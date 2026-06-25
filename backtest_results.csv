@@ -1,0 +1,1 @@
+timestamp,symbol,signal,raw_confidence,entry_price,stop_loss,take_profit,rr,horizon_hours,future_time,exit_time,exit_price,exit_reason,profit_percent,max_profit_percent,max_drawdown_percent,is_win

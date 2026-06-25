@@ -1,0 +1,3 @@
+timestamp,setup_id,symbol,direction,signal,score,distance_to_entry_zone
+2026-06-25T03:11:06.196077+00:00,BTC_SHORT,BTC/USDT,SHORT,SETUP,85,0.0
+2026-06-25T03:11:06.939387+00:00,ETH_SHORT,ETH/USDT,SHORT,SETUP,85,0.0
