@@ -59,6 +59,7 @@ def build_main_keyboard():
         [InlineKeyboardButton("📊 Последние сигналы", callback_data="last_signals")],
         [InlineKeyboardButton("📋 Статистика", callback_data="statistics")],
         [InlineKeyboardButton("⚙️ Состояние бота", callback_data="bot_status")],
+        [InlineKeyboardButton("🧠 Объяснение решения", callback_data="decision_explain")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -143,6 +144,41 @@ def format_bot_status():
     lines.append(f"🕒 Время: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
     return "\n".join(lines)
 
+def format_decision_explain():
+    signals = read_signals()
+    if not signals:
+        return "🧠 Объяснение решения\n\nНет данных."
+
+    latest = latest_by_symbol(signals)
+    if not latest:
+        return "🧠 Объяснение решения\n\nНет данных."
+
+    best = max(latest.values(), key=lambda s: float(s.get("score", 0) or 0))
+
+    symbol = best.get("symbol", "N/A")
+    direction = best.get("direction", "N/A")
+    signal = best.get("signal", "N/A")
+    score = best.get("score", "N/A")
+    reason = best.get("reason", "Причина отсутствует.")
+
+    if direction == "LONG":
+        direction_line = "📈 Направление: LONG"
+    elif direction == "SHORT":
+        direction_line = "📉 Направление: SHORT"
+    else:
+        direction_line = f"➡️ Направление: {direction}"
+
+    return (
+        "🧠 Объяснение решения\n\n"
+        f"🪙 {symbol}\n"
+        f"{direction_line}\n"
+        f"🚦 Сигнал: {signal}\n"
+        f"⭐ Оценка: {score}\n\n"
+        "📝 Причина:\n"
+        f"{reason}\n\n"
+        "AITradingAgent V4"
+    )
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "🤖 AI Trading Agent V4\n\nВыберите раздел:",
@@ -154,6 +190,8 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.answer()
     if query.data == "market_status":
         text = format_market_status()
+    elif query.data == "decision_explain":
+        text = format_decision_explain()
     elif query.data == "best_candidate":
         text = format_best_candidate()
     elif query.data == "last_signals":
