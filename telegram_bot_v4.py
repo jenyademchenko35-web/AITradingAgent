@@ -57,6 +57,8 @@ def build_main_keyboard():
         [InlineKeyboardButton("📈 Статус рынка", callback_data="market_status")],
         [InlineKeyboardButton("⭐ Лучший кандидат", callback_data="best_candidate")],
         [InlineKeyboardButton("📊 Последние сигналы", callback_data="last_signals")],
+        [InlineKeyboardButton("📋 Статистика", callback_data="statistics")],
+        [InlineKeyboardButton("⚙️ Состояние бота", callback_data="bot_status")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -105,6 +107,42 @@ def format_last_signals():
         lines.append(f"{dt} | {symbol} | {direction} | Оценка: {score}")
     return "\n".join(lines)
 
+def format_statistics():
+    stats = read_stats()
+    if not stats:
+        return "Нет статистики."
+
+    lines = ["📋 Статистика", ""]
+
+    labels = {
+        "runs": "🔄 Анализов",
+        "high_priority": "🔥 Сильных сигналов",
+        "setup": "🎯 Сетапов",
+        "watch": "👀 Наблюдений",
+        "wait": "⏳ Ожиданий",
+        "no_trade": "⛔ Нет сделки",
+    }
+
+    for key, label in labels.items():
+        if key in stats:
+            lines.append(f"{label}: {stats[key]}")
+
+    return "\n".join(lines)
+
+def format_bot_status():
+    import sys
+
+    lines = ["⚙️ Состояние бота", ""]
+    lines.append("🟢 Статус: Онлайн")
+    lines.append("")
+    lines.append(f"📄 signals.csv: {'✅' if os.path.exists('signals.csv') else '❌'}")
+    lines.append(f"📄 agent_stats.json: {'✅' if os.path.exists('agent_stats.json') else '❌'}")
+    lines.append("")
+    lines.append("🤖 Версия: V4")
+    lines.append(f"🐍 Python: {sys.version.split()[0]}")
+    lines.append(f"🕒 Время: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
+    return "\n".join(lines)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "🤖 AI Trading Agent V4\n\nВыберите раздел:",
@@ -120,6 +158,10 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         text = format_best_candidate()
     elif query.data == "last_signals":
         text = format_last_signals()
+    elif query.data == "statistics":
+        text = format_statistics()
+    elif query.data == "bot_status":
+        text = format_bot_status()
     else:
         text = "🚧 Раздел находится в разработке."
     try:
