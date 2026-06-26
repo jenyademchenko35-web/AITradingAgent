@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import argparse
 import os
 import json
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 import ccxt
 import pandas as pd
 
@@ -21,10 +21,11 @@ from ta.volatility import AverageTrueRange
 # STORAGE
 # ==========================
 
-SIGNALS_FILE = "signals_v3.csv"
-STATS_FILE = "agent_v3_stats.json"
-ACTIVE_SETUPS_FILE = "active_setups_v3.json"
-SETUP_HISTORY_FILE = "setup_history_v3.csv"
+SIGNALS_FILE = os.path.join(BASE_DIR, "signals_v3.csv")
+STATS_FILE = os.path.join(BASE_DIR, "agent_v3_stats.json")
+ACTIVE_SETUPS_FILE = os.path.join(BASE_DIR, "active_setups_v3.json")
+SETUP_HISTORY_FILE = os.path.join(BASE_DIR, "setup_history_v3.csv")
+DECISION_DEBUG_FILE = os.path.join(BASE_DIR, "decision_debug.csv")
 
 # ==========================
 # HELPERS
@@ -122,9 +123,10 @@ def save_setup_history(symbol, decision):
     if decision.signal not in ("SETUP", "HIGH PRIORITY"):
         return
     file_exists = os.path.exists(SETUP_HISTORY_FILE)
+    needs_header = (not file_exists) or os.path.getsize(SETUP_HISTORY_FILE) == 0
     with open(SETUP_HISTORY_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        if not file_exists:
+        if needs_header:
             writer.writerow([
                 "timestamp",
                 "symbol",
@@ -132,6 +134,7 @@ def save_setup_history(symbol, decision):
                 "signal",
                 "score",
                 "confidence",
+                "quality",
                 "long_total",
                 "short_total",
                 "summary",
@@ -144,6 +147,7 @@ def save_setup_history(symbol, decision):
             decision.signal,
             decision.score,
             decision.confidence,
+            decision.quality,
             decision.long_total,
             decision.short_total,
             decision.summary,
@@ -158,9 +162,10 @@ def save_signal(
     risk: "EngineResult",
 ):
     file_exists = os.path.exists(SIGNALS_FILE)
+    needs_header = (not file_exists) or os.path.getsize(SIGNALS_FILE) == 0
     with open(SIGNALS_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        if not file_exists:
+        if needs_header:
             writer.writerow([
                 "timestamp",
                 "symbol",
@@ -168,6 +173,7 @@ def save_signal(
                 "signal",
                 "score",
                 "confidence",
+                "quality",
                 "trend_long",
                 "trend_short",
                 "structure_long",
@@ -188,6 +194,7 @@ def save_signal(
             decision.signal,
             decision.score,
             decision.confidence,
+            decision.quality,
             trend.long,
             trend.short,
             structure.long,
@@ -198,6 +205,75 @@ def save_signal(
             risk.short,
             decision.long_total,
             decision.short_total,
+            decision.summary,
+        ])
+
+def save_decision_debug(
+    symbol: str,
+    decision: "DecisionResult",
+    trend: "EngineResult",
+    structure: "EngineResult",
+    momentum: "EngineResult",
+    risk: "EngineResult",
+):
+    file_exists = os.path.exists(DECISION_DEBUG_FILE)
+    needs_header = (not file_exists) or os.path.getsize(DECISION_DEBUG_FILE) == 0
+
+    with open(DECISION_DEBUG_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        if needs_header:
+            writer.writerow([
+                "timestamp",
+                "symbol",
+                "direction",
+                "signal",
+                "score",
+                "confidence",
+                "quality",
+                "trend_long",
+                "trend_short",
+                "structure_long",
+                "structure_short",
+                "momentum_long",
+                "momentum_short",
+                "risk_long",
+                "risk_short",
+                "long_total",
+                "short_total",
+                "diff",
+                "winner",
+                "trend_reason",
+                "structure_reason",
+                "momentum_reason",
+                "risk_reason",
+                "summary",
+            ])
+
+        writer.writerow([
+            datetime.now(timezone.utc).isoformat(),
+            symbol,
+            decision.direction,
+            decision.signal,
+            decision.score,
+            decision.confidence,
+            decision.quality,
+            trend.long,
+            trend.short,
+            structure.long,
+            structure.short,
+            momentum.long,
+            momentum.short,
+            risk.long,
+            risk.short,
+            decision.long_total,
+            decision.short_total,
+            abs(decision.long_total - decision.short_total),
+            decision.direction,
+            trend.reason.replace("\n", " | "),
+            structure.reason.replace("\n", " | "),
+            momentum.reason.replace("\n", " | "),
+            risk.reason.replace("\n", " | "),
             decision.summary,
         ])
 
@@ -346,7 +422,9 @@ class DecisionResult:
     long_total: int
     short_total: int
     confidence: float
+    quality: str
     summary: str
+    explanation: str
 
 
 class TrendEngine:
@@ -390,12 +468,27 @@ class TrendEngine:
                 short_score += weight // 2
                 reasons.append(f"{tf_name}: MACD SHORT +{weight // 2}")
 
+        # ===== Trend Summary (выполняется ОДИН раз) =====
+
+        reasons.append("")
+        reasons.append("=== Trend Summary ===")
+
+        for tf_name, tf in timeframes.items():
+            reasons.append(
+                f"{tf_name}: "
+                f"EMA={tf.trend_ema} | "
+                f"MACD={tf.trend_macd} | "
+                f"EMA20={tf.ema20:.2f} | "
+                f"EMA50={tf.ema50:.2f} | "
+                f"MACD={tf.macd:.4f} | "
+                f"Signal={tf.macd_signal:.4f}"
+            )
+
         return EngineResult(
             long=long_score,
             short=short_score,
             reason="\n".join(reasons),
         )
-
 
 # ==========================
 # STRUCTURE ENGINE
@@ -441,12 +534,8 @@ class StructureEngine:
                 )
 
             else:
-                long_score += weight // 2
-                short_score += weight // 2
-
-                reasons.append(
-                    f"{tf_name}: середина диапазона"
-                )
+                reasons.append(f"{tf_name}: середина диапазона")
+                
 
         return EngineResult(
             long=long_score,
@@ -503,11 +592,7 @@ class MomentumEngine:
                 short_score += rsi_half
                 reasons.append(f"{tf_name}: RSI {tf.rsi:.1f} >65 SHORT +{rsi_half}")
             else:
-                half_long = rsi_half // 2
-                half_short = rsi_half - half_long
-                long_score += half_long
-                short_score += half_short
-                reasons.append(f"{tf_name}: RSI {tf.rsi:.1f} middle range split +{half_long} LONG +{half_short} SHORT")
+                reasons.append(f"{tf_name}: RSI {tf.rsi:.1f} neutral")
 
         return EngineResult(
             long=long_score,
@@ -543,14 +628,10 @@ class RiskEngine:
             short_score -= 5
             reasons.append("Высокая волатильность (-5 LONG, -5 SHORT)")
         elif atr_pct < 1:
-            long_score += 5
-            short_score += 5
-            reasons.append("Низкая волатильность (+5 LONG, +5 SHORT)")
+            reasons.append("Низкая волатильность")
 
         if 35 <= pos <= 65:
-            long_score += 8
-            short_score += 8
-            reasons.append("Цена далеко от зоны входа (+8 LONG, +8 SHORT)")
+            reasons.append("Цена далеко от зоны входа")
         elif pos < 35:
             long_score += 15
             reasons.append("Хорошая зона для LONG (+15 LONG)")
@@ -568,25 +649,43 @@ class RiskEngine:
 # ==========================
 # DECISION ENGINE
 # ==========================
-
+TREND_WEIGHT = 0.40
+STRUCTURE_WEIGHT = 0.25
+MOMENTUM_WEIGHT = 0.20
+RISK_WEIGHT = 0.15
 class DecisionEngine:
+   
 
     @staticmethod
     def calculate(trend: EngineResult, structure: EngineResult, momentum: EngineResult, risk: EngineResult) -> DecisionResult:
         # Weighted totals
         # Trend: 40%, Structure: 25%, Momentum: 20%, Risk: 15%
+        trend_long = trend.long * TREND_WEIGHT
+        trend_short = trend.short * TREND_WEIGHT
+
+        structure_long = structure.long * STRUCTURE_WEIGHT
+        structure_short = structure.short * STRUCTURE_WEIGHT
+
+        momentum_long = momentum.long * MOMENTUM_WEIGHT
+        momentum_short = momentum.short * MOMENTUM_WEIGHT
+
+        risk_long = risk.long * RISK_WEIGHT
+        risk_short = risk.short * RISK_WEIGHT
+
         long_total = (
-            trend.long * 0.4
-            + structure.long * 0.25
-            + momentum.long * 0.2
-            + risk.long * 0.15
+            trend_long
+            + structure_long
+            + momentum_long
+            + risk_long
         )
+
         short_total = (
-            trend.short * 0.4
-            + structure.short * 0.25
-            + momentum.short * 0.2
-            + risk.short * 0.15
+            trend_short
+            + structure_short
+            + momentum_short
+            + risk_short
         )
+
         long_total = int(round(long_total))
         short_total = int(round(short_total))
 
@@ -603,20 +702,44 @@ class DecisionEngine:
             else:
                 direction = "SHORT"
                 score = short_total
-            if score >= 95:
+            if score >= 27:
                 signal = "HIGH PRIORITY"
-            elif score >= 80:
+            elif score >= 25:
                 signal = "SETUP"
-            elif score >= 65:
+            elif score >= 23:
                 signal = "WATCH"
-            elif score >= 45:
+            elif score >= 20:
                 signal = "WAIT"
             else:
                 signal = "NO TRADE"
             summary = f"{direction} wins by {abs_diff} points"
 
         confidence = round((max(long_total, short_total) / max(long_total + short_total, 1)) * 100, 1)
+        if signal == "HIGH PRIORITY":
+            quality = "A"
+        elif signal == "SETUP":
+            quality = "B"
+        elif signal == "WATCH":
+            quality = "C"
+        elif signal == "WAIT":
+            quality = "D"
+        else:
+            quality = "E"
+        explanation = (
+            f"Trend {trend.long}/{trend.short} "
+            f"({trend_long:.1f}/{trend_short:.1f}) | "
 
+            f"Structure {structure.long}/{structure.short} "
+            f"({structure_long:.1f}/{structure_short:.1f}) | "
+
+            f"Momentum {momentum.long}/{momentum.short} "
+            f"({momentum_long:.1f}/{momentum_short:.1f}) | "
+
+            f"Risk {risk.long}/{risk.short} "
+            f"({risk_long:.1f}/{risk_short:.1f}) | "
+
+            f"Totals {long_total}/{short_total}"
+        )
         return DecisionResult(
             direction=direction,
             signal=signal,
@@ -624,7 +747,9 @@ class DecisionEngine:
             long_total=long_total,
             short_total=short_total,
             confidence=confidence,
+            quality=quality,
             summary=summary,
+            explanation=explanation,
         )
 
 
@@ -649,9 +774,23 @@ def analyze_symbol(symbol: str) -> DecisionResult:
     momentum = MomentumEngine(market).calculate()
     risk = RiskEngine(market).calculate()
 
-    decision = DecisionEngine.calculate(trend, structure, momentum, risk)
+    decision = DecisionEngine.calculate(
+    trend,
+    structure,
+    momentum,
+    risk,
+)
 
     save_signal(symbol, decision, trend, structure, momentum, risk)
+
+    save_decision_debug(
+        symbol,
+        decision,
+        trend,
+        structure,
+        momentum,
+        risk,
+    )
 
     # Setup tracking logic
     setup_id = f"{symbol.replace('/', '_')}_{decision.direction}"
@@ -659,6 +798,7 @@ def analyze_symbol(symbol: str) -> DecisionResult:
         if is_setup_active(setup_id):
             decision.summary += " | COOLDOWN"
             log(f"[{symbol}] Cooldown active for {setup_id}")
+            print("   ", decision.explanation)
         else:
             mark_setup_active(setup_id)
             save_setup_history(symbol, decision)
@@ -678,7 +818,8 @@ def run_once():
             t1 = time.time()
             elapsed = t1 - t0
             # Log the compact line with summary and duration
-            log(f"[{symbol}] {decision.direction} | {decision.signal} | Score={decision.score} | Confidence={decision.confidence}% | {decision.summary} ({elapsed:.2f}s)")
+            log(f"[{symbol}] {decision.direction} | {decision.signal} | Quality={decision.quality} | Score={decision.score} | Confidence={decision.confidence}% | {decision.summary} ({elapsed:.2f}s)")
+            print("   ", decision.explanation)
             decisions.append((symbol, decision))
         except Exception as e:
             log(f"[ERROR] {symbol}: {e}")
@@ -692,12 +833,12 @@ def run_once():
     print("\nBEST SETUP:")
     print("=" * 60)
     symbol, decision = decisions[0]
-    print(f"{symbol}: {decision.direction} | {decision.signal} | Score={decision.score} | Confidence={decision.confidence}%")
+    print(f"{symbol}: {decision.direction} | {decision.signal} | Quality={decision.quality} | Score={decision.score} | Confidence={decision.confidence}%")
     print("=" * 60)
     print("Ranked summary by score:")
     print("=" * 60)
     for symbol, decision in decisions:
-        print(f"{symbol}: {decision.direction} | {decision.signal} | Score={decision.score} | Confidence={decision.confidence}%")
+        print(f"{symbol}: {decision.direction} | {decision.signal} | Quality={decision.quality} | Score={decision.score} | Confidence={decision.confidence}%")
     print("=" * 60)
 
     # Count signals by type

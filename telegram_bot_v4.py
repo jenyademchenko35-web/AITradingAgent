@@ -5,6 +5,7 @@ from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import BadRequest
+from notification_manager import save_chat_id
 import json
 import csv
 
@@ -27,11 +28,13 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 def read_signals():
-    signals_path = "signals.csv"
+    signals_path = "signals_v3.csv"
     try:
         with open(signals_path, "r", encoding="utf-8", newline='') as f:
             reader = csv.DictReader(f)
-            return list(reader)
+            rows = list(reader)
+            rows = [r for r in rows if r.get("score") not in (None, "score", "")]
+            return rows
     except Exception:
         return []
 
@@ -46,6 +49,8 @@ def read_stats():
 def latest_by_symbol(signals):
     latest = {}
     for signal in signals:
+        if signal.get("score") == "score":
+            continue
         symbol = signal.get("symbol")
         timestamp = signal.get("timestamp")
         if symbol not in latest or timestamp > latest[symbol]["timestamp"]:
@@ -65,11 +70,20 @@ def build_main_keyboard():
 
 def format_market_status():
     stats = read_stats()
+
     if not stats:
         return "Нет данных о состоянии рынка."
-    lines = ["📈 Статус рынка:"]
+
+    lines = ["📈 Статус рынка", ""]
+
     for key, value in stats.items():
-        lines.append(f"{key}: {value}")
+        text = str(value)
+
+        if len(text) > 100:
+            text = text[:100] + "..."
+
+        lines.append(f"{key}: {text}")
+
     return "\n".join(lines)
 
 def format_best_candidate():
@@ -80,7 +94,10 @@ def format_best_candidate():
     if not latest:
         return "Нет последних сигналов по символам."
     # Find best candidate by highest 'score' field
-    best = max(latest.values(), key=lambda s: s.get("score", 0))
+    best = max(
+        latest.values(),
+        key=lambda s: float(s.get("score", "0") if str(s.get("score", "0")).replace(".", "", 1).isdigit() else 0)
+    )
     symbol = best.get("symbol", "N/A")
     score = best.get("score", 0)
     direction = best.get("direction", "N/A")
@@ -97,9 +114,13 @@ def format_last_signals():
     if not signals:
         return "Нет данных о сигналах."
     # Sort signals by timestamp descending, take last 5
-    sorted_signals = sorted(signals, key=lambda s: s.get("timestamp", 0), reverse=True)[:5]
+    sorted_signals = sorted(
+    signals,
+    key=lambda s: s.get("timestamp", 0),
+    reverse=True
+)
     lines = ["📊 Последние сигналы:"]
-    for s in sorted_signals:
+    for s in sorted_signals[:10]:
         symbol = s.get("symbol", "N/A")
         direction = s.get("direction", "N/A")
         score = s.get("score", "N/A")
@@ -136,7 +157,7 @@ def format_bot_status():
     lines = ["⚙️ Состояние бота", ""]
     lines.append("🟢 Статус: Онлайн")
     lines.append("")
-    lines.append(f"📄 signals.csv: {'✅' if os.path.exists('signals.csv') else '❌'}")
+    lines.append(f"📄 signals_v3.csv: {'✅' if os.path.exists('signals_v3.csv') else '❌'}")
     lines.append(f"📄 agent_stats.json: {'✅' if os.path.exists('agent_stats.json') else '❌'}")
     lines.append("")
     lines.append("🤖 Версия: V4")
@@ -153,7 +174,13 @@ def format_decision_explain():
     if not latest:
         return "🧠 Объяснение решения\n\nНет данных."
 
-    best = max(latest.values(), key=lambda s: float(s.get("score", 0) or 0))
+    def safe_score(signal):
+        try:
+            return float(signal.get("score", 0))
+        except (TypeError, ValueError):
+            return 0.0
+
+    best = max(latest.values(), key=safe_score)
 
     symbol = best.get("symbol", "N/A")
     direction = best.get("direction", "N/A")
@@ -179,15 +206,28 @@ def format_decision_explain():
         "AITradingAgent V4"
     )
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        "🤖 AI Trading Agent V4\n\nВыберите раздел:",
-        reply_markup=build_main_keyboard()
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    save_chat_id(chat_id)
+
+    print(f"/start from {chat_id}")
+    print("Before reply_text")
+
+    try:
+        await context.bot.send_message(
+        chat_id=chat_id,
+        text="ТЕСТ ✅ Бот отвечает",
     )
+        print("After reply_text")
+
+    except Exception as e:
+        print(f"START ERROR: {e}")
 
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+    print(f"Button: {query.data}")
+
     if query.data == "market_status":
         text = format_market_status()
     elif query.data == "decision_explain":
@@ -202,16 +242,28 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         text = format_bot_status()
     else:
         text = "🚧 Раздел находится в разработке."
+
+    if len(text) > 4000:
+        text = text[:4000] + "\n\n... сообщение сокращено ..."
+
     try:
         await query.edit_message_text(
             text=text,
             reply_markup=build_main_keyboard(),
         )
-    except BadRequest as exc:
-        if "Message is not modified" in str(exc):
+    except BadRequest as e:
+        if "Message is not modified" in str(e):
             return
-        raise
-
+        await query.message.reply_text(
+            text,
+            reply_markup=build_main_keyboard(),
+        )
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        await query.message.reply_text(
+            f"❌ Ошибка: {e}",
+            reply_markup=build_main_keyboard(),
+        )
 def main():
     if not BOT_TOKEN:
         print("BOT_TOKEN не найден. Проверь файл .env")
