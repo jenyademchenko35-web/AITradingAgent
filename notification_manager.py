@@ -40,29 +40,65 @@ def is_duplicate(signal: str) -> bool:
     return signal == last_notification()
 
 
-def format_signal(symbol, decision):
-    """Формирует красивое сообщение для Telegram."""
+from datetime import datetime
 
-    return f"""🚨 AI Trading Agent
+def trend_name(trend):
+    return {
+        "BULL": "🟢 Восходящий",
+        "BEAR": "🔴 Нисходящий",
+        "SIDEWAYS": "🟡 Боковой",
+    }.get(trend, trend)
 
-🪙 Монета: {symbol}
 
-📉 Направление: {decision.direction}
+def direction_name(direction):
+    return {
+        "LONG": "🟢 LONG",
+        "SHORT": "🔴 SHORT",
+    }.get(direction, direction)
 
-🎯 Сигнал: {decision.signal}
+def format_signal(symbol, decision, market):
+    entry = market.tf1h.close
 
-⭐ Качество: {decision.quality}
+    if decision.direction == "LONG":
+        stop_loss = entry - market.tf1h.atr
+        take_profit = entry + market.tf1h.atr * 2
+    else:
+        stop_loss = entry + market.tf1h.atr
+        take_profit = entry - market.tf1h.atr * 2
 
-📊 Score: {decision.score}
+    risk = abs(entry - stop_loss)
+    reward = abs(take_profit - entry)
+    rr = reward / risk if risk else 0
 
-🎯 Уверенность: {decision.confidence}%
+    return (
+    "🚨 AI Trading Agent\n\n"
 
-━━━━━━━━━━━━━━━━━━━━
+        f"🪙 {symbol}\n\n"
 
-📝 Причина
+        f"📉 Направление: {direction_name(decision.direction)}\n"
+        f"🎯 Сигнал: {decision.signal}\n"
+        f"⭐ Качество: {decision.quality}\n\n"
 
-{decision.summary}
-"""
+        f"💰 Цена: {market.tf1h.close:.2f}\n"
+        f"📊 Score: {decision.score}\n"
+        f"🎯 Confidence: {decision.confidence}%\n\n"
+        f"🎯 Entry: {entry:.2f}\n"
+        f"🛑 Stop Loss: {stop_loss:.2f}\n"
+        f"✅ Take Profit: {take_profit:.2f}\n"
+        f"⚖️ Risk/Reward: 1:{rr:.1f}\n\n"
+
+        "📈 Тренд\n"
+        f"• 1H: {trend_name(market.tf1h.trend_ema)}\n"
+        f"• 4H: {trend_name(market.tf4h.trend_ema)}\n"
+        f"• 1D: {trend_name(market.tf1d.trend_ema)}\n"
+
+        f"📏 ATR (1H): {market.tf1h.atr:.2f}\n\n"
+
+        "📝 Причина\n"
+        f"{decision.summary}\n\n"
+
+        f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+    )
 
 
 def mark_as_sent(signal: str):

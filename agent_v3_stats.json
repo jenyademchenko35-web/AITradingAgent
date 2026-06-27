@@ -1,7 +1,7 @@
 {
-  "runs": 475,
-  "analyzed_symbols": 1418,
+  "runs": 478,
+  "analyzed_symbols": 1427,
   "api_errors": 7,
-  "setup_signals": 164,
-  "no_trade_signals": 785
+  "setup_signals": 170,
+  "no_trade_signals": 788
 }

@@ -769,7 +769,11 @@ class DecisionEngine:
 # Notification Sending
 # ==========================
 
-async def send_notification(symbol: str, decision: DecisionResult):
+async def send_notification(
+        symbol: str,
+        decision: DecisionResult,
+        market: MarketSnapshot,
+    ):
     chat_id = load_chat_id()
     if not chat_id or not BOT_TOKEN:
         return
@@ -833,12 +837,13 @@ def analyze_symbol(symbol: str) -> DecisionResult:
             mark_setup_active(setup_id)
             save_setup_history(symbol, decision)
 
-    if (
-    decision.signal in ("SETUP", "HIGH PRIORITY")
-        and decision.quality in ("A", "B")
-        and decision.confidence >= 80
-    ):
-        asyncio.run(send_notification(symbol, decision))
+            if (
+                decision.quality in ("A", "B")
+                and decision.confidence >= 80
+            ):
+                print(f"📨 Sending notification for {symbol}")
+                asyncio.run(send_notification(symbol, decision))
+                print("✅ Notification sent")
 
     # No logging of compact signal or summary here
 
