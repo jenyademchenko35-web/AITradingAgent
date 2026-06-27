@@ -8,6 +8,17 @@ import json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 import ccxt
 import pandas as pd
+import asyncio
+from notification_manager import (
+    load_chat_id,
+    format_signal,
+    is_duplicate,
+    mark_as_sent,
+)
+from telegram import Bot
+from dotenv import load_dotenv
+load_dotenv()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
@@ -753,6 +764,25 @@ class DecisionEngine:
         )
 
 
+
+# ==========================
+# Notification Sending
+# ==========================
+
+async def send_notification(symbol: str, decision: DecisionResult):
+    chat_id = load_chat_id()
+    if not chat_id or not BOT_TOKEN:
+        return
+
+    text = format_signal(symbol, decision)
+
+    if is_duplicate(text):
+        return
+
+    bot = Bot(BOT_TOKEN)
+    await bot.send_message(chat_id=chat_id, text=text)
+    mark_as_sent(text)
+
 # ==========================
 # EXECUTION
 # ==========================
@@ -802,6 +832,13 @@ def analyze_symbol(symbol: str) -> DecisionResult:
         else:
             mark_setup_active(setup_id)
             save_setup_history(symbol, decision)
+
+    if (
+    decision.signal in ("SETUP", "HIGH PRIORITY")
+        and decision.quality in ("A", "B")
+        and decision.confidence >= 80
+    ):
+        asyncio.run(send_notification(symbol, decision))
 
     # No logging of compact signal or summary here
 
