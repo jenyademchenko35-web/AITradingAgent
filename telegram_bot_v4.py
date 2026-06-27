@@ -63,6 +63,7 @@ def build_main_keyboard():
         [InlineKeyboardButton("⭐ Лучший кандидат", callback_data="best_candidate")],
         [InlineKeyboardButton("📊 Последние сигналы", callback_data="last_signals")],
         [InlineKeyboardButton("📋 Статистика", callback_data="statistics")],
+        [InlineKeyboardButton("🔔 Уведомления", callback_data="notifications")],
         [InlineKeyboardButton("⚙️ Состояние бота", callback_data="bot_status")],
         [InlineKeyboardButton("🧠 Объяснение решения", callback_data="decision_explain")],
     ]
@@ -214,10 +215,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Before reply_text")
 
     try:
-        await context.bot.send_message(
-        chat_id=chat_id,
-        text="ТЕСТ ✅ Бот отвечает",
-    )
+        await update.message.reply_text(
+            "🤖 AI Trading Agent V5\n\nДобро пожаловать!\n\nВыберите нужный раздел:",
+            reply_markup=build_main_keyboard(),
+        )
         print("After reply_text")
 
     except Exception as e:
@@ -238,6 +239,13 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         text = format_last_signals()
     elif query.data == "statistics":
         text = format_statistics()
+    elif query.data == "notifications":
+        text = (
+            "🔔 Уведомления\n\n"
+            "Статус: 🟢 Включены\n\n"
+            "Пока это тестовая версия.\n"
+            "Следующим этапом будут автоматические push-уведомления при сильных сигналах."
+        )
     elif query.data == "bot_status":
         text = format_bot_status()
     else:
