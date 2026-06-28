@@ -6,6 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from telegram.error import BadRequest
 from notification_manager import save_chat_id
+from performance_analyzer import format_statistics
 import json
 import csv
 
@@ -130,27 +131,6 @@ def format_last_signals():
         lines.append(f"{dt} | {symbol} | {direction} | Оценка: {score}")
     return "\n".join(lines)
 
-def format_statistics():
-    stats = read_stats()
-    if not stats:
-        return "Нет статистики."
-
-    lines = ["📋 Статистика", ""]
-
-    labels = {
-        "runs": "🔄 Анализов",
-        "high_priority": "🔥 Сильных сигналов",
-        "setup": "🎯 Сетапов",
-        "watch": "👀 Наблюдений",
-        "wait": "⏳ Ожиданий",
-        "no_trade": "⛔ Нет сделки",
-    }
-
-    for key, label in labels.items():
-        if key in stats:
-            lines.append(f"{label}: {stats[key]}")
-
-    return "\n".join(lines)
 
 def format_bot_status():
     import sys

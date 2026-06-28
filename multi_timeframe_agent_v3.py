@@ -6,6 +6,16 @@ import argparse
 import os
 import json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+WEIGHTS_FILE = os.path.join(BASE_DIR, "strategy_weights.json")
+
+def load_strategy_weights(symbol=None):
+    with open(WEIGHTS_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if symbol and symbol in data:
+        return data[symbol]
+    return data["global"]
 import ccxt
 import pandas as pd
 import asyncio
@@ -16,6 +26,11 @@ from notification_manager import (
     mark_as_sent,
 )
 from telegram import Bot
+from trade_tracker import (
+    open_trade,
+    get_open_trades,
+    close_trade,
+)
 from dotenv import load_dotenv
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -25,8 +40,21 @@ from ta.trend import EMAIndicator, MACD
 from ta.volatility import AverageTrueRange
 
 # ==========================
-# CONFIG
+# # ==========================
+# STRATEGY CONSTANTS
 # ==========================
+
+MIN_CONFIDENCE = 80
+MIN_EDGE = 15
+
+ATR_HIGH = 2.0
+ATR_LOW = 1.0
+
+PRICE_ZONE_LOW = 35
+PRICE_ZONE_HIGH = 65
+
+# ==========================
+
 
 # ==========================
 # STORAGE
@@ -46,20 +74,37 @@ def log(message: str):
     print(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {message}")
 
 def fetch_with_retry(symbol, timeframe):
-    delays = [2, 4, 8]
+    cache_key = (symbol, timeframe)
+
+    delays = [2, 5, 10]
     last_exc = None
+
     for i, delay in enumerate(delays):
         try:
-            return EXCHANGE.fetch_ohlcv(
+            data = EXCHANGE.fetch_ohlcv(
                 symbol,
                 timeframe=timeframe,
                 limit=OHLCV_LIMIT,
             )
+
+            OHLCV_CACHE[cache_key] = data
+            return data
+
         except Exception as e:
             last_exc = e
-            if i == len(delays) - 1:
-                raise
+
+            log(
+                f"API error {symbol} {timeframe} "
+                f"({i + 1}/{len(delays)}): {e}"
+            )
+
+            recreate_exchange()
             time.sleep(delay)
+
+    if cache_key in OHLCV_CACHE:
+        log(f"Using cached OHLCV for {symbol} {timeframe}")
+        return OHLCV_CACHE[cache_key]
+
     raise last_exc
 
 def load_active_setups():
@@ -311,11 +356,26 @@ RUN_INTERVAL = 900
 EXCHANGE = ccxt.bybit(
     {
         "enableRateLimit": True,
+        "timeout": 30000,
         "options": {
             "defaultType": "spot",
         },
     }
 )
+
+def recreate_exchange():
+    global EXCHANGE
+
+    EXCHANGE = ccxt.bybit(
+        {
+            "enableRateLimit": True,
+            "timeout": 30000,
+            "options": {
+                "defaultType": "spot",
+            },
+        }
+    )
+OHLCV_CACHE = {}
 
 # ==========================
 # MARKET SNAPSHOT
@@ -347,28 +407,13 @@ class MarketSnapshot:
 # LOADER
 # ==========================
 
-def load_tf(symbol: str, timeframe: str) -> TFData:
-    ohlcv = fetch_with_retry(symbol, timeframe)
-
-    df = pd.DataFrame(
-        ohlcv,
-        columns=[
-            "ts",
-            "open",
-            "high",
-            "low",
-            "close",
-            "volume",
-        ],
-    )
-
+def build_tf(df: pd.DataFrame) -> TFData:
     df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
     df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
 
     df["rsi"] = RSIIndicator(df["close"]).rsi()
 
     macd = MACD(df["close"])
-
     df["macd"] = macd.macd()
     df["macd_signal"] = macd.macd_signal()
 
@@ -407,12 +452,50 @@ def load_tf(symbol: str, timeframe: str) -> TFData:
         else "BEARISH",
     )
 
+
+def load_tf(symbol: str, timeframe: str) -> TFData:
+    ohlcv = fetch_with_retry(symbol, timeframe)
+    df = pd.DataFrame(
+        ohlcv,
+        columns=[
+            "ts",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ],
+    )
+    return build_tf(df)
+
 def load_market(symbol: str) -> MarketSnapshot:
+    return build_market_snapshot(
+        symbol=symbol,
+        tf1h_df=pd.DataFrame(
+            fetch_with_retry(symbol, "1h"),
+            columns=["ts", "open", "high", "low", "close", "volume"],
+        ),
+        tf4h_df=pd.DataFrame(
+            fetch_with_retry(symbol, "4h"),
+            columns=["ts", "open", "high", "low", "close", "volume"],
+        ),
+        tf1d_df=pd.DataFrame(
+            fetch_with_retry(symbol, "1d"),
+            columns=["ts", "open", "high", "low", "close", "volume"],
+        ),
+    )
+
+def build_market_snapshot(
+    symbol: str,
+    tf1h_df: pd.DataFrame,
+    tf4h_df: pd.DataFrame,
+    tf1d_df: pd.DataFrame,
+) -> MarketSnapshot:
     return MarketSnapshot(
         symbol=symbol,
-        tf1h=load_tf(symbol, "1h"),
-        tf4h=load_tf(symbol, "4h"),
-        tf1d=load_tf(symbol, "1d"),
+        tf1h=build_tf(tf1h_df),
+        tf4h=build_tf(tf4h_df),
+        tf1d=build_tf(tf1d_df),
     )
 
 # ==========================
@@ -532,6 +615,30 @@ class StructureEngine:
 
             weight = weights[tf_name]
 
+            # Цена относительно EMA20
+            if tf.close > tf.ema20:
+                long_score += 1
+                reasons.append(f"{tf_name}: цена выше EMA20 (+1 LONG)")
+            else:
+                short_score += 1
+                reasons.append(f"{tf_name}: цена ниже EMA20 (+1 SHORT)")
+
+            # Цена относительно EMA50
+            if tf.close > tf.ema50:
+                long_score += 1
+                reasons.append(f"{tf_name}: цена выше EMA50 (+1 LONG)")
+            else:
+                short_score += 1
+                reasons.append(f"{tf_name}: цена ниже EMA50 (+1 SHORT)")
+
+            # Взаимное расположение EMA
+            if tf.ema20 > tf.ema50:
+                long_score += 2
+                reasons.append(f"{tf_name}: EMA20 > EMA50 (+2 LONG)")
+            else:
+                short_score += 2
+                reasons.append(f"{tf_name}: EMA20 < EMA50 (+2 SHORT)")
+
             if tf.price_position <= 20:
                 long_score += weight
                 reasons.append(
@@ -634,21 +741,23 @@ class RiskEngine:
 
         # ATR volatility effect
         atr_pct = (atr / price) * 100 if price else 0
-        if atr_pct > 2:
+        if atr_pct > ATR_HIGH:
             long_score -= 5
             short_score -= 5
             reasons.append("Высокая волатильность (-5 LONG, -5 SHORT)")
-        elif atr_pct < 1:
+        elif atr_pct < ATR_LOW:
             reasons.append("Низкая волатильность")
 
-        if 35 <= pos <= 65:
-            reasons.append("Цена далеко от зоны входа")
-        elif pos < 35:
-            long_score += 15
-            reasons.append("Хорошая зона для LONG (+15 LONG)")
-        elif pos > 65:
-            short_score += 15
-            reasons.append("Хорошая зона для SHORT (+15 SHORT)")
+        if PRICE_ZONE_LOW <= pos <= PRICE_ZONE_HIGH:
+            long_score -= 5
+            short_score -= 5
+            reasons.append("Цена в середине диапазона (-5 LONG, -5 SHORT)")
+        elif pos < PRICE_ZONE_LOW:
+            long_score += 20
+            reasons.append("Хорошая зона для LONG (+20 LONG)")
+        elif pos > PRICE_ZONE_HIGH:
+            short_score += 20
+            reasons.append("Хорошая зона для SHORT (+20 SHORT)")
 
         return EngineResult(
             long=long_score,
@@ -657,31 +766,26 @@ class RiskEngine:
         )
 
 
-# ==========================
-# DECISION ENGINE
-# ==========================
-TREND_WEIGHT = 0.40
-STRUCTURE_WEIGHT = 0.25
-MOMENTUM_WEIGHT = 0.20
-RISK_WEIGHT = 0.15
 class DecisionEngine:
    
-
     @staticmethod
-    def calculate(trend: EngineResult, structure: EngineResult, momentum: EngineResult, risk: EngineResult) -> DecisionResult:
-        # Weighted totals
-        # Trend: 40%, Structure: 25%, Momentum: 20%, Risk: 15%
-        trend_long = trend.long * TREND_WEIGHT
-        trend_short = trend.short * TREND_WEIGHT
+    def calculate(trend: EngineResult, structure: EngineResult, momentum: EngineResult, risk: EngineResult, weights) -> DecisionResult:
+        trend_weight = weights["trend"]
+        structure_weight = weights["structure"]
+        momentum_weight = weights["momentum"]
+        risk_weight = weights["risk"]
 
-        structure_long = structure.long * STRUCTURE_WEIGHT
-        structure_short = structure.short * STRUCTURE_WEIGHT
+        trend_long = trend.long * trend_weight
+        trend_short = trend.short * trend_weight
 
-        momentum_long = momentum.long * MOMENTUM_WEIGHT
-        momentum_short = momentum.short * MOMENTUM_WEIGHT
+        structure_long = structure.long * structure_weight
+        structure_short = structure.short * structure_weight
 
-        risk_long = risk.long * RISK_WEIGHT
-        risk_short = risk.short * RISK_WEIGHT
+        momentum_long = momentum.long * momentum_weight
+        momentum_short = momentum.short * momentum_weight
+
+        risk_long = risk.long * risk_weight
+        risk_short = risk.short * risk_weight
 
         long_total = (
             trend_long
@@ -700,11 +804,16 @@ class DecisionEngine:
         long_total = int(round(long_total))
         short_total = int(round(short_total))
 
-        abs_diff = abs(long_total - short_total)
-        if abs_diff < 10:
-            direction = "WAIT"
+        diff = abs(long_total - short_total)
+
+        confidence = min(
+            100,
+            round(50 + diff * 3, 1),
+        )
+        if diff < MIN_EDGE:
+            direction = "NEUTRAL"
             signal = "NO TRADE"
-            score = max(long_total, short_total)
+            score = 0
             summary = "No clear directional edge."
         else:
             if long_total >= short_total:
@@ -713,19 +822,22 @@ class DecisionEngine:
             else:
                 direction = "SHORT"
                 score = short_total
-            if score >= 27:
+            if score >= 27 and confidence >= 90:
                 signal = "HIGH PRIORITY"
-            elif score >= 25:
+
+            elif score >= 25 and confidence >= 80:
                 signal = "SETUP"
-            elif score >= 23:
+
+            elif score >= 23 and confidence >= 70:
                 signal = "WATCH"
+
             elif score >= 20:
                 signal = "WAIT"
+
             else:
                 signal = "NO TRADE"
-            summary = f"{direction} wins by {abs_diff} points"
+            summary = f"{direction} wins by {diff} points"
 
-        confidence = round((max(long_total, short_total) / max(long_total + short_total, 1)) * 100, 1)
         if signal == "HIGH PRIORITY":
             quality = "A"
         elif signal == "SETUP":
@@ -778,7 +890,7 @@ async def send_notification(
     if not chat_id or not BOT_TOKEN:
         return
 
-    text = format_signal(symbol, decision)
+    text = format_signal(symbol, decision, market)
 
     if is_duplicate(text):
         return
@@ -800,21 +912,41 @@ def print_engine(title: str, result: EngineResult):
     print(result.reason)
     print()
 
-def analyze_symbol(symbol: str) -> DecisionResult:
-    market = load_market(symbol)
-
+def analyze_market(market: MarketSnapshot, symbol: str):
     trend = TrendEngine(market).calculate()
     structure = StructureEngine(market).calculate()
     momentum = MomentumEngine(market).calculate()
     risk = RiskEngine(market).calculate()
 
-    decision = DecisionEngine.calculate(
-    trend,
-    structure,
-    momentum,
-    risk,
-)
+    weights = load_strategy_weights(symbol)
 
+    decision = DecisionEngine.calculate(
+        trend,
+        structure,
+        momentum,
+        risk,
+        weights,
+    )
+
+    return decision, trend, structure, momentum, risk
+
+def analyze_symbol(symbol: str):
+    market = load_market(symbol)
+    # Higher timeframe trend filter
+    higher_tf_bull = (
+        market.tf4h.ema20 > market.tf4h.ema50
+        and market.tf1d.ema20 > market.tf1d.ema50
+    )
+
+    higher_tf_bear = (
+        market.tf4h.ema20 < market.tf4h.ema50
+        and market.tf1d.ema20 < market.tf1d.ema50
+    )
+
+    decision, trend, structure, momentum, risk = analyze_market(
+    market=market,
+    symbol=symbol,
+)
     save_signal(symbol, decision, trend, structure, momentum, risk)
 
     save_decision_debug(
@@ -828,35 +960,124 @@ def analyze_symbol(symbol: str) -> DecisionResult:
 
     # Setup tracking logic
     setup_id = f"{symbol.replace('/', '_')}_{decision.direction}"
-    if decision.signal in ("SETUP", "HIGH PRIORITY"):
+    if (
+            decision.signal in ("SETUP", "HIGH PRIORITY")
+            and decision.quality in ("A", "B")
+            and decision.confidence >= MIN_CONFIDENCE
+            and abs(decision.long_total - decision.short_total) >= MIN_EDGE
+        ):
         if is_setup_active(setup_id):
             decision.summary += " | COOLDOWN"
             log(f"[{symbol}] Cooldown active for {setup_id}")
             print("   ", decision.explanation)
         else:
             mark_setup_active(setup_id)
+            entry = market.tf1h.close
+
+            if decision.direction == "LONG":
+                stop_loss = entry - market.tf1h.atr
+                take_profit = entry + market.tf1h.atr * 2
+            else:
+                stop_loss = entry + market.tf1h.atr
+                take_profit = entry - market.tf1h.atr * 2
+
+            existing_trade = next(
+                (t for t in get_open_trades() if t["symbol"] == symbol),
+                None,
+            )
+
+            if existing_trade:
+                log(f"[{symbol}] Open trade already exists, skipping.")
+                return decision, market
+
+            if decision.direction == "LONG" and not higher_tf_bull:
+                log(f"[{symbol}] LONG rejected by higher timeframe trend filter.")
+                return decision, market
+
+            if decision.direction == "SHORT" and not higher_tf_bear:
+                log(f"[{symbol}] SHORT rejected by higher timeframe trend filter.")
+                return decision, market
+
+            open_trade(
+                symbol=symbol,
+                direction=decision.direction,
+                entry=entry,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+            )
             save_setup_history(symbol, decision)
 
             if (
                 decision.quality in ("A", "B")
-                and decision.confidence >= 80
+                and decision.confidence >= 75
             ):
                 print(f"📨 Sending notification for {symbol}")
-                asyncio.run(send_notification(symbol, decision))
+                asyncio.run(
+                    send_notification(
+                        symbol,
+                        decision,
+                        market,
+                    )
+                )
                 print("✅ Notification sent")
 
     # No logging of compact signal or summary here
 
-    return decision
+    return decision, market
 
+def update_open_trades(current_prices):
+    trades = get_open_trades()
+
+    for trade in trades:
+
+        symbol = trade["symbol"]
+
+        print(f"Checking trade: {symbol}")
+
+        if symbol not in current_prices:
+            continue
+
+        price = current_prices[symbol]
+
+        direction = trade["direction"]
+
+        sl = float(trade["stop_loss"])
+        tp = float(trade["take_profit"])
+
+        print(f"🔍 {symbol} | {direction} | Price={price:.2f} | SL={sl:.2f} | TP={tp:.2f}")
+
+        if direction == "LONG":
+
+            if price <= sl:
+                close_trade(symbol, "LOSS")
+                print(f"❌ {symbol} -> LOSS")
+
+            elif price >= tp:
+                pnl = abs(price - float(trade["entry"]))
+                close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
+                print(f"✅ {symbol} -> WIN")
+
+        else:
+
+            if price >= sl:
+                pnl = -abs(price - float(trade["entry"]))
+                close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
+                print(f"❌ {symbol} -> LOSS")
+
+            elif price <= tp:
+                pnl = abs(float(trade["entry"]) - price)
+                close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
+                print(f"✅ {symbol} -> WIN")
 # Main analysis pipeline for one execution cycle
 def run_once():
     decisions = []
     api_errors = 0
+    current_prices = {}
     for symbol in SYMBOLS:
         t0 = time.time()
         try:
-            decision = analyze_symbol(symbol)
+            decision, market = analyze_symbol(symbol)
+            current_prices[symbol] = market.tf1h.close
             t1 = time.time()
             elapsed = t1 - t0
             # Log the compact line with summary and duration
@@ -902,6 +1123,8 @@ def run_once():
     print(f"WATCH       : {counts.get('WATCH',0)}")
     print(f"WAIT        : {counts.get('WAIT',0)}")
     print(f"NO TRADE    : {counts.get('NO TRADE',0)}")
+
+    update_open_trades(current_prices)
 
 
 # Continuous scheduler

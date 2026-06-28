@@ -1,0 +1,26 @@
+{
+  "global": {
+    "trend": 0.40,
+    "structure": 0.25,
+    "momentum": 0.20,
+    "risk": 0.15
+  },
+  "BTC/USDT": {
+    "trend": 0.40,
+    "structure": 0.25,
+    "momentum": 0.20,
+    "risk": 0.15
+  },
+  "ETH/USDT": {
+    "trend": 0.40,
+    "structure": 0.25,
+    "momentum": 0.20,
+    "risk": 0.15
+  },
+  "SOL/USDT": {
+    "trend": 0.40,
+    "structure": 0.25,
+    "momentum": 0.20,
+    "risk": 0.15
+  }
+}
