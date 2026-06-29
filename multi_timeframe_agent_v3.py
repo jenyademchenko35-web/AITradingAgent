@@ -5,6 +5,16 @@ from datetime import datetime, timezone, timedelta
 import argparse
 import os
 import json
+from config import (
+    MIN_CONFIDENCE,
+    MIN_EDGE,
+    ATR_HIGH,
+    ATR_LOW,
+    PRICE_ZONE_LOW,
+    PRICE_ZONE_HIGH,
+    SETUP_COOLDOWN_HOURS,
+    RUN_INTERVAL,
+)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 WEIGHTS_FILE = os.path.join(BASE_DIR, "strategy_weights.json")
@@ -44,14 +54,6 @@ from ta.volatility import AverageTrueRange
 # STRATEGY CONSTANTS
 # ==========================
 
-MIN_CONFIDENCE = 80
-MIN_EDGE = 15
-
-ATR_HIGH = 2.0
-ATR_LOW = 1.0
-
-PRICE_ZONE_LOW = 35
-PRICE_ZONE_HIGH = 65
 
 # ==========================
 
@@ -336,8 +338,6 @@ def save_decision_debug(
 # ==========================
 # SETUP TRACKING CONSTANTS
 # ==========================
-SETUP_COOLDOWN_HOURS = 6
-
 SYMBOLS = [
     "BTC/USDT",
     "ETH/USDT",
@@ -351,7 +351,6 @@ TIMEFRAMES = [
 ]
 
 OHLCV_LIMIT = 200
-RUN_INTERVAL = 900
 
 EXCHANGE = ccxt.bybit(
     {

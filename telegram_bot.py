@@ -1,40 +1,21 @@
-def format_market_status() -> str:
-    signals = read_signals()
+def format_last_signals() -> str:
+    signals = _load_last_signals()
     if not signals:
         return "Нет данных."
 
-    latest_by_symbol: dict[str, dict[str, Any]] = {}
-    for row in signals:
-        symbol = row.get("symbol", "")
-        if symbol:
-            latest_by_symbol[symbol] = row
+    lines = ["📈 Last Signals"]
+    for signal in signals[:10]:
+        timestamp = _value(signal, "timestamp")
+        symbol = signal.get("symbol", "").replace("/", "")
+        signal_name = _value(signal, "signal")
+        score = _value(signal, "score")
+        distance = _format_distance(signal)
 
-    blocks = ["📊 Market Status"]
-    for symbol in SYMBOL_ORDER:
-        row = latest_by_symbol.get(symbol)
-        display_symbol = symbol.replace("/", "")
-        if not row:
-            blocks.append(f"\n{display_symbol}\nНет данных.")
-            continue
+        lines.append("")
+        lines.append(timestamp)
+        lines.append(symbol)
+        lines.append(f"🚦 {signal_name}")
+        lines.append(f"⭐ Score: {score}")
+        lines.append(f"🎯 Distance: {distance}")
 
-        direction = _value(row, "direction")
-        if direction == "LONG":
-            direction_line = f"📈 Direction: {direction}"
-        elif direction == "SHORT":
-            direction_line = f"📉 Direction: {direction}"
-        else:
-            direction_line = f"➡️ Direction: {direction}"
-
-        blocks.append(
-            "\n".join(
-                [
-                    f"\n{display_symbol}",
-                    direction_line,
-                    f"🚦 Signal: {_value(row, 'signal')}",
-                    f"⭐ Score: {_value(row, 'score')}",
-                    f"🎯 Distance: {_format_distance(row)}",
-                ]
-            )
-        )
-
-    return "\n".join(blocks)
+    return "\n".join(lines)

@@ -1,5 +1,7 @@
 import ccxt
 import pandas as pd
+import time
+import csv
 
 from multi_timeframe_agent_v3 import (
     analyze_market,
@@ -15,19 +17,42 @@ EXCHANGE = ccxt.bybit({
 })
 
 SYMBOL = "BTC/USDT"
-TIMEFRAME = "1h"
-LIMIT = 2000
-
+from config import (
+    TIMEFRAME,
+    LIMIT,
+    START_BAR,
+    ATR_MULT,
+    RISK_REWARD,
+)
 
 def load_history():
-    data = EXCHANGE.fetch_ohlcv(
-        SYMBOL,
-        timeframe=TIMEFRAME,
-        limit=LIMIT,
-    )
+    print(f"Loading up to {LIMIT} candles...")
+
+    all_data = []
+    end_ms = EXCHANGE.milliseconds()
+
+    while len(all_data) < LIMIT:
+        batch = EXCHANGE.fetch_ohlcv(
+            SYMBOL,
+            timeframe=TIMEFRAME,
+            since=end_ms - 1000 * 3600 * 1000,
+            limit=1000,
+        )
+
+        if not batch:
+            break
+
+        all_data = batch + all_data
+
+        oldest = batch[0][0]
+        end_ms = oldest - 1
+
+        print(f"Loaded {len(all_data)} candles...", end="\r")
+
+        time.sleep(EXCHANGE.rateLimit / 1000)
 
     df = pd.DataFrame(
-        data,
+        all_data,
         columns=[
             "timestamp",
             "open",
@@ -38,7 +63,17 @@ def load_history():
         ],
     )
 
+    df = (
+        df.drop_duplicates(subset="timestamp")
+          .sort_values("timestamp")
+          .tail(LIMIT)
+          .reset_index(drop=True)
+    )
+
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+
+    print(f"\nLoaded {len(df)} unique candles")
+
     return df
 
 
@@ -51,9 +86,24 @@ def run_backtest(df):
         "trades": 0,
         "wins": 0,
         "losses": 0,
+        "gross_profit": 0.0,
+        "gross_loss": 0.0,
     }
 
-    start_bar = 24 * 30
+    with open("backtest_trades.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "Entry Time",
+            "Exit Time",
+            "Direction",
+            "Entry",
+            "Exit",
+            "PnL",
+            "Result",
+            "DurationHours",
+        ])
+
+    start_bar = START_BAR
 
     for i in range(start_bar, len(df)):
         trade_closed = False
@@ -135,22 +185,98 @@ def run_backtest(df):
 
             if virtual_trade["direction"] == "LONG":
                 if low <= virtual_trade["sl"]:
+                    exit_price = virtual_trade["sl"]
+                    result = "LOSS"
+                    pnl = -(virtual_trade["entry"] - virtual_trade["sl"])
+                    duration = i - virtual_trade["entry_bar"]
+
+                    with open("backtest_trades.csv", "a", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow([
+                            virtual_trade["entry_time"],
+                            current_time,
+                            virtual_trade["direction"],
+                            round(virtual_trade["entry"], 2),
+                            round(exit_price, 2),
+                            round(pnl, 2),
+                            result,
+                            duration,
+                        ])
+
+                    stats["gross_loss"] += abs(pnl)
                     stats["losses"] += 1
                     print(f"\nLOSS LONG @ {current_time}")
                     virtual_trade = None
                     trade_closed = True
                 elif high >= virtual_trade["tp"]:
+                    exit_price = virtual_trade["tp"]
+                    result = "WIN"
+                    pnl = virtual_trade["tp"] - virtual_trade["entry"]
+                    duration = i - virtual_trade["entry_bar"]
+
+                    with open("backtest_trades.csv", "a", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow([
+                            virtual_trade["entry_time"],
+                            current_time,
+                            virtual_trade["direction"],
+                            round(virtual_trade["entry"], 2),
+                            round(exit_price, 2),
+                            round(pnl, 2),
+                            result,
+                            duration,
+                        ])
+
+                    stats["gross_profit"] += pnl
                     stats["wins"] += 1
                     print(f"\nWIN LONG @ {current_time}")
                     virtual_trade = None
                     trade_closed = True
             else:
                 if high >= virtual_trade["sl"]:
+                    exit_price = virtual_trade["sl"]
+                    result = "LOSS"
+                    pnl = -(virtual_trade["sl"] - virtual_trade["entry"])
+                    duration = i - virtual_trade["entry_bar"]
+
+                    with open("backtest_trades.csv", "a", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow([
+                            virtual_trade["entry_time"],
+                            current_time,
+                            virtual_trade["direction"],
+                            round(virtual_trade["entry"], 2),
+                            round(exit_price, 2),
+                            round(pnl, 2),
+                            result,
+                            duration,
+                        ])
+
+                    stats["gross_loss"] += abs(pnl)
                     stats["losses"] += 1
                     print(f"\nLOSS SHORT @ {current_time}")
                     virtual_trade = None
                     trade_closed = True
                 elif low <= virtual_trade["tp"]:
+                    exit_price = virtual_trade["tp"]
+                    result = "WIN"
+                    pnl = virtual_trade["entry"] - virtual_trade["tp"]
+                    duration = i - virtual_trade["entry_bar"]
+
+                    with open("backtest_trades.csv", "a", newline="") as f:
+                        writer = csv.writer(f)
+                        writer.writerow([
+                            virtual_trade["entry_time"],
+                            current_time,
+                            virtual_trade["direction"],
+                            round(virtual_trade["entry"], 2),
+                            round(exit_price, 2),
+                            round(pnl, 2),
+                            result,
+                            duration,
+                        ])
+
+                    stats["gross_profit"] += pnl
                     stats["wins"] += 1
                     print(f"\nWIN SHORT @ {current_time}")
                     virtual_trade = None
@@ -164,11 +290,11 @@ def run_backtest(df):
                 atr = market.tf1h.atr
 
                 if decision.direction == "LONG":
-                    stop_loss = next_open - atr
-                    take_profit = next_open + atr * 2
+                    stop_loss = next_open - atr * ATR_MULT
+                    take_profit = next_open + atr * RISK_REWARD
                 else:
-                    stop_loss = next_open + atr
-                    take_profit = next_open - atr * 2
+                    stop_loss = next_open + atr * ATR_MULT
+                    take_profit = next_open - atr * RISK_REWARD
 
                 virtual_trade = {
                     "direction": decision.direction,
@@ -176,6 +302,7 @@ def run_backtest(df):
                     "sl": stop_loss,
                     "tp": take_profit,
                     "time": current_time,
+                    "entry_time": current_time,
                     "entry_bar": i + 1,
                 }
 
@@ -210,6 +337,21 @@ def run_backtest(df):
     print(f"Closed : {closed_trades}")
     print(f"Open   : {stats['trades'] - closed_trades}")
     print(f"WinRate: {win_rate:.2f}%")
+
+    profit_factor = (
+        stats["gross_profit"] / stats["gross_loss"]
+        if stats["gross_loss"] > 0
+        else 0
+    )
+
+    net_profit = (
+        stats["gross_profit"] - stats["gross_loss"]
+    )
+
+    print(f"Gross Profit : {stats['gross_profit']:.2f}")
+    print(f"Gross Loss   : {stats['gross_loss']:.2f}")
+    print(f"Net Profit   : {net_profit:.2f}")
+    print(f"ProfitFactor : {profit_factor:.2f}")
 
 
 if __name__ == "__main__":
