@@ -2,6 +2,7 @@ import ccxt
 import pandas as pd
 import time
 import csv
+import argparse
 
 from multi_timeframe_agent_v3 import (
     analyze_market,
@@ -77,7 +78,11 @@ def load_history():
     return df
 
 
-def run_backtest(df):
+def run_backtest(
+    df,
+    atr_mult=ATR_MULT,
+    risk_reward=RISK_REWARD,
+):
     print("\nRunning candle-by-candle simulation...")
 
     virtual_trade = None
@@ -290,11 +295,11 @@ def run_backtest(df):
                 atr = market.tf1h.atr
 
                 if decision.direction == "LONG":
-                    stop_loss = next_open - atr * ATR_MULT
-                    take_profit = next_open + atr * RISK_REWARD
+                    stop_loss = next_open - atr * atr_mult
+                    take_profit = next_open + atr * risk_reward
                 else:
-                    stop_loss = next_open + atr * ATR_MULT
-                    take_profit = next_open - atr * RISK_REWARD
+                    stop_loss = next_open + atr * atr_mult
+                    take_profit = next_open - atr * risk_reward
 
                 virtual_trade = {
                     "direction": decision.direction,
@@ -355,6 +360,22 @@ def run_backtest(df):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--atr",
+        type=float,
+        default=ATR_MULT,
+    )
+
+    parser.add_argument(
+        "--rr",
+        type=float,
+        default=RISK_REWARD,
+    )
+
+    args = parser.parse_args()
+
     df = load_history()
 
     print("========== BACKTEST ==========")
@@ -363,4 +384,9 @@ if __name__ == "__main__":
     print(f"From   : {df.iloc[0]['timestamp']}")
     print(f"To     : {df.iloc[-1]['timestamp']}")
     print(df.tail())
-    run_backtest(df)
+
+    run_backtest(
+        df,
+        atr_mult=args.atr,
+        risk_reward=args.rr,
+    )

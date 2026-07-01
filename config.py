@@ -13,6 +13,17 @@ PRICE_ZONE_LOW = 35
 PRICE_ZONE_HIGH = 65
 
 ATR_MULT = 1.5
+
+ATR_TEST_VALUES = [
+    1.0,
+    1.2,
+    1.4,
+    1.5,
+    1.6,
+    1.8,
+    2.0,
+]
+
 RISK_REWARD = 2.0
 
 # ===============================
