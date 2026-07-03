@@ -1,0 +1,30 @@
+Trend-Momentum Conflict v2
+==========================
+Generated: 2026-07-03T15:42:12.285691+00:00
+Status: OK
+
+Rule:
+- SHORT + 1H EMA trend BULLISH + Momentum FAIL
+- LONG + 1H EMA trend BEARISH + Momentum FAIL
+
+Sample:
+- Source rows: 8529
+- Conflict candidates: 2143
+- Signals: {'NO TRADE': 2111, 'WATCH': 27, 'SETUP': 5}
+- Directions: {'SHORT': 2143}
+
+Outcome:
+- 1h: checked=2076 favorable=46.77% avg_return=-0.1562% median=-0.0401% negative_follow_through=True
+- 2h: checked=2048 favorable=50.29% avg_return=-0.194% median=0.0106% negative_follow_through=False
+- 4h: checked=1985 favorable=49.32% avg_return=-0.2643% median=-0.0178% negative_follow_through=True
+- 8h: checked=1830 favorable=38.63% avg_return=-0.5052% median=-0.3772% negative_follow_through=True
+
+Recommendation:
+- Status: CANDIDATE_PROTECTIVE_FILTER
+- Reason: Conflict candidates show negative 4h/8h follow-through.
+- Apply automatically: false
+
+Important:
+- This is a read-only replay.
+- Decision snapshots are not independent closed trades.
+- DecisionEngine and live strategy were not changed.

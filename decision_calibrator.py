@@ -1,6 +1,5 @@
 import csv
 from collections import Counter
-from statistics import mean
 
 CSV_FILE = "decision_debug.csv"
 

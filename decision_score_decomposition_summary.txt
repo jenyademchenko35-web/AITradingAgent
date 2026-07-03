@@ -1,0 +1,33 @@
+Decision Score Decomposition
+Generated at: 2026-07-03T14:45:26.328795+00:00
+Rows analyzed: 7885
+
+Interpretation
+- Final Score is primarily lost when weighted directional score exists but diff remains below MIN_EDGE.
+- Score=0: 77.7%
+- MIN_EDGE zeroing: 77.7%
+
+Heatmap
+Stage | Avg | Loss | Pass %
+Trend | 16.32 | 0.0 | 100.0
+Structure | 18.91 | 2.59 | 100.0
+Momentum | 20.28 | 1.37 | 100.0
+Risk | 21.17 | 0.89 | 100.0
+Weighted Score | 21.14 | -0.03 | 68.13
+Potential Score | 21.14 | 0.0 | 68.13
+MIN_EDGE | 5.74 | -15.4 | 22.3
+Final Score | 5.74 | 0.0 | 22.3
+
+Candidate Simulation
+- baseline: WATCH=712, SETUP=696, HIGH=315, NO TRADE=6127
+- without_MIN_EDGE: WATCH=941, SETUP=792, HIGH=316, NO TRADE=2513
+- without_Momentum: WATCH=400, SETUP=766, HIGH=260, NO TRADE=5931
+- without_Risk: WATCH=620, SETUP=738, HIGH=350, NO TRADE=6056
+- without_Structure: WATCH=1194, SETUP=271, HIGH=58, NO TRADE=6166
+
+TOP 5 Reasons
+1. MIN_EDGE - 4460 (63.15%)
+2. Diagnostics: Momentum - 1086 (15.38%)
+3. Diagnostics: Risk - 735 (10.41%)
+4. Diagnostics: Structure - 448 (6.34%)
+5. Diagnostics: Trend - 332 (4.7%)

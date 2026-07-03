@@ -1,0 +1,30 @@
+Confidence Calibration Experiment
+=================================
+Generated: 2026-07-03T19:23:57.840466+00:00
+Status: OK
+Source: trade_pattern_discovery_report.json
+
+Sample:
+- Closed trades: 20
+- Confidence > 90 trades: 10
+- High-confidence WIN/LOSS: 1 / 9
+
+Baseline:
+- Trades: 20 | WIN: 3 | LOSS: 17 | WR: 15.0% | PF: 0.3228 | Net PnL: -3051.88974277
+
+Best candidate:
+- Scenario: block_conf_gt90_sl_quality_D
+- Mode: BLOCK
+- Trades after filter: 13
+- WR: 23.08% | PF: 0.6712 | Net PnL: -712.74974277
+- Prevented LOSS: 7
+- Lost WIN: 0
+- Net PnL delta: 2339.14
+
+Recommendation:
+- Status: INSUFFICIENT_DATA
+- Reason: Only 20 closed trades are available; minimum is 30.
+- Apply automatically: False
+
+Important:
+- DecisionEngine, config, weights, and live agent were not changed.

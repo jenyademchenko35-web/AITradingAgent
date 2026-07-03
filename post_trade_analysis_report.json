@@ -1,0 +1,661 @@
+{
+  "generated_at": "2026-07-02T14:50:00.470764+00:00",
+  "status": "OK",
+  "closed_trades": 19,
+  "wins": 3,
+  "losses": 16,
+  "winrate": 15.79,
+  "top_loss_reasons": {
+    "bad Risk": 9,
+    "unclassified LOSS": 5,
+    "low Confidence": 3,
+    "weak Momentum": 2
+  },
+  "top_win_factors": {
+    "strong Trend": 3,
+    "good Structure": 3,
+    "strong Momentum": 3,
+    "high Confidence": 3,
+    "good Risk": 1
+  },
+  "by_symbol": {
+    "BTC/USDT": {
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate": 20.0,
+      "pnl": -2961.6
+    },
+    "ETH/USDT": {
+      "trades": 8,
+      "wins": 1,
+      "losses": 7,
+      "winrate": 12.5,
+      "pnl": -73.25
+    },
+    "SOL/USDT": {
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate": 0.0,
+      "pnl": 0.0
+    }
+  },
+  "by_direction": {
+    "LONG": {
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate": 0.0,
+      "pnl": 0.0
+    },
+    "SHORT": {
+      "trades": 18,
+      "wins": 3,
+      "losses": 15,
+      "winrate": 16.67,
+      "pnl": -3034.85
+    }
+  },
+  "best_symbol": "SOL/USDT",
+  "worst_symbol": "BTC/USDT",
+  "recommendation": "Сначала улучшать: bad Risk.",
+  "trades": [
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -577.0,
+      "entry": 60312.5,
+      "stop_loss": 60698.35652886378,
+      "take_profit": 59540.78694227244,
+      "opened_at": "2026-06-27T14:26:20.413799",
+      "closed_at": "2026-06-27T15:12:28.886189",
+      "matched_signal_time": "2026-06-27T14:23:26.428266+00:00",
+      "matched_debug_time": "2026-06-27T14:23:26.433221+00:00",
+      "signal_age_minutes": 2.9,
+      "score": 26.0,
+      "confidence": 66.7,
+      "primary_blocker": "Momentum",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Risk"
+      ],
+      "failed_filters": [
+        "Momentum"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "weak Momentum",
+        "low Confidence"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": 0.0,
+      "entry": 1581.31,
+      "stop_loss": 1592.6903647678707,
+      "take_profit": 1558.5492704642586,
+      "opened_at": "2026-06-27T14:26:22.415892",
+      "closed_at": "2026-06-27T14:23:27.983657",
+      "matched_signal_time": "2026-06-27T14:23:27.252651+00:00",
+      "matched_debug_time": "2026-06-27T14:23:27.253061+00:00",
+      "signal_age_minutes": 2.92,
+      "score": 26.0,
+      "confidence": 66.7,
+      "primary_blocker": "Momentum",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Risk"
+      ],
+      "failed_filters": [
+        "Momentum"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "weak Momentum",
+        "low Confidence"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "SOL/USDT",
+      "direction": "LONG",
+      "result": "LOSS",
+      "pnl": 0.0,
+      "entry": 71.73,
+      "stop_loss": 70.97062200275049,
+      "take_profit": 73.24875599449904,
+      "opened_at": "2026-06-27T14:26:24.618466",
+      "closed_at": "2026-06-27T21:54:53.708641",
+      "matched_signal_time": "2026-06-27T14:23:27.980942+00:00",
+      "matched_debug_time": "2026-06-27T14:23:27.981215+00:00",
+      "signal_age_minutes": 2.94,
+      "score": 22.0,
+      "confidence": 61.1,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "bad Risk",
+        "low Confidence"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -11.73,
+      "entry": 1578.43,
+      "stop_loss": 1590.0128843862904,
+      "take_profit": 1555.2642312274195,
+      "opened_at": "2026-06-27T19:27:10.038503",
+      "closed_at": "2026-06-28T08:41:08.075663",
+      "matched_signal_time": "2026-06-27T19:27:10.034590+00:00",
+      "matched_debug_time": "2026-06-27T19:27:10.034948+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 70.3,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -404.2,
+      "entry": 60091.8,
+      "stop_loss": 60411.71542295299,
+      "take_profit": 59451.969154094026,
+      "opened_at": "2026-06-27T22:05:01.578303",
+      "closed_at": "2026-06-28T08:41:08.075061",
+      "matched_signal_time": "2026-06-27T22:05:01.575278+00:00",
+      "matched_debug_time": "2026-06-27T22:05:01.575660+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 76.5,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -11.73,
+      "entry": 1575.51,
+      "stop_loss": 1586.3556646170232,
+      "take_profit": 1553.8186707659536,
+      "opened_at": "2026-06-28T01:30:16.583295",
+      "closed_at": "2026-06-28T08:41:08.075663",
+      "matched_signal_time": "2026-06-28T01:30:16.579809+00:00",
+      "matched_debug_time": "2026-06-28T01:30:16.580079+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 74.3,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -404.2,
+      "entry": 60212.8,
+      "stop_loss": 60508.386839020146,
+      "take_profit": 59621.626321959724,
+      "opened_at": "2026-06-28T04:08:12.162651",
+      "closed_at": "2026-06-28T08:41:08.075061",
+      "matched_signal_time": "2026-06-28T04:08:12.159589+00:00",
+      "matched_debug_time": "2026-06-28T04:08:12.159903+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 81.2,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -11.73,
+      "entry": 1571.68,
+      "stop_loss": 1581.4235907116517,
+      "take_profit": 1552.1928185766967,
+      "opened_at": "2026-06-28T07:31:57.404947",
+      "closed_at": "2026-06-28T08:41:08.075663",
+      "matched_signal_time": "2026-06-28T07:31:57.401349+00:00",
+      "matched_debug_time": "2026-06-28T07:31:57.401661+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 70.3,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "pnl": 600.7,
+      "entry": 60193.1,
+      "stop_loss": 60480.81069014031,
+      "take_profit": 59617.67861971938,
+      "opened_at": "2026-06-28T10:09:24.348272",
+      "closed_at": "2026-06-28T18:01:09.997989",
+      "matched_signal_time": "2026-06-28T10:09:24.344695+00:00",
+      "matched_debug_time": "2026-06-28T10:09:24.344956+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 25.0,
+      "confidence": 89.3,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [],
+      "win_factors": [
+        "strong Trend",
+        "good Structure",
+        "strong Momentum",
+        "high Confidence"
+      ]
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "pnl": 24.48,
+      "entry": 1584.09,
+      "stop_loss": 1593.644230480394,
+      "take_profit": 1564.9815390392116,
+      "opened_at": "2026-06-28T15:35:30.025277",
+      "closed_at": "2026-06-28T19:51:31.262980",
+      "matched_signal_time": "2026-06-28T15:35:30.022198+00:00",
+      "matched_debug_time": "2026-06-28T15:35:30.022500+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 28.0,
+      "confidence": 80.0,
+      "primary_blocker": "N/A",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum",
+        "Risk"
+      ],
+      "failed_filters": [],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [],
+      "win_factors": [
+        "strong Trend",
+        "good Structure",
+        "good Risk",
+        "strong Momentum",
+        "high Confidence"
+      ]
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -12.37,
+      "entry": 1573.33,
+      "stop_loss": 1583.5940686292129,
+      "take_profit": 1552.8018627415743,
+      "opened_at": "2026-06-28T21:36:55.672192",
+      "closed_at": "2026-06-29T03:10:02.924045",
+      "matched_signal_time": "2026-06-28T21:36:55.671537+00:00",
+      "matched_debug_time": "2026-06-28T21:36:55.671712+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 25.0,
+      "confidence": 100.0,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -515.8,
+      "entry": 59297.0,
+      "stop_loss": 59665.3513029234,
+      "take_profit": 58560.297394153204,
+      "opened_at": "2026-06-28T23:10:42.619477",
+      "closed_at": "2026-06-28T23:41:18.223858",
+      "matched_signal_time": "2026-06-28T23:10:42.615978+00:00",
+      "matched_debug_time": "2026-06-28T23:10:42.616166+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 98.0,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -15.11,
+      "entry": 1579.36,
+      "stop_loss": 1594.4596553116535,
+      "take_profit": 1549.1606893766927,
+      "opened_at": "2026-06-29T03:40:36.306185",
+      "closed_at": "2026-06-29T12:19:37.386264",
+      "matched_signal_time": "2026-06-29T03:40:36.303315+00:00",
+      "matched_debug_time": "2026-06-29T03:40:36.303486+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 100.0,
+      "primary_blocker": "N/A",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum",
+        "Risk"
+      ],
+      "failed_filters": [],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "unclassified LOSS"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -560.8,
+      "entry": 59947.2,
+      "stop_loss": 60411.43073029587,
+      "take_profit": 59018.73853940825,
+      "opened_at": "2026-06-29T05:47:02.594428",
+      "closed_at": "2026-06-29T12:09:26.529917",
+      "matched_signal_time": "2026-06-29T05:47:02.590822+00:00",
+      "matched_debug_time": "2026-06-29T05:47:02.591100+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 27.0,
+      "confidence": 100.0,
+      "primary_blocker": "N/A",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum",
+        "Risk"
+      ],
+      "failed_filters": [],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "unclassified LOSS"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -35.06,
+      "entry": 1580.49,
+      "stop_loss": 1596.9392721366853,
+      "take_profit": 1547.5914557266294,
+      "opened_at": "2026-06-29T15:56:52.344739",
+      "closed_at": "2026-06-29T17:13:19.049773",
+      "matched_signal_time": "2026-06-29T15:56:52.341677+00:00",
+      "matched_debug_time": "2026-06-29T15:56:52.341878+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 100.0,
+      "primary_blocker": "N/A",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum",
+        "Risk"
+      ],
+      "failed_filters": [],
+      "market_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "loss_reasons": [
+        "unclassified LOSS"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "pnl": 829.7,
+      "entry": 59297.2,
+      "stop_loss": 59687.426385314146,
+      "take_profit": 58516.74722937171,
+      "opened_at": "2026-06-30T08:58:08.989095",
+      "closed_at": "2026-06-30T13:02:31.781824",
+      "matched_signal_time": "2026-06-30T08:58:08.988017+00:00",
+      "matched_debug_time": "2026-06-30T08:58:08.988165+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 95.0,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [],
+      "win_factors": [
+        "strong Trend",
+        "good Structure",
+        "strong Momentum",
+        "high Confidence"
+      ]
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -439.0,
+      "entry": 58536.8,
+      "stop_loss": 58968.40342098995,
+      "take_profit": 57673.593158020114,
+      "opened_at": "2026-06-30T14:59:39.773334",
+      "closed_at": "2026-07-01T01:45:47.918332",
+      "matched_signal_time": "2026-06-30T14:59:39.769643+00:00",
+      "matched_debug_time": "2026-06-30T14:59:39.769927+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 29.0,
+      "confidence": 100.0,
+      "primary_blocker": "Risk",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum"
+      ],
+      "failed_filters": [
+        "Risk"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "bad Risk"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -761.0,
+      "entry": 59032.6,
+      "stop_loss": 59442.08331402172,
+      "take_profit": 58213.633371956545,
+      "opened_at": "2026-07-01T03:01:58.877010",
+      "closed_at": "2026-07-01T14:12:54.424314",
+      "matched_signal_time": "2026-07-01T03:01:58.873237+00:00",
+      "matched_debug_time": "2026-07-01T03:01:58.873515+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 30.0,
+      "confidence": 100.0,
+      "primary_blocker": "N/A",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum",
+        "Risk"
+      ],
+      "failed_filters": [],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "unclassified LOSS"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -730.0,
+      "entry": 60492.7,
+      "stop_loss": 60994.629861761845,
+      "take_profit": 59488.840276476294,
+      "opened_at": "2026-07-01T15:24:02.821700",
+      "closed_at": "2026-07-01T22:21:37.322014",
+      "matched_signal_time": "2026-07-01T15:24:02.817755+00:00",
+      "matched_debug_time": "2026-07-01T15:24:02.818010+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 95.0,
+      "primary_blocker": "N/A",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Momentum",
+        "Risk"
+      ],
+      "failed_filters": [],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "unclassified LOSS"
+      ],
+      "win_factors": []
+    }
+  ]
+}

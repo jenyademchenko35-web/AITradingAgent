@@ -1,0 +1,61 @@
+Trade Pattern Discovery
+=======================
+Generated: 2026-07-03T18:59:32.956111+00:00
+Status: OK
+
+Sample:
+- Trades: 20 | WIN: 3 | LOSS: 17
+- Base LOSS rate: 85.0%
+- Min support: 2
+
+TOP LOSS Patterns:
+1. Trend=PASS + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+2. age=0-5m + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+3. direction=SHORT + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+4. local_trend=BEARISH + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+5. rr=1.5-2.2 + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+6. sl_quality=D + with_or_neutral_local_trend | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+7. Trend=PASS + age=0-5m + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+8. Trend=PASS + direction=SHORT + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+9. Trend=PASS + local_trend=BEARISH + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+10. Trend=PASS + rr=1.5-2.2 + sl_quality=D | support=14 LOSS=100.0% lift=1.1765 avg_pnl=-269.36502605
+
+TOP WIN Patterns:
+1. Risk=FAIL + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+2. Momentum=FAIL + Risk=FAIL + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+3. Risk=FAIL + Trend=PASS + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+4. Risk=FAIL + age=0-5m + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+5. Risk=FAIL + direction=SHORT + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+6. Risk=FAIL + entry_quality=B + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+7. Risk=FAIL + entry_quality=B + symbol=BTC/USDT | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+8. Risk=FAIL + local_trend=BEARISH + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+9. Risk=FAIL + momentum_disagreement + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+10. Risk=FAIL + potential_score=25-27 + sl_quality=B | support=2 WIN=100.0% lift=6.6667 avg_pnl=715.2
+
+Future Block Candidates:
+- Consider future block-test: Trend=PASS + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: age=0-5m + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: direction=SHORT + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: local_trend=BEARISH + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: rr=1.5-2.2 + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: sl_quality=D + with_or_neutral_local_trend (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: Trend=PASS + age=0-5m + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: Trend=PASS + direction=SHORT + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: Trend=PASS + local_trend=BEARISH + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+- Consider future block-test: Trend=PASS + rr=1.5-2.2 + sl_quality=D (support=14, LOSS confidence=1.00, lift=1.18).
+
+Future Encourage Candidates:
+- Encourage in future scoring tests: Risk=FAIL + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Momentum=FAIL + Risk=FAIL + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + Trend=PASS + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + age=0-5m + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + direction=SHORT + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + entry_quality=B + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + entry_quality=B + symbol=BTC/USDT (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + local_trend=BEARISH + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + momentum_disagreement + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+- Encourage in future scoring tests: Risk=FAIL + potential_score=25-27 + sl_quality=B (support=2, WIN confidence=1.00, lift=6.67).
+
+Important:
+- This is pattern discovery on a small sample.
+- No strategy, config, weights, or DecisionEngine code was changed.

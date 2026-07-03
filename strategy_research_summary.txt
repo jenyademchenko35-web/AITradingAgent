@@ -1,0 +1,61 @@
+AITradingAgent Strategy Research
+Generated at: 2026-07-02T14:49:45.788165+00:00
+
+Decision overview
+Total decisions: 5914
+NO TRADE: 3720
+WAIT: 322
+WATCH: 527
+SETUP: 985
+HIGH PRIORITY: 360
+
+Diagnostics overview
+Total diagnostics: 177
+Average lost score: 3.04
+Primary blockers:
+- Momentum: 118
+- Structure: 32
+- Risk: 27
+
+Near setup symbols
+- BTC/USDT: near=50, avg_potential=23.5, max_potential=23.6
+- SOL/USDT: near=49, avg_potential=27.56, max_potential=28.45
+- ETH/USDT: near=34, avg_potential=23.52, max_potential=23.6
+- DOGE/USDT: near=3, avg_potential=26.4, max_potential=26.4
+- ADA/USDT: near=3, avg_potential=24.5, max_potential=24.5
+- BNB/USDT: near=1, avg_potential=24.4, max_potential=24.4
+
+Lost contribution by engine
+- Trend: 141824.0
+- Structure: 41251.0
+- Momentum: 38637.0
+- Risk: 68770.0
+
+Market regime overview
+- Range: winrate=15.79%, good_setups=1345, closed_trades=19
+  blockers={'Momentum': 118, 'Structure': 32, 'Risk': 27}
+Notes:
+- This report classifies the current regime per symbol using existing EMA/ATR/RSI/MACD values.
+- Historical regime analytics in strategy_research.py are snapshot-based because legacy logs do not store EMA/ATR/RSI/MACD per decision row.
+
+Trade overview
+Closed trades: 19
+Winrate: 15.79%
+Average PnL: -159.73
+
+Recommendations
+- Check whether Momentum is too strict; it is the most frequent blocker.
+- Review Trend contribution gaps first; it produces the largest lost contribution.
+- ADA/USDT repeatedly shows weak Structure; verify whether this symbol belongs in the active universe.
+- AVAX/USDT repeatedly shows weak Risk; verify whether this symbol belongs in the active universe.
+- BNB/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.
+- BTC/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.
+- DOGE/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.
+- ETH/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.
+- LINK/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.
+- XRP/USDT repeatedly shows weak Structure; verify whether this symbol belongs in the active universe.
+- Keep BTC/USDT, SOL/USDT, ETH/USDT in backtest research first; they most often approach SETUP.
+- There is a noticeable SHORT bias; test market-regime sensitivity in backtest.
+- Closed trade performance is weak; test stricter entry selection in backtest before changing live weights.
+- Consider moving backtest research knobs into config only after the current weak filters are confirmed statistically.
+- Current snapshot suggests the strongest environment is Range; compare backtest ideas against that regime first.

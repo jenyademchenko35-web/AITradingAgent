@@ -1,0 +1,24 @@
+Strategy Calibration Experiments
+Generated at: 2026-07-03T13:54:18.914469+00:00
+
+Baseline
+- baseline: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=6037, Score0=6037
+
+Best candidate
+- risk_weight_minus_20: trades=15, WR=20.0%, PF=0.46, net=-1727.85, DD=-1727.85, avg=-115.19, NO TRADE=5897, Score0=5897
+
+Recommendation status: INSUFFICIENT_DATA
+Reason: Best observed candidate exists, but closed-trade sample is below 30.
+
+All scenarios
+- baseline: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=6037, Score0=6037
+- momentum_weight_minus_10: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=5882, Score0=5882
+- momentum_weight_minus_20: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=5799, Score0=5799
+- risk_weight_minus_10: trades=15, WR=20.0%, PF=0.46, net=-1727.85, DD=-1727.85, avg=-115.19, NO TRADE=6008, Score0=6008
+- risk_weight_minus_20: trades=15, WR=20.0%, PF=0.46, net=-1727.85, DD=-1727.85, avg=-115.19, NO TRADE=5897, Score0=5897
+- structure_weight_plus_10: trades=14, WR=14.29%, PF=0.2, net=-2557.55, DD=-2557.55, avg=-182.68, NO TRADE=6164, Score0=6164
+- structure_weight_plus_20: trades=12, WR=16.67%, PF=0.2, net=-2534.09, DD=-2534.09, avg=-211.17, NO TRADE=6347, Score0=6347
+- min_score_24: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=6037, Score0=6037
+- min_score_23: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=6037, Score0=6037
+- min_score_22: trades=16, WR=18.75%, PF=0.37, net=-2457.85, DD=-2457.85, avg=-153.62, NO TRADE=6037, Score0=6037
+- atr_1_8_rr_2_0: trades=56, WR=69.64%, PF=2.68, net=0.0, DD=0.0, avg=0.0, NO TRADE=6037, Score0=6037

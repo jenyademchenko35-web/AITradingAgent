@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "source": "strategy_experiments_report.json",
+    "selected_scenario": "structure_weight_0.20",
+    "selected_because": "Лучший сценарий по текущему experiments-report: выше winrate, выше PF, лучше average PnL и менее глубокий max drawdown по сравнению с baseline.",
+    "generated_for": "analysis_only",
+    "generated_at": "2026-07-02T12:08:34.250441+00:00"
+  },
+  "global": {
+    "trend": 0.4,
+    "structure": 0.2,
+    "momentum": 0.25,
+    "risk": 0.15
+  },
+  "BTC/USDT": {
+    "trend": 0.4,
+    "structure": 0.2,
+    "momentum": 0.25,
+    "risk": 0.15
+  },
+  "ETH/USDT": {
+    "trend": 0.4,
+    "structure": 0.2,
+    "momentum": 0.25,
+    "risk": 0.15
+  },
+  "SOL/USDT": {
+    "trend": 0.4,
+    "structure": 0.2,
+    "momentum": 0.25,
+    "risk": 0.15
+  }
+}

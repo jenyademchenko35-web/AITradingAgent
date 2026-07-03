@@ -1,0 +1,19 @@
+AITradingAgent Blocked Trade Simulation
+Generated at: 2026-07-02T12:51:21.667318+00:00
+Blocker: ALL
+Status: OK
+Blocked Momentum candidates: 80
+Simulated trades: 53
+Winrate: 0.0%
+Average R: -0.36
+Profit Factor: 0.0
+Max Drawdown: -18.9
+Best symbol: N/A
+Worst symbol: N/A
+Recommendation: Не ослаблять фильтры автоматически: сначала сравнить blocker-specific результаты.
+
+By blocker:
+- Momentum: status=OK | candidates=53 | simulated=53
+- Structure: status=WAITING_FOR_DATA | candidates=23 | simulated=0
+- Risk: status=WAITING_FOR_DATA | candidates=4 | simulated=0
+- Trend: status=OK | candidates=0 | simulated=0

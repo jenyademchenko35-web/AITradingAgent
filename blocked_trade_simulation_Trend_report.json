@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-07-02T13:18:57.693375+00:00",
+  "blocker": "Trend",
+  "status": "OK",
+  "blocked_momentum_candidates": 0,
+  "summary": {
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "expired": 0,
+    "winrate": 0.0,
+    "average_r": 0.0,
+    "profit_factor": 0.0,
+    "max_drawdown": 0.0
+  },
+  "by_symbol": {},
+  "by_direction": {},
+  "recommendation": "Подходящих blocked Momentum-сделок не найдено."
+}

@@ -1,0 +1,37 @@
+AITradingAgent v1.1 - Strategy Calibration Framework
+Generated at: 2026-07-03T08:18:21.302868+00:00
+
+Overview
+- Total decisions: 7669
+- Closed trades: 19
+- WinRate: 15.79%
+- Profit Factor: 0.32
+- NO TRADE rate: 71.33%
+
+Filters
+- Main blocker: Momentum (46.48%)
+- Average lost score: 2.12
+- Average potential score: 20.73
+
+Confidence Calibration
+- Status: MISALIGNED
+- Recommendation: Confidence needs calibration review: higher confidence does not consistently improve realized WinRate.
+
+Overall Assessment
+- Strategy score: 40/100
+- Strengths:
+  * Optimizer shows a reproducible best region around ATR 1.8 / RR 2.0.
+  * Momentum is clearly measurable as a blocker, so future changes can be evidence-based.
+  * The project now has enough analytics coverage to explain both decisions and trade outcomes.
+- Weaknesses:
+  * Current live trade metrics remain weak: PF 0.32 and WinRate 15.79%.
+  * NO TRADE dominates flow at 71.33%, which slows statistical learning.
+  * Per-trade MAE/MFE is not yet tracked, so intratrade quality analysis is still partial.
+  * Potentially over-strict filters: Risk, Momentum.
+- Recommendations:
+  * Keep the framework read-only: Momentum should be investigated before any live strategy change.
+  * First candidate for controlled testing remains structure_weight_0.20.
+  * Do not auto-apply threshold changes until a dedicated threshold sweep exists.
+  * Confidence needs calibration review: higher confidence does not consistently improve realized WinRate.
+- Expected effect:
+  * ATR_MULT: Avg PF 2.09 -> 2.31

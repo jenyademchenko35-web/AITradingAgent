@@ -1,0 +1,16 @@
+scenario,mode,symbol_scope,decision_count,signals_count,setup_count,high_priority_count,no_trade_count,closed_trades,winrate,average_pnl,profit_factor,max_drawdown,long_trades,short_trades
+baseline,baseline,ALL,5455,1753,956,360,3702,16,18.75,-153.62,0.37,-2457.85,0,16
+momentum_soft,momentum_soft,ALL,5455,1589,742,657,3866,14,14.29,-182.68,0.2,-2557.55,0,14
+trend_weight_0.35,weight_override,ALL,5455,1255,118,95,4200,11,18.18,-190.46,0.23,-2095.09,0,11
+trend_weight_0.40,weight_override,ALL,5455,1753,956,360,3702,16,18.75,-153.62,0.37,-2457.85,0,16
+trend_weight_0.45,weight_override,ALL,5455,1972,286,1585,3483,16,18.75,-153.62,0.37,-2457.85,0,16
+structure_weight_0.20,weight_override,ALL,5455,1794,1036,306,3661,15,20.0,-115.19,0.46,-1727.85,0,15
+structure_weight_0.25,weight_override,ALL,5455,1753,956,360,3702,16,18.75,-153.62,0.37,-2457.85,0,16
+structure_weight_0.30,weight_override,ALL,5455,1762,366,959,3693,18,16.67,-168.6,0.32,-3034.85,0,18
+risk_weight_0.10,weight_override,ALL,5455,1728,849,385,3727,15,20.0,-115.19,0.46,-1727.85,0,15
+risk_weight_0.15,weight_override,ALL,5455,1753,956,360,3702,16,18.75,-153.62,0.37,-2457.85,0,16
+risk_weight_0.20,weight_override,ALL,5455,1773,793,481,3682,15,13.33,-219.17,0.16,-3287.55,0,15
+short_bias_check,short_bias_check,ALL,5455,1907,334,1222,3548,16,18.75,-153.62,0.37,-2457.85,0,16
+symbol_weights_BTC,symbol_filter,BTC/USDT,1811,995,475,292,816,9,22.22,-264.96,0.37,-2384.6,0,9
+symbol_weights_ETH,symbol_filter,ETH/USDT,1813,743,481,68,1070,7,14.29,-10.46,0.25,-73.25,0,7
+symbol_weights_SOL,symbol_filter,SOL/USDT,1813,15,0,0,1798,0,0.0,0.0,0.0,0.0,0,0

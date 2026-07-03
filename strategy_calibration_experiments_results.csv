@@ -1,0 +1,12 @@
+scenario,trades,wins,losses,winrate,profit_factor,net_profit,max_drawdown,average_trade,no_trade_count,score_zero_count,metric_source
+baseline,16,3,13,18.75,0.37,-2457.85,-2457.85,-153.62,6037,6037,matched_closed_trades
+momentum_weight_minus_10,16,3,13,18.75,0.37,-2457.85,-2457.85,-153.62,5882,5882,matched_closed_trades
+momentum_weight_minus_20,16,3,13,18.75,0.37,-2457.85,-2457.85,-153.62,5799,5799,matched_closed_trades
+risk_weight_minus_10,15,3,12,20.0,0.46,-1727.85,-1727.85,-115.19,6008,6008,matched_closed_trades
+risk_weight_minus_20,15,3,12,20.0,0.46,-1727.85,-1727.85,-115.19,5897,5897,matched_closed_trades
+structure_weight_plus_10,14,2,12,14.29,0.2,-2557.55,-2557.55,-182.68,6164,6164,matched_closed_trades
+structure_weight_plus_20,12,2,10,16.67,0.2,-2534.09,-2534.09,-211.17,6347,6347,matched_closed_trades
+min_score_24,16,3,13,18.75,0.37,-2457.85,-2457.85,-153.62,6037,6037,matched_closed_trades
+min_score_23,16,3,13,18.75,0.37,-2457.85,-2457.85,-153.62,6037,6037,matched_closed_trades
+min_score_22,16,3,13,18.75,0.37,-2457.85,-2457.85,-153.62,6037,6037,matched_closed_trades
+atr_1_8_rr_2_0,56,39,17,69.64,2.68,0.0,0.0,0.0,6037,6037,optimizer_results.csv

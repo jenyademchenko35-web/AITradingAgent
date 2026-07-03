@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-07-02T12:51:21.354819+00:00",
+  "blocker": "Structure",
+  "status": "WAITING_FOR_DATA",
+  "error": "OHLCV недоступен ни через ccxt, ни через локальный cache.",
+  "blocked_momentum_candidates": 23,
+  "simulated_trades": 0,
+  "candidates_file": "/Users/jeynademcenko/AITradingAgent/blocked_trade_candidates_Structure.csv",
+  "fetch_errors": {
+    "SOL/USDT": "bybit GET https://api.bybit.com/v5/market/instruments-info?category=spot"
+  },
+  "recommendation": "Нужно запустить симулятор в среде с доступом к Bybit или добавить локальный OHLCV-cache."
+}

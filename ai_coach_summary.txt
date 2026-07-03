@@ -1,0 +1,20 @@
+🧠 AI Coach
+
+Сегодня рынок: Range
+Главный blocker: Momentum
+Последние 19 сделок: WR 15.79%
+Всего закрытых сделок: 19
+Главная проблема: bad Risk
+Что чаще работает: strong Trend
+Data Quality: OK
+Auto-Learning: NOT_ENOUGH_DATA
+Best Experiment: structure_weight_0.20
+Лучший символ: SOL/USDT
+Худший символ: BTC/USDT
+
+Что делать сегодня:
+- собрать ещё 11 закрытых сделок
+- ждать только A-сетапы и внимательно проверять Risk
+- не ослаблять Momentum без новых blocked-trade доказательств
+- не открывать Momentum-blocked сделки вручную
+- не менять веса сегодня

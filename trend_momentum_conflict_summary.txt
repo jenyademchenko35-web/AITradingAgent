@@ -1,0 +1,40 @@
+Trend/Momentum Conflict Experiment
+==================================
+Generated: 2026-07-03T15:34:35.739439+00:00
+
+Rule:
+- IF direction = SHORT
+- AND 1H EMA trend = BULLISH
+- AND Momentum = FAIL
+- THEN downgrade signal or block to NO TRADE
+
+Baseline:
+- Trades: 20
+- Wins/Losses: 3 / 17
+- Winrate: 15.0%
+- Profit Factor: 0.3228
+- Net Profit: -3051.88974277
+
+Conflict matches:
+- Matches: 1
+- Wins/Losses: 0 / 1
+- Net Profit: -4.9
+- Symbols: {'BNB/USDT': 1}
+
+Scenarios:
+- downgrade_one_step:
+  trades=19 wins=3 losses=16
+  winrate=15.79% PF=0.3232 net=-3046.98974277
+  prevented_losses=1 lost_wins=0
+  net_delta=4.9
+- block_to_no_trade:
+  trades=19 wins=3 losses=16
+  winrate=15.79% PF=0.3232 net=-3046.98974277
+  prevented_losses=1 lost_wins=0
+  net_delta=4.9
+
+Recommendation:
+- Status: CANDIDATE_FOR_V2_TEST
+- Best scenario: downgrade_one_step
+- Reason: Rule prevented more losses than wins and improved PF/net profit in historical trades.
+- Apply automatically: false

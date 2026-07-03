@@ -1,0 +1,536 @@
+{
+  "generated_at": "2026-07-03T14:45:26.328795+00:00",
+  "status": "OK",
+  "warnings": [],
+  "source_files": {
+    "decision_debug": "/Users/jeynademcenko/AITradingAgent/decision_debug.csv",
+    "decision_diagnostics": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
+    "decision_explanations": "/Users/jeynademcenko/AITradingAgent/decision_explanations.csv",
+    "signals": "/Users/jeynademcenko/AITradingAgent/signals_v3.csv",
+    "strategy_weights": "/Users/jeynademcenko/AITradingAgent/strategy_weights.json"
+  },
+  "data_coverage": {
+    "debug_rows": 7885,
+    "diagnostics_rows": 2607,
+    "explanations_rows": 2607,
+    "signals_rows": 8344,
+    "decomposed_rows": 7885
+  },
+  "stage_statistics": {
+    "Trend": {
+      "average": 16.32,
+      "min": 9.6,
+      "max": 24.0,
+      "stddev": 3.41,
+      "pass_percent": 100.0
+    },
+    "Structure": {
+      "average": 18.91,
+      "min": 11.2,
+      "max": 27.75,
+      "stddev": 3.26,
+      "pass_percent": 100.0
+    },
+    "Momentum": {
+      "average": 20.28,
+      "min": 12.8,
+      "max": 29.4,
+      "stddev": 3.47,
+      "pass_percent": 100.0
+    },
+    "Risk": {
+      "average": 21.17,
+      "min": 13.6,
+      "max": 31.7,
+      "stddev": 3.43,
+      "pass_percent": 100.0
+    },
+    "Weighted Score": {
+      "average": 21.14,
+      "min": 14.0,
+      "max": 32.0,
+      "stddev": 3.36,
+      "pass_percent": 68.13
+    },
+    "Potential Score": {
+      "average": 21.14,
+      "min": 14.0,
+      "max": 32.0,
+      "stddev": 3.36,
+      "pass_percent": 68.13
+    },
+    "MIN_EDGE": {
+      "average": 5.74,
+      "min": 0.0,
+      "max": 32.0,
+      "stddev": 10.76,
+      "pass_percent": 22.3
+    },
+    "Final Score": {
+      "average": 5.74,
+      "min": 0.0,
+      "max": 32.0,
+      "stddev": 10.76,
+      "pass_percent": 22.3
+    }
+  },
+  "score_loss_heatmap": [
+    {
+      "stage": "Trend",
+      "average": 16.32,
+      "loss_from_previous": 0.0,
+      "pass_percent": 100.0
+    },
+    {
+      "stage": "Structure",
+      "average": 18.91,
+      "loss_from_previous": 2.59,
+      "pass_percent": 100.0
+    },
+    {
+      "stage": "Momentum",
+      "average": 20.28,
+      "loss_from_previous": 1.37,
+      "pass_percent": 100.0
+    },
+    {
+      "stage": "Risk",
+      "average": 21.17,
+      "loss_from_previous": 0.89,
+      "pass_percent": 100.0
+    },
+    {
+      "stage": "Weighted Score",
+      "average": 21.14,
+      "loss_from_previous": -0.03,
+      "pass_percent": 68.13
+    },
+    {
+      "stage": "Potential Score",
+      "average": 21.14,
+      "loss_from_previous": 0.0,
+      "pass_percent": 68.13
+    },
+    {
+      "stage": "MIN_EDGE",
+      "average": 5.74,
+      "loss_from_previous": -15.4,
+      "pass_percent": 22.3
+    },
+    {
+      "stage": "Final Score",
+      "average": 5.74,
+      "loss_from_previous": 0.0,
+      "pass_percent": 22.3
+    }
+  ],
+  "symbol_breakdown": {
+    "ADA/USDT": {
+      "decisions": 273,
+      "trend": 14.97,
+      "structure": 17.5,
+      "momentum": 19.74,
+      "risk": 20.03,
+      "weighted_score": 20.15,
+      "final_score": 0.0,
+      "score_zero_percent": 100.0,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "AVAX/USDT": {
+      "decisions": 273,
+      "trend": 15.35,
+      "structure": 17.92,
+      "momentum": 20.09,
+      "risk": 20.08,
+      "weighted_score": 20.26,
+      "final_score": 0.0,
+      "score_zero_percent": 100.0,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "BNB/USDT": {
+      "decisions": 273,
+      "trend": 15.22,
+      "structure": 18.15,
+      "momentum": 18.93,
+      "risk": 19.94,
+      "weighted_score": 19.99,
+      "final_score": 0.48,
+      "score_zero_percent": 98.17,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "BTC/USDT": {
+      "decisions": 2081,
+      "trend": 18.3,
+      "structure": 20.99,
+      "momentum": 22.11,
+      "risk": 23.15,
+      "weighted_score": 23.06,
+      "final_score": 12.5,
+      "score_zero_percent": 52.19,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "DOGE/USDT": {
+      "decisions": 273,
+      "trend": 14.97,
+      "structure": 18.43,
+      "momentum": 19.22,
+      "risk": 21.17,
+      "weighted_score": 21.32,
+      "final_score": 0.0,
+      "score_zero_percent": 100.0,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "ETH/USDT": {
+      "decisions": 2083,
+      "trend": 17.19,
+      "structure": 19.81,
+      "momentum": 20.92,
+      "risk": 21.97,
+      "weighted_score": 21.83,
+      "final_score": 9.02,
+      "score_zero_percent": 64.33,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "LINK/USDT": {
+      "decisions": 273,
+      "trend": 13.76,
+      "structure": 16.27,
+      "momentum": 18.05,
+      "risk": 18.84,
+      "weighted_score": 18.93,
+      "final_score": 0.0,
+      "score_zero_percent": 100.0,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "SOL/USDT": {
+      "decisions": 2083,
+      "trend": 14.7,
+      "structure": 17.11,
+      "momentum": 18.87,
+      "risk": 19.57,
+      "weighted_score": 19.6,
+      "final_score": 0.15,
+      "score_zero_percent": 99.28,
+      "most_common_loss_stage": "MIN_EDGE"
+    },
+    "XRP/USDT": {
+      "decisions": 273,
+      "trend": 14.36,
+      "structure": 16.34,
+      "momentum": 17.52,
+      "risk": 18.03,
+      "weighted_score": 18.13,
+      "final_score": 0.0,
+      "score_zero_percent": 100.0,
+      "most_common_loss_stage": "MIN_EDGE"
+    }
+  },
+  "confidence_correlation": {
+    "50-59": {
+      "count": 1986,
+      "average_raw_score": 59.17,
+      "average_weighted_score": 18.84,
+      "average_final_score": 0.0,
+      "score_zero_percent": 100.0
+    },
+    "60-69": {
+      "count": 2412,
+      "average_raw_score": 58.84,
+      "average_weighted_score": 19.6,
+      "average_final_score": 0.0,
+      "score_zero_percent": 100.0
+    },
+    "70-79": {
+      "count": 1528,
+      "average_raw_score": 65.89,
+      "average_weighted_score": 21.88,
+      "average_final_score": 6.5,
+      "score_zero_percent": 74.35
+    },
+    "80-89": {
+      "count": 845,
+      "average_raw_score": 70.18,
+      "average_weighted_score": 23.45,
+      "average_final_score": 12.76,
+      "score_zero_percent": 49.11
+    },
+    "90-100": {
+      "count": 946,
+      "average_raw_score": 77.34,
+      "average_weighted_score": 26.16,
+      "average_final_score": 22.17,
+      "score_zero_percent": 16.7
+    }
+  },
+  "candidate_simulation": {
+    "baseline": {
+      "decision_count": 7885,
+      "average_score": 5.74,
+      "high_priority_count": 315,
+      "setup_count": 696,
+      "watch_count": 712,
+      "wait_count": 35,
+      "no_trade_count": 6127,
+      "signal_breakdown": {
+        "HIGH PRIORITY": 315,
+        "SETUP": 696,
+        "WATCH": 712,
+        "WAIT": 35,
+        "NO TRADE": 6127
+      }
+    },
+    "without_MIN_EDGE": {
+      "decision_count": 7885,
+      "average_score": 21.14,
+      "high_priority_count": 316,
+      "setup_count": 792,
+      "watch_count": 941,
+      "wait_count": 3323,
+      "no_trade_count": 2513,
+      "signal_breakdown": {
+        "HIGH PRIORITY": 316,
+        "SETUP": 792,
+        "WATCH": 941,
+        "WAIT": 3323,
+        "NO TRADE": 2513
+      }
+    },
+    "without_Momentum": {
+      "decision_count": 7885,
+      "average_score": 6.03,
+      "high_priority_count": 260,
+      "setup_count": 766,
+      "watch_count": 400,
+      "wait_count": 528,
+      "no_trade_count": 5931,
+      "signal_breakdown": {
+        "HIGH PRIORITY": 260,
+        "SETUP": 766,
+        "WATCH": 400,
+        "WAIT": 528,
+        "NO TRADE": 5931
+      }
+    },
+    "without_Risk": {
+      "decision_count": 7885,
+      "average_score": 5.86,
+      "high_priority_count": 350,
+      "setup_count": 738,
+      "watch_count": 620,
+      "wait_count": 121,
+      "no_trade_count": 6056,
+      "signal_breakdown": {
+        "HIGH PRIORITY": 350,
+        "SETUP": 738,
+        "WATCH": 620,
+        "WAIT": 121,
+        "NO TRADE": 6056
+      }
+    },
+    "without_Structure": {
+      "decision_count": 7885,
+      "average_score": 5.16,
+      "high_priority_count": 58,
+      "setup_count": 271,
+      "watch_count": 1194,
+      "wait_count": 196,
+      "no_trade_count": 6166,
+      "signal_breakdown": {
+        "HIGH PRIORITY": 58,
+        "SETUP": 271,
+        "WATCH": 1194,
+        "WAIT": 196,
+        "NO TRADE": 6166
+      }
+    }
+  },
+  "top_reasons": [
+    {
+      "rank": 1,
+      "reason": "MIN_EDGE",
+      "count": 4460,
+      "percent": 63.15
+    },
+    {
+      "rank": 2,
+      "reason": "Diagnostics: Momentum",
+      "count": 1086,
+      "percent": 15.38
+    },
+    {
+      "rank": 3,
+      "reason": "Diagnostics: Risk",
+      "count": 735,
+      "percent": 10.41
+    },
+    {
+      "rank": 4,
+      "reason": "Diagnostics: Structure",
+      "count": 448,
+      "percent": 6.34
+    },
+    {
+      "rank": 5,
+      "reason": "Diagnostics: Trend",
+      "count": 332,
+      "percent": 4.7
+    }
+  ],
+  "examples": [
+    {
+      "timestamp": "2026-06-25T20:07:47.300699+00:00",
+      "symbol": "BTC/USDT",
+      "confidence": 70.0,
+      "weighted_score": 21.0,
+      "diff": 12.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T20:07:48.060854+00:00",
+      "symbol": "ETH/USDT",
+      "confidence": 60.0,
+      "weighted_score": 21.0,
+      "diff": 7.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:05:14.410255+00:00",
+      "symbol": "BTC/USDT",
+      "confidence": 70.0,
+      "weighted_score": 21.0,
+      "diff": 12.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:05:15.296682+00:00",
+      "symbol": "ETH/USDT",
+      "confidence": 60.0,
+      "weighted_score": 21.0,
+      "diff": 7.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:06:19.602349+00:00",
+      "symbol": "BTC/USDT",
+      "confidence": 70.0,
+      "weighted_score": 21.0,
+      "diff": 12.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:06:20.597908+00:00",
+      "symbol": "ETH/USDT",
+      "confidence": 60.0,
+      "weighted_score": 21.0,
+      "diff": 7.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:07:52.985306+00:00",
+      "symbol": "BTC/USDT",
+      "confidence": 70.0,
+      "weighted_score": 21.0,
+      "diff": 12.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:07:54.159034+00:00",
+      "symbol": "ETH/USDT",
+      "confidence": 60.0,
+      "weighted_score": 21.0,
+      "diff": 7.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:12:58.523346+00:00",
+      "symbol": "BTC/USDT",
+      "confidence": 70.0,
+      "weighted_score": 21.0,
+      "diff": 12.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    },
+    {
+      "timestamp": "2026-06-25T21:13:00.755761+00:00",
+      "symbol": "ETH/USDT",
+      "confidence": 60.0,
+      "weighted_score": 21.0,
+      "diff": 7.0,
+      "final_score": 0.0,
+      "primary_loss_stage": "MIN_EDGE",
+      "cumulative": {
+        "Trend": 20.0,
+        "Structure": 20.0,
+        "Momentum": 21.4,
+        "Risk": 21.4
+      }
+    }
+  ],
+  "interpretation": {
+    "score_zero_percent": 77.7,
+    "min_edge_zero_percent": 77.7,
+    "summary": "Final Score is primarily lost when weighted directional score exists but diff remains below MIN_EDGE."
+  }
+}

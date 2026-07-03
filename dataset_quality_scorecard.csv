@@ -1,0 +1,18 @@
+category,item,score,status,sample_size,reliability,confidence_level,notes
+Research Reliability,Score Zero Audit,90,HIGH,8254,HIGH,0.9,observations
+Research Reliability,MIN_EDGE Analysis,90,HIGH,2706,HIGH,0.9,observations
+Research Reliability,Momentum Analysis,90,HIGH,1073,HIGH,0.9,observations
+Research Reliability,Trend Conflict Replay,90,HIGH,2143,HIGH,0.9,observations
+Research Reliability,Trade Comparator,35,LOW,20,LOW,0.35,trades
+Research Reliability,Pattern Discovery,35,LOW,20,LOW,0.35,trades
+Research Reliability,SL Quality Experiment,35,LOW,20,LOW,0.35,trades
+Research Reliability,Optimizer History,35,LOW,28,LOW,0.35,observations
+Project Readiness,Architecture,90,OK,,,,
+Project Readiness,Strategy,55,WARNING,,,,
+Project Readiness,Dataset,82,OK,,,,
+Project Readiness,Analytics,50,WARNING,,,,
+Project Readiness,Research,50,WARNING,,,,
+Project Readiness,Production Readiness,72,WARNING,,,,
+Bias Detection,Symbol bias,,MEDIUM,,,,ETH/USDT has 24.93% of decisions.
+Bias Detection,SHORT bias,,HIGH,,,,SHORT trades share is 95.0%.
+Bias Detection,Confidence bias,,HIGH,,,,Confidence 90-100 has winrate 10.0% over 10 trades.

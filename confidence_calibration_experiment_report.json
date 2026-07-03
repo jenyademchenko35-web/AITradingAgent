@@ -1,0 +1,540 @@
+{
+  "generated_at": "2026-07-03T19:23:57.840466+00:00",
+  "status": "OK",
+  "source": "trade_pattern_discovery_report.json",
+  "rules": {
+    "high_confidence_threshold": 90.0,
+    "minimum_closed_trades_for_recommendation": 30,
+    "mode": "read-only historical closed-trade replay",
+    "apply_automatically": false
+  },
+  "sample": {
+    "closed_trades": 20,
+    "high_confidence_trades": 10,
+    "high_confidence_losses": 9,
+    "high_confidence_wins": 1
+  },
+  "baseline": {
+    "trades": 20,
+    "wins": 3,
+    "losses": 17,
+    "winrate": 15.0,
+    "profit_factor": 0.3228,
+    "net_pnl": -3051.88974277,
+    "average_pnl": -152.59448714,
+    "scenario": "baseline",
+    "mode": "BASELINE",
+    "description": "Current closed-trade baseline.",
+    "prevented_trades": 0,
+    "prevented_losses": 0,
+    "lost_wins": 0,
+    "prevented_loss_pnl": 0.0,
+    "lost_win_pnl": 0.0,
+    "net_pnl_delta": 0.0,
+    "profit_factor_delta": 0.0,
+    "winrate_delta": 0.0
+  },
+  "scenarios": {
+    "baseline": {
+      "trades": 20,
+      "wins": 3,
+      "losses": 17,
+      "winrate": 15.0,
+      "profit_factor": 0.3228,
+      "net_pnl": -3051.88974277,
+      "average_pnl": -152.59448714,
+      "scenario": "baseline",
+      "mode": "BASELINE",
+      "description": "Current closed-trade baseline.",
+      "prevented_trades": 0,
+      "prevented_losses": 0,
+      "lost_wins": 0,
+      "prevented_loss_pnl": 0.0,
+      "lost_win_pnl": 0.0,
+      "net_pnl_delta": 0.0,
+      "profit_factor_delta": 0.0,
+      "winrate_delta": 0.0
+    },
+    "block_conf_gt90": {
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate": 20.0,
+      "profit_factor": 0.4364,
+      "net_pnl": -807.54974277,
+      "average_pnl": -80.75497428,
+      "scenario": "block_conf_gt90",
+      "mode": "BLOCK",
+      "description": "Block all trades with Confidence > 90.",
+      "prevented_trades": 10,
+      "prevented_losses": 9,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -3074.04,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 6,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 10
+      },
+      "net_pnl_delta": 2244.34,
+      "profit_factor_delta": 0.1136,
+      "winrate_delta": 5.0
+    },
+    "downgrade_block_conf_gt90": {
+      "trades": 13,
+      "wins": 2,
+      "losses": 11,
+      "winrate": 15.38,
+      "profit_factor": 0.1958,
+      "net_pnl": -2568.34974277,
+      "average_pnl": -197.56536483,
+      "scenario": "downgrade_block_conf_gt90",
+      "mode": "DOWNGRADE",
+      "description": "Block all trades with Confidence > 90.",
+      "prevented_trades": 7,
+      "prevented_losses": 6,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -1313.24,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 3,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 483.54,
+      "profit_factor_delta": -0.127,
+      "winrate_delta": 0.38
+    },
+    "block_conf_gt90_momentum_disagreement": {
+      "trades": 11,
+      "wins": 2,
+      "losses": 9,
+      "winrate": 18.18,
+      "profit_factor": 0.285,
+      "net_pnl": -1568.54974277,
+      "average_pnl": -142.59543116,
+      "scenario": "block_conf_gt90_momentum_disagreement",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 when Momentum disagreement is present.",
+      "prevented_trades": 9,
+      "prevented_losses": 8,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -2313.04,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 5,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 9
+      },
+      "net_pnl_delta": 1483.34,
+      "profit_factor_delta": -0.0378,
+      "winrate_delta": 3.18
+    },
+    "downgrade_block_conf_gt90_momentum_disagreement": {
+      "trades": 13,
+      "wins": 2,
+      "losses": 11,
+      "winrate": 15.38,
+      "profit_factor": 0.1958,
+      "net_pnl": -2568.34974277,
+      "average_pnl": -197.56536483,
+      "scenario": "downgrade_block_conf_gt90_momentum_disagreement",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 when Momentum disagreement is present.",
+      "prevented_trades": 7,
+      "prevented_losses": 6,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -1313.24,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 3,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 483.54,
+      "profit_factor_delta": -0.127,
+      "winrate_delta": 0.38
+    },
+    "block_conf_gt90_sl_quality_D": {
+      "trades": 13,
+      "wins": 3,
+      "losses": 10,
+      "winrate": 23.08,
+      "profit_factor": 0.6712,
+      "net_pnl": -712.74974277,
+      "average_pnl": -54.82690329,
+      "scenario": "block_conf_gt90_sl_quality_D",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 when SL quality is D.",
+      "prevented_trades": 7,
+      "prevented_losses": 7,
+      "lost_wins": 0,
+      "prevented_loss_pnl": -2339.14,
+      "lost_win_pnl": 0,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 4
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 2339.14,
+      "profit_factor_delta": 0.3484,
+      "winrate_delta": 8.08
+    },
+    "downgrade_block_conf_gt90_sl_quality_D": {
+      "trades": 16,
+      "wins": 3,
+      "losses": 13,
+      "winrate": 18.75,
+      "profit_factor": 0.3703,
+      "net_pnl": -2473.54974277,
+      "average_pnl": -154.59685892,
+      "scenario": "downgrade_block_conf_gt90_sl_quality_D",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 when SL quality is D.",
+      "prevented_trades": 4,
+      "prevented_losses": 4,
+      "lost_wins": 0,
+      "prevented_loss_pnl": -578.34,
+      "lost_win_pnl": 0,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 4
+      },
+      "net_pnl_delta": 578.34,
+      "profit_factor_delta": 0.0475,
+      "winrate_delta": 3.75
+    },
+    "block_conf_gt90_short_bias": {
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate": 20.0,
+      "profit_factor": 0.4364,
+      "net_pnl": -807.54974277,
+      "average_pnl": -80.75497428,
+      "scenario": "block_conf_gt90_short_bias",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 when direction is SHORT.",
+      "prevented_trades": 10,
+      "prevented_losses": 9,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -3074.04,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 6,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 10
+      },
+      "net_pnl_delta": 2244.34,
+      "profit_factor_delta": 0.1136,
+      "winrate_delta": 5.0
+    },
+    "downgrade_block_conf_gt90_short_bias": {
+      "trades": 13,
+      "wins": 2,
+      "losses": 11,
+      "winrate": 15.38,
+      "profit_factor": 0.1958,
+      "net_pnl": -2568.34974277,
+      "average_pnl": -197.56536483,
+      "scenario": "downgrade_block_conf_gt90_short_bias",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 when direction is SHORT.",
+      "prevented_trades": 7,
+      "prevented_losses": 6,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -1313.24,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 3,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 483.54,
+      "profit_factor_delta": -0.127,
+      "winrate_delta": 0.38
+    },
+    "block_conf_gt90_momentum_or_sl_D": {
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate": 20.0,
+      "profit_factor": 0.4364,
+      "net_pnl": -807.54974277,
+      "average_pnl": -80.75497428,
+      "scenario": "block_conf_gt90_momentum_or_sl_D",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 when Momentum disagrees or SL quality is D.",
+      "prevented_trades": 10,
+      "prevented_losses": 9,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -3074.04,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 6,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 10
+      },
+      "net_pnl_delta": 2244.34,
+      "profit_factor_delta": 0.1136,
+      "winrate_delta": 5.0
+    },
+    "downgrade_block_conf_gt90_momentum_or_sl_D": {
+      "trades": 13,
+      "wins": 2,
+      "losses": 11,
+      "winrate": 15.38,
+      "profit_factor": 0.1958,
+      "net_pnl": -2568.34974277,
+      "average_pnl": -197.56536483,
+      "scenario": "downgrade_block_conf_gt90_momentum_or_sl_D",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 when Momentum disagrees or SL quality is D.",
+      "prevented_trades": 7,
+      "prevented_losses": 6,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -1313.24,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 3,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 483.54,
+      "profit_factor_delta": -0.127,
+      "winrate_delta": 0.38
+    },
+    "block_conf_gt90_short_momentum": {
+      "trades": 11,
+      "wins": 2,
+      "losses": 9,
+      "winrate": 18.18,
+      "profit_factor": 0.285,
+      "net_pnl": -1568.54974277,
+      "average_pnl": -142.59543116,
+      "scenario": "block_conf_gt90_short_momentum",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 for SHORT trades with Momentum disagreement.",
+      "prevented_trades": 9,
+      "prevented_losses": 8,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -2313.04,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 5,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 9
+      },
+      "net_pnl_delta": 1483.34,
+      "profit_factor_delta": -0.0378,
+      "winrate_delta": 3.18
+    },
+    "downgrade_block_conf_gt90_short_momentum": {
+      "trades": 13,
+      "wins": 2,
+      "losses": 11,
+      "winrate": 15.38,
+      "profit_factor": 0.1958,
+      "net_pnl": -2568.34974277,
+      "average_pnl": -197.56536483,
+      "scenario": "downgrade_block_conf_gt90_short_momentum",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 for SHORT trades with Momentum disagreement.",
+      "prevented_trades": 7,
+      "prevented_losses": 6,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -1313.24,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 3,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 483.54,
+      "profit_factor_delta": -0.127,
+      "winrate_delta": 0.38
+    },
+    "block_conf_gt90_short_sl_quality_D": {
+      "trades": 13,
+      "wins": 3,
+      "losses": 10,
+      "winrate": 23.08,
+      "profit_factor": 0.6712,
+      "net_pnl": -712.74974277,
+      "average_pnl": -54.82690329,
+      "scenario": "block_conf_gt90_short_sl_quality_D",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 for SHORT trades with SL quality D.",
+      "prevented_trades": 7,
+      "prevented_losses": 7,
+      "lost_wins": 0,
+      "prevented_loss_pnl": -2339.14,
+      "lost_win_pnl": 0,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 4
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 2339.14,
+      "profit_factor_delta": 0.3484,
+      "winrate_delta": 8.08
+    },
+    "downgrade_block_conf_gt90_short_sl_quality_D": {
+      "trades": 16,
+      "wins": 3,
+      "losses": 13,
+      "winrate": 18.75,
+      "profit_factor": 0.3703,
+      "net_pnl": -2473.54974277,
+      "average_pnl": -154.59685892,
+      "scenario": "downgrade_block_conf_gt90_short_sl_quality_D",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 for SHORT trades with SL quality D.",
+      "prevented_trades": 4,
+      "prevented_losses": 4,
+      "lost_wins": 0,
+      "prevented_loss_pnl": -578.34,
+      "lost_win_pnl": 0,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 4
+      },
+      "net_pnl_delta": 578.34,
+      "profit_factor_delta": 0.0475,
+      "winrate_delta": 3.75
+    },
+    "block_conf_gt90_any_risk_feature": {
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate": 20.0,
+      "profit_factor": 0.4364,
+      "net_pnl": -807.54974277,
+      "average_pnl": -80.75497428,
+      "scenario": "block_conf_gt90_any_risk_feature",
+      "mode": "BLOCK",
+      "description": "Block Confidence > 90 with Momentum disagreement, SL quality D, or SHORT direction.",
+      "prevented_trades": 10,
+      "prevented_losses": 9,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -3074.04,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 6,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 10
+      },
+      "net_pnl_delta": 2244.34,
+      "profit_factor_delta": 0.1136,
+      "winrate_delta": 5.0
+    },
+    "downgrade_block_conf_gt90_any_risk_feature": {
+      "trades": 13,
+      "wins": 2,
+      "losses": 11,
+      "winrate": 15.38,
+      "profit_factor": 0.1958,
+      "net_pnl": -2568.34974277,
+      "average_pnl": -197.56536483,
+      "scenario": "downgrade_block_conf_gt90_any_risk_feature",
+      "mode": "DOWNGRADE",
+      "description": "Block Confidence > 90 with Momentum disagreement, SL quality D, or SHORT direction.",
+      "prevented_trades": 7,
+      "prevented_losses": 6,
+      "lost_wins": 1,
+      "prevented_loss_pnl": -1313.24,
+      "lost_win_pnl": 829.7,
+      "prevented_symbols": {
+        "ETH/USDT": 3,
+        "BTC/USDT": 3,
+        "BNB/USDT": 1
+      },
+      "prevented_directions": {
+        "SHORT": 7
+      },
+      "net_pnl_delta": 483.54,
+      "profit_factor_delta": -0.127,
+      "winrate_delta": 0.38
+    }
+  },
+  "best_candidate": {
+    "trades": 13,
+    "wins": 3,
+    "losses": 10,
+    "winrate": 23.08,
+    "profit_factor": 0.6712,
+    "net_pnl": -712.74974277,
+    "average_pnl": -54.82690329,
+    "scenario": "block_conf_gt90_sl_quality_D",
+    "mode": "BLOCK",
+    "description": "Block Confidence > 90 when SL quality is D.",
+    "prevented_trades": 7,
+    "prevented_losses": 7,
+    "lost_wins": 0,
+    "prevented_loss_pnl": -2339.14,
+    "lost_win_pnl": 0,
+    "prevented_symbols": {
+      "ETH/USDT": 3,
+      "BTC/USDT": 4
+    },
+    "prevented_directions": {
+      "SHORT": 7
+    },
+    "net_pnl_delta": 2339.14,
+    "profit_factor_delta": 0.3484,
+    "winrate_delta": 8.08
+  },
+  "recommendation": {
+    "status": "INSUFFICIENT_DATA",
+    "reason": "Only 20 closed trades are available; minimum is 30.",
+    "best_candidate": "block_conf_gt90_sl_quality_D",
+    "apply_automatically": false
+  },
+  "warnings": [
+    "This experiment is read-only and uses closed historical trades only.",
+    "Do not change DecisionEngine from this report while sample size is below 30 closed trades."
+  ]
+}

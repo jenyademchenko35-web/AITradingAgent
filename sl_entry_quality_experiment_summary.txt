@@ -1,0 +1,26 @@
+SL / Entry Quality Experiment
+=============================
+Status: OK
+
+Scenarios:
+- baseline: trades=20 wins=3 losses=17 WR=15.0% PF=0.3228 net=-3051.88974277 prevented_losses=0 lost_wins=0 delta=0.0
+- block_sl_quality_D: trades=6 wins=3 losses=3 WR=50.0% PF=1.9777 net=719.220622 prevented_losses=14 lost_wins=0 delta=3771.11036477
+- block_sl_quality_D_E: trades=6 wins=3 losses=3 WR=50.0% PF=1.9777 net=719.220622 prevented_losses=14 lost_wins=0 delta=3771.11036477
+- downgrade_sl_quality_D: trades=9 wins=3 losses=6 WR=33.33% PF=0.5828 net=-1041.579378 prevented_losses=11 lost_wins=0 delta=2010.31036477
+- block_short_sl_quality_D: trades=6 wins=3 losses=3 WR=50.0% PF=1.9777 net=719.220622 prevented_losses=14 lost_wins=0 delta=3771.11036477
+
+Best candidate:
+- block_sl_quality_D
+- Net delta: 3771.11036477
+- Prevented losses: 14
+- Lost wins: 0
+
+Recommendation:
+- Status: CANDIDATE_FOR_DRY_RUN
+- Best scenario: block_short_sl_quality_D
+- Reason: block_short_sl_quality_D prevented more LOSS than WIN and improved historical net PnL.
+- Apply automatically: false
+
+Important:
+- Read-only experiment.
+- DecisionEngine, config, weights, and live trading logic were not changed.

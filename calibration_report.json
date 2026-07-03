@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-07-02T11:42:11.552228+00:00",
+  "source": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
+  "status": "ok",
+  "total_decisions": 36,
+  "no_trade_decisions": 36,
+  "primary_blockers": {
+    "Momentum": 24,
+    "Structure": 12
+  },
+  "engine_failures": {
+    "Risk": 12,
+    "Trend": 0,
+    "Structure": 12,
+    "Momentum": 30
+  },
+  "average_lost_score": 3.98,
+  "average_potential_score": 25.07,
+  "near_setup_symbols": {
+    "SOL": {
+      "near_setup_count": 12,
+      "avg_potential_score": 28.35,
+      "max_potential_score": 28.45,
+      "primary_blockers": {
+        "Structure": 12
+      }
+    },
+    "ETH": {
+      "near_setup_count": 12,
+      "avg_potential_score": 23.45,
+      "max_potential_score": 23.6,
+      "primary_blockers": {
+        "Momentum": 12
+      }
+    },
+    "BTC": {
+      "near_setup_count": 12,
+      "avg_potential_score": 23.4,
+      "max_potential_score": 23.4,
+      "primary_blockers": {
+        "Momentum": 12
+      }
+    }
+  },
+  "recommendations": [
+    "Momentum is the most frequent primary blocker (66.7% of decisions).",
+    "Score threshold may be strict: many non-actionable decisions cluster between WATCH and SETUP potential scores.",
+    "Average potential score is near WATCH/SETUP territory; review score thresholds only after confirming blocker quality.",
+    "Keep these symbols in the watchlist: SOL, ETH, BTC."
+  ]
+}

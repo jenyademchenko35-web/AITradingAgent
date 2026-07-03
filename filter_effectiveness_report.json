@@ -1,0 +1,94 @@
+{
+  "generated_at": "2026-07-02T12:38:35.455209+00:00",
+  "notes": [
+    "Blocked trade outcomes are estimated analytically from the nearest later closed trade with the same symbol and direction.",
+    "This report is advisory only and does not change DecisionEngine or live weights."
+  ],
+  "baseline": {
+    "actionable_signals": 1345,
+    "trade_metrics": {
+      "closed_trades": 19,
+      "wins": 3,
+      "losses": 16,
+      "winrate": 15.79,
+      "profit_factor": 0.32,
+      "average_pnl": -159.73,
+      "max_drawdown": -3034.85
+    }
+  },
+  "filters": {
+    "Trend": {
+      "pass_count": 72,
+      "fail_count": 0,
+      "blocked_potential_trades": 0,
+      "matched_blocked_trades": 0,
+      "blocked_profitable": 0,
+      "blocked_losing": 0,
+      "blocked_average_pnl": 0.0,
+      "blocked_winrate": 0.0,
+      "blocked_profit_factor": 0.0,
+      "blocked_max_drawdown": 0.0,
+      "winrate_impact": 0.0,
+      "profit_factor_impact": 0.0,
+      "drawdown_impact": 0.0
+    },
+    "Structure": {
+      "pass_count": 48,
+      "fail_count": 24,
+      "blocked_potential_trades": 24,
+      "matched_blocked_trades": 0,
+      "blocked_profitable": 0,
+      "blocked_losing": 0,
+      "blocked_average_pnl": 0.0,
+      "blocked_winrate": 0.0,
+      "blocked_profit_factor": 0.0,
+      "blocked_max_drawdown": 0.0,
+      "winrate_impact": 0.0,
+      "profit_factor_impact": 0.0,
+      "drawdown_impact": 0.0
+    },
+    "Momentum": {
+      "pass_count": 9,
+      "fail_count": 63,
+      "blocked_potential_trades": 63,
+      "matched_blocked_trades": 0,
+      "blocked_profitable": 0,
+      "blocked_losing": 0,
+      "blocked_average_pnl": 0.0,
+      "blocked_winrate": 0.0,
+      "blocked_profit_factor": 0.0,
+      "blocked_max_drawdown": 0.0,
+      "winrate_impact": 0.0,
+      "profit_factor_impact": 0.0,
+      "drawdown_impact": 0.0
+    },
+    "Risk": {
+      "pass_count": 48,
+      "fail_count": 24,
+      "blocked_potential_trades": 24,
+      "matched_blocked_trades": 0,
+      "blocked_profitable": 0,
+      "blocked_losing": 0,
+      "blocked_average_pnl": 0.0,
+      "blocked_winrate": 0.0,
+      "blocked_profit_factor": 0.0,
+      "blocked_max_drawdown": 0.0,
+      "winrate_impact": 0.0,
+      "profit_factor_impact": 0.0,
+      "drawdown_impact": 0.0
+    }
+  },
+  "ranking": {
+    "most_useful": "N/A",
+    "most_harmful": "N/A",
+    "most_strict": "Momentum",
+    "most_useless": "Momentum",
+    "main_blocker": "Momentum"
+  },
+  "recommendations": [
+    "Главный блокирующий фильтр сейчас: Momentum.",
+    "Momentum сейчас самый строгий фильтр по числу FAIL. Его стоит проверять первым в research/backtest.",
+    "Momentum пока выглядит самым бесполезным по текущему окну: много FAIL, но пока нет подтверждённой trade-связки для оценки эффекта.",
+    "Для денежной оценки полезности/вредности пока не хватает сопоставленных blocked-trade исходов."
+  ]
+}

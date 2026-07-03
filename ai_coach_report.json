@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-07-03T13:50:30.889787+00:00",
+  "status": "OK",
+  "agent_cycle": 2228,
+  "market_regime": "Range",
+  "main_blocker": "Momentum",
+  "closed_trades": 19,
+  "recent_trades_window": 19,
+  "recent_winrate": 15.79,
+  "overall_winrate": 15.79,
+  "top_loss_reason": "bad Risk",
+  "top_win_factor": "strong Trend",
+  "best_symbol": "SOL/USDT",
+  "worst_symbol": "BTC/USDT",
+  "data_quality": "OK",
+  "auto_learning": "NOT_ENOUGH_DATA",
+  "best_experiment": "structure_weight_0.20",
+  "actions": [
+    "собрать ещё 11 закрытых сделок",
+    "ждать только A-сетапы и внимательно проверять Risk",
+    "не ослаблять Momentum без новых blocked-trade доказательств",
+    "не открывать Momentum-blocked сделки вручную",
+    "не менять веса сегодня"
+  ],
+  "notes": [
+    "AI Coach is advisory only.",
+    "No trading logic, DecisionEngine, or weights are changed."
+  ]
+}

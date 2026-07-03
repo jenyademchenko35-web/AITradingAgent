@@ -2,7 +2,8 @@ import csv
 from pathlib import Path
 from datetime import datetime
 
-TRADES_FILE = Path("trades.csv")
+BASE_DIR = Path(__file__).resolve().parent
+TRADES_FILE = BASE_DIR / "trades.csv"
 FIELDS = [
     "symbol",
     "direction",

@@ -1,0 +1,5 @@
+timestamp,symbol,candidate_direction,primary_blocker,potential_score,actual_score,lost_score,entry,atr,reason
+2026-07-02T12:34:39.677150+00:00,SOL/USDT,LONG,Risk,26.5,0.0,5.5,,,Momentum blocked near-actionable setup.
+2026-07-02T12:39:43.692480+00:00,SOL/USDT,LONG,Risk,26.5,0.0,5.5,,,Momentum blocked near-actionable setup.
+2026-07-02T12:44:49.160398+00:00,SOL/USDT,LONG,Risk,26.5,0.0,5.5,,,Momentum blocked near-actionable setup.
+2026-07-02T12:47:32.627854+00:00,SOL/USDT,LONG,Risk,26.5,0.0,5.5,,,Momentum blocked near-actionable setup.

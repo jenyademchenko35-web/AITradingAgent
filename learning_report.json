@@ -1,0 +1,137 @@
+{
+  "generated_at": "2026-07-02T23:11:45.553545+00:00",
+  "warnings": [],
+  "signals": {
+    "total_decisions": 6724,
+    "distribution": {
+      "HIGH PRIORITY": {
+        "count": 360,
+        "percent": 5.35
+      },
+      "SETUP": {
+        "count": 990,
+        "percent": 14.72
+      },
+      "WATCH": {
+        "count": 527,
+        "percent": 7.84
+      },
+      "WAIT": {
+        "count": 322,
+        "percent": 4.79
+      },
+      "NO TRADE": {
+        "count": 4525,
+        "percent": 67.3
+      }
+    }
+  },
+  "filters": {
+    "rows": 987,
+    "primary_blocker": "Momentum",
+    "blockers": {
+      "Trend": {
+        "count": 72,
+        "percent": 7.29
+      },
+      "Structure": {
+        "count": 87,
+        "percent": 8.81
+      },
+      "Momentum": {
+        "count": 492,
+        "percent": 49.85
+      },
+      "Risk": {
+        "count": 336,
+        "percent": 34.04
+      }
+    },
+    "average_lost_score": 1.87,
+    "average_potential_score": 21.08
+  },
+  "optimizer": {
+    "optimization_runs": 28,
+    "best_atr": "1.8",
+    "best_rr": "2.0",
+    "max_profit_factor": 2.68,
+    "average_profit_factor": 2.05,
+    "average_winrate": 56.86
+  },
+  "symbols": {
+    "ADA/USDT": {
+      "decisions": 93,
+      "average_score": 0.0,
+      "average_confidence": 59.0,
+      "setup_count": 0,
+      "high_priority_count": 0
+    },
+    "AVAX/USDT": {
+      "decisions": 93,
+      "average_score": 0.0,
+      "average_confidence": 76.58,
+      "setup_count": 0,
+      "high_priority_count": 0
+    },
+    "BNB/USDT": {
+      "decisions": 93,
+      "average_score": 1.4,
+      "average_confidence": 90.0,
+      "setup_count": 5,
+      "high_priority_count": 0
+    },
+    "BTC/USDT": {
+      "decisions": 2054,
+      "average_score": 17.21,
+      "average_confidence": 79.0,
+      "setup_count": 486,
+      "high_priority_count": 292
+    },
+    "DOGE/USDT": {
+      "decisions": 93,
+      "average_score": 0.0,
+      "average_confidence": 88.68,
+      "setup_count": 0,
+      "high_priority_count": 0
+    },
+    "ETH/USDT": {
+      "decisions": 2056,
+      "average_score": 13.34,
+      "average_confidence": 73.18,
+      "setup_count": 484,
+      "high_priority_count": 68
+    },
+    "LINK/USDT": {
+      "decisions": 93,
+      "average_score": 0.0,
+      "average_confidence": 67.1,
+      "setup_count": 0,
+      "high_priority_count": 0
+    },
+    "SOL/USDT": {
+      "decisions": 2056,
+      "average_score": 8.68,
+      "average_confidence": 63.17,
+      "setup_count": 15,
+      "high_priority_count": 0
+    },
+    "XRP/USDT": {
+      "decisions": 93,
+      "average_score": 0.0,
+      "average_confidence": 57.71,
+      "setup_count": 0,
+      "high_priority_count": 0
+    }
+  },
+  "recommendations": [
+    "Momentum filter blocks 49.85% of diagnostics decisions.",
+    "Momentum filter rejects too many candidates at 49.85%.",
+    "Risk filter rejects too many candidates at 34.04%.",
+    "ATR 1.8 remains optimal.",
+    "RR 2.0 remains optimal.",
+    "BTC/USDT produces the highest average score.",
+    "BTC/USDT has the highest setup frequency.",
+    "NO TRADE dominates signal flow at 67.3%.",
+    "Debug/explanations coverage differs by 5278 rows and should be monitored."
+  ]
+}

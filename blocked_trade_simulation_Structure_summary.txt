@@ -1,0 +1,8 @@
+AITradingAgent Blocked Trade Simulation
+Generated at: 2026-07-02T12:51:21.354819+00:00
+Blocker: Structure
+Status: WAITING_FOR_DATA
+Blocked Momentum candidates: 23
+Simulated trades: 0
+Error: OHLCV недоступен ни через ccxt, ни через локальный cache.
+Candidates file: /Users/jeynademcenko/AITradingAgent/blocked_trade_candidates_Structure.csv

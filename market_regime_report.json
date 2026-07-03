@@ -1,0 +1,299 @@
+{
+  "generated_at": "2026-07-02T14:50:00.258118+00:00",
+  "symbols": {
+    "ADA/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "momentum_state": "Overbought",
+      "atr_pct_1h": 1.29,
+      "snapshot": {
+        "tf1h": {
+          "close": 0.1603,
+          "ema20": 0.1568,
+          "ema50": 0.1532,
+          "atr": 0.0021,
+          "rsi": 66.62,
+          "macd": 0.0023,
+          "macd_signal": 0.002
+        },
+        "tf4h": {
+          "ema20": 0.1517,
+          "ema50": 0.1507,
+          "rsi": 72.34,
+          "macd": 0.0031,
+          "macd_signal": 0.0017
+        },
+        "tf1d": {
+          "ema20": 0.1592,
+          "ema50": 0.1861,
+          "rsi": 45.51,
+          "macd": -0.0118,
+          "macd_signal": -0.0146
+        }
+      }
+    },
+    "AVAX/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "momentum_state": "Neutral",
+      "atr_pct_1h": 0.96,
+      "snapshot": {
+        "tf1h": {
+          "close": 6.755,
+          "ema20": 6.7322,
+          "ema50": 6.6782,
+          "atr": 0.0649,
+          "rsi": 54.46,
+          "macd": 0.0339,
+          "macd_signal": 0.0277
+        },
+        "tf4h": {
+          "ema20": 6.643,
+          "ema50": 6.5455,
+          "rsi": 58.92,
+          "macd": 0.0689,
+          "macd_signal": 0.0635
+        },
+        "tf1d": {
+          "ema20": 6.6696,
+          "ema50": 7.3891,
+          "rsi": 48.33,
+          "macd": -0.2421,
+          "macd_signal": -0.3717
+        }
+      }
+    },
+    "BNB/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "momentum_state": "Neutral",
+      "atr_pct_1h": 0.75,
+      "snapshot": {
+        "tf1h": {
+          "close": 561.8,
+          "ema20": 555.4383,
+          "ema50": 552.939,
+          "atr": 4.2159,
+          "rsi": 61.53,
+          "macd": 2.9986,
+          "macd_signal": 1.8009
+        },
+        "tf4h": {
+          "ema20": 553.8187,
+          "ema50": 559.7806,
+          "rsi": 56.02,
+          "macd": -0.6051,
+          "macd_signal": -2.4506
+        },
+        "tf1d": {
+          "ema20": 575.1676,
+          "ema50": 600.775,
+          "rsi": 41.46,
+          "macd": -17.3848,
+          "macd_signal": -16.9924
+        }
+      }
+    },
+    "BTC/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "momentum_state": "Overbought",
+      "atr_pct_1h": 0.84,
+      "snapshot": {
+        "tf1h": {
+          "close": 61661.2,
+          "ema20": 60766.1183,
+          "ema50": 60147.9861,
+          "atr": 517.1086,
+          "rsi": 65.13,
+          "macd": 528.0922,
+          "macd_signal": 430.0778
+        },
+        "tf4h": {
+          "ema20": 60095.5298,
+          "ema50": 60511.2647,
+          "rsi": 61.66,
+          "macd": 200.8668,
+          "macd_signal": -116.6369
+        },
+        "tf1d": {
+          "ema20": 62158.9903,
+          "ema50": 66200.8382,
+          "rsi": 44.2,
+          "macd": -2045.3648,
+          "macd_signal": -2255.4673
+        }
+      }
+    },
+    "DOGE/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "momentum_state": "Neutral",
+      "atr_pct_1h": 1.02,
+      "snapshot": {
+        "tf1h": {
+          "close": 0.0746,
+          "ema20": 0.0734,
+          "ema50": 0.0729,
+          "atr": 0.0008,
+          "rsi": 63.86,
+          "macd": 0.0006,
+          "macd_signal": 0.0004
+        },
+        "tf4h": {
+          "ema20": 0.0731,
+          "ema50": 0.0747,
+          "rsi": 56.53,
+          "macd": -0.0002,
+          "macd_signal": -0.0006
+        },
+        "tf1d": {
+          "ema20": 0.079,
+          "ema50": 0.0869,
+          "rsi": 32.08,
+          "macd": -0.0049,
+          "macd_signal": -0.0049
+        }
+      }
+    },
+    "ETH/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "momentum_state": "Overbought",
+      "atr_pct_1h": 1.13,
+      "snapshot": {
+        "tf1h": {
+          "close": 1700.31,
+          "ema20": 1641.5344,
+          "ema50": 1617.0524,
+          "atr": 19.2339,
+          "rsi": 73.48,
+          "macd": 21.3492,
+          "macd_signal": 14.2026
+        },
+        "tf4h": {
+          "ema20": 1612.7182,
+          "ema50": 1615.0691,
+          "rsi": 67.42,
+          "macd": 15.5095,
+          "macd_signal": 4.3882
+        },
+        "tf1d": {
+          "ema20": 1666.8849,
+          "ema50": 1811.4152,
+          "rsi": 49.89,
+          "macd": -60.2187,
+          "macd_signal": -73.1876
+        }
+      }
+    },
+    "LINK/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "momentum_state": "Overbought",
+      "atr_pct_1h": 1.09,
+      "snapshot": {
+        "tf1h": {
+          "close": 7.809,
+          "ema20": 7.5594,
+          "ema50": 7.4319,
+          "atr": 0.0848,
+          "rsi": 71.4,
+          "macd": 0.1158,
+          "macd_signal": 0.0818
+        },
+        "tf4h": {
+          "ema20": 7.4132,
+          "ema50": 7.4337,
+          "rsi": 68.24,
+          "macd": 0.0672,
+          "macd_signal": 0.0093
+        },
+        "tf1d": {
+          "ema20": 7.6766,
+          "ema50": 8.2104,
+          "rsi": 49.72,
+          "macd": -0.2696,
+          "macd_signal": -0.31
+        }
+      }
+    },
+    "SOL/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Normal Volatility",
+      "momentum_state": "Overbought",
+      "atr_pct_1h": 1.35,
+      "snapshot": {
+        "tf1h": {
+          "close": 80.78,
+          "ema20": 79.217,
+          "ema50": 77.1969,
+          "atr": 1.0906,
+          "rsi": 64.2,
+          "macd": 1.3796,
+          "macd_signal": 1.1819
+        },
+        "tf4h": {
+          "ema20": 76.3373,
+          "ema50": 73.8644,
+          "rsi": 67.75,
+          "macd": 2.1066,
+          "macd_signal": 1.5378
+        },
+        "tf1d": {
+          "ema20": 73.0795,
+          "ema50": 75.5089,
+          "rsi": 63.72,
+          "macd": 0.5645,
+          "macd_signal": -0.8538
+        }
+      }
+    },
+    "XRP/USDT": {
+      "primary_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "momentum_state": "Neutral",
+      "atr_pct_1h": 0.99,
+      "snapshot": {
+        "tf1h": {
+          "close": 1.0916,
+          "ema20": 1.0718,
+          "ema50": 1.0606,
+          "atr": 0.0108,
+          "rsi": 64.87,
+          "macd": 0.0106,
+          "macd_signal": 0.0071
+        },
+        "tf4h": {
+          "ema20": 1.0594,
+          "ema50": 1.067,
+          "rsi": 62.58,
+          "macd": 0.0047,
+          "macd_signal": -0.0006
+        },
+        "tf1d": {
+          "ema20": 1.1041,
+          "ema50": 1.1898,
+          "rsi": 43.72,
+          "macd": -0.0443,
+          "macd_signal": -0.0475
+        }
+      }
+    }
+  },
+  "summary": {
+    "trend_distribution": {
+      "Range": 9
+    },
+    "volatility_distribution": {
+      "Normal Volatility": 5,
+      "Low Volatility": 4
+    },
+    "symbols_analyzed": 9
+  },
+  "errors": {},
+  "notes": [
+    "This report classifies the current regime per symbol using existing EMA/ATR/RSI/MACD values.",
+    "Historical regime analytics in strategy_research.py are snapshot-based because legacy logs do not store EMA/ATR/RSI/MACD per decision row."
+  ]
+}

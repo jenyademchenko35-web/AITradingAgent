@@ -1,0 +1,8 @@
+AITradingAgent Data Quality Check
+Generated at: 2026-07-02T14:49:30.378785+00:00
+
+Status: OK
+Issues found: 0
+Decision counts: {'signals': 5914, 'decision_debug': 5455, 'decision_diagnostics': 177, 'decision_explanations': 177}
+
+Top issues:

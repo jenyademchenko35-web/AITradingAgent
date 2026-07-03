@@ -1,0 +1,27 @@
+AITradingAgent Strategy Experiments
+Generated at: 2026-07-02T14:49:46.581225+00:00
+
+Scenarios tested: 15
+
+Best scenario
+- structure_weight_0.20: signals=1794, SETUP=1036, HIGH PRIORITY=306, NO TRADE=3661, winrate=20.0%, avg_pnl=-115.19, pf=0.46, max_dd=-1727.85
+
+Worst scenario
+- symbol_weights_SOL: signals=15, SETUP=0, HIGH PRIORITY=0, NO TRADE=1798, winrate=0.0%, avg_pnl=0.0, pf=0.0, max_dd=0.0
+
+All scenarios
+- baseline: signals=1753, SETUP=956, HIGH PRIORITY=360, NO TRADE=3702, winrate=18.75%, avg_pnl=-153.62, pf=0.37, max_dd=-2457.85
+- momentum_soft: signals=1589, SETUP=742, HIGH PRIORITY=657, NO TRADE=3866, winrate=14.29%, avg_pnl=-182.68, pf=0.2, max_dd=-2557.55
+- trend_weight_0.35: signals=1255, SETUP=118, HIGH PRIORITY=95, NO TRADE=4200, winrate=18.18%, avg_pnl=-190.46, pf=0.23, max_dd=-2095.09
+- trend_weight_0.40: signals=1753, SETUP=956, HIGH PRIORITY=360, NO TRADE=3702, winrate=18.75%, avg_pnl=-153.62, pf=0.37, max_dd=-2457.85
+- trend_weight_0.45: signals=1972, SETUP=286, HIGH PRIORITY=1585, NO TRADE=3483, winrate=18.75%, avg_pnl=-153.62, pf=0.37, max_dd=-2457.85
+- structure_weight_0.20: signals=1794, SETUP=1036, HIGH PRIORITY=306, NO TRADE=3661, winrate=20.0%, avg_pnl=-115.19, pf=0.46, max_dd=-1727.85
+- structure_weight_0.25: signals=1753, SETUP=956, HIGH PRIORITY=360, NO TRADE=3702, winrate=18.75%, avg_pnl=-153.62, pf=0.37, max_dd=-2457.85
+- structure_weight_0.30: signals=1762, SETUP=366, HIGH PRIORITY=959, NO TRADE=3693, winrate=16.67%, avg_pnl=-168.6, pf=0.32, max_dd=-3034.85
+- risk_weight_0.10: signals=1728, SETUP=849, HIGH PRIORITY=385, NO TRADE=3727, winrate=20.0%, avg_pnl=-115.19, pf=0.46, max_dd=-1727.85
+- risk_weight_0.15: signals=1753, SETUP=956, HIGH PRIORITY=360, NO TRADE=3702, winrate=18.75%, avg_pnl=-153.62, pf=0.37, max_dd=-2457.85
+- risk_weight_0.20: signals=1773, SETUP=793, HIGH PRIORITY=481, NO TRADE=3682, winrate=13.33%, avg_pnl=-219.17, pf=0.16, max_dd=-3287.55
+- short_bias_check: signals=1907, SETUP=334, HIGH PRIORITY=1222, NO TRADE=3548, winrate=18.75%, avg_pnl=-153.62, pf=0.37, max_dd=-2457.85
+- symbol_weights_BTC: signals=995, SETUP=475, HIGH PRIORITY=292, NO TRADE=816, winrate=22.22%, avg_pnl=-264.96, pf=0.37, max_dd=-2384.6
+- symbol_weights_ETH: signals=743, SETUP=481, HIGH PRIORITY=68, NO TRADE=1070, winrate=14.29%, avg_pnl=-10.46, pf=0.25, max_dd=-73.25
+- symbol_weights_SOL: signals=15, SETUP=0, HIGH PRIORITY=0, NO TRADE=1798, winrate=0.0%, avg_pnl=0.0, pf=0.0, max_dd=0.0

@@ -10,6 +10,7 @@ from config import (
     MIN_EDGE,
     ATR_HIGH,
     ATR_LOW,
+    LOG_LEVEL,
     PRICE_ZONE_LOW,
     PRICE_ZONE_HIGH,
     SETUP_COOLDOWN_HOURS,
@@ -22,6 +23,7 @@ WEIGHTS_FILE = os.path.join(BASE_DIR, "strategy_weights.json")
 def load_strategy_weights(symbol=None):
     with open(WEIGHTS_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
+    LOGGER.csv_read(WEIGHTS_FILE)
 
     if symbol and symbol in data:
         return data[symbol]
@@ -35,6 +37,12 @@ from notification_manager import (
     is_duplicate,
     mark_as_sent,
 )
+from explainable_ai import ExplainableAI
+from decision_diagnostics import DecisionDiagnostics
+from logging_manager import ConsoleOutputManager
+from protective_filter_dry_run import ProtectiveFilterDryRun
+from sl_quality_protective_dry_run import SLQualityProtectiveDryRun
+from confidence_sl_quality_d_dry_run import ConfidenceSLQualityDDryRun
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -48,6 +56,11 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
 from ta.volatility import AverageTrueRange
+
+LOGGER = ConsoleOutputManager(LOG_LEVEL)
+PROTECTIVE_FILTER_DRY_RUN = ProtectiveFilterDryRun()
+SL_QUALITY_PROTECTIVE_DRY_RUN = SLQualityProtectiveDryRun()
+CONFIDENCE_SL_QUALITY_D_DRY_RUN = ConfidenceSLQualityDDryRun()
 
 # ==========================
 # # ==========================
@@ -68,12 +81,100 @@ ACTIVE_SETUPS_FILE = os.path.join(BASE_DIR, "active_setups_v3.json")
 SETUP_HISTORY_FILE = os.path.join(BASE_DIR, "setup_history_v3.csv")
 DECISION_DEBUG_FILE = os.path.join(BASE_DIR, "decision_debug.csv")
 
-# ==========================
-# HELPERS
-# ==========================
+SETUP_HISTORY_FIELDS = [
+    "timestamp",
+    "symbol",
+    "direction",
+    "signal",
+    "score",
+    "confidence",
+    "quality",
+    "long_total",
+    "short_total",
+    "summary",
+]
 
-def log(message: str):
-    print(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {message}")
+SIGNAL_FIELDS = [
+    "timestamp",
+    "symbol",
+    "direction",
+    "signal",
+    "score",
+    "confidence",
+    "quality",
+    "trend_long",
+    "trend_short",
+    "structure_long",
+    "structure_short",
+    "momentum_long",
+    "momentum_short",
+    "risk_long",
+    "risk_short",
+    "long_total",
+    "short_total",
+    "summary",
+]
+
+DECISION_DEBUG_FIELDS = [
+    "timestamp",
+    "symbol",
+    "direction",
+    "signal",
+    "score",
+    "confidence",
+    "quality",
+    "trend_long",
+    "trend_short",
+    "structure_long",
+    "structure_short",
+    "momentum_long",
+    "momentum_short",
+    "risk_long",
+    "risk_short",
+    "long_total",
+    "short_total",
+    "diff",
+    "winner",
+    "trend_reason",
+    "structure_reason",
+    "momentum_reason",
+    "risk_reason",
+    "summary",
+]
+
+def ensure_csv_schema(file_path: str, fieldnames: list[str]) -> None:
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        return
+
+    with open(file_path, "r", newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+
+    if not rows or rows[0] == fieldnames:
+        return
+
+    old_header = rows[0]
+    if "quality" not in old_header and "quality" in fieldnames:
+        quality_index = fieldnames.index("quality")
+        migrated_rows = [fieldnames]
+
+        for row in rows[1:]:
+            if not row:
+                migrated_rows.append(row)
+                continue
+            if len(row) == len(fieldnames):
+                migrated_rows.append(row)
+                continue
+            if len(row) == len(fieldnames) - 1:
+                migrated = row[:quality_index] + [""] + row[quality_index:]
+                migrated_rows.append(migrated)
+                continue
+            migrated_rows.append(row)
+
+        with open(file_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerows(migrated_rows)
+        LOGGER.schema_migrated(file_path)
+        LOGGER.csv_write(file_path)
 
 def fetch_with_retry(symbol, timeframe):
     cache_key = (symbol, timeframe)
@@ -95,16 +196,13 @@ def fetch_with_retry(symbol, timeframe):
         except Exception as e:
             last_exc = e
 
-            log(
-                f"API error {symbol} {timeframe} "
-                f"({i + 1}/{len(delays)}): {e}"
-            )
+            LOGGER.api_retry(symbol, timeframe, i + 1, len(delays), e)
 
             recreate_exchange()
             time.sleep(delay)
 
     if cache_key in OHLCV_CACHE:
-        log(f"Using cached OHLCV for {symbol} {timeframe}")
+        LOGGER.cache_used(symbol, timeframe)
         return OHLCV_CACHE[cache_key]
 
     raise last_exc
@@ -113,7 +211,9 @@ def load_active_setups():
     if os.path.exists(ACTIVE_SETUPS_FILE):
         try:
             with open(ACTIVE_SETUPS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+            LOGGER.csv_read(ACTIVE_SETUPS_FILE)
+            return data
         except Exception:
             return {}
     return {}
@@ -121,6 +221,7 @@ def load_active_setups():
 def save_active_setups(data):
     with open(ACTIVE_SETUPS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    LOGGER.csv_write(ACTIVE_SETUPS_FILE)
 
 def is_setup_active(setup_id):
     setups = load_active_setups()
@@ -153,7 +254,9 @@ def load_stats():
         }
     try:
         with open(STATS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+        LOGGER.csv_read(STATS_FILE)
+        return data
     except Exception:
         return {
             "runs": 0,
@@ -166,6 +269,7 @@ def load_stats():
 def save_stats(stats):
     with open(STATS_FILE, "w", encoding="utf-8") as f:
         json.dump(stats, f, indent=2)
+    LOGGER.csv_write(STATS_FILE)
 
 def update_stats(decisions, api_errors):
     stats = load_stats()
@@ -180,23 +284,13 @@ def save_setup_history(symbol, decision):
     # Only save for SETUP or HIGH PRIORITY
     if decision.signal not in ("SETUP", "HIGH PRIORITY"):
         return
+    ensure_csv_schema(SETUP_HISTORY_FILE, SETUP_HISTORY_FIELDS)
     file_exists = os.path.exists(SETUP_HISTORY_FILE)
     needs_header = (not file_exists) or os.path.getsize(SETUP_HISTORY_FILE) == 0
     with open(SETUP_HISTORY_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if needs_header:
-            writer.writerow([
-                "timestamp",
-                "symbol",
-                "direction",
-                "signal",
-                "score",
-                "confidence",
-                "quality",
-                "long_total",
-                "short_total",
-                "summary",
-            ])
+            writer.writerow(SETUP_HISTORY_FIELDS)
         timestamp = datetime.now(timezone.utc).isoformat()
         writer.writerow([
             timestamp,
@@ -210,6 +304,7 @@ def save_setup_history(symbol, decision):
             decision.short_total,
             decision.summary,
         ])
+    LOGGER.csv_write(SETUP_HISTORY_FILE)
 
 def save_signal(
     symbol: str,
@@ -219,31 +314,13 @@ def save_signal(
     momentum: "EngineResult",
     risk: "EngineResult",
 ):
+    ensure_csv_schema(SIGNALS_FILE, SIGNAL_FIELDS)
     file_exists = os.path.exists(SIGNALS_FILE)
     needs_header = (not file_exists) or os.path.getsize(SIGNALS_FILE) == 0
     with open(SIGNALS_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if needs_header:
-            writer.writerow([
-                "timestamp",
-                "symbol",
-                "direction",
-                "signal",
-                "score",
-                "confidence",
-                "quality",
-                "trend_long",
-                "trend_short",
-                "structure_long",
-                "structure_short",
-                "momentum_long",
-                "momentum_short",
-                "risk_long",
-                "risk_short",
-                "long_total",
-                "short_total",
-                "summary",
-            ])
+            writer.writerow(SIGNAL_FIELDS)
         timestamp = datetime.now(timezone.utc).isoformat()
         writer.writerow([
             timestamp,
@@ -265,6 +342,7 @@ def save_signal(
             decision.short_total,
             decision.summary,
         ])
+    LOGGER.csv_write(SIGNALS_FILE)
 
 def save_decision_debug(
     symbol: str,
@@ -274,6 +352,7 @@ def save_decision_debug(
     momentum: "EngineResult",
     risk: "EngineResult",
 ):
+    ensure_csv_schema(DECISION_DEBUG_FILE, DECISION_DEBUG_FIELDS)
     file_exists = os.path.exists(DECISION_DEBUG_FILE)
     needs_header = (not file_exists) or os.path.getsize(DECISION_DEBUG_FILE) == 0
 
@@ -281,32 +360,7 @@ def save_decision_debug(
         writer = csv.writer(f)
 
         if needs_header:
-            writer.writerow([
-                "timestamp",
-                "symbol",
-                "direction",
-                "signal",
-                "score",
-                "confidence",
-                "quality",
-                "trend_long",
-                "trend_short",
-                "structure_long",
-                "structure_short",
-                "momentum_long",
-                "momentum_short",
-                "risk_long",
-                "risk_short",
-                "long_total",
-                "short_total",
-                "diff",
-                "winner",
-                "trend_reason",
-                "structure_reason",
-                "momentum_reason",
-                "risk_reason",
-                "summary",
-            ])
+            writer.writerow(DECISION_DEBUG_FIELDS)
 
         writer.writerow([
             datetime.now(timezone.utc).isoformat(),
@@ -334,6 +388,7 @@ def save_decision_debug(
             risk.reason.replace("\n", " | "),
             decision.summary,
         ])
+    LOGGER.csv_write(DECISION_DEBUG_FILE)
 
 # ==========================
 # SETUP TRACKING CONSTANTS
@@ -342,6 +397,12 @@ SYMBOLS = [
     "BTC/USDT",
     "ETH/USDT",
     "SOL/USDT",
+    "BNB/USDT",
+    "XRP/USDT",
+    "LINK/USDT",
+    "ADA/USDT",
+    "AVAX/USDT",
+    "DOGE/USDT",
 ]
 
 TIMEFRAMES = [
@@ -387,6 +448,8 @@ class TFData:
     ema20: float
     ema50: float
     atr: float
+    high20: float
+    low20: float
     macd: float
     macd_signal: float
     price_position: float
@@ -440,6 +503,8 @@ def build_tf(df: pd.DataFrame) -> TFData:
         ema20=float(last.ema20),
         ema50=float(last.ema50),
         atr=float(last.atr),
+        high20=float(last.high20),
+        low20=float(last.low20),
         macd=float(last.macd),
         macd_signal=float(last.macd_signal),
         price_position=float(last.price_position),
@@ -902,23 +967,28 @@ async def send_notification(
 # EXECUTION
 # ==========================
 
-def print_engine(title: str, result: EngineResult):
-    print("=" * 60)
-    print(title)
-    print("=" * 60)
-    print(f"LONG  : {result.long}")
-    print(f"SHORT : {result.short}")
-    print(result.reason)
-    print()
-
 def analyze_market(market: MarketSnapshot, symbol: str):
+    timings = {}
+
+    t0 = time.time()
     trend = TrendEngine(market).calculate()
+    timings["trend"] = time.time() - t0
+
+    t0 = time.time()
     structure = StructureEngine(market).calculate()
+    timings["structure"] = time.time() - t0
+
+    t0 = time.time()
     momentum = MomentumEngine(market).calculate()
+    timings["momentum"] = time.time() - t0
+
+    t0 = time.time()
     risk = RiskEngine(market).calculate()
+    timings["risk"] = time.time() - t0
 
     weights = load_strategy_weights(symbol)
 
+    t0 = time.time()
     decision = DecisionEngine.calculate(
         trend,
         structure,
@@ -926,8 +996,10 @@ def analyze_market(market: MarketSnapshot, symbol: str):
         risk,
         weights,
     )
+    timings["decision"] = time.time() - t0
+    LOGGER.engine_timings(symbol, timings)
 
-    return decision, trend, structure, momentum, risk
+    return decision, trend, structure, momentum, risk, weights
 
 def analyze_symbol(symbol: str):
     market = load_market(symbol)
@@ -942,10 +1014,10 @@ def analyze_symbol(symbol: str):
         and market.tf1d.ema20 < market.tf1d.ema50
     )
 
-    decision, trend, structure, momentum, risk = analyze_market(
-    market=market,
-    symbol=symbol,
-)
+    decision, trend, structure, momentum, risk, weights = analyze_market(
+        market=market,
+        symbol=symbol,
+    )
     save_signal(symbol, decision, trend, structure, momentum, risk)
 
     save_decision_debug(
@@ -955,6 +1027,44 @@ def analyze_symbol(symbol: str):
         structure,
         momentum,
         risk,
+    )
+
+    xai = ExplainableAI(symbol=symbol)
+    xai_report = xai.explain(
+        decision,
+        trend,
+        structure,
+        momentum,
+        risk,
+    )
+
+    diagnostics = DecisionDiagnostics(symbol=symbol, weights=weights)
+    diagnostics_report = diagnostics.analyze(
+        decision,
+        trend,
+        structure,
+        momentum,
+        risk,
+    )
+    PROTECTIVE_FILTER_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
+        market=market,
+        diagnostics_report=diagnostics_report,
+    )
+    SL_QUALITY_PROTECTIVE_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
+        market=market,
+    )
+    CONFIDENCE_SL_QUALITY_D_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
+        market=market,
+    )
+    LOGGER.analysis_reports(
+        xai.format_report(xai_report),
+        diagnostics.format_report(diagnostics_report),
     )
 
     # Setup tracking logic
@@ -967,8 +1077,7 @@ def analyze_symbol(symbol: str):
         ):
         if is_setup_active(setup_id):
             decision.summary += " | COOLDOWN"
-            log(f"[{symbol}] Cooldown active for {setup_id}")
-            print("   ", decision.explanation)
+            LOGGER.cooldown_active(symbol, setup_id)
         else:
             mark_setup_active(setup_id)
             entry = market.tf1h.close
@@ -986,15 +1095,15 @@ def analyze_symbol(symbol: str):
             )
 
             if existing_trade:
-                log(f"[{symbol}] Open trade already exists, skipping.")
+                LOGGER.open_trade_exists(symbol)
                 return decision, market
 
             if decision.direction == "LONG" and not higher_tf_bull:
-                log(f"[{symbol}] LONG rejected by higher timeframe trend filter.")
+                LOGGER.higher_tf_rejected(symbol, "LONG")
                 return decision, market
 
             if decision.direction == "SHORT" and not higher_tf_bear:
-                log(f"[{symbol}] SHORT rejected by higher timeframe trend filter.")
+                LOGGER.higher_tf_rejected(symbol, "SHORT")
                 return decision, market
 
             open_trade(
@@ -1010,7 +1119,7 @@ def analyze_symbol(symbol: str):
                 decision.quality in ("A", "B")
                 and decision.confidence >= 75
             ):
-                print(f"📨 Sending notification for {symbol}")
+                LOGGER.notification_sending(symbol)
                 asyncio.run(
                     send_notification(
                         symbol,
@@ -1018,7 +1127,7 @@ def analyze_symbol(symbol: str):
                         market,
                     )
                 )
-                print("✅ Notification sent")
+                LOGGER.notification_sent()
 
     # No logging of compact signal or summary here
 
@@ -1031,7 +1140,7 @@ def update_open_trades(current_prices):
 
         symbol = trade["symbol"]
 
-        print(f"Checking trade: {symbol}")
+        LOGGER.checking_trade(symbol)
 
         if symbol not in current_prices:
             continue
@@ -1043,30 +1152,30 @@ def update_open_trades(current_prices):
         sl = float(trade["stop_loss"])
         tp = float(trade["take_profit"])
 
-        print(f"🔍 {symbol} | {direction} | Price={price:.2f} | SL={sl:.2f} | TP={tp:.2f}")
+        LOGGER.trade_snapshot(symbol, direction, price, sl, tp)
 
         if direction == "LONG":
 
             if price <= sl:
                 close_trade(symbol, "LOSS")
-                print(f"❌ {symbol} -> LOSS")
+                LOGGER.trade_result(symbol, "LOSS")
 
             elif price >= tp:
                 pnl = abs(price - float(trade["entry"]))
                 close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
-                print(f"✅ {symbol} -> WIN")
+                LOGGER.trade_result(symbol, "WIN")
 
         else:
 
             if price >= sl:
                 pnl = -abs(price - float(trade["entry"]))
                 close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
-                print(f"❌ {symbol} -> LOSS")
+                LOGGER.trade_result(symbol, "LOSS")
 
             elif price <= tp:
                 pnl = abs(float(trade["entry"]) - price)
                 close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
-                print(f"✅ {symbol} -> WIN")
+                LOGGER.trade_result(symbol, "WIN")
 # Main analysis pipeline for one execution cycle
 def run_once():
     decisions = []
@@ -1079,29 +1188,20 @@ def run_once():
             current_prices[symbol] = market.tf1h.close
             t1 = time.time()
             elapsed = t1 - t0
-            # Log the compact line with summary and duration
-            log(f"[{symbol}] {decision.direction} | {decision.signal} | Quality={decision.quality} | Score={decision.score} | Confidence={decision.confidence}% | {decision.summary} ({elapsed:.2f}s)")
-            print("   ", decision.explanation)
+            LOGGER.symbol_summary(symbol, decision, elapsed)
             decisions.append((symbol, decision))
         except Exception as e:
-            log(f"[ERROR] {symbol}: {e}")
+            LOGGER.symbol_error(symbol, e)
             api_errors += 1
     update_stats(decisions, api_errors)
     if not decisions:
-        print("No symbols analyzed this cycle.")
+        LOGGER.no_symbols_analyzed()
         return
     # Sort descending by score
     decisions.sort(key=lambda x: x[1].score, reverse=True)
-    print("\nBEST SETUP:")
-    print("=" * 60)
     symbol, decision = decisions[0]
-    print(f"{symbol}: {decision.direction} | {decision.signal} | Quality={decision.quality} | Score={decision.score} | Confidence={decision.confidence}%")
-    print("=" * 60)
-    print("Ranked summary by score:")
-    print("=" * 60)
-    for symbol, decision in decisions:
-        print(f"{symbol}: {decision.direction} | {decision.signal} | Quality={decision.quality} | Score={decision.score} | Confidence={decision.confidence}%")
-    print("=" * 60)
+    LOGGER.best_setup(symbol, decision)
+    LOGGER.ranked_summary(decisions)
 
     # Count signals by type
     counts = {
@@ -1116,12 +1216,7 @@ def run_once():
             counts[dec.signal] += 1
         else:
             counts[dec.signal] = 1
-    print("Signal counts this cycle:")
-    print(f"HIGH PRIORITY: {counts.get('HIGH PRIORITY',0)}")
-    print(f"SETUP       : {counts.get('SETUP',0)}")
-    print(f"WATCH       : {counts.get('WATCH',0)}")
-    print(f"WAIT        : {counts.get('WAIT',0)}")
-    print(f"NO TRADE    : {counts.get('NO TRADE',0)}")
+    LOGGER.signal_counts(counts)
 
     update_open_trades(current_prices)
 
@@ -1131,25 +1226,23 @@ def run_loop(interval_seconds: int):
     try:
         while True:
             cycle_start = time.time()
-            print("=" * 60)
-            print(f"Cycle started at {datetime.now(timezone.utc).isoformat()}")
-            print("=" * 60)
+            LOGGER.cycle_started(datetime.now(timezone.utc).isoformat())
             try:
                 run_once()
             except Exception as e:
-                print(f"[LOOP ERROR] {e}")
+                LOGGER.loop_error(e)
             cycle_end = time.time()
             duration = cycle_end - cycle_start
-            print(f"Cycle duration: {duration:.2f} seconds")
-            print(f"Sleeping {interval_seconds} seconds...")
+            LOGGER.cycle_finished(duration)
+            LOGGER.sleeping(interval_seconds)
             try:
                 for _ in range(interval_seconds):
                     time.sleep(1)
             except KeyboardInterrupt:
-                print("\nStopping agent...")
+                LOGGER.stopping()
                 break
     except KeyboardInterrupt:
-        print("\nStopping agent...")
+        LOGGER.stopping()
 
 
 if __name__ == "__main__":
@@ -1159,11 +1252,9 @@ if __name__ == "__main__":
     parser.add_argument("--interval", type=int, default=RUN_INTERVAL, help="Interval between runs in seconds when looping")
 
     args = parser.parse_args()
-    print("=" * 60)
-    print(f"Multi-Timeframe Agent v3 started at {datetime.now(timezone.utc).isoformat()}")
-    print("=" * 60)
+    LOGGER.startup(datetime.now(timezone.utc).isoformat())
     if args.loop:
         run_loop(args.interval)
     else:
         run_once()
-        print("Finished.")
+        LOGGER.finished()

@@ -1,0 +1,524 @@
+{
+  "generated_at": "2026-07-02T14:49:46.581225+00:00",
+  "source_files": {
+    "decision_debug": "/Users/jeynademcenko/AITradingAgent/decision_debug.csv",
+    "signals": "/Users/jeynademcenko/AITradingAgent/signals_v3.csv",
+    "trades": "/Users/jeynademcenko/AITradingAgent/trades.csv",
+    "weights": "/Users/jeynademcenko/AITradingAgent/strategy_weights.json"
+  },
+  "notes": [
+    "Scenarios are isolated and do not modify DecisionEngine, multi_timeframe_agent_v3.py, or strategy_weights.json.",
+    "Trade metrics are estimated from recorded closed trades matched to historical signals by symbol, direction, and time."
+  ],
+  "scenario_count": 15,
+  "results": [
+    {
+      "scenario": "baseline",
+      "mode": "baseline",
+      "symbol_scope": "ALL",
+      "weights_override": {},
+      "decision_count": 5455,
+      "signals_count": 1753,
+      "setup_count": 956,
+      "high_priority_count": 360,
+      "no_trade_count": 3702,
+      "signal_breakdown": {
+        "NO TRADE": 3702,
+        "WAIT": 35,
+        "WATCH": 402,
+        "SETUP": 956,
+        "HIGH PRIORITY": 360
+      },
+      "trade_metrics": {
+        "closed_trades": 16,
+        "wins": 3,
+        "losses": 13,
+        "winrate": 18.75,
+        "average_pnl": -153.62,
+        "profit_factor": 0.37,
+        "max_drawdown": -2457.85,
+        "long_trades": 0,
+        "short_trades": 16
+      }
+    },
+    {
+      "scenario": "momentum_soft",
+      "mode": "momentum_soft",
+      "symbol_scope": "ALL",
+      "weights_override": {},
+      "decision_count": 5455,
+      "signals_count": 1589,
+      "setup_count": 742,
+      "high_priority_count": 657,
+      "no_trade_count": 3866,
+      "signal_breakdown": {
+        "NO TRADE": 3866,
+        "WAIT": 14,
+        "WATCH": 176,
+        "SETUP": 742,
+        "HIGH PRIORITY": 657
+      },
+      "trade_metrics": {
+        "closed_trades": 14,
+        "wins": 2,
+        "losses": 12,
+        "winrate": 14.29,
+        "average_pnl": -182.68,
+        "profit_factor": 0.2,
+        "max_drawdown": -2557.55,
+        "long_trades": 0,
+        "short_trades": 14
+      }
+    },
+    {
+      "scenario": "trend_weight_0.35",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "trend": 0.35
+      },
+      "decision_count": 5455,
+      "signals_count": 1255,
+      "setup_count": 118,
+      "high_priority_count": 95,
+      "no_trade_count": 4200,
+      "signal_breakdown": {
+        "NO TRADE": 4200,
+        "WAIT": 364,
+        "WATCH": 678,
+        "HIGH PRIORITY": 95,
+        "SETUP": 118
+      },
+      "trade_metrics": {
+        "closed_trades": 11,
+        "wins": 2,
+        "losses": 9,
+        "winrate": 18.18,
+        "average_pnl": -190.46,
+        "profit_factor": 0.23,
+        "max_drawdown": -2095.09,
+        "long_trades": 0,
+        "short_trades": 11
+      }
+    },
+    {
+      "scenario": "trend_weight_0.40",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "trend": 0.4
+      },
+      "decision_count": 5455,
+      "signals_count": 1753,
+      "setup_count": 956,
+      "high_priority_count": 360,
+      "no_trade_count": 3702,
+      "signal_breakdown": {
+        "NO TRADE": 3702,
+        "WAIT": 35,
+        "WATCH": 402,
+        "SETUP": 956,
+        "HIGH PRIORITY": 360
+      },
+      "trade_metrics": {
+        "closed_trades": 16,
+        "wins": 3,
+        "losses": 13,
+        "winrate": 18.75,
+        "average_pnl": -153.62,
+        "profit_factor": 0.37,
+        "max_drawdown": -2457.85,
+        "long_trades": 0,
+        "short_trades": 16
+      }
+    },
+    {
+      "scenario": "trend_weight_0.45",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "trend": 0.45
+      },
+      "decision_count": 5455,
+      "signals_count": 1972,
+      "setup_count": 286,
+      "high_priority_count": 1585,
+      "no_trade_count": 3483,
+      "signal_breakdown": {
+        "NO TRADE": 3483,
+        "WATCH": 101,
+        "SETUP": 286,
+        "HIGH PRIORITY": 1585
+      },
+      "trade_metrics": {
+        "closed_trades": 16,
+        "wins": 3,
+        "losses": 13,
+        "winrate": 18.75,
+        "average_pnl": -153.62,
+        "profit_factor": 0.37,
+        "max_drawdown": -2457.85,
+        "long_trades": 0,
+        "short_trades": 16
+      }
+    },
+    {
+      "scenario": "structure_weight_0.20",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "structure": 0.2
+      },
+      "decision_count": 5455,
+      "signals_count": 1794,
+      "setup_count": 1036,
+      "high_priority_count": 306,
+      "no_trade_count": 3661,
+      "signal_breakdown": {
+        "NO TRADE": 3661,
+        "WAIT": 81,
+        "WATCH": 371,
+        "SETUP": 1036,
+        "HIGH PRIORITY": 306
+      },
+      "trade_metrics": {
+        "closed_trades": 15,
+        "wins": 3,
+        "losses": 12,
+        "winrate": 20.0,
+        "average_pnl": -115.19,
+        "profit_factor": 0.46,
+        "max_drawdown": -1727.85,
+        "long_trades": 0,
+        "short_trades": 15
+      }
+    },
+    {
+      "scenario": "structure_weight_0.25",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "structure": 0.25
+      },
+      "decision_count": 5455,
+      "signals_count": 1753,
+      "setup_count": 956,
+      "high_priority_count": 360,
+      "no_trade_count": 3702,
+      "signal_breakdown": {
+        "NO TRADE": 3702,
+        "WAIT": 35,
+        "WATCH": 402,
+        "SETUP": 956,
+        "HIGH PRIORITY": 360
+      },
+      "trade_metrics": {
+        "closed_trades": 16,
+        "wins": 3,
+        "losses": 13,
+        "winrate": 18.75,
+        "average_pnl": -153.62,
+        "profit_factor": 0.37,
+        "max_drawdown": -2457.85,
+        "long_trades": 0,
+        "short_trades": 16
+      }
+    },
+    {
+      "scenario": "structure_weight_0.30",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "structure": 0.3
+      },
+      "decision_count": 5455,
+      "signals_count": 1762,
+      "setup_count": 366,
+      "high_priority_count": 959,
+      "no_trade_count": 3693,
+      "signal_breakdown": {
+        "NO TRADE": 3693,
+        "WAIT": 35,
+        "WATCH": 402,
+        "SETUP": 366,
+        "HIGH PRIORITY": 959
+      },
+      "trade_metrics": {
+        "closed_trades": 18,
+        "wins": 3,
+        "losses": 15,
+        "winrate": 16.67,
+        "average_pnl": -168.6,
+        "profit_factor": 0.32,
+        "max_drawdown": -3034.85,
+        "long_trades": 0,
+        "short_trades": 18
+      }
+    },
+    {
+      "scenario": "risk_weight_0.10",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "risk": 0.1
+      },
+      "decision_count": 5455,
+      "signals_count": 1728,
+      "setup_count": 849,
+      "high_priority_count": 385,
+      "no_trade_count": 3727,
+      "signal_breakdown": {
+        "NO TRADE": 3727,
+        "WAIT": 109,
+        "WATCH": 385,
+        "SETUP": 849,
+        "HIGH PRIORITY": 385
+      },
+      "trade_metrics": {
+        "closed_trades": 15,
+        "wins": 3,
+        "losses": 12,
+        "winrate": 20.0,
+        "average_pnl": -115.19,
+        "profit_factor": 0.46,
+        "max_drawdown": -1727.85,
+        "long_trades": 0,
+        "short_trades": 15
+      }
+    },
+    {
+      "scenario": "risk_weight_0.15",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "risk": 0.15
+      },
+      "decision_count": 5455,
+      "signals_count": 1753,
+      "setup_count": 956,
+      "high_priority_count": 360,
+      "no_trade_count": 3702,
+      "signal_breakdown": {
+        "NO TRADE": 3702,
+        "WAIT": 35,
+        "WATCH": 402,
+        "SETUP": 956,
+        "HIGH PRIORITY": 360
+      },
+      "trade_metrics": {
+        "closed_trades": 16,
+        "wins": 3,
+        "losses": 13,
+        "winrate": 18.75,
+        "average_pnl": -153.62,
+        "profit_factor": 0.37,
+        "max_drawdown": -2457.85,
+        "long_trades": 0,
+        "short_trades": 16
+      }
+    },
+    {
+      "scenario": "risk_weight_0.20",
+      "mode": "weight_override",
+      "symbol_scope": "ALL",
+      "weights_override": {
+        "risk": 0.2
+      },
+      "decision_count": 5455,
+      "signals_count": 1773,
+      "setup_count": 793,
+      "high_priority_count": 481,
+      "no_trade_count": 3682,
+      "signal_breakdown": {
+        "NO TRADE": 3682,
+        "WAIT": 79,
+        "WATCH": 420,
+        "SETUP": 793,
+        "HIGH PRIORITY": 481
+      },
+      "trade_metrics": {
+        "closed_trades": 15,
+        "wins": 2,
+        "losses": 13,
+        "winrate": 13.33,
+        "average_pnl": -219.17,
+        "profit_factor": 0.16,
+        "max_drawdown": -3287.55,
+        "long_trades": 0,
+        "short_trades": 15
+      }
+    },
+    {
+      "scenario": "short_bias_check",
+      "mode": "short_bias_check",
+      "symbol_scope": "ALL",
+      "weights_override": {},
+      "decision_count": 5455,
+      "signals_count": 1907,
+      "setup_count": 334,
+      "high_priority_count": 1222,
+      "no_trade_count": 3548,
+      "signal_breakdown": {
+        "NO TRADE": 3548,
+        "WATCH": 316,
+        "WAIT": 35,
+        "SETUP": 334,
+        "HIGH PRIORITY": 1222
+      },
+      "trade_metrics": {
+        "closed_trades": 16,
+        "wins": 3,
+        "losses": 13,
+        "winrate": 18.75,
+        "average_pnl": -153.62,
+        "profit_factor": 0.37,
+        "max_drawdown": -2457.85,
+        "long_trades": 0,
+        "short_trades": 16
+      }
+    },
+    {
+      "scenario": "symbol_weights_BTC",
+      "mode": "symbol_filter",
+      "symbol_scope": "BTC/USDT",
+      "weights_override": {},
+      "decision_count": 1811,
+      "signals_count": 995,
+      "setup_count": 475,
+      "high_priority_count": 292,
+      "no_trade_count": 816,
+      "signal_breakdown": {
+        "NO TRADE": 816,
+        "WAIT": 6,
+        "WATCH": 222,
+        "SETUP": 475,
+        "HIGH PRIORITY": 292
+      },
+      "trade_metrics": {
+        "closed_trades": 9,
+        "wins": 2,
+        "losses": 7,
+        "winrate": 22.22,
+        "average_pnl": -264.96,
+        "profit_factor": 0.37,
+        "max_drawdown": -2384.6,
+        "long_trades": 0,
+        "short_trades": 9
+      }
+    },
+    {
+      "scenario": "symbol_weights_ETH",
+      "mode": "symbol_filter",
+      "symbol_scope": "ETH/USDT",
+      "weights_override": {},
+      "decision_count": 1813,
+      "signals_count": 743,
+      "setup_count": 481,
+      "high_priority_count": 68,
+      "no_trade_count": 1070,
+      "signal_breakdown": {
+        "NO TRADE": 1070,
+        "WAIT": 15,
+        "SETUP": 481,
+        "WATCH": 179,
+        "HIGH PRIORITY": 68
+      },
+      "trade_metrics": {
+        "closed_trades": 7,
+        "wins": 1,
+        "losses": 6,
+        "winrate": 14.29,
+        "average_pnl": -10.46,
+        "profit_factor": 0.25,
+        "max_drawdown": -73.25,
+        "long_trades": 0,
+        "short_trades": 7
+      }
+    },
+    {
+      "scenario": "symbol_weights_SOL",
+      "mode": "symbol_filter",
+      "symbol_scope": "SOL/USDT",
+      "weights_override": {},
+      "decision_count": 1813,
+      "signals_count": 15,
+      "setup_count": 0,
+      "high_priority_count": 0,
+      "no_trade_count": 1798,
+      "signal_breakdown": {
+        "WAIT": 14,
+        "NO TRADE": 1798,
+        "WATCH": 1
+      },
+      "trade_metrics": {
+        "closed_trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "winrate": 0.0,
+        "average_pnl": 0.0,
+        "profit_factor": 0.0,
+        "max_drawdown": 0.0,
+        "long_trades": 0,
+        "short_trades": 0
+      }
+    }
+  ],
+  "best_scenario": {
+    "scenario": "structure_weight_0.20",
+    "mode": "weight_override",
+    "symbol_scope": "ALL",
+    "weights_override": {
+      "structure": 0.2
+    },
+    "decision_count": 5455,
+    "signals_count": 1794,
+    "setup_count": 1036,
+    "high_priority_count": 306,
+    "no_trade_count": 3661,
+    "signal_breakdown": {
+      "NO TRADE": 3661,
+      "WAIT": 81,
+      "WATCH": 371,
+      "SETUP": 1036,
+      "HIGH PRIORITY": 306
+    },
+    "trade_metrics": {
+      "closed_trades": 15,
+      "wins": 3,
+      "losses": 12,
+      "winrate": 20.0,
+      "average_pnl": -115.19,
+      "profit_factor": 0.46,
+      "max_drawdown": -1727.85,
+      "long_trades": 0,
+      "short_trades": 15
+    }
+  },
+  "worst_scenario": {
+    "scenario": "symbol_weights_SOL",
+    "mode": "symbol_filter",
+    "symbol_scope": "SOL/USDT",
+    "weights_override": {},
+    "decision_count": 1813,
+    "signals_count": 15,
+    "setup_count": 0,
+    "high_priority_count": 0,
+    "no_trade_count": 1798,
+    "signal_breakdown": {
+      "WAIT": 14,
+      "NO TRADE": 1798,
+      "WATCH": 1
+    },
+    "trade_metrics": {
+      "closed_trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "winrate": 0.0,
+      "average_pnl": 0.0,
+      "profit_factor": 0.0,
+      "max_drawdown": 0.0,
+      "long_trades": 0,
+      "short_trades": 0
+    }
+  }
+}

@@ -1,0 +1,14 @@
+AITradingAgent Filter Effectiveness
+Generated at: 2026-07-02T12:38:35.455209+00:00
+
+Most useful: N/A
+Most harmful: N/A
+Most strict: Momentum
+Most useless: Momentum
+Main blocker: Momentum
+
+Recommendations:
+- Главный блокирующий фильтр сейчас: Momentum.
+- Momentum сейчас самый строгий фильтр по числу FAIL. Его стоит проверять первым в research/backtest.
+- Momentum пока выглядит самым бесполезным по текущему окну: много FAIL, но пока нет подтверждённой trade-связки для оценки эффекта.
+- Для денежной оценки полезности/вредности пока не хватает сопоставленных blocked-trade исходов.

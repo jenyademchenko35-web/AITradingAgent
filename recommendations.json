@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-07-02T23:11:45.577348+00:00",
+  "status": "READY",
+  "recommendations": [
+    {
+      "parameter": "ATR_MULT",
+      "current": 1.5,
+      "recommended": 1.8,
+      "confidence": 0.95,
+      "reason": "Highest ProfitFactor over optimization history."
+    }
+  ],
+  "message": "Recommendations generated from sufficient learning statistics.",
+  "warnings": [],
+  "evidence": {
+    "total_decisions": 6724,
+    "diagnostics_rows": 987,
+    "optimization_runs": 28
+  }
+}

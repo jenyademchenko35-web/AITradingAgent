@@ -1,0 +1,44 @@
+Winning vs Losing Trade Comparator
+==================================
+Generated: 2026-07-03T18:54:49.056113+00:00
+Status: OK
+
+Overall:
+- Trades: 20 | WIN: 3 | LOSS: 17
+- WinRate: 15.0%
+- Profit Factor: 0.3228
+- Net Profit: -3051.88974277
+
+WIN averages:
+- Score: 26.3333 | Confidence: 88.1 | Weighted: 26.3333
+- RR: 2.0 | ATR: 198.94119048 | Stop: 229.16376864
+
+LOSS averages:
+- Score: 24.8824 | Confidence: 82.1765 | Weighted: 24.8824
+- RR: 2.0 | ATR: 185.87239496 | Stop: 192.18805987
+
+Engine strongest loss association:
+- None
+
+Symbols:
+- Best: SOL/USDT
+- Worst: BTC/USDT
+
+Top WIN factors:
+- confidence_bin=80-90 | edge=60.78 pp
+- symbol=BTC/USDT | edge=19.61 pp
+- Risk=FAIL | edge=19.61 pp
+- quality=A | edge=15.69 pp
+- signal=HIGH PRIORITY | edge=15.69 pp
+
+Top LOSS factors:
+- loss_reason=Momentum disagreement | edge=88.24 pp
+- loss_reason=bad SL zone | edge=82.35 pp
+- loss_reason=overestimated confidence | edge=58.82 pp
+- loss_reason=bad entry | edge=52.94 pp
+- high_confidence_loss | edge=52.94 pp
+
+Improvement candidates:
+- Sample is small: 20 closed trades. Treat all findings as candidates, not rules.
+- Confidence 90-100 has weak WinRate (10.0%). Confidence may be overestimated.
+- Do not apply changes automatically; validate via replay/backtest first.

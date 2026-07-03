@@ -1,0 +1,25 @@
+Score=0 Audit
+Generated at: 2026-07-03T13:54:17.769391+00:00
+
+Total decisions: 8254
+Score=0 decisions: 4865 (58.94%)
+Average Confidence at Score=0: 65.72%
+Score=0 with Confidence >= 60: 3232
+Score=0 with Confidence >= 75: 846
+Main blocker for Score=0: Momentum
+Average Potential Score: 20.85
+Average Lost Score: 2.38
+
+Score=0 by symbol
+- SOL/USDT: 1355
+- ETH/USDT: 1119
+- BTC/USDT: 818
+- XRP/USDT: 263
+- LINK/USDT: 263
+- ADA/USDT: 263
+- AVAX/USDT: 263
+- DOGE/USDT: 263
+- BNB/USDT: 258
+
+Reason
+Score becomes 0 when directional edge diff is below MIN_EDGE. Current MIN_EDGE=15; confidence can still be high because it is derived from diff.

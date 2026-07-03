@@ -1,0 +1,632 @@
+{
+  "generated_at": "2026-07-03T08:18:21.302868+00:00",
+  "framework": "AITradingAgent v1.1 Strategy Calibration Framework",
+  "status": "OK",
+  "warnings": [],
+  "source_files": {
+    "decision_diagnostics": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
+    "decision_debug": "/Users/jeynademcenko/AITradingAgent/decision_debug.csv",
+    "decision_explanations": "/Users/jeynademcenko/AITradingAgent/decision_explanations.csv",
+    "signals": "/Users/jeynademcenko/AITradingAgent/signals_v3.csv",
+    "trades": "/Users/jeynademcenko/AITradingAgent/trades.csv",
+    "optimizer_results": "/Users/jeynademcenko/AITradingAgent/optimizer_results.csv",
+    "filter_effectiveness_report": "/Users/jeynademcenko/AITradingAgent/filter_effectiveness_report.json",
+    "post_trade_analysis_report": "/Users/jeynademcenko/AITradingAgent/post_trade_analysis_report.json",
+    "strategy_experiments_report": "/Users/jeynademcenko/AITradingAgent/strategy_experiments_report.json",
+    "learning_report": "/Users/jeynademcenko/AITradingAgent/learning_report.json",
+    "recommendations": "/Users/jeynademcenko/AITradingAgent/recommendations.json",
+    "strategy_weights": "/Users/jeynademcenko/AITradingAgent/strategy_weights.json"
+  },
+  "strategy_overview": {
+    "total_decisions": 7669,
+    "closed_trades": 19,
+    "wins": 3,
+    "losses": 16,
+    "winrate": 15.79,
+    "profit_factor": 0.32,
+    "average_pnl": -159.73,
+    "max_drawdown": -3034.85,
+    "no_trade_rate": 71.33,
+    "signal_distribution": {
+      "HIGH PRIORITY": {
+        "count": 360,
+        "percent": 4.69
+      },
+      "SETUP": {
+        "count": 990,
+        "percent": 12.91
+      },
+      "WATCH": {
+        "count": 527,
+        "percent": 6.87
+      },
+      "WAIT": {
+        "count": 322,
+        "percent": 4.2
+      },
+      "NO TRADE": {
+        "count": 5470,
+        "percent": 71.33
+      }
+    }
+  },
+  "filter_analysis": {
+    "rows": 1932,
+    "main_blocker": "Momentum",
+    "main_blocker_percent": 46.48,
+    "average_lost_score": 2.12,
+    "average_potential_score": 20.73,
+    "filters": {
+      "Trend": {
+        "primary_blocker_count": 195,
+        "primary_blocker_percent": 10.09,
+        "fail_count": 195,
+        "potential_trades_lost": 195,
+        "average_lost_score": 2.22,
+        "average_potential_score": 11.03,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      },
+      "Structure": {
+        "primary_blocker_count": 335,
+        "primary_blocker_percent": 17.34,
+        "fail_count": 965,
+        "potential_trades_lost": 335,
+        "average_lost_score": 3.45,
+        "average_potential_score": 22.91,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      },
+      "Momentum": {
+        "primary_blocker_count": 898,
+        "primary_blocker_percent": 46.48,
+        "fail_count": 1021,
+        "potential_trades_lost": 898,
+        "average_lost_score": 1.42,
+        "average_potential_score": 21.27,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      },
+      "Risk": {
+        "primary_blocker_count": 504,
+        "primary_blocker_percent": 26.09,
+        "fail_count": 1273,
+        "potential_trades_lost": 504,
+        "average_lost_score": 2.43,
+        "average_potential_score": 22.07,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      }
+    },
+    "strictness_ranking": [
+      "Risk",
+      "Momentum",
+      "Structure",
+      "Trend"
+    ]
+  },
+  "sensitivity_analysis": {
+    "atr_rr": {
+      "current_atr": 1.5,
+      "current_rr": 2.0,
+      "best_atr": "1.8",
+      "best_rr": "2.0",
+      "atr_summary": {
+        "1.0": {
+          "average_profit_factor": 1.84,
+          "average_winrate": 44.96,
+          "average_trades": 86.75
+        },
+        "1.2": {
+          "average_profit_factor": 1.77,
+          "average_winrate": 49.08,
+          "average_trades": 76.0
+        },
+        "1.4": {
+          "average_profit_factor": 1.88,
+          "average_winrate": 54.13,
+          "average_trades": 69.5
+        },
+        "1.5": {
+          "average_profit_factor": 2.09,
+          "average_winrate": 58.37,
+          "average_trades": 63.5
+        },
+        "1.6": {
+          "average_profit_factor": 2.19,
+          "average_winrate": 60.5,
+          "average_trades": 63.0
+        },
+        "1.8": {
+          "average_profit_factor": 2.31,
+          "average_winrate": 64.47,
+          "average_trades": 55.5
+        },
+        "2.0": {
+          "average_profit_factor": 2.23,
+          "average_winrate": 66.55,
+          "average_trades": 52.75
+        }
+      },
+      "rr_summary": {
+        "1.5": {
+          "average_profit_factor": 1.94,
+          "average_winrate": 64.61,
+          "average_trades": 90.71
+        },
+        "2.0": {
+          "average_profit_factor": 2.27,
+          "average_winrate": 60.61,
+          "average_trades": 69.57
+        },
+        "2.5": {
+          "average_profit_factor": 1.9,
+          "average_winrate": 51.95,
+          "average_trades": 57.86
+        },
+        "3.0": {
+          "average_profit_factor": 2.07,
+          "average_winrate": 50.28,
+          "average_trades": 48.71
+        }
+      }
+    },
+    "weights": {
+      "current_global_weights": {
+        "trend": 0.4,
+        "structure": 0.25,
+        "momentum": 0.2,
+        "risk": 0.15
+      },
+      "baseline_scenario": "baseline",
+      "best_scenario": "structure_weight_0.20",
+      "scenario_deltas": [
+        {
+          "scenario": "momentum_soft",
+          "mode": "momentum_soft",
+          "weights_override": {},
+          "profit_factor_delta": -0.17,
+          "winrate_delta": -4.46,
+          "average_pnl_delta": -29.06,
+          "signals_delta": -164,
+          "setup_high_priority_delta": 83
+        },
+        {
+          "scenario": "trend_weight_0.35",
+          "mode": "weight_override",
+          "weights_override": {
+            "trend": 0.35
+          },
+          "profit_factor_delta": -0.14,
+          "winrate_delta": -0.57,
+          "average_pnl_delta": -36.84,
+          "signals_delta": -498,
+          "setup_high_priority_delta": -1103
+        },
+        {
+          "scenario": "trend_weight_0.40",
+          "mode": "weight_override",
+          "weights_override": {
+            "trend": 0.4
+          },
+          "profit_factor_delta": 0.0,
+          "winrate_delta": 0.0,
+          "average_pnl_delta": 0.0,
+          "signals_delta": 0,
+          "setup_high_priority_delta": 0
+        },
+        {
+          "scenario": "trend_weight_0.45",
+          "mode": "weight_override",
+          "weights_override": {
+            "trend": 0.45
+          },
+          "profit_factor_delta": 0.0,
+          "winrate_delta": 0.0,
+          "average_pnl_delta": 0.0,
+          "signals_delta": 219,
+          "setup_high_priority_delta": 555
+        },
+        {
+          "scenario": "structure_weight_0.20",
+          "mode": "weight_override",
+          "weights_override": {
+            "structure": 0.2
+          },
+          "profit_factor_delta": 0.09,
+          "winrate_delta": 1.25,
+          "average_pnl_delta": 38.43,
+          "signals_delta": 41,
+          "setup_high_priority_delta": 26
+        },
+        {
+          "scenario": "structure_weight_0.25",
+          "mode": "weight_override",
+          "weights_override": {
+            "structure": 0.25
+          },
+          "profit_factor_delta": 0.0,
+          "winrate_delta": 0.0,
+          "average_pnl_delta": 0.0,
+          "signals_delta": 0,
+          "setup_high_priority_delta": 0
+        },
+        {
+          "scenario": "structure_weight_0.30",
+          "mode": "weight_override",
+          "weights_override": {
+            "structure": 0.3
+          },
+          "profit_factor_delta": -0.05,
+          "winrate_delta": -2.08,
+          "average_pnl_delta": -14.98,
+          "signals_delta": 9,
+          "setup_high_priority_delta": 9
+        },
+        {
+          "scenario": "risk_weight_0.10",
+          "mode": "weight_override",
+          "weights_override": {
+            "risk": 0.1
+          },
+          "profit_factor_delta": 0.09,
+          "winrate_delta": 1.25,
+          "average_pnl_delta": 38.43,
+          "signals_delta": -25,
+          "setup_high_priority_delta": -82
+        },
+        {
+          "scenario": "risk_weight_0.15",
+          "mode": "weight_override",
+          "weights_override": {
+            "risk": 0.15
+          },
+          "profit_factor_delta": 0.0,
+          "winrate_delta": 0.0,
+          "average_pnl_delta": 0.0,
+          "signals_delta": 0,
+          "setup_high_priority_delta": 0
+        },
+        {
+          "scenario": "risk_weight_0.20",
+          "mode": "weight_override",
+          "weights_override": {
+            "risk": 0.2
+          },
+          "profit_factor_delta": -0.21,
+          "winrate_delta": -5.42,
+          "average_pnl_delta": -65.55,
+          "signals_delta": 20,
+          "setup_high_priority_delta": -42
+        },
+        {
+          "scenario": "short_bias_check",
+          "mode": "short_bias_check",
+          "weights_override": {},
+          "profit_factor_delta": 0.0,
+          "winrate_delta": 0.0,
+          "average_pnl_delta": 0.0,
+          "signals_delta": 154,
+          "setup_high_priority_delta": 240
+        },
+        {
+          "scenario": "symbol_weights_BTC",
+          "mode": "symbol_filter",
+          "weights_override": {},
+          "profit_factor_delta": 0.0,
+          "winrate_delta": 3.47,
+          "average_pnl_delta": -111.34,
+          "signals_delta": -758,
+          "setup_high_priority_delta": -549
+        },
+        {
+          "scenario": "symbol_weights_ETH",
+          "mode": "symbol_filter",
+          "weights_override": {},
+          "profit_factor_delta": -0.12,
+          "winrate_delta": -4.46,
+          "average_pnl_delta": 143.16,
+          "signals_delta": -1010,
+          "setup_high_priority_delta": -767
+        },
+        {
+          "scenario": "symbol_weights_SOL",
+          "mode": "symbol_filter",
+          "weights_override": {},
+          "profit_factor_delta": -0.37,
+          "winrate_delta": -18.75,
+          "average_pnl_delta": 153.62,
+          "signals_delta": -1738,
+          "setup_high_priority_delta": -1316
+        }
+      ]
+    },
+    "min_score": {
+      "current": 25,
+      "near_threshold_decisions": 1828,
+      "near_threshold_percent": 23.84,
+      "average_score": 10.53,
+      "average_confidence": 70.93,
+      "note": "Score sensitivity near MIN_SCORE is measurable from live history, but direct PF/WinRate threshold impact needs a dedicated threshold sweep."
+    },
+    "runtime_thresholds": {
+      "min_score": 25,
+      "min_confidence": 80,
+      "min_edge": 15
+    }
+  },
+  "decision_quality_analysis": {
+    "filter_ranking": [
+      {
+        "filter": "Trend",
+        "primary_blocker_percent": 10.09,
+        "fail_count": 195,
+        "near_setup_blocks": 90,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      },
+      {
+        "filter": "Structure",
+        "primary_blocker_percent": 17.34,
+        "fail_count": 965,
+        "near_setup_blocks": 130,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      },
+      {
+        "filter": "Risk",
+        "primary_blocker_percent": 26.09,
+        "fail_count": 1273,
+        "near_setup_blocks": 215,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      },
+      {
+        "filter": "Momentum",
+        "primary_blocker_percent": 46.48,
+        "fail_count": 1021,
+        "near_setup_blocks": 325,
+        "profit_factor_impact": 0.0,
+        "winrate_impact": 0.0
+      }
+    ],
+    "too_strict_filters": [
+      "Risk",
+      "Momentum"
+    ],
+    "weakly_influential_filters": [
+      "Trend",
+      "Structure",
+      "Risk",
+      "Momentum"
+    ],
+    "dominant_loss_patterns": {
+      "bad Risk": 9,
+      "unclassified LOSS": 5,
+      "low Confidence": 3,
+      "weak Momentum": 2
+    },
+    "sample_explanations": [
+      "Trade rejected because the combined decision did not reach an actionable threshold.",
+      "Trade rejected because the combined decision did not reach an actionable threshold.",
+      "Trade rejected because the combined decision did not reach an actionable threshold.",
+      "Trade rejected because the combined decision did not reach an actionable threshold.",
+      "Trade rejected because the combined decision did not reach an actionable threshold."
+    ]
+  },
+  "trade_outcome_analysis": {
+    "closed_trades": 19,
+    "wins": 3,
+    "losses": 16,
+    "winrate": 15.79,
+    "profit_factor": 0.32,
+    "average_pnl": -159.73,
+    "max_drawdown": -3034.85,
+    "average_holding_minutes": 354.9,
+    "average_achieved_rr": -0.66,
+    "rr_observations": 19,
+    "approximated_rr_observations": 2,
+    "best_symbol": "SOL/USDT",
+    "worst_symbol": "BTC/USDT",
+    "top_loss_reasons": {
+      "bad Risk": 9,
+      "unclassified LOSS": 5,
+      "low Confidence": 3,
+      "weak Momentum": 2
+    },
+    "top_win_factors": {
+      "strong Trend": 3,
+      "good Structure": 3,
+      "strong Momentum": 3,
+      "high Confidence": 3,
+      "good Risk": 1
+    },
+    "max_drawdown_during_trade": "Unavailable from current trade log",
+    "max_profit_before_close": "Unavailable from current trade log",
+    "data_gap_note": "Per-trade MAE/MFE is not yet reproducible from trades.csv alone. It would require candle-level lifecycle tracking per trade."
+  },
+  "confidence_calibration": {
+    "status": "MISALIGNED",
+    "buckets": {
+      "50-59": {
+        "trades": 0,
+        "winrate": 0.0,
+        "average_pnl": 0.0,
+        "profit_factor": 0.0
+      },
+      "60-69": {
+        "trades": 3,
+        "winrate": 0.0,
+        "average_pnl": -192.33,
+        "profit_factor": 0.0
+      },
+      "70-79": {
+        "trades": 4,
+        "winrate": 0.0,
+        "average_pnl": -109.85,
+        "profit_factor": 0.0
+      },
+      "80-89": {
+        "trades": 2,
+        "winrate": 50.0,
+        "average_pnl": -189.86,
+        "profit_factor": 0.06
+      },
+      "90-100": {
+        "trades": 9,
+        "winrate": 11.11,
+        "average_pnl": -248.83,
+        "profit_factor": 0.27
+      }
+    },
+    "recommendation": "Confidence needs calibration review: higher confidence does not consistently improve realized WinRate."
+  },
+  "engine_contribution_analysis": {
+    "engines": {
+      "Trend": {
+        "average_contribution": 41.61,
+        "actionable_average_contribution": 53.98,
+        "winning_trade_average": 52.67,
+        "losing_trade_average": 50.0
+      },
+      "Structure": {
+        "average_contribution": 10.03,
+        "actionable_average_contribution": 11.39,
+        "winning_trade_average": 13.67,
+        "losing_trade_average": 15.38
+      },
+      "Momentum": {
+        "average_contribution": 6.58,
+        "actionable_average_contribution": 8.05,
+        "winning_trade_average": 7.0,
+        "losing_trade_average": 6.56
+      },
+      "Risk": {
+        "average_contribution": 5.8,
+        "actionable_average_contribution": 4.94,
+        "winning_trade_average": 5.0,
+        "losing_trade_average": 7.81
+      }
+    },
+    "influence_ranking": [
+      "Trend",
+      "Structure",
+      "Momentum",
+      "Risk"
+    ],
+    "highest_weighted_engine": "Trend",
+    "lowest_weighted_engine": "Risk"
+  },
+  "threshold_analysis": {
+    "current_thresholds": {
+      "high_priority_min_score": 25,
+      "setup_threshold_anchor": 25,
+      "watch_threshold_observation": "Derived from DecisionEngine internals; not recalibrated here.",
+      "wait_threshold_observation": "Derived from DecisionEngine internals; not recalibrated here.",
+      "no_trade_threshold_observation": "Derived from DecisionEngine internals; not recalibrated here."
+    },
+    "usage": {
+      "HIGH PRIORITY": {
+        "count": 360,
+        "percent": 4.69
+      },
+      "SETUP": {
+        "count": 990,
+        "percent": 12.91
+      },
+      "WATCH": {
+        "count": 527,
+        "percent": 6.87
+      },
+      "WAIT": {
+        "count": 322,
+        "percent": 4.2
+      },
+      "NO TRADE": {
+        "count": 5470,
+        "percent": 71.33
+      }
+    },
+    "near_setup_rejections": 760,
+    "threshold_sweep_status": "INSUFFICIENT_DIRECT_DATA",
+    "note": "Threshold usage is measurable from signals/diagnostics, but direct PF impact of threshold changes requires a dedicated threshold experiment pass.",
+    "best_related_experiment": "structure_weight_0.20"
+  },
+  "optimizer_validation": {
+    "status": "OK",
+    "optimization_runs": 28,
+    "best_combination": {
+      "atr": "1.8",
+      "rr": "2.0",
+      "profit_factor": 2.68,
+      "winrate": 69.64,
+      "trades": 56
+    },
+    "average_profit_factor": 2.05,
+    "average_top5_profit_factor": 2.54,
+    "best_to_second_gap": 0.06,
+    "top5_atr_distribution": {
+      "1.8": 1,
+      "1.6": 1,
+      "1.5": 1,
+      "2.0": 2
+    },
+    "top5_rr_distribution": {
+      "2.0": 4,
+      "2.5": 1
+    },
+    "confidence": "HIGH"
+  },
+  "recommendation_validation": {
+    "status": "READY",
+    "message": "Recommendations generated from sufficient learning statistics.",
+    "validated_recommendations": [
+      {
+        "parameter": "ATR_MULT",
+        "current": 1.5,
+        "recommended": 1.8,
+        "confidence": 0.95,
+        "reason": "Highest ProfitFactor over optimization history.",
+        "observations": 28,
+        "evidence_link": "optimizer_validation.best_combination",
+        "expected_effect": "Avg PF 2.09 -> 2.31",
+        "validated": true
+      }
+    ],
+    "warnings": []
+  },
+  "overall_assessment": {
+    "strategy_score": 40,
+    "strongest_area": "HIGH",
+    "weakest_area": "Momentum",
+    "strengths": [
+      "Optimizer shows a reproducible best region around ATR 1.8 / RR 2.0.",
+      "Momentum is clearly measurable as a blocker, so future changes can be evidence-based.",
+      "The project now has enough analytics coverage to explain both decisions and trade outcomes."
+    ],
+    "weaknesses": [
+      "Current live trade metrics remain weak: PF 0.32 and WinRate 15.79%.",
+      "NO TRADE dominates flow at 71.33%, which slows statistical learning.",
+      "Per-trade MAE/MFE is not yet tracked, so intratrade quality analysis is still partial.",
+      "Potentially over-strict filters: Risk, Momentum."
+    ],
+    "problematic_filters": [
+      "Risk",
+      "Momentum"
+    ],
+    "effective_parameters": [
+      "ATR 1.8",
+      "RR 2.0",
+      "structure_weight_0.20"
+    ],
+    "recommendations": [
+      "Keep the framework read-only: Momentum should be investigated before any live strategy change.",
+      "First candidate for controlled testing remains structure_weight_0.20.",
+      "Do not auto-apply threshold changes until a dedicated threshold sweep exists.",
+      "Confidence needs calibration review: higher confidence does not consistently improve realized WinRate."
+    ],
+    "expected_effect": [
+      "ATR_MULT: Avg PF 2.09 -> 2.31"
+    ]
+  }
+}

@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
+from datetime import datetime
 
-CONFIG_FILE = Path("bot_config.json")
-LAST_FILE = Path("last_notification.json")
+BASE_DIR = Path(__file__).resolve().parent
+CONFIG_FILE = BASE_DIR / "bot_config.json"
+LAST_FILE = BASE_DIR / "last_notification.json"
 
 
 def save_chat_id(chat_id: int):
@@ -38,9 +40,6 @@ def last_notification():
 def is_duplicate(signal: str) -> bool:
     """Проверяет, не отправлялся ли уже такой сигнал."""
     return signal == last_notification()
-
-
-from datetime import datetime
 
 def trend_name(trend):
     return {

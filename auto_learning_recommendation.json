@@ -1,0 +1,122 @@
+{
+  "generated_at": "2026-07-02T14:49:46.680082+00:00",
+  "status": "NOT_ENOUGH_DATA",
+  "confidence": "LOW",
+  "current_live_weights": {
+    "global": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    },
+    "BTC/USDT": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    },
+    "ETH/USDT": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    },
+    "SOL/USDT": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    }
+  },
+  "candidate_weights": {
+    "metadata": {
+      "source": "strategy_experiments_report.json",
+      "selected_scenario": "structure_weight_0.20",
+      "selected_because": "Лучший сценарий по текущему experiments-report: выше winrate, выше PF, лучше average PnL и менее глубокий max drawdown по сравнению с baseline.",
+      "generated_for": "analysis_only",
+      "generated_at": "2026-07-02T12:08:34.250441+00:00"
+    },
+    "global": {
+      "trend": 0.4,
+      "structure": 0.2,
+      "momentum": 0.25,
+      "risk": 0.15
+    },
+    "BTC/USDT": {
+      "trend": 0.4,
+      "structure": 0.2,
+      "momentum": 0.25,
+      "risk": 0.15
+    },
+    "ETH/USDT": {
+      "trend": 0.4,
+      "structure": 0.2,
+      "momentum": 0.25,
+      "risk": 0.15
+    },
+    "SOL/USDT": {
+      "trend": 0.4,
+      "structure": 0.2,
+      "momentum": 0.25,
+      "risk": 0.15
+    }
+  },
+  "current_live_weights_sum": 1.0,
+  "candidate_weights_sum": 1.0,
+  "candidate_weights_status": "VALID",
+  "proposed_changes": [
+    {
+      "weight": "structure",
+      "from": 0.25,
+      "to": 0.2,
+      "delta": -0.05
+    },
+    {
+      "weight": "momentum",
+      "from": 0.2,
+      "to": 0.25,
+      "delta": 0.05
+    }
+  ],
+  "why_proposed": [
+    "Research показывает повторяющийся blocker: Momentum.",
+    "Candidate weights собраны на основе лучшего experiment-сценария.",
+    "Baseline PF 0.37 -> candidate PF 0.46.",
+    "Baseline winrate 18.75% -> candidate winrate 20.0%."
+  ],
+  "baseline_vs_candidate": {
+    "baseline": {
+      "closed_trades": 16,
+      "wins": 3,
+      "losses": 13,
+      "winrate": 18.75,
+      "average_pnl": -153.62,
+      "profit_factor": 0.37,
+      "max_drawdown": -2457.85,
+      "long_trades": 0,
+      "short_trades": 16
+    },
+    "candidate": {
+      "closed_trades": 15,
+      "wins": 3,
+      "losses": 12,
+      "winrate": 20.0,
+      "average_pnl": -115.19,
+      "profit_factor": 0.46,
+      "max_drawdown": -1727.85,
+      "long_trades": 0,
+      "short_trades": 15
+    },
+    "pf_improvement": 0.09,
+    "winrate_improvement": 1.25
+  },
+  "closed_trades_count": 19,
+  "diagnostics_rows": 177,
+  "status_required": "PENDING_APPROVAL",
+  "not_applied_because": [
+    "Safe Auto-Learning v1 никогда не применяет веса автоматически.",
+    "Недостаточно закрытых сделок: 19 < 30.",
+    "Улучшение PF слишком маленькое: 0.09 < 0.10."
+  ],
+  "candidate_selected_scenario": "structure_weight_0.20"
+}

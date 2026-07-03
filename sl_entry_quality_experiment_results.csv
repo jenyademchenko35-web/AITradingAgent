@@ -1,0 +1,6 @@
+scenario,trades,wins,losses,winrate,profit_factor,net_pnl,prevented_losses,lost_wins,prevented_trades,net_pnl_delta
+baseline,20,3,17,15.0,0.3228,-3051.88974277,0,0,0,0.0
+block_sl_quality_D,6,3,3,50.0,1.9777,719.220622,14,0,14,3771.11036477
+block_sl_quality_D_E,6,3,3,50.0,1.9777,719.220622,14,0,14,3771.11036477
+downgrade_sl_quality_D,9,3,6,33.33,0.5828,-1041.579378,11,0,11,2010.31036477
+block_short_sl_quality_D,6,3,3,50.0,1.9777,719.220622,14,0,14,3771.11036477

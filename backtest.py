@@ -3,11 +3,15 @@ import pandas as pd
 import time
 import csv
 import argparse
+from pathlib import Path
 
 from multi_timeframe_agent_v3 import (
     analyze_market,
     build_market_snapshot,
 )
+
+BASE_DIR = Path(__file__).resolve().parent
+BACKTEST_TRADES_FILE = BASE_DIR / "backtest_trades.csv"
 
 EXCHANGE = ccxt.bybit({
     "enableRateLimit": True,
@@ -95,7 +99,7 @@ def run_backtest(
         "gross_loss": 0.0,
     }
 
-    with open("backtest_trades.csv", "w", newline="") as f:
+    with BACKTEST_TRADES_FILE.open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             "Entry Time",
@@ -167,7 +171,7 @@ def run_backtest(
         )
 
 
-        decision, trend, structure, momentum, risk = analyze_market(
+        decision, trend, structure, momentum, risk, _weights = analyze_market(
             market=market,
             symbol=SYMBOL,
         )
@@ -195,7 +199,7 @@ def run_backtest(
                     pnl = -(virtual_trade["entry"] - virtual_trade["sl"])
                     duration = i - virtual_trade["entry_bar"]
 
-                    with open("backtest_trades.csv", "a", newline="") as f:
+                    with BACKTEST_TRADES_FILE.open("a", newline="") as f:
                         writer = csv.writer(f)
                         writer.writerow([
                             virtual_trade["entry_time"],
@@ -219,7 +223,7 @@ def run_backtest(
                     pnl = virtual_trade["tp"] - virtual_trade["entry"]
                     duration = i - virtual_trade["entry_bar"]
 
-                    with open("backtest_trades.csv", "a", newline="") as f:
+                    with BACKTEST_TRADES_FILE.open("a", newline="") as f:
                         writer = csv.writer(f)
                         writer.writerow([
                             virtual_trade["entry_time"],
@@ -244,7 +248,7 @@ def run_backtest(
                     pnl = -(virtual_trade["sl"] - virtual_trade["entry"])
                     duration = i - virtual_trade["entry_bar"]
 
-                    with open("backtest_trades.csv", "a", newline="") as f:
+                    with BACKTEST_TRADES_FILE.open("a", newline="") as f:
                         writer = csv.writer(f)
                         writer.writerow([
                             virtual_trade["entry_time"],
@@ -268,7 +272,7 @@ def run_backtest(
                     pnl = virtual_trade["entry"] - virtual_trade["tp"]
                     duration = i - virtual_trade["entry_bar"]
 
-                    with open("backtest_trades.csv", "a", newline="") as f:
+                    with BACKTEST_TRADES_FILE.open("a", newline="") as f:
                         writer = csv.writer(f)
                         writer.writerow([
                             virtual_trade["entry_time"],

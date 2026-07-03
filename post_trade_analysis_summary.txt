@@ -1,0 +1,23 @@
+AITradingAgent Post Trade Analysis
+Generated at: 2026-07-02T14:50:00.470764+00:00
+Closed trades: 19
+Wins: 3
+Losses: 16
+Winrate: 15.79%
+
+Top LOSS reasons:
+- bad Risk: 9
+- unclassified LOSS: 5
+- low Confidence: 3
+- weak Momentum: 2
+
+Top WIN factors:
+- strong Trend: 3
+- good Structure: 3
+- strong Momentum: 3
+- high Confidence: 3
+- good Risk: 1
+
+Best symbol: SOL/USDT
+Worst symbol: BTC/USDT
+Recommendation: Сначала улучшать: bad Risk.

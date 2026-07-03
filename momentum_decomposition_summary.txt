@@ -1,0 +1,30 @@
+Momentum Decomposition
+Generated at: 2026-07-03T15:23:04.511085+00:00
+
+Momentum candidates: 1115
+Checked: 1073
+Main weak component: RSI weak
+
+Weak components
+- RSI weak: 447 (40.09%)
+- MACD weak: 347 (31.12%)
+- Volume weak: 244 (21.88%)
+- EMA slope weak: 42 (3.77%)
+- Candle momentum weak: 35 (3.14%)
+
+Outcome check
+- 1h: favorable=43.9%, avg_return=-0.1799%, median=-0.0455%
+- 2h: favorable=45.67%, avg_return=-0.2524%, median=-0.0945%
+- 4h: favorable=39.34%, avg_return=-0.3473%, median=-0.3656%
+- 8h: favorable=25.95%, avg_return=-0.6369%, median=-0.6459%
+
+Symbol breakdown
+- BNB/USDT: candidates=243, main=MACD weak
+- BTC/USDT: candidates=288, main=RSI weak
+- DOGE/USDT: candidates=283, main=RSI weak
+- ETH/USDT: candidates=66, main=MACD weak
+- LINK/USDT: candidates=55, main=MACD weak
+- XRP/USDT: candidates=180, main=Volume weak
+
+Recommendation
+- Momentum appears protective: blocked signals do not show positive follow-through.

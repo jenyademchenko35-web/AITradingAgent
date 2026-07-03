@@ -13,6 +13,7 @@ COLUMNS = [
     "signal",
     "score",
     "confidence",
+    "quality",
     "trend_long",
     "trend_short",
     "structure_long",

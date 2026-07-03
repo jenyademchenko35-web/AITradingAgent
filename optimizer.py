@@ -2,22 +2,32 @@ import subprocess
 import re
 import csv
 from datetime import datetime
-import os
-#import shutil
+import sys
+import time
+from pathlib import Path
 
-from config import ATR_TEST_VALUES
+from config import ATR_TEST_VALUES, RR_TEST_VALUES
 
-def run_test(atr):
+BASE_DIR = Path(__file__).resolve().parent
+
+def run_test(atr, rr):
     result = subprocess.run(
         [
-            "python3",
-            "backtest.py",
-            "--atr",
-            str(atr),
-        ],
+        sys.executable,
+        str(BASE_DIR / "backtest.py"),
+        "--atr",
+        str(atr),
+        "--rr",
+        str(rr),
+    ],
         capture_output=True,
         text=True,
     )
+
+    if result.returncode != 0:
+        print(f"\nERROR while testing ATR={atr}")
+        print(result.stderr)
+        return None
 
     return result.stdout
 
@@ -25,17 +35,13 @@ print("=" * 60)
 print("AI Trading Strategy Optimizer")
 print("=" * 60)
 
-print("\nRunning backtest...\n")
-
-#CONFIG_FILE = "config.py"
-#BACKUP_FILE = "config_backup.py"
-
-#shutil.copy(CONFIG_FILE, BACKUP_FILE)
+print("\nRunning optimization...\n")
 
 print("\nATR values to test:")
 
 for atr in ATR_TEST_VALUES:
-    print(f" - ATR_MULT = {atr}")
+    for rr in RR_TEST_VALUES:
+        print(f" - ATR={atr} | RR={rr}")
 
 patterns = {
     "ProfitFactor": r"ProfitFactor\s*:\s*([0-9.]+)",
@@ -45,25 +51,31 @@ patterns = {
     "Losses": r"Losses\s*:\s*(\d+)",
 }
 
+start_time = time.time()
 results = []
 
 for atr in ATR_TEST_VALUES:
-    output = run_test(atr)
+    for rr in RR_TEST_VALUES:
+        print(f"\nTesting ATR={atr} | RR={rr}...")
+        output = run_test(atr, rr)
+        if output is None:
+            continue
 
-    stats = {}
+        stats = {}
 
-    for key, pattern in patterns.items():
-        match = re.search(pattern, output)
-        stats[key] = match.group(1) if match else "N/A"
+        for key, pattern in patterns.items():
+            match = re.search(pattern, output)
+            stats[key] = match.group(1) if match else "N/A"
 
-    results.append({
-        "atr": atr,
-        "ProfitFactor": stats["ProfitFactor"],
-        "WinRate": stats["WinRate"],
-        "Trades": stats["Trades"],
-        "Wins": stats["Wins"],
-        "Losses": stats["Losses"],
-    })
+        results.append({
+            "atr": atr,
+            "rr": rr,
+            "ProfitFactor": stats["ProfitFactor"],
+            "WinRate": stats["WinRate"],
+            "Trades": stats["Trades"],
+            "Wins": stats["Wins"],
+            "Losses": stats["Losses"],
+        })
 
 print("=" * 60)
 print("BACKTEST SUMMARY")
@@ -72,23 +84,25 @@ print("=" * 60)
 for result in results:
     print(
         f'ATR={result["atr"]} | '
+        f'RR={result["rr"]} | '
         f'PF={result["ProfitFactor"]} | '
         f'WR={result["WinRate"]}% | '
         f'Trades={result["Trades"]}'
     )
 
 print("=" * 60)
-csv_file = "optimizer_results.csv"
+csv_file = BASE_DIR / "optimizer_results.csv"
 
-file_exists = os.path.exists(csv_file)
+file_exists = csv_file.exists()
 
-with open(csv_file, "a", newline="") as f:
+with csv_file.open("a", newline="") as f:
     writer = csv.writer(f)
 
     if not file_exists:
         writer.writerow([
             "Date",
             "ATR",
+            "RR",
             "ProfitFactor",
             "WinRate",
             "Trades",
@@ -100,6 +114,7 @@ with open(csv_file, "a", newline="") as f:
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             result["atr"],
+            result["rr"],
             result["ProfitFactor"],
             result["WinRate"],
             result["Trades"],
@@ -107,7 +122,16 @@ with open(csv_file, "a", newline="") as f:
             result["Losses"],
         ])
 
-best_result = max(results, key=lambda r: float(r["ProfitFactor"]))
+if not results:
+    print("No optimizer results were produced.")
+    raise SystemExit(1)
+
+results.sort(
+    key=lambda r: float(r["ProfitFactor"]),
+    reverse=True,
+)
+
+best_result = results[0]
 
 print("\n" + "=" * 60)
 print("BEST CONFIG")
@@ -118,8 +142,14 @@ print(f"WinRate       : {best_result['WinRate']}%")
 print(f"Trades        : {best_result['Trades']}")
 print("=" * 60)
 
-print("\nResult saved to optimizer_results.csv")
+print("\nTOP 3 RESULTS")
+for r in results[:3]:
+    print(
+        f'ATR={r["atr"]} | '
+        f'PF={r["ProfitFactor"]} | '
+        f'WR={r["WinRate"]}%'
+    )
 
-#shutil.move(BACKUP_FILE, CONFIG_FILE)
-
-#print("Config restored.")
+elapsed = time.time() - start_time
+print(f"\nOptimization finished in {elapsed:.2f} sec")
+print(f"\nResult saved to {csv_file.name}")

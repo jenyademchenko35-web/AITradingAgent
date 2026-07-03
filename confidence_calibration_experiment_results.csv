@@ -1,0 +1,18 @@
+scenario,mode,trades,wins,losses,winrate,profit_factor,net_pnl,average_pnl,prevented_trades,prevented_losses,lost_wins,net_pnl_delta,profit_factor_delta,winrate_delta,description
+baseline,BASELINE,20,3,17,15.0,0.3228,-3051.88974277,-152.59448714,0,0,0,0.0,0.0,0.0,Current closed-trade baseline.
+block_conf_gt90,BLOCK,10,2,8,20.0,0.4364,-807.54974277,-80.75497428,10,9,1,2244.34,0.1136,5.0,Block all trades with Confidence > 90.
+downgrade_block_conf_gt90,DOWNGRADE,13,2,11,15.38,0.1958,-2568.34974277,-197.56536483,7,6,1,483.54,-0.127,0.38,Block all trades with Confidence > 90.
+block_conf_gt90_momentum_disagreement,BLOCK,11,2,9,18.18,0.285,-1568.54974277,-142.59543116,9,8,1,1483.34,-0.0378,3.18,Block Confidence > 90 when Momentum disagreement is present.
+downgrade_block_conf_gt90_momentum_disagreement,DOWNGRADE,13,2,11,15.38,0.1958,-2568.34974277,-197.56536483,7,6,1,483.54,-0.127,0.38,Block Confidence > 90 when Momentum disagreement is present.
+block_conf_gt90_sl_quality_D,BLOCK,13,3,10,23.08,0.6712,-712.74974277,-54.82690329,7,7,0,2339.14,0.3484,8.08,Block Confidence > 90 when SL quality is D.
+downgrade_block_conf_gt90_sl_quality_D,DOWNGRADE,16,3,13,18.75,0.3703,-2473.54974277,-154.59685892,4,4,0,578.34,0.0475,3.75,Block Confidence > 90 when SL quality is D.
+block_conf_gt90_short_bias,BLOCK,10,2,8,20.0,0.4364,-807.54974277,-80.75497428,10,9,1,2244.34,0.1136,5.0,Block Confidence > 90 when direction is SHORT.
+downgrade_block_conf_gt90_short_bias,DOWNGRADE,13,2,11,15.38,0.1958,-2568.34974277,-197.56536483,7,6,1,483.54,-0.127,0.38,Block Confidence > 90 when direction is SHORT.
+block_conf_gt90_momentum_or_sl_D,BLOCK,10,2,8,20.0,0.4364,-807.54974277,-80.75497428,10,9,1,2244.34,0.1136,5.0,Block Confidence > 90 when Momentum disagrees or SL quality is D.
+downgrade_block_conf_gt90_momentum_or_sl_D,DOWNGRADE,13,2,11,15.38,0.1958,-2568.34974277,-197.56536483,7,6,1,483.54,-0.127,0.38,Block Confidence > 90 when Momentum disagrees or SL quality is D.
+block_conf_gt90_short_momentum,BLOCK,11,2,9,18.18,0.285,-1568.54974277,-142.59543116,9,8,1,1483.34,-0.0378,3.18,Block Confidence > 90 for SHORT trades with Momentum disagreement.
+downgrade_block_conf_gt90_short_momentum,DOWNGRADE,13,2,11,15.38,0.1958,-2568.34974277,-197.56536483,7,6,1,483.54,-0.127,0.38,Block Confidence > 90 for SHORT trades with Momentum disagreement.
+block_conf_gt90_short_sl_quality_D,BLOCK,13,3,10,23.08,0.6712,-712.74974277,-54.82690329,7,7,0,2339.14,0.3484,8.08,Block Confidence > 90 for SHORT trades with SL quality D.
+downgrade_block_conf_gt90_short_sl_quality_D,DOWNGRADE,16,3,13,18.75,0.3703,-2473.54974277,-154.59685892,4,4,0,578.34,0.0475,3.75,Block Confidence > 90 for SHORT trades with SL quality D.
+block_conf_gt90_any_risk_feature,BLOCK,10,2,8,20.0,0.4364,-807.54974277,-80.75497428,10,9,1,2244.34,0.1136,5.0,"Block Confidence > 90 with Momentum disagreement, SL quality D, or SHORT direction."
+downgrade_block_conf_gt90_any_risk_feature,DOWNGRADE,13,2,11,15.38,0.1958,-2568.34974277,-197.56536483,7,6,1,483.54,-0.127,0.38,"Block Confidence > 90 with Momentum disagreement, SL quality D, or SHORT direction."

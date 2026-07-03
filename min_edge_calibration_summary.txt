@@ -1,0 +1,22 @@
+MIN_EDGE Calibration
+Generated at: 2026-07-03T13:54:19.145388+00:00
+Status: INSUFFICIENT_DATA
+
+Current MIN_EDGE: 15
+Answer: MIN_EDGE=15 is strict by signal distribution because it creates Score=0 in 77.45% of replayed decisions. However, lower MIN_EDGE values did not pass candidate rules on the current matched-trade sample, and closed-trade evidence is still below 30 trades.
+Recommendation: Current MIN_EDGE=15 may be strict, but only 16 matched closed trades are available. Do not apply changes yet.
+
+Baseline
+- MIN_EDGE=15: Score0=6037 (77.45%), NO TRADE=77.45%, WATCH=402, SETUP=961, HIGH=360, avg_score=5.81, avg_conf=74.64, PF=0.37, WR=18.75%, trades=16
+
+Best candidate
+- None
+
+All MIN_EDGE values
+- MIN_EDGE=5: Score0=2544 (32.64%), NO TRADE=43.5%, WATCH=712, SETUP=1085, HIGH=361, avg_score=15.06, avg_conf=74.64, PF=0.32, WR=15.79%, trades=19
+- MIN_EDGE=8: Score0=4279 (54.89%), NO TRADE=58.19%, WATCH=712, SETUP=1085, HIGH=361, avg_score=10.61, avg_conf=74.64, PF=0.32, WR=15.79%, trades=19
+- MIN_EDGE=10: Score0=4962 (63.66%), NO TRADE=64.68%, WATCH=709, SETUP=1085, HIGH=361, avg_score=8.84, avg_conf=74.64, PF=0.32, WR=15.79%, trades=19
+- MIN_EDGE=12: Score0=5331 (68.39%), NO TRADE=68.99%, WATCH=657, SETUP=1085, HIGH=361, avg_score=7.83, avg_conf=74.64, PF=0.32, WR=16.67%, trades=18
+- MIN_EDGE=15: Score0=6037 (77.45%), NO TRADE=77.45%, WATCH=402, SETUP=961, HIGH=360, avg_score=5.81, avg_conf=74.64, PF=0.37, WR=18.75%, trades=16
+- MIN_EDGE=18: Score0=6824 (87.54%), NO TRADE=87.54%, WATCH=139, SETUP=568, HIGH=264, avg_score=3.27, avg_conf=74.64, PF=0.29, WR=25.0%, trades=8
+- MIN_EDGE=20: Score0=7330 (94.03%), NO TRADE=94.03%, WATCH=13, SETUP=245, HIGH=207, avg_score=1.63, avg_conf=74.64, PF=0.54, WR=50.0%, trades=4

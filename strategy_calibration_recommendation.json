@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-07-03T13:54:19.145404+00:00",
+  "status": "INSUFFICIENT_DATA",
+  "reason": "Best observed candidate exists, but closed-trade sample is below 30.",
+  "baseline": {
+    "scenario": "baseline",
+    "kind": "baseline",
+    "min_score": 25,
+    "weight_change": {},
+    "atr": null,
+    "rr": null,
+    "decision_count": 7795,
+    "no_trade_count": 6037,
+    "score_zero_count": 6037,
+    "high_confidence_score_zero_count": 1484,
+    "signal_breakdown": {
+      "HIGH PRIORITY": 360,
+      "SETUP": 961,
+      "WATCH": 402,
+      "WAIT": 35,
+      "NO TRADE": 6037
+    },
+    "trades": 16,
+    "wins": 3,
+    "losses": 13,
+    "winrate": 18.75,
+    "profit_factor": 0.37,
+    "net_profit": -2457.85,
+    "max_drawdown": -2457.85,
+    "average_trade": -153.62,
+    "metric_source": "matched_closed_trades"
+  },
+  "best_candidate": {
+    "scenario": "risk_weight_minus_20",
+    "kind": "weight",
+    "min_score": 25,
+    "weight_change": {
+      "engine": "risk",
+      "change": -0.2
+    },
+    "atr": null,
+    "rr": null,
+    "decision_count": 7795,
+    "no_trade_count": 5897,
+    "score_zero_count": 5897,
+    "high_confidence_score_zero_count": 1309,
+    "signal_breakdown": {
+      "HIGH PRIORITY": 1218,
+      "SETUP": 300,
+      "WATCH": 281,
+      "WAIT": 99,
+      "NO TRADE": 5897
+    },
+    "trades": 15,
+    "wins": 3,
+    "losses": 12,
+    "winrate": 20.0,
+    "profit_factor": 0.46,
+    "net_profit": -1727.85,
+    "max_drawdown": -1727.85,
+    "average_trade": -115.19,
+    "metric_source": "matched_closed_trades"
+  },
+  "recommended_changes": [],
+  "evidence": [
+    "Baseline PF=0.37, candidate PF=0.46.",
+    "Baseline WinRate=18.75%, candidate WinRate=20.0%.",
+    "Baseline Score=0=6037, candidate Score=0=5897.",
+    "Baseline NO TRADE=6037, candidate NO TRADE=5897."
+  ],
+  "warnings": [
+    "Only 16 matched closed trades are available; minimum recommended sample is 30."
+  ],
+  "apply_automatically": false
+}

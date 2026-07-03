@@ -1,0 +1,46 @@
+Dataset Quality & Statistical Reliability
+============================================
+Status: WARNING
+Generated: 2026-07-03T19:17:06.027498+00:00
+
+Dataset Coverage
+- Decisions: 8742
+- Closed trades: 20 (3 WIN / 17 LOSS)
+- Trade WinRate: 15.0%
+- Trade directions: {'SHORT': 19, 'LONG': 1}
+
+Research Reliability
+- Score Zero Audit: 8254 sample, HIGH confidence
+- MIN_EDGE Analysis: 2706 sample, HIGH confidence
+- Momentum Analysis: 1073 sample, HIGH confidence
+- Trend Conflict Replay: 2143 sample, HIGH confidence
+- Trade Comparator: 20 sample, LOW confidence
+- Pattern Discovery: 20 sample, LOW confidence
+- SL Quality Experiment: 20 sample, LOW confidence
+- Optimizer History: 28 sample, LOW confidence
+
+Freshness
+- Status: OK
+- Last decision: 18s ago
+- Last trade: 4h ago
+- Last analysis: 13m ago
+
+Dry Run Quality
+- protective_filter_dry_run.csv: 0 candidates, NO_CANDIDATES_OBSERVED_YET
+- sl_quality_protective_dry_run.csv: 0 candidates, NO_CANDIDATES_OBSERVED_YET
+
+Project Readiness
+- Architecture: 90/100
+- Strategy: 55/100
+- Dataset: 82/100
+- Analytics: 50/100
+- Research: 50/100
+- Production Readiness: 72/100
+
+Final Assessment
+- Trust level: Partially. High-sample replay and decision-snapshot studies are reliable; closed-trade conclusions are still low confidence.
+- HIGH confidence: Score Zero Audit, MIN_EDGE Analysis, Momentum Analysis, Trend Conflict Replay
+- LOW confidence: Trade Comparator, Pattern Discovery, SL Quality Experiment, Optimizer History
+
+Missing / Optional Sources
+- watchlist.csv, line_movement.csv

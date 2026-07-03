@@ -1,0 +1,246 @@
+{
+  "generated_at": "2026-07-02T14:49:30.378785+00:00",
+  "status": "OK",
+  "issues_count": 0,
+  "severity_breakdown": {},
+  "files": {
+    "signals": {
+      "path": "/Users/jeynademcenko/AITradingAgent/signals_v3.csv",
+      "exists": true,
+      "size": 701368
+    },
+    "decision_debug": {
+      "path": "/Users/jeynademcenko/AITradingAgent/decision_debug.csv",
+      "exists": true,
+      "size": 6242549
+    },
+    "decision_diagnostics": {
+      "path": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
+      "exists": true,
+      "size": 16019
+    },
+    "decision_explanations": {
+      "path": "/Users/jeynademcenko/AITradingAgent/decision_explanations.csv",
+      "exists": true,
+      "size": 46529
+    },
+    "trades": {
+      "path": "/Users/jeynademcenko/AITradingAgent/trades.csv",
+      "exists": true,
+      "size": 2720
+    },
+    "setup_history": {
+      "path": "/Users/jeynademcenko/AITradingAgent/setup_history_v3.csv",
+      "exists": true,
+      "size": 2948
+    },
+    "stats": {
+      "path": "/Users/jeynademcenko/AITradingAgent/agent_v3_stats.json",
+      "exists": true,
+      "size": 119
+    },
+    "strategy_weights": {
+      "path": "/Users/jeynademcenko/AITradingAgent/strategy_weights.json",
+      "exists": true,
+      "size": 409
+    },
+    "candidate_weights": {
+      "path": "/Users/jeynademcenko/AITradingAgent/candidate_weights.json",
+      "exists": true,
+      "size": 849
+    },
+    "auto_learning": {
+      "path": "/Users/jeynademcenko/AITradingAgent/auto_learning_recommendation.json",
+      "exists": true,
+      "size": 3210
+    }
+  },
+  "csv_checks": {
+    "signals": {
+      "row_count": 5914,
+      "header_ok": true,
+      "broken_rows": 0,
+      "missing_required": {
+        "timestamp": 0,
+        "symbol": 0,
+        "direction": 0,
+        "signal": 0,
+        "score": 0,
+        "confidence": 0
+      }
+    },
+    "decision_debug": {
+      "row_count": 5455,
+      "header_ok": true,
+      "broken_rows": 0,
+      "missing_required": {
+        "timestamp": 0,
+        "symbol": 0,
+        "direction": 0,
+        "signal": 0,
+        "score": 0,
+        "confidence": 0
+      }
+    },
+    "decision_diagnostics": {
+      "row_count": 177,
+      "header_ok": true,
+      "broken_rows": 0,
+      "missing_required": {
+        "timestamp": 0,
+        "symbol": 0,
+        "decision": 0,
+        "primary_blocker": 0
+      }
+    },
+    "decision_explanations": {
+      "row_count": 177,
+      "header_ok": true,
+      "broken_rows": 0,
+      "missing_required": {
+        "timestamp": 0,
+        "symbol": 0,
+        "decision": 0,
+        "summary": 0
+      }
+    },
+    "trades": {
+      "row_count": 19,
+      "header_ok": true,
+      "broken_rows": 0,
+      "missing_required": {
+        "symbol": 0,
+        "direction": 0,
+        "status": 0,
+        "opened_at": 0
+      }
+    },
+    "setup_history": {
+      "row_count": 30,
+      "header_ok": true,
+      "broken_rows": 0,
+      "missing_required": {
+        "timestamp": 0,
+        "symbol": 0,
+        "direction": 0,
+        "signal": 0
+      }
+    }
+  },
+  "value_checks": {
+    "signals": {
+      "invalid_signals": 0,
+      "invalid_directions": 0,
+      "invalid_qualities": 0,
+      "invalid_score": 0,
+      "invalid_confidence": 0,
+      "duplicate_count": 0
+    },
+    "decision_debug": {
+      "invalid_signals": 0,
+      "invalid_directions": 0,
+      "invalid_qualities": 0,
+      "invalid_score": 0,
+      "invalid_confidence": 0,
+      "duplicate_count": 0
+    },
+    "setup_history": {
+      "invalid_signals": 0,
+      "invalid_directions": 0,
+      "invalid_qualities": 0,
+      "invalid_score": 0,
+      "invalid_confidence": 0,
+      "duplicate_count": 0
+    }
+  },
+  "json_checks": {
+    "agent_v3_stats": {
+      "keys": [
+        "analyzed_symbols",
+        "api_errors",
+        "no_trade_signals",
+        "runs",
+        "setup_signals"
+      ]
+    },
+    "strategy_weights": {
+      "entries": {
+        "global": {
+          "sum": 1.0,
+          "status": "VALID"
+        },
+        "BTC/USDT": {
+          "sum": 1.0,
+          "status": "VALID"
+        },
+        "ETH/USDT": {
+          "sum": 1.0,
+          "status": "VALID"
+        },
+        "SOL/USDT": {
+          "sum": 1.0,
+          "status": "VALID"
+        }
+      }
+    },
+    "candidate_weights": {
+      "entries": {
+        "global": {
+          "sum": 1.0,
+          "status": "VALID"
+        },
+        "BTC/USDT": {
+          "sum": 1.0,
+          "status": "VALID"
+        },
+        "ETH/USDT": {
+          "sum": 1.0,
+          "status": "VALID"
+        },
+        "SOL/USDT": {
+          "sum": 1.0,
+          "status": "VALID"
+        }
+      }
+    },
+    "auto_learning": {
+      "keys": [
+        "baseline_vs_candidate",
+        "candidate_selected_scenario",
+        "candidate_weights",
+        "candidate_weights_status",
+        "candidate_weights_sum",
+        "closed_trades_count",
+        "confidence",
+        "current_live_weights",
+        "current_live_weights_sum",
+        "diagnostics_rows",
+        "generated_at",
+        "not_applied_because",
+        "proposed_changes",
+        "status",
+        "status_required",
+        "why_proposed"
+      ]
+    }
+  },
+  "decision_counts": {
+    "signals": 5914,
+    "decision_debug": 5455,
+    "decision_diagnostics": 177,
+    "decision_explanations": 177
+  },
+  "overlap_counts": {
+    "signals_from_debug_start": 5454,
+    "decision_debug": 5455,
+    "difference": -1
+  },
+  "diagnostics_blockers": {
+    "Momentum": 118,
+    "Structure": 32,
+    "Risk": 27
+  },
+  "issues": [],
+  "top_issues": [],
+  "what_to_fix": []
+}

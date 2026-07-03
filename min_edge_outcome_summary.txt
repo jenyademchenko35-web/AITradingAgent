@@ -1,0 +1,28 @@
+MIN_EDGE Zero Outcome Analysis
+Generated at: 2026-07-03T14:55:12.600379+00:00
+
+Weighted Score threshold: 20.0
+MIN_EDGE: 15
+Candidates found: 2753
+Candidates checked with OHLCV: 2706
+Missing local OHLCV: 0
+
+Horizon outcomes
+- 1h: checked=2706, favorable=47.12%, avg_return=-0.0448%, median=-0.0172%
+- 2h: checked=2640, favorable=50.61%, avg_return=-0.059%, median=0.0248%
+- 4h: checked=2491, favorable=56.2%, avg_return=-0.0168%, median=0.0716%
+- 8h: checked=2320, favorable=53.32%, avg_return=0.2372%, median=0.1314%
+
+Symbol coverage
+- ADA/USDT: candidates=184, statuses={'OK': 184}
+- AVAX/USDT: candidates=174, statuses={'OK': 174}
+- BNB/USDT: candidates=151, statuses={'OK': 151}
+- BTC/USDT: candidates=467, statuses={'OK': 467}
+- DOGE/USDT: candidates=210, statuses={'OK': 210}
+- ETH/USDT: candidates=600, statuses={'OK': 600}
+- LINK/USDT: candidates=43, statuses={'OK': 43}
+- SOL/USDT: candidates=811, statuses={'OK': 811}
+- XRP/USDT: candidates=113, statuses={'OK': 113}
+
+Interpretation
+- Checked candidates show the strongest average direction-aware return at 8h (0.2372%). This is observational only and does not justify changing MIN_EDGE by itself.

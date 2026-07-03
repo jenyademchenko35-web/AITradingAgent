@@ -1,0 +1,428 @@
+{
+  "generated_at": "2026-07-03T19:17:06.027498+00:00",
+  "status": "WARNING",
+  "source_files": {
+    "decision_debug.csv": {
+      "exists": true,
+      "rows": 8742,
+      "last_modified": "2026-07-03T19:17:06.011457+00:00"
+    },
+    "decision_diagnostics.csv": {
+      "exists": true,
+      "rows": 3464,
+      "last_modified": "2026-07-03T19:17:06.011943+00:00"
+    },
+    "decision_explanations.csv": {
+      "exists": true,
+      "rows": 3464,
+      "last_modified": "2026-07-03T19:17:06.011783+00:00"
+    },
+    "signals_v3.csv": {
+      "exists": true,
+      "rows": 9201,
+      "last_modified": "2026-07-03T19:17:05.932300+00:00"
+    },
+    "trades.csv": {
+      "exists": true,
+      "rows": 20,
+      "last_modified": "2026-07-03T15:09:00.593180+00:00"
+    },
+    "watchlist.csv": {
+      "exists": false,
+      "rows": 0,
+      "last_modified": null
+    },
+    "optimizer_results.csv": {
+      "exists": true,
+      "rows": 28,
+      "last_modified": "2026-07-02T23:11:31.995047+00:00"
+    },
+    "line_movement.csv": {
+      "exists": false,
+      "rows": 0,
+      "last_modified": null
+    },
+    "protective_filter_dry_run.csv": {
+      "exists": true,
+      "rows": 0,
+      "last_modified": "2026-07-03T15:50:58.218804+00:00"
+    },
+    "sl_quality_protective_dry_run.csv": {
+      "exists": true,
+      "rows": 0,
+      "last_modified": "2026-07-03T19:07:19.044381+00:00"
+    },
+    "trade_pattern_discovery_patterns.csv": {
+      "exists": true,
+      "rows": 19450,
+      "last_modified": "2026-07-03T18:59:33.023916+00:00"
+    },
+    "trade_comparator.csv": {
+      "exists": true,
+      "rows": 20,
+      "last_modified": "2026-07-03T18:54:49.057455+00:00"
+    },
+    "calibration_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-02T11:42:11.552647+00:00"
+    },
+    "strategy_calibration_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T08:18:21.303448+00:00"
+    },
+    "strategy_calibration_experiments_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T13:54:19.146052+00:00"
+    },
+    "strategy_calibration_recommendation.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T13:54:19.146603+00:00"
+    },
+    "min_edge_calibration_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T13:54:19.146375+00:00"
+    },
+    "min_edge_outcome_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T14:55:12.655909+00:00"
+    },
+    "score_zero_audit_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T13:54:19.145637+00:00"
+    },
+    "sl_entry_quality_experiment_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T19:03:24.370121+00:00"
+    },
+    "trend_momentum_conflict_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T15:34:35.739979+00:00"
+    },
+    "trend_momentum_conflict_v2_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T15:42:12.343900+00:00"
+    },
+    "momentum_decomposition_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T15:23:04.546600+00:00"
+    },
+    "trade_comparator_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T18:54:49.057190+00:00"
+    },
+    "trade_pattern_discovery_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-03T18:59:32.956876+00:00"
+    },
+    "market_regime_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-02T14:50:00.258771+00:00"
+    },
+    "data_quality_report.json": {
+      "exists": true,
+      "last_modified": "2026-07-02T14:49:30.383736+00:00"
+    }
+  },
+  "missing_sources": [
+    "watchlist.csv",
+    "line_movement.csv"
+  ],
+  "warnings": [],
+  "dataset_coverage": {
+    "decisions_source": "decision_debug.csv",
+    "total_decisions": 8742,
+    "signals_rows": 9201,
+    "debug_rows": 8742,
+    "total_trades": 20,
+    "closed_trades": 20,
+    "wins": 3,
+    "losses": 17,
+    "winrate": 15.0,
+    "decision_directions": {
+      "SHORT": 2122,
+      "LONG": 141,
+      "NEUTRAL": 5812
+    },
+    "trade_directions": {
+      "SHORT": 19,
+      "LONG": 1
+    },
+    "trade_long": 1,
+    "trade_short": 19
+  },
+  "symbol_coverage": {
+    "symbols": {
+      "BTC/USDT": {
+        "decisions": 2177,
+        "trades": 10,
+        "wins": 2,
+        "losses": 8,
+        "winrate": 20.0,
+        "average_score": 14.3372,
+        "average_confidence": 78.0407
+      },
+      "ETH/USDT": {
+        "decisions": 2179,
+        "trades": 8,
+        "wins": 1,
+        "losses": 7,
+        "winrate": 12.5,
+        "average_score": 10.687,
+        "average_confidence": 71.0821
+      },
+      "BNB/USDT": {
+        "decisions": 369,
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate": 0.0,
+        "average_score": 0.3523,
+        "average_confidence": 73.6016
+      },
+      "SOL/USDT": {
+        "decisions": 2179,
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate": 0.0,
+        "average_score": 6.3139,
+        "average_confidence": 61.8638
+      },
+      "DOGE/USDT": {
+        "decisions": 367,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "winrate": 0.0,
+        "average_score": 0.0,
+        "average_confidence": 74.1063
+      },
+      "XRP/USDT": {
+        "decisions": 369,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "winrate": 0.0,
+        "average_score": 0.0,
+        "average_confidence": 62.0732
+      },
+      "ADA/USDT": {
+        "decisions": 367,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "winrate": 0.0,
+        "average_score": 0.0,
+        "average_confidence": 61.6649
+      },
+      "LINK/USDT": {
+        "decisions": 368,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "winrate": 0.0,
+        "average_score": 0.0,
+        "average_confidence": 60.9647
+      },
+      "AVAX/USDT": {
+        "decisions": 367,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "winrate": 0.0,
+        "average_score": 0.0,
+        "average_confidence": 63.4223
+      }
+    },
+    "best_symbol_by_winrate": "BTC/USDT",
+    "worst_symbol_by_winrate": "BNB/USDT"
+  },
+  "market_coverage": {
+    "method": "historical EMA reason inference plus current market_regime_report snapshot",
+    "historical_decision_regimes": {
+      "Sideways": 2831,
+      "Bear": 2408,
+      "Bull": 3503
+    },
+    "historical_percent": {
+      "Sideways": 32.38,
+      "Bear": 27.55,
+      "Bull": 40.07
+    },
+    "current_regime_snapshot": {
+      "Range": 9
+    },
+    "note": "Historical regime is inferred from saved trend_reason text, not from recomputed indicators."
+  },
+  "statistical_reliability": {
+    "Score Zero Audit": {
+      "sample_size": 8254,
+      "reliability": "HIGH",
+      "confidence_level": 0.9,
+      "study_type": "observations"
+    },
+    "MIN_EDGE Analysis": {
+      "sample_size": 2706,
+      "reliability": "HIGH",
+      "confidence_level": 0.9,
+      "study_type": "observations"
+    },
+    "Momentum Analysis": {
+      "sample_size": 1073,
+      "reliability": "HIGH",
+      "confidence_level": 0.9,
+      "study_type": "observations"
+    },
+    "Trend Conflict Replay": {
+      "sample_size": 2143,
+      "reliability": "HIGH",
+      "confidence_level": 0.9,
+      "study_type": "observations"
+    },
+    "Trade Comparator": {
+      "sample_size": 20,
+      "reliability": "LOW",
+      "confidence_level": 0.35,
+      "study_type": "trades"
+    },
+    "Pattern Discovery": {
+      "sample_size": 20,
+      "reliability": "LOW",
+      "confidence_level": 0.35,
+      "study_type": "trades"
+    },
+    "SL Quality Experiment": {
+      "sample_size": 20,
+      "reliability": "LOW",
+      "confidence_level": 0.35,
+      "study_type": "trades"
+    },
+    "Optimizer History": {
+      "sample_size": 28,
+      "reliability": "LOW",
+      "confidence_level": 0.35,
+      "study_type": "observations"
+    }
+  },
+  "bias_detection": [
+    {
+      "bias": "Symbol bias",
+      "detected": true,
+      "severity": "MEDIUM",
+      "evidence": "ETH/USDT has 24.93% of decisions.",
+      "recommendation": "Check whether older logs were collected before the expanded 9-symbol watchlist."
+    },
+    {
+      "bias": "SHORT bias",
+      "detected": true,
+      "severity": "HIGH",
+      "evidence": "SHORT trades share is 95.0%.",
+      "recommendation": "Do not generalize closed-trade conclusions to LONG until more LONG trades close."
+    },
+    {
+      "bias": "Confidence bias",
+      "detected": true,
+      "severity": "HIGH",
+      "evidence": "Confidence 90-100 has winrate 10.0% over 10 trades.",
+      "recommendation": "Treat high confidence as uncalibrated until 30+ closed trades confirm it."
+    }
+  ],
+  "data_freshness": {
+    "latest_decision": "2026-07-03T19:16:47.074710+00:00",
+    "latest_decision_age": "18s ago",
+    "latest_trade": "2026-07-03T15:09:00.592930+00:00",
+    "latest_trade_age": "4h ago",
+    "latest_analysis": "2026-07-03T19:03:24.370121+00:00",
+    "latest_analysis_age": "13m ago",
+    "latest_replay": "2026-07-03T19:03:24.370121+00:00",
+    "latest_replay_age": "13m ago",
+    "latest_optimizer": "2026-07-03T02:11:31+00:00",
+    "latest_optimizer_age": "17h ago",
+    "analysis_lag_minutes_vs_decision": 13,
+    "status": "OK"
+  },
+  "dry_run_quality": {
+    "protective_filter_dry_run.csv": {
+      "candidates": 0,
+      "confirmations": 0,
+      "status": "NO_CANDIDATES_OBSERVED_YET",
+      "note": "No candidates observed yet."
+    },
+    "sl_quality_protective_dry_run.csv": {
+      "candidates": 0,
+      "confirmations": 0,
+      "status": "NO_CANDIDATES_OBSERVED_YET",
+      "note": "No candidates observed yet."
+    }
+  },
+  "research_confidence_score": {
+    "MIN_EDGE": {
+      "confidence": "HIGH",
+      "sample_size": 2706,
+      "confidence_level": 0.9
+    },
+    "Momentum": {
+      "confidence": "HIGH",
+      "sample_size": 1073,
+      "confidence_level": 0.9
+    },
+    "SL Quality": {
+      "confidence": "LOW",
+      "sample_size": 20,
+      "confidence_level": 0.35
+    },
+    "Confidence": {
+      "confidence": "LOW",
+      "sample_size": 20,
+      "confidence_level": 0.35
+    },
+    "Trend Conflict": {
+      "confidence": "HIGH",
+      "sample_size": 2143,
+      "confidence_level": 0.9
+    },
+    "Pattern Discovery": {
+      "confidence": "LOW",
+      "sample_size": 20,
+      "confidence_level": 0.35
+    }
+  },
+  "overall_project_readiness": {
+    "Architecture": 90,
+    "Strategy": 55,
+    "Dataset": 82,
+    "Analytics": 50,
+    "Research": 50,
+    "Production Readiness": 72,
+    "notes": [
+      "Decision-snapshot studies are mature enough for directional evidence.",
+      "Closed-trade studies remain limited until 30+ trades are available."
+    ]
+  },
+  "final_assessment": {
+    "can_trust_research_results": "Partially. High-sample replay and decision-snapshot studies are reliable; closed-trade conclusions are still low confidence.",
+    "proven": [
+      "MIN_EDGE and Score=0 behavior has enough observations for high-confidence analysis.",
+      "Momentum-blocked replay has enough observations and shows weak follow-through.",
+      "Trend/Momentum conflict replay has high sample support."
+    ],
+    "needs_more_statistics": [
+      "Trade Comparator and Pattern Discovery need at least 30 closed trades.",
+      "SL Quality protective idea should remain dry-run until more live candidates are observed.",
+      "LONG-side conclusions are weak if closed trades remain SHORT-heavy."
+    ],
+    "high_confidence_research": [
+      "Score Zero Audit",
+      "MIN_EDGE Analysis",
+      "Momentum Analysis",
+      "Trend Conflict Replay"
+    ],
+    "medium_confidence_research": [],
+    "low_confidence_research": [
+      "Trade Comparator",
+      "Pattern Discovery",
+      "SL Quality Experiment",
+      "Optimizer History"
+    ]
+  }
+}

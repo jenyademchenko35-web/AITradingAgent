@@ -1,0 +1,37 @@
+Post-Loss Decomposition
+=======================
+Generated: 2026-07-03T15:29:36.763828+00:00
+Status: OK
+Loss trades analyzed: 17
+BNB SHORT losses: 1
+
+Top reasons:
+- Momentum disagreement: 15
+- bad SL zone: 14
+- overestimated confidence: 10
+- bad entry: 9
+- late entry: 1
+- counter-trend trade: 1
+
+BNB/USDT SHORT LOSS
+-------------------
+Opened: 2026-07-02T15:34:55.567557
+Closed: 2026-07-03T15:09:00.592930
+Entry / SL / Exit: 563.3 / 567.4147183769353 / 568.2
+Decision: SETUP | Score=26.0 | Confidence=98.0 | Quality=B
+Primary blocker: Momentum
+Passed: Trend, Structure, Risk
+Failed: Momentum
+Engine most wrong: Momentum
+Bad entry: True | SHORT entered while 1h EMA trend was bullish
+Late entry: False | age=0.0 min
+Bad SL zone: False | SL zone acceptable: 1.01 ATR
+Counter-trend: True | 1h trend was bullish against SHORT
+Confidence overestimated: True | very high confidence despite failed engine
+MFE/MAE: 1.2249% / 0.7989%
+Diagnosis: Momentum was the weakest engine; SHORT entered while 1h EMA trend was bullish; 1h trend was bullish against SHORT; very high confidence despite failed engine
+
+Recommendations:
+- Do not ignore Momentum disagreement on SETUP trades; review it before changing thresholds.
+- Review SL placement around recent swing highs/lows before changing DecisionEngine.
+- Add counter-trend cases to v2 experiments, but keep live DecisionEngine unchanged.

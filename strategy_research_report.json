@@ -1,0 +1,425 @@
+{
+  "generated_at": "2026-07-02T14:49:45.788165+00:00",
+  "source_files": {
+    "decision_diagnostics": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
+    "decision_debug": "/Users/jeynademcenko/AITradingAgent/decision_debug.csv",
+    "signals": "/Users/jeynademcenko/AITradingAgent/signals_v3.csv",
+    "trades": "/Users/jeynademcenko/AITradingAgent/trades.csv",
+    "weights": "/Users/jeynademcenko/AITradingAgent/strategy_weights.json",
+    "market_regime": "/Users/jeynademcenko/AITradingAgent/market_regime_report.json"
+  },
+  "weights_snapshot": {
+    "global": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    },
+    "BTC/USDT": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    },
+    "ETH/USDT": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    },
+    "SOL/USDT": {
+      "trend": 0.4,
+      "structure": 0.25,
+      "momentum": 0.2,
+      "risk": 0.15
+    }
+  },
+  "decision_overview": {
+    "total_rows": 5914,
+    "signal_counts": {
+      "NO TRADE": 3720,
+      "WAIT": 322,
+      "WATCH": 527,
+      "SETUP": 985,
+      "HIGH PRIORITY": 360
+    },
+    "per_symbol": {
+      "ADA/USDT": {
+        "total_decisions": 3,
+        "signals": {
+          "NO TRADE": 3,
+          "WAIT": 0,
+          "WATCH": 0,
+          "SETUP": 0,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "NEUTRAL": 3
+        }
+      },
+      "AVAX/USDT": {
+        "total_decisions": 3,
+        "signals": {
+          "NO TRADE": 3,
+          "WAIT": 0,
+          "WATCH": 0,
+          "SETUP": 0,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "NEUTRAL": 3
+        }
+      },
+      "BNB/USDT": {
+        "total_decisions": 3,
+        "signals": {
+          "NO TRADE": 3,
+          "WAIT": 0,
+          "WATCH": 0,
+          "SETUP": 0,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "NEUTRAL": 3
+        }
+      },
+      "BTC/USDT": {
+        "total_decisions": 1964,
+        "signals": {
+          "NO TRADE": 860,
+          "WAIT": 70,
+          "WATCH": 256,
+          "SETUP": 486,
+          "HIGH PRIORITY": 292
+        },
+        "long_short_bias": {
+          "SHORT": 1259,
+          "WAIT": 147,
+          "NEUTRAL": 558
+        }
+      },
+      "DOGE/USDT": {
+        "total_decisions": 3,
+        "signals": {
+          "NO TRADE": 3,
+          "WAIT": 0,
+          "WATCH": 0,
+          "SETUP": 0,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "NEUTRAL": 3
+        }
+      },
+      "ETH/USDT": {
+        "total_decisions": 1966,
+        "signals": {
+          "NO TRADE": 1085,
+          "WAIT": 71,
+          "WATCH": 258,
+          "SETUP": 484,
+          "HIGH PRIORITY": 68
+        },
+        "long_short_bias": {
+          "SHORT": 1012,
+          "WAIT": 95,
+          "NEUTRAL": 859
+        }
+      },
+      "LINK/USDT": {
+        "total_decisions": 3,
+        "signals": {
+          "NO TRADE": 3,
+          "WAIT": 0,
+          "WATCH": 0,
+          "SETUP": 0,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "NEUTRAL": 3
+        }
+      },
+      "SOL/USDT": {
+        "total_decisions": 1966,
+        "signals": {
+          "NO TRADE": 1757,
+          "WAIT": 181,
+          "WATCH": 13,
+          "SETUP": 15,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "SHORT": 266,
+          "WAIT": 464,
+          "LONG": 141,
+          "NEUTRAL": 1095
+        }
+      },
+      "XRP/USDT": {
+        "total_decisions": 3,
+        "signals": {
+          "NO TRADE": 3,
+          "WAIT": 0,
+          "WATCH": 0,
+          "SETUP": 0,
+          "HIGH PRIORITY": 0
+        },
+        "long_short_bias": {
+          "NEUTRAL": 3
+        }
+      }
+    }
+  },
+  "diagnostics_overview": {
+    "total_rows": 177,
+    "primary_blockers": {
+      "Momentum": 118,
+      "Structure": 32,
+      "Risk": 27
+    },
+    "average_lost_score": 3.04,
+    "average_lost_score_by_symbol": {
+      "ADA/USDT": 3.5,
+      "AVAX/USDT": 0.0,
+      "BNB/USDT": 0.4,
+      "BTC/USDT": 2.01,
+      "DOGE/USDT": 1.4,
+      "ETH/USDT": 1.52,
+      "LINK/USDT": 0.8,
+      "SOL/USDT": 6.14,
+      "XRP/USDT": 2.13
+    },
+    "near_setup_symbols": {
+      "BTC/USDT": {
+        "near_setup_count": 50,
+        "average_potential_score": 23.5,
+        "max_potential_score": 23.6
+      },
+      "SOL/USDT": {
+        "near_setup_count": 49,
+        "average_potential_score": 27.56,
+        "max_potential_score": 28.45
+      },
+      "ETH/USDT": {
+        "near_setup_count": 34,
+        "average_potential_score": 23.52,
+        "max_potential_score": 23.6
+      },
+      "DOGE/USDT": {
+        "near_setup_count": 3,
+        "average_potential_score": 26.4,
+        "max_potential_score": 26.4
+      },
+      "ADA/USDT": {
+        "near_setup_count": 3,
+        "average_potential_score": 24.5,
+        "max_potential_score": 24.5
+      },
+      "BNB/USDT": {
+        "near_setup_count": 1,
+        "average_potential_score": 24.4,
+        "max_potential_score": 24.4
+      }
+    },
+    "weak_filter_symbols": {
+      "BTC/USDT": {
+        "dominant_weak_filter": "Momentum",
+        "failures": {
+          "Momentum": 53
+        }
+      },
+      "ETH/USDT": {
+        "dominant_weak_filter": "Momentum",
+        "failures": {
+          "Momentum": 53
+        }
+      },
+      "BNB/USDT": {
+        "dominant_weak_filter": "Momentum",
+        "failures": {
+          "Momentum": 3,
+          "Structure": 2
+        }
+      },
+      "XRP/USDT": {
+        "dominant_weak_filter": "Structure",
+        "failures": {
+          "Structure": 3,
+          "Momentum": 3
+        }
+      },
+      "LINK/USDT": {
+        "dominant_weak_filter": "Momentum",
+        "failures": {
+          "Momentum": 3
+        }
+      },
+      "ADA/USDT": {
+        "dominant_weak_filter": "Structure",
+        "failures": {
+          "Structure": 3,
+          "Risk": 3
+        }
+      },
+      "AVAX/USDT": {
+        "dominant_weak_filter": "Risk",
+        "failures": {
+          "Risk": 3
+        }
+      },
+      "DOGE/USDT": {
+        "dominant_weak_filter": "Momentum",
+        "failures": {
+          "Momentum": 3
+        }
+      }
+    }
+  },
+  "debug_overview": {
+    "total_rows": 5455,
+    "long_short_bias": {
+      "SHORT": 2117,
+      "WAIT": 667,
+      "LONG": 141,
+      "NEUTRAL": 2530
+    },
+    "long_short_bias_by_symbol": {
+      "ADA/USDT": {
+        "NEUTRAL": 3
+      },
+      "AVAX/USDT": {
+        "NEUTRAL": 3
+      },
+      "BNB/USDT": {
+        "NEUTRAL": 3
+      },
+      "BTC/USDT": {
+        "SHORT": 1121,
+        "WAIT": 132,
+        "NEUTRAL": 558
+      },
+      "DOGE/USDT": {
+        "NEUTRAL": 3
+      },
+      "ETH/USDT": {
+        "WAIT": 72,
+        "SHORT": 882,
+        "NEUTRAL": 859
+      },
+      "LINK/USDT": {
+        "NEUTRAL": 3
+      },
+      "SOL/USDT": {
+        "SHORT": 114,
+        "WAIT": 463,
+        "LONG": 141,
+        "NEUTRAL": 1095
+      },
+      "XRP/USDT": {
+        "NEUTRAL": 3
+      }
+    },
+    "lost_contribution_by_engine": {
+      "Trend": 141824.0,
+      "Structure": 41251.0,
+      "Momentum": 38637.0,
+      "Risk": 68770.0
+    }
+  },
+  "trade_overview": {
+    "closed_trades": 19,
+    "winrate": 15.79,
+    "average_pnl": -159.73,
+    "by_symbol": {
+      "BTC/USDT": {
+        "wins": 2,
+        "losses": 8,
+        "winrate": 20.0,
+        "average_pnl": -296.16
+      },
+      "ETH/USDT": {
+        "wins": 1,
+        "losses": 7,
+        "winrate": 12.5,
+        "average_pnl": -9.16
+      },
+      "SOL/USDT": {
+        "wins": 0,
+        "losses": 1,
+        "winrate": 0.0,
+        "average_pnl": 0.0
+      }
+    },
+    "by_direction": {
+      "LONG": {
+        "wins": 0,
+        "losses": 1,
+        "winrate": 0.0,
+        "average_pnl": 0.0
+      },
+      "SHORT": {
+        "wins": 3,
+        "losses": 15,
+        "winrate": 16.67,
+        "average_pnl": -168.6
+      }
+    },
+    "signal_to_outcome": {
+      "SETUP": {
+        "LOSS": 15,
+        "WIN": 3
+      },
+      "WAIT": {
+        "LOSS": 1
+      }
+    }
+  },
+  "market_regime_overview": {
+    "mode": "snapshot_based",
+    "by_regime": {
+      "Range": {
+        "winrate": 15.79,
+        "closed_trades": 19,
+        "average_pnl": -159.73,
+        "primary_blockers": {
+          "Momentum": 118,
+          "Structure": 32,
+          "Risk": 27
+        },
+        "good_setups": 1345,
+        "symbols": [
+          "ADA/USDT",
+          "AVAX/USDT",
+          "BNB/USDT",
+          "BTC/USDT",
+          "DOGE/USDT",
+          "ETH/USDT",
+          "LINK/USDT",
+          "SOL/USDT",
+          "XRP/USDT"
+        ]
+      }
+    },
+    "notes": [
+      "This report classifies the current regime per symbol using existing EMA/ATR/RSI/MACD values.",
+      "Historical regime analytics in strategy_research.py are snapshot-based because legacy logs do not store EMA/ATR/RSI/MACD per decision row."
+    ]
+  },
+  "recommendations": [
+    "Check whether Momentum is too strict; it is the most frequent blocker.",
+    "Review Trend contribution gaps first; it produces the largest lost contribution.",
+    "ADA/USDT repeatedly shows weak Structure; verify whether this symbol belongs in the active universe.",
+    "AVAX/USDT repeatedly shows weak Risk; verify whether this symbol belongs in the active universe.",
+    "BNB/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.",
+    "BTC/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.",
+    "DOGE/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.",
+    "ETH/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.",
+    "LINK/USDT repeatedly shows weak Momentum; verify whether this symbol belongs in the active universe.",
+    "XRP/USDT repeatedly shows weak Structure; verify whether this symbol belongs in the active universe.",
+    "Keep BTC/USDT, SOL/USDT, ETH/USDT in backtest research first; they most often approach SETUP.",
+    "There is a noticeable SHORT bias; test market-regime sensitivity in backtest.",
+    "Closed trade performance is weak; test stricter entry selection in backtest before changing live weights.",
+    "Consider moving backtest research knobs into config only after the current weak filters are confirmed statistically.",
+    "Current snapshot suggests the strongest environment is Range; compare backtest ideas against that regime first."
+  ]
+}

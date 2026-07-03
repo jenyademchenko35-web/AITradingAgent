@@ -1,0 +1,13 @@
+AITradingAgent Blocked Trade Simulation
+Generated at: 2026-07-02T12:51:21.494783+00:00
+Blocker: Momentum
+Status: OK
+Blocked Momentum candidates: 53
+Simulated trades: 53
+Winrate: 0.0%
+Average R: -0.36
+Profit Factor: 0.0
+Max Drawdown: -18.9
+Best symbol: BTC/USDT
+Worst symbol: ETH/USDT
+Recommendation: Momentum пока ослаблять рано: blocked trades не показали уверенного преимущества.

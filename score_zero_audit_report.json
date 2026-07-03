@@ -1,0 +1,119 @@
+{
+  "generated_at": "2026-07-03T13:54:17.769391+00:00",
+  "source_files": {
+    "decision_debug": "/Users/jeynademcenko/AITradingAgent/decision_debug.csv",
+    "decision_diagnostics": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
+    "decision_explanations": "/Users/jeynademcenko/AITradingAgent/decision_explanations.csv",
+    "signals": "/Users/jeynademcenko/AITradingAgent/signals_v3.csv"
+  },
+  "total_decisions": 8254,
+  "score_zero_count": 4865,
+  "score_zero_percent": 58.94,
+  "score_zero_by_symbol": {
+    "SOL/USDT": 1355,
+    "ETH/USDT": 1119,
+    "BTC/USDT": 818,
+    "XRP/USDT": 263,
+    "LINK/USDT": 263,
+    "ADA/USDT": 263,
+    "AVAX/USDT": 263,
+    "DOGE/USDT": 263,
+    "BNB/USDT": 258
+  },
+  "average_confidence_score_zero": 65.72,
+  "score_zero_confidence_ge_60": 3232,
+  "score_zero_confidence_ge_75": 846,
+  "main_blocker_score_zero": "Momentum",
+  "blocker_distribution_score_zero": {
+    "Momentum": 1066,
+    "Risk": 694,
+    "Structure": 432,
+    "Trend": 319,
+    "Score Threshold": 1
+  },
+  "average_potential_score_score_zero": 20.85,
+  "average_lost_score_score_zero": 2.38,
+  "average_diff_score_zero": 5.24,
+  "decision_engine_reason": "Score becomes 0 when directional edge diff is below MIN_EDGE. Current MIN_EDGE=15; confidence can still be high because it is derived from diff.",
+  "matched_diagnostics_rows": 2512,
+  "matched_debug_rows": 4865,
+  "decision_explanations_rows": 2517,
+  "blocker_analysis": {
+    "Trend": {
+      "primary_blocker_count": 319,
+      "primary_blocker_percent": 12.67,
+      "average_lost_score": 2.31,
+      "average_potential_score": 11.48,
+      "average_confidence": 51.57,
+      "symbols": {
+        "ETH/USDT": 109,
+        "SOL/USDT": 87,
+        "ADA/USDT": 35,
+        "LINK/USDT": 35,
+        "AVAX/USDT": 27,
+        "XRP/USDT": 15,
+        "BTC/USDT": 11
+      },
+      "decisions": {
+        "NO TRADE": 319
+      }
+    },
+    "Structure": {
+      "primary_blocker_count": 432,
+      "primary_blocker_percent": 17.16,
+      "average_lost_score": 3.56,
+      "average_potential_score": 23.01,
+      "average_confidence": 63.03,
+      "symbols": {
+        "SOL/USDT": 189,
+        "AVAX/USDT": 157,
+        "LINK/USDT": 46,
+        "ADA/USDT": 35,
+        "XRP/USDT": 3,
+        "DOGE/USDT": 2
+      },
+      "decisions": {
+        "NO TRADE": 432
+      }
+    },
+    "Momentum": {
+      "primary_blocker_count": 1071,
+      "primary_blocker_percent": 42.55,
+      "average_lost_score": 1.48,
+      "average_potential_score": 21.46,
+      "average_confidence": 70.5,
+      "symbols": {
+        "BTC/USDT": 288,
+        "DOGE/USDT": 261,
+        "BNB/USDT": 221,
+        "XRP/USDT": 180,
+        "ETH/USDT": 66,
+        "LINK/USDT": 55
+      },
+      "decisions": {
+        "NO TRADE": 1066,
+        "SETUP": 5
+      }
+    },
+    "Risk": {
+      "primary_blocker_count": 694,
+      "primary_blocker_percent": 27.57,
+      "average_lost_score": 3.06,
+      "average_potential_score": 22.91,
+      "average_confidence": 66.93,
+      "symbols": {
+        "ADA/USDT": 193,
+        "ETH/USDT": 138,
+        "LINK/USDT": 126,
+        "AVAX/USDT": 79,
+        "XRP/USDT": 65,
+        "BNB/USDT": 42,
+        "SOL/USDT": 37,
+        "BTC/USDT": 14
+      },
+      "decisions": {
+        "NO TRADE": 694
+      }
+    }
+  }
+}

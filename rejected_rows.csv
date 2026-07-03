@@ -1,0 +1,26 @@
+source_file,line_no,reason,raw_1,raw_2,raw_3,raw_4,raw_5,raw_6,raw_7,raw_8,raw_9,raw_10,raw_11,raw_12,raw_13,raw_14,raw_15,raw_16,raw_17,raw_18
+signals_v3.csv,2,broken_length,2026-06-25T08:35:58.111329+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,3,broken_length,2026-06-25T08:35:59.991357+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,4,broken_length,2026-06-25T08:36:01.668181+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,5,broken_length,2026-06-25T08:38:03.452703+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,6,broken_length,2026-06-25T08:38:04.505087+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,7,broken_length,2026-06-25T08:38:05.317604+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,8,broken_length,2026-06-25T08:46:08.010972+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,9,broken_length,2026-06-25T08:46:08.891619+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,10,broken_length,2026-06-25T08:46:09.604239+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,11,broken_length,2026-06-25T08:47:51.965346+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,12,broken_length,2026-06-25T08:47:52.665976+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,13,broken_length,2026-06-25T08:47:53.372465+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,14,broken_length,2026-06-25T08:48:07.231157+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,15,broken_length,2026-06-25T08:48:08.644245+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,16,broken_length,2026-06-25T08:48:10.229425+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,17,broken_length,2026-06-25T08:49:45.485232+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,18,broken_length,2026-06-25T08:49:46.317724+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,19,broken_length,2026-06-25T08:49:47.133744+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,20,broken_length,2026-06-25T08:51:41.606068+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,21,broken_length,2026-06-25T08:51:42.616052+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,22,broken_length,2026-06-25T08:51:43.349481+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,23,broken_length,2026-06-25T08:52:51.024668+00:00,BTC/USDT,SHORT,SETUP,84,67.7,40,84,SHORT wins by 44 points
+signals_v3.csv,24,broken_length,2026-06-25T08:52:51.851462+00:00,ETH/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,25,broken_length,2026-06-25T08:52:53.656385+00:00,SOL/USDT,SHORT,SETUP,88,70.4,37,88,SHORT wins by 51 points
+signals_v3.csv,1045,embedded_header,timestamp,symbol,direction,signal,score,confidence,long_total,short_total,summary
