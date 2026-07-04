@@ -45,6 +45,7 @@ from sl_quality_protective_dry_run import SLQualityProtectiveDryRun
 from confidence_sl_quality_d_dry_run import ConfidenceSLQualityDDryRun
 from portfolio_manager import PortfolioManager
 from ada_opportunity_dry_run import ADAOpportunityDryRun
+from doge_link_opportunity_dry_run import DogeLinkOpportunityDryRun
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -65,6 +66,7 @@ SL_QUALITY_PROTECTIVE_DRY_RUN = SLQualityProtectiveDryRun()
 CONFIDENCE_SL_QUALITY_D_DRY_RUN = ConfidenceSLQualityDDryRun()
 PORTFOLIO_MANAGER = PortfolioManager()
 ADA_OPPORTUNITY_DRY_RUN = ADAOpportunityDryRun()
+DOGE_LINK_OPPORTUNITY_DRY_RUN = DogeLinkOpportunityDryRun()
 
 # ==========================
 # # ==========================
@@ -1084,6 +1086,10 @@ def analyze_symbol(symbol: str):
             minimum="VERBOSE",
         )
     ADA_OPPORTUNITY_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
+    )
+    DOGE_LINK_OPPORTUNITY_DRY_RUN.evaluate(
         symbol=symbol,
         decision=decision,
     )
