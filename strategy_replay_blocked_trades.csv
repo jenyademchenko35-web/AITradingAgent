@@ -1,0 +1,41 @@
+scenario,trade_id,symbol,direction,result,pnl,decision,score,confidence,sl_quality,local_trend,momentum,reason
+trend_momentum_protective_filter,19,BNB/USDT,SHORT,LOSS,-4.9,SETUP,26.0,98.0,B,BULLISH,FAIL,Block SHORT + bullish local 1H trend + Momentum FAIL.
+sl_quality_d_filter,0,BTC/USDT,SHORT,LOSS,-577.0,SETUP,26.0,66.7,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,1,ETH/USDT,SHORT,LOSS,-11.38036477,SETUP,26.0,66.7,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,3,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,70.3,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,4,BTC/USDT,SHORT,LOSS,-404.2,SETUP,26.0,76.5,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,5,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,74.3,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,6,BTC/USDT,SHORT,LOSS,-404.2,SETUP,26.0,81.2,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,7,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,70.3,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,10,ETH/USDT,SHORT,LOSS,-12.37,SETUP,25.0,100.0,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,11,BTC/USDT,SHORT,LOSS,-515.8,SETUP,26.0,98.0,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,12,ETH/USDT,SHORT,LOSS,-15.11,SETUP,26.0,100.0,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,13,BTC/USDT,SHORT,LOSS,-560.8,HIGH PRIORITY,27.0,100.0,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,14,ETH/USDT,SHORT,LOSS,-35.06,SETUP,26.0,100.0,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,16,BTC/USDT,SHORT,LOSS,-439.0,HIGH PRIORITY,29.0,100.0,D,BEARISH,FAIL,Block SHORT + sl_quality=D.
+sl_quality_d_filter,17,BTC/USDT,SHORT,LOSS,-761.0,HIGH PRIORITY,30.0,100.0,D,BEARISH,PASS,Block SHORT + sl_quality=D.
+confidence_sl_quality_d_filter,10,ETH/USDT,SHORT,LOSS,-12.37,SETUP,25.0,100.0,D,BEARISH,FAIL,Block confidence > 90 + sl_quality=D.
+confidence_sl_quality_d_filter,11,BTC/USDT,SHORT,LOSS,-515.8,SETUP,26.0,98.0,D,BEARISH,FAIL,Block confidence > 90 + sl_quality=D.
+confidence_sl_quality_d_filter,12,ETH/USDT,SHORT,LOSS,-15.11,SETUP,26.0,100.0,D,BEARISH,FAIL,Block confidence > 90 + sl_quality=D.
+confidence_sl_quality_d_filter,13,BTC/USDT,SHORT,LOSS,-560.8,HIGH PRIORITY,27.0,100.0,D,BEARISH,FAIL,Block confidence > 90 + sl_quality=D.
+confidence_sl_quality_d_filter,14,ETH/USDT,SHORT,LOSS,-35.06,SETUP,26.0,100.0,D,BEARISH,FAIL,Block confidence > 90 + sl_quality=D.
+confidence_sl_quality_d_filter,16,BTC/USDT,SHORT,LOSS,-439.0,HIGH PRIORITY,29.0,100.0,D,BEARISH,FAIL,Block confidence > 90 + sl_quality=D.
+confidence_sl_quality_d_filter,17,BTC/USDT,SHORT,LOSS,-761.0,HIGH PRIORITY,30.0,100.0,D,BEARISH,PASS,Block confidence > 90 + sl_quality=D.
+portfolio_manager_advisory,5,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,74.3,D,BEARISH,FAIL,Max open trades reached: 2/2. | Open trade already exists for ETH/USDT. | Estimated total risk 3.00% exceeds portfolio limit 2.00%.
+portfolio_manager_advisory,6,BTC/USDT,SHORT,LOSS,-404.2,SETUP,26.0,81.2,D,BEARISH,FAIL,Max open trades reached: 2/2. | Open trade already exists for BTC/USDT. | Estimated total risk 3.00% exceeds portfolio limit 2.00%.
+portfolio_manager_advisory,7,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,70.3,D,BEARISH,FAIL,Max open trades reached: 2/2. | Open trade already exists for ETH/USDT. | Estimated total risk 3.00% exceeds portfolio limit 2.00%.
+combined_protective_filters,0,BTC/USDT,SHORT,LOSS,-577.0,SETUP,26.0,66.7,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,1,ETH/USDT,SHORT,LOSS,-11.38036477,SETUP,26.0,66.7,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,3,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,70.3,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,4,BTC/USDT,SHORT,LOSS,-404.2,SETUP,26.0,76.5,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,5,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,74.3,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,6,BTC/USDT,SHORT,LOSS,-404.2,SETUP,26.0,81.2,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,7,ETH/USDT,SHORT,LOSS,-11.73,SETUP,26.0,70.3,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,10,ETH/USDT,SHORT,LOSS,-12.37,SETUP,25.0,100.0,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,11,BTC/USDT,SHORT,LOSS,-515.8,SETUP,26.0,98.0,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,12,ETH/USDT,SHORT,LOSS,-15.11,SETUP,26.0,100.0,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,13,BTC/USDT,SHORT,LOSS,-560.8,HIGH PRIORITY,27.0,100.0,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,14,ETH/USDT,SHORT,LOSS,-35.06,SETUP,26.0,100.0,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,16,BTC/USDT,SHORT,LOSS,-439.0,HIGH PRIORITY,29.0,100.0,D,BEARISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,17,BTC/USDT,SHORT,LOSS,-761.0,HIGH PRIORITY,30.0,100.0,D,BEARISH,PASS,Block trend/momentum OR SL quality D OR confidence/SL quality D.
+combined_protective_filters,19,BNB/USDT,SHORT,LOSS,-4.9,SETUP,26.0,98.0,B,BULLISH,FAIL,Block trend/momentum OR SL quality D OR confidence/SL quality D.
