@@ -4,3 +4,19 @@ __pycache__/
 .env
 .vscode/
 .idea/
+
+# AITradingAgent runtime artifacts
+logs/*.log
+*_report.json
+*_summary.txt
+decision_debug.csv
+decision_diagnostics.csv
+decision_explanations.csv
+diagnostics_report.json
+signals_v3.csv
+agent_v3_stats.json
+ai_coach_report.json
+protective_filter_dry_run.csv
+sl_quality_protective_dry_run.csv
+confidence_sl_quality_d_dry_run.csv
+*_dry_run.csv
