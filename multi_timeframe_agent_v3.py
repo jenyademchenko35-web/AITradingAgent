@@ -43,6 +43,8 @@ from logging_manager import ConsoleOutputManager
 from protective_filter_dry_run import ProtectiveFilterDryRun
 from sl_quality_protective_dry_run import SLQualityProtectiveDryRun
 from confidence_sl_quality_d_dry_run import ConfidenceSLQualityDDryRun
+from portfolio_manager import PortfolioManager
+from ada_opportunity_dry_run import ADAOpportunityDryRun
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -61,6 +63,8 @@ LOGGER = ConsoleOutputManager(LOG_LEVEL)
 PROTECTIVE_FILTER_DRY_RUN = ProtectiveFilterDryRun()
 SL_QUALITY_PROTECTIVE_DRY_RUN = SLQualityProtectiveDryRun()
 CONFIDENCE_SL_QUALITY_D_DRY_RUN = ConfidenceSLQualityDDryRun()
+PORTFOLIO_MANAGER = PortfolioManager()
+ADA_OPPORTUNITY_DRY_RUN = ADAOpportunityDryRun()
 
 # ==========================
 # # ==========================
@@ -1061,6 +1065,27 @@ def analyze_symbol(symbol: str):
         symbol=symbol,
         decision=decision,
         market=market,
+    )
+    portfolio_evaluation = PORTFOLIO_MANAGER.evaluate_and_log(
+        candidate={
+            "symbol": symbol,
+            "direction": decision.direction,
+            "decision": decision.signal,
+            "score": decision.score,
+            "confidence": decision.confidence,
+        },
+    )
+    if not portfolio_evaluation.get("allowed", True):
+        LOGGER.timestamped(
+            (
+                f"[Portfolio dry-run] {symbol} would not be recommended: "
+                f"{' | '.join(portfolio_evaluation.get('reasons', []))}"
+            ),
+            minimum="VERBOSE",
+        )
+    ADA_OPPORTUNITY_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
     )
     LOGGER.analysis_reports(
         xai.format_report(xai_report),

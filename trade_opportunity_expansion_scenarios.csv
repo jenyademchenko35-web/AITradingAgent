@@ -1,0 +1,10 @@
+scenario,candidate_count,estimated_favorable_1h,estimated_favorable_4h,estimated_favorable_8h,avg_return_4h,avg_return_8h,sample_size,risk_warning,status
+baseline,1349,47.07,39.21,30.69,-0.2681,-0.367,1349,avg_return_4h <= 0; avg_return_8h <= 0; favorable_4h < 52%,OBSERVE_ONLY
+confidence_70,362,67.38,64.91,41.13,0.0725,-0.0645,265,avg_return_8h <= 0,OBSERVE_ONLY
+confidence_65,369,65.74,65.81,42.65,0.0766,-0.0552,272,avg_return_8h <= 0,OBSERVE_ONLY
+min_score_23,362,67.38,64.91,41.13,0.0725,-0.0645,265,avg_return_8h <= 0,OBSERVE_ONLY
+min_score_22,875,55.9,58.7,45.35,0.0584,-0.0636,632,avg_return_8h <= 0,OBSERVE_ONLY
+min_edge_minus_2,235,56.17,33.19,26.38,-0.2862,-0.431,235,avg_return_4h <= 0; avg_return_8h <= 0; favorable_4h < 52%,OBSERVE_ONLY
+min_edge_minus_3,397,59.95,51.64,41.06,0.0147,-0.0386,397,avg_return_8h <= 0; favorable_4h < 52%,OBSERVE_ONLY
+watch_to_setup_if_edge_close,680,56.76,43.09,40.44,-0.1653,-0.2694,680,avg_return_4h <= 0; avg_return_8h <= 0; favorable_4h < 52%,OBSERVE_ONLY
+symbol_specific_best_only,289,52.63,82.48,100.0,1.133,2.8299,137,Quality gate passed; collect more dry-run evidence.,PROMISING_DRY_RUN
