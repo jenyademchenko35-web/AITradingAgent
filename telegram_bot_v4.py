@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
-from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.error import BadRequest, Conflict, NetworkError
 from telegram.ext import (
     ApplicationBuilder,
@@ -24,6 +24,28 @@ from config import RUN_INTERVAL
 from calibration_report import build_calibration_report, save_report
 from decision_diagnostics import DecisionDiagnostics
 from notification_manager import save_chat_id
+from telegram_formatters import (
+    format_ai_coach as v5_format_ai_coach,
+    format_dashboard as v5_format_dashboard,
+    format_developer as v5_format_developer,
+    format_dry_run as v5_format_dry_run,
+    footer as v5_footer,
+    format_market as v5_format_market,
+    format_opportunities as v5_format_opportunities,
+    format_reports_status as v5_format_reports_status,
+    format_settings as v5_format_settings,
+    format_statistics as v5_format_statistics,
+    format_symbol_detail as v5_format_symbol_detail,
+    format_trades as v5_format_trades,
+    format_watchlist as v5_format_watchlist,
+    market_symbols as v5_market_symbols,
+)
+from telegram_handlers import (
+    BOT_COMMANDS_V5,
+    developer_keyboard as v5_developer_keyboard,
+    main_keyboard as v5_main_keyboard,
+    market_keyboard as v5_market_keyboard,
+)
 
 
 try:
@@ -70,33 +92,7 @@ VENV_PYTHON = BASE_DIR / "venv" / "bin" / "python"
 
 MAX_MESSAGE_LENGTH = 3900
 FRESHNESS_GRACE_SECONDS = 60 * 60
-BOT_COMMANDS = [
-    BotCommand("start", "Главное меню"),
-    BotCommand("dashboard", "📊 Health Dashboard"),
-    BotCommand("coach", "🧠 AI Coach"),
-    BotCommand("v2", "🚀 V2 Readiness"),
-    BotCommand("symbols", "🏆 Рейтинг символов"),
-    BotCommand("equity", "💰 Equity отчёт"),
-    BotCommand("timeline", "🕘 Timeline стратегии"),
-    BotCommand("status", "⚙️ Статус агента"),
-    BotCommand("market", "📈 Состояние рынка"),
-    BotCommand("watchlist", "📋 Ближайшие сигналы"),
-    BotCommand("diagnostics", "🧠 Диагностика символа"),
-    BotCommand("stats", "📊 Статистика"),
-    BotCommand("trades", "📂 Сделки"),
-    BotCommand("posttrade", "🔎 Post Trade Analysis"),
-    BotCommand("calibration", "🛠 Калибровка"),
-    BotCommand("research", "🔬 Исследование стратегии"),
-    BotCommand("experiments", "🧪 Эксперименты"),
-    BotCommand("candidate", "🧾 Кандидатные веса"),
-    BotCommand("learn", "🧠 Самообучение"),
-    BotCommand("quality", "🛡 Проверка данных"),
-    BotCommand("filters", "⚙️ Анализ фильтров"),
-    BotCommand("blocked", "🚧 Blocked Trades"),
-    BotCommand("regime", "🌍 Режим рынка"),
-    BotCommand("history", "🕘 История"),
-    BotCommand("report", "🧾 Дневной отчёт"),
-]
+BOT_COMMANDS = BOT_COMMANDS_V5
 
 
 load_dotenv()
@@ -230,60 +226,7 @@ def load_weights(symbol: str) -> Dict[str, float]:
 
 def main_keyboard() -> InlineKeyboardMarkup:
     """Build the main inline keyboard."""
-    keyboard = [
-        [
-            InlineKeyboardButton("📊 Dashboard", callback_data="dashboard"),
-        ],
-        [
-            InlineKeyboardButton("🧠 AI Coach", callback_data="coach"),
-        ],
-        [
-            InlineKeyboardButton("🚀 V2", callback_data="v2"),
-            InlineKeyboardButton("🏆 Symbols", callback_data="symbols"),
-        ],
-        [
-            InlineKeyboardButton("💰 Equity", callback_data="equity"),
-            InlineKeyboardButton("🕘 Timeline", callback_data="timeline"),
-        ],
-        [
-            InlineKeyboardButton("⚙️ Статус", callback_data="status"),
-            InlineKeyboardButton("📈 Рынок", callback_data="market"),
-        ],
-        [
-            InlineKeyboardButton("📋 Watchlist", callback_data="watchlist"),
-            InlineKeyboardButton("📊 Статистика", callback_data="stats"),
-        ],
-        [
-            InlineKeyboardButton("📂 Сделки", callback_data="trades"),
-            InlineKeyboardButton("🔎 PostTrade", callback_data="posttrade"),
-        ],
-        [
-            InlineKeyboardButton("🛠 Калибровка", callback_data="calibration"),
-        ],
-        [
-            InlineKeyboardButton("🔬 Исследование", callback_data="research"),
-            InlineKeyboardButton("🧪 Эксперименты", callback_data="experiments"),
-        ],
-        [
-            InlineKeyboardButton("🧾 Кандидат", callback_data="candidate"),
-            InlineKeyboardButton("🧠 Обучение", callback_data="learn"),
-        ],
-        [
-            InlineKeyboardButton("🛡 Качество", callback_data="quality"),
-            InlineKeyboardButton("⚙️ Фильтры", callback_data="filters"),
-        ],
-        [
-            InlineKeyboardButton("🚧 Blocked", callback_data="blocked:Momentum"),
-            InlineKeyboardButton("🌍 Режим", callback_data="regime:view"),
-        ],
-        [
-            InlineKeyboardButton("🕘 История", callback_data="history"),
-        ],
-        [
-            InlineKeyboardButton("🧾 Отчёт", callback_data="report"),
-        ],
-    ]
-    return InlineKeyboardMarkup(keyboard)
+    return v5_main_keyboard()
 
 
 def localize_calibration_item(text: str) -> str:
@@ -1934,6 +1877,58 @@ def format_daily_report() -> str:
     return "\n".join(lines)
 
 
+def format_dashboard() -> str:
+    """Format the simplified UI v5 dashboard."""
+    return v5_format_dashboard()
+
+
+def format_market() -> str:
+    """Format the simplified UI v5 market screen."""
+    return v5_format_market()
+
+
+def format_opportunities() -> str:
+    """Format the UI v5 opportunities screen."""
+    return v5_format_opportunities()
+
+
+def format_watchlist() -> str:
+    """Format the simplified UI v5 watchlist."""
+    return v5_format_watchlist()
+
+
+def format_stats() -> str:
+    """Format the simplified UI v5 statistics screen."""
+    return v5_format_statistics()
+
+
+def format_trades() -> str:
+    """Format the simplified UI v5 trades screen."""
+    return v5_format_trades()
+
+
+def format_coach() -> str:
+    """Format the recommendation-focused UI v5 AI Coach."""
+    return v5_format_ai_coach()
+
+
+def format_settings() -> str:
+    """Format read-only UI settings."""
+    return v5_format_settings()
+
+
+def format_developer() -> str:
+    """Format the developer section intro."""
+    return v5_format_developer()
+
+
+def with_v5_footer(text: str) -> str:
+    """Append the compact UI footer when a legacy formatter is reused."""
+    if "Version: v1.0 / Telegram UI v5" in text:
+        return text
+    return text.rstrip() + v5_footer()
+
+
 def truncate(text: str) -> str:
     """Keep messages inside Telegram limits."""
     if len(text) <= MAX_MESSAGE_LENGTH:
@@ -1941,13 +1936,17 @@ def truncate(text: str) -> str:
     return text[:MAX_MESSAGE_LENGTH] + "\n\n... сообщение сокращено ..."
 
 
-async def reply(update: Update, text: str) -> None:
+async def reply(
+    update: Update,
+    text: str,
+    reply_markup: Optional[InlineKeyboardMarkup] = None,
+) -> None:
     """Reply to a command with the main keyboard."""
     if update.message is None:
         return
     await update.message.reply_text(
         truncate(text),
-        reply_markup=main_keyboard(),
+        reply_markup=reply_markup or main_keyboard(),
     )
 
 
@@ -1967,42 +1966,31 @@ def help_text() -> str:
     """Return command help."""
     return "\n".join(
         [
-            "🤖 AITradingAgent v1.0",
+            "🤖 AITradingAgent v1.0 / Telegram UI v5",
             "",
-            "📊 Мониторинг",
+            "Ежедневная работа",
             "/dashboard",
-            "/coach",
-            "/v2",
-            "/status",
             "/market",
+            "/opportunities",
             "/watchlist",
-            "/regime",
-            "",
-            "📈 Торговля",
             "/trades",
-            "/posttrade",
-            "/symbols",
-            "/equity",
-            "/timeline",
-            "/history",
-            "/report",
+            "/stats",
+            "/coach",
             "",
-            "🧠 Аналитика",
-            "/research",
-            "/experiments",
-            "/candidate",
-            "/learn",
-            "",
-            "🛡 Контроль качества",
-            "/quality",
-            "/filters",
-            "/blocked Momentum|Structure|Risk|Trend|ALL",
-            "",
-            "⚙️ Сервис",
+            "Сервис",
             "/start",
             "/help",
-            "/calibration",
+            "/settings",
+            "/developer",
+            "",
+            "Developer-раздел",
+            "Replay, Calibration, Experiments, Blocked, Research,",
+            "Diagnostics, Dry Run, Reports.",
+            "",
+            "Прямые команды для глубокой аналитики всё ещё доступны:",
             "/diagnostics BTC",
+            "/blocked Momentum|Structure|Risk|Trend|ALL",
+            "/research /experiments /calibration /quality",
         ]
     )
 
@@ -2051,7 +2039,14 @@ async def timeline_command(
 
 
 async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await reply(update, format_market())
+    await reply(update, format_market(), v5_market_keyboard(v5_market_symbols()))
+
+
+async def opportunities_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_opportunities())
 
 
 async def watchlist_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2075,6 +2070,20 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def trades_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply(update, format_trades())
+
+
+async def settings_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_settings())
+
+
+async def developer_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_developer(), v5_developer_keyboard())
 
 
 async def posttrade_command(
@@ -2172,7 +2181,31 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     await query.answer()
 
-    if query.data and query.data.startswith("blocked:"):
+    reply_markup = main_keyboard()
+    if query.data and query.data.startswith("symbol:"):
+        text = v5_format_symbol_detail(query.data.split(":", 1)[1])
+        reply_markup = v5_market_keyboard(v5_market_symbols())
+    elif query.data and query.data.startswith("dev:"):
+        developer_actions = {
+            "dev:replay": lambda: (
+                "Replay report доступен через strategy_replay_report.json."
+                if read_json(BASE_DIR / "strategy_replay_report.json")
+                else "Replay report пока отсутствует."
+            ),
+            "dev:experiments": lambda: with_v5_footer(format_experiments(full=False)),
+            "dev:research": lambda: with_v5_footer(format_research()),
+            "dev:diagnostics": lambda: (
+                "🧠 Diagnostics\n\n"
+                "Для подробностей используй /diagnostics BTC, /diagnostics ETH и т.д."
+            ),
+            "dev:dryrun": v5_format_dry_run,
+            "dev:reports": v5_format_reports_status,
+        }
+        text = developer_actions.get(query.data, format_developer)()
+        if query.data in {"dev:replay", "dev:diagnostics"}:
+            text = with_v5_footer(text)
+        reply_markup = v5_developer_keyboard()
+    elif query.data and query.data.startswith("blocked:"):
         blocker = normalize_blocker(query.data.split(":", 1)[1])
         text = (
             "🚧 Blocked\n\n"
@@ -2186,39 +2219,31 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         actions = {
             "dashboard": format_dashboard,
             "coach": format_coach,
-            "v2": format_v2_readiness,
-            "symbols": format_symbols_report,
-            "equity": format_equity_report,
-            "timeline": format_timeline_report,
-            "status": format_status,
+            "opportunities": format_opportunities,
             "market": format_market,
             "watchlist": format_watchlist,
             "stats": format_stats,
             "trades": format_trades,
-            "posttrade": format_posttrade,
-            "calibration": format_calibration,
-            "research": format_research,
-            "experiments": lambda: format_experiments(full=False),
-            "candidate": format_candidate,
-            "learn": format_learn,
-            "quality": format_quality,
-            "filters": format_filters,
-            "history": format_history,
-            "report": format_daily_report,
+            "settings": format_settings,
+            "developer": format_developer,
         }
         text = actions.get(query.data, help_text)()
+        if query.data == "market":
+            reply_markup = v5_market_keyboard(v5_market_symbols())
+        elif query.data == "developer":
+            reply_markup = v5_developer_keyboard()
 
     try:
         await query.edit_message_text(
             text=truncate(text),
-            reply_markup=main_keyboard(),
+            reply_markup=reply_markup,
         )
     except BadRequest as exc:
         if "Message is not modified" in str(exc):
             return
         await query.message.reply_text(
             truncate(text),
-            reply_markup=main_keyboard(),
+            reply_markup=reply_markup,
         )
 
 
@@ -2242,6 +2267,9 @@ def build_app():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("dashboard", dashboard_command))
     app.add_handler(CommandHandler("coach", coach_command))
+    app.add_handler(CommandHandler("opportunities", opportunities_command))
+    app.add_handler(CommandHandler("settings", settings_command))
+    app.add_handler(CommandHandler("developer", developer_command))
     app.add_handler(CommandHandler("v2", v2_command))
     app.add_handler(CommandHandler("symbols", symbols_command))
     app.add_handler(CommandHandler("equity", equity_command))
