@@ -1,0 +1,7 @@
+regime,analyses,no_trade,average_confidence,average_weighted_score,average_directional_edge,average_risk,average_structure_score,average_momentum_score,near_setup,trades,wins,losses,winrate,profit_factor,roi
+TRENDING_UP,4828,4728,63.71,19.51,4.77,7.52,12.21,7.36,1146,2,0,2,0.0,0.0,-4.9
+TRENDING_DOWN,1149,341,84.81,24.68,15.15,-0.07,11.15,6.93,950,10,2,8,20.0,0.66,-740.54
+RANGING,1633,763,76.69,22.24,12.43,9.15,10.32,5.36,985,8,1,7,12.5,0.01,-2294.31
+HIGH_VOLATILITY,1954,1534,63.73,20.5,6.55,3.36,7.24,9.09,442,0,0,0,0.0,0.0,0
+LOW_VOLATILITY,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0,0,0.0,0.0,0
+UNCERTAIN,0,0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0,0,0.0,0.0,0

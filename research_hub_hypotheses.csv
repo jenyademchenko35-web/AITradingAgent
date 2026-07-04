@@ -1,0 +1,9 @@
+name,status,confidence,evidence,source
+MIN_EDGE,KEEP,HIGH,MIN_EDGE analysis has high observational coverage; opportunity expansion does not allow safe live relaxation.,dataset_quality_report.json / trade_opportunity_expansion_report.json
+Momentum,KEEP,HIGH,Momentum analysis has strong sample coverage and prior blocked/outcome checks did not justify weakening it.,dataset_quality_report.json
+SL Quality D,PROMISING_DRY_RUN,LOW,Лучший сценарий: block_short_sl_quality_D; prevented_losses=14; lost_wins=0; apply_automatically=False.,sl_entry_quality_experiment_report.json
+Confidence > 90 + SL D,INSUFFICIENT_DATA,LOW,Лучший сценарий: block_conf_gt90_sl_quality_D; prevented_losses=7; lost_wins=0; apply_automatically=False.,confidence_calibration_experiment_report.json
+DOGE/LINK Opportunity,OBSERVE_ONLY,LOW,Dry-run candidates: 0; нужно live-наблюдение outcome.,doge_link_opportunity_dry_run.csv / trade_opportunity_expansion_report.json
+ADA Opportunity,OBSERVE_ONLY,LOW,Dry-run candidates: 0; нужно live-наблюдение outcome.,ada_opportunity_dry_run.csv / trade_opportunity_expansion_report.json
+Market Regime,PROMISING,MEDIUM,"Текущий режим: TRENDING_UP; режимы помогают понять, где появляются Near Setup.",market_regime_advisor_report.json
+Strategy Replay,INSUFFICIENT_DATA,LOW,Only 20 closed trades are available; minimum is 30.,strategy_replay_report.json
