@@ -46,6 +46,7 @@ from confidence_sl_quality_d_dry_run import ConfidenceSLQualityDDryRun
 from portfolio_manager import PortfolioManager
 from ada_opportunity_dry_run import ADAOpportunityDryRun
 from doge_link_opportunity_dry_run import DogeLinkOpportunityDryRun
+from long_rebound_opportunity_dry_run import LongReboundOpportunityDryRun
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -67,6 +68,7 @@ CONFIDENCE_SL_QUALITY_D_DRY_RUN = ConfidenceSLQualityDDryRun()
 PORTFOLIO_MANAGER = PortfolioManager()
 ADA_OPPORTUNITY_DRY_RUN = ADAOpportunityDryRun()
 DOGE_LINK_OPPORTUNITY_DRY_RUN = DogeLinkOpportunityDryRun()
+LONG_REBOUND_OPPORTUNITY_DRY_RUN = LongReboundOpportunityDryRun()
 
 # ==========================
 # # ==========================
@@ -1092,6 +1094,12 @@ def analyze_symbol(symbol: str):
     DOGE_LINK_OPPORTUNITY_DRY_RUN.evaluate(
         symbol=symbol,
         decision=decision,
+    )
+    LONG_REBOUND_OPPORTUNITY_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
+        risk=risk,
+        trend=trend,
     )
     LOGGER.analysis_reports(
         xai.format_report(xai_report),
