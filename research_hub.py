@@ -30,6 +30,15 @@ SOURCES = {
     "confidence_sl_dry_run": BASE_DIR / "confidence_sl_quality_d_dry_run.csv",
 }
 
+CORE_REPORTS = {
+    "strategy_replay": "Strategy Replay",
+    "decision_pipeline": "Pipeline Profiler",
+    "opportunity_expansion": "Opportunity Expansion",
+    "market_regime": "Market Regime",
+}
+
+REPORT_MAX_AGE_HOURS = 24
+
 REPORT_FILE = BASE_DIR / "research_hub_report.json"
 SUMMARY_FILE = BASE_DIR / "research_hub_summary.txt"
 HYPOTHESES_FILE = BASE_DIR / "research_hub_hypotheses.csv"
@@ -50,6 +59,22 @@ def read_json(path: Path) -> dict[str, Any]:
     except (json.JSONDecodeError, OSError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def read_json_with_error(path: Path) -> tuple[dict[str, Any], str | None]:
+    """Read JSON and return a warning only for real read/parse errors."""
+    if not path.exists() or path.stat().st_size == 0:
+        return {}, None
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            data = json.load(file)
+    except json.JSONDecodeError as exc:
+        return {}, f"Битый JSON: {path.name}: {exc}"
+    except OSError as exc:
+        return {}, f"Ошибка чтения файла: {path.name}: {exc}"
+    if not isinstance(data, dict):
+        return {}, f"Некорректный формат JSON: {path.name}"
+    return data, None
 
 
 def read_csv_rows(path: Path) -> list[dict[str, str]]:
@@ -124,6 +149,25 @@ def is_near_setup(row: Mapping[str, str]) -> bool:
     )
 
 
+def opportunity_rank(row: Mapping[str, str]) -> tuple[int, float, float, float]:
+    """Rank candidates by status, confidence, edge and weighted score."""
+    signal = row.get("signal", "")
+    if signal in {"SETUP", "HIGH PRIORITY"}:
+        status_rank = 4
+    elif signal == "WATCH":
+        status_rank = 3
+    elif is_near_setup(row):
+        status_rank = 2
+    else:
+        status_rank = 1
+    return (
+        status_rank,
+        safe_float(row.get("confidence")),
+        signal_edge(row),
+        signal_weighted_score(row),
+    )
+
+
 def trade_metrics(rows: list[dict[str, str]]) -> dict[str, Any]:
     """Calculate compact trade statistics."""
     closed = [
@@ -160,32 +204,71 @@ def dry_run_count(path: Path) -> int:
 
 def file_state(path: Path) -> dict[str, Any]:
     """Return source availability metadata."""
+    exists = path.exists() and path.stat().st_size > 0
+    modified_at = None
+    age_hours = None
+    freshness = "не найден"
+    if exists:
+        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+        modified_at = modified.isoformat()
+        age_hours = round(
+            (datetime.now(timezone.utc) - modified).total_seconds() / 3600,
+            2,
+        )
+        freshness = "свежий" if age_hours <= REPORT_MAX_AGE_HOURS else "устаревший"
     return {
-        "exists": path.exists(),
+        "exists": exists,
+        "status": freshness,
+        "modified_at": modified_at,
+        "age_hours": age_hours,
         "size": path.stat().st_size if path.exists() else 0,
         "rows": len(read_csv_rows(path)) if path.suffix == ".csv" else None,
     }
+
+
+def report_status_text(state: Mapping[str, Any]) -> str:
+    """Return localized report status text."""
+    if not state.get("exists"):
+        return "отчёт ещё не создан на этом сервере"
+    if state.get("status") == "устаревший":
+        return "нет свежего отчёта"
+    return "найден, свежий"
+
+
+def unique_preserve_order(items: list[str]) -> list[str]:
+    """Return unique items preserving original order."""
+    seen = set()
+    result = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    return result
 
 
 class ResearchHub:
     """Read-only aggregator of existing research conclusions."""
 
     def __init__(self) -> None:
-        self.json_sources = {
-            name: read_json(path)
-            for name, path in SOURCES.items()
-            if path.suffix == ".json"
-        }
+        self.warnings: list[str] = []
+        self.json_sources: dict[str, dict[str, Any]] = {}
+        for name, path in SOURCES.items():
+            if path.suffix != ".json":
+                continue
+            data, warning = read_json_with_error(path)
+            self.json_sources[name] = data
+            if warning:
+                self.warnings.append(warning)
         self.csv_sources = {
             name: read_csv_rows(path)
             for name, path in SOURCES.items()
             if path.suffix == ".csv"
         }
-        self.warnings = [
-            f"Файл отсутствует или пуст: {path.name}"
-            for path in SOURCES.values()
-            if not path.exists() or path.stat().st_size == 0
-        ]
+        self.source_states = {
+            name: file_state(path)
+            for name, path in SOURCES.items()
+        }
 
     def build_status(self) -> dict[str, Any]:
         """Build overall system status."""
@@ -202,6 +285,11 @@ class ResearchHub:
         metrics = trade_metrics(trades)
         market = self.json_sources.get("market_regime", {})
         opportunity = self.json_sources.get("opportunity_expansion", {})
+        market_regime = market.get("current_market", {}).get("regime")
+        if not market_regime:
+            market_regime = stats.get("market_regime") or stats.get("regime")
+        if not market_regime:
+            market_regime = "Недостаточно данных"
 
         decision_rows = debug_rows or signals
         latest_by_symbol: dict[str, dict[str, str]] = {}
@@ -212,12 +300,7 @@ class ResearchHub:
         near_rows = [row for row in latest_by_symbol.values() if is_near_setup(row)]
         best = sorted(
             near_rows or list(latest_by_symbol.values()),
-            key=lambda row: (
-                is_near_setup(row),
-                safe_float(row.get("confidence")),
-                signal_weighted_score(row),
-                signal_edge(row),
-            ),
+            key=opportunity_rank,
             reverse=True,
         )
         best_symbol = (
@@ -244,7 +327,7 @@ class ResearchHub:
             "closed_trades": metrics["closed"],
             "winrate": metrics["winrate"],
             "profit_factor": metrics["profit_factor"],
-            "current_market_regime": market.get("current_market", {}).get("regime", "N/A"),
+            "current_market_regime": market_regime,
             "best_opportunity": best_symbol,
             "near_setup_count": len(near_rows),
             "dry_run_candidates": dry_run_candidates,
@@ -318,7 +401,7 @@ class ResearchHub:
                 "confidence": "MEDIUM" if market.get("current_market") else "LOW",
                 "evidence": (
                     "Текущий режим: "
-                    f"{market.get('current_market', {}).get('regime', 'N/A')}; "
+                    f"{status.get('current_market_regime', 'Недостаточно данных')}; "
                     "режимы помогают понять, где появляются Near Setup."
                 ),
                 "source": "market_regime_advisor_report.json",
@@ -365,7 +448,7 @@ class ResearchHub:
                 "Confidence >90 + SL Quality D.",
             ]
         )
-        return items
+        return unique_preserve_order(items)
 
     def forbidden_actions(self) -> list[str]:
         """Return actions that should not be taken now."""
@@ -399,15 +482,24 @@ class ResearchHub:
             "observe": self.observation_items(),
             "do_not_do_now": self.forbidden_actions(),
             "next_best_action": self.next_best_action(status),
-            "source_files": {
-                name: file_state(path)
-                for name, path in SOURCES.items()
-            },
+            "report_freshness": self.report_freshness(),
+            "source_files": self.source_states,
             "warnings": self.warnings,
             "notes": [
                 "Research Hub only aggregates existing reports and CSV files.",
                 "No live logic, strategy, config, weights, dry-run or replay code is changed.",
             ],
+        }
+
+    def report_freshness(self) -> dict[str, Any]:
+        """Return freshness of core research reports."""
+        return {
+            name: {
+                "label": label,
+                **self.source_states.get(name, {}),
+                "message": report_status_text(self.source_states.get(name, {})),
+            }
+            for name, label in CORE_REPORTS.items()
         }
 
     def save_outputs(self, report: Mapping[str, Any]) -> None:
@@ -525,6 +617,12 @@ def format_summary(report: Mapping[str, Any]) -> str:
     ]
     for index, item in enumerate(selected, start=1):
         lines.append(f"{index}. {item.get('name')} — {item.get('status')}")
+    freshness = report.get("report_freshness", {})
+    lines.extend(["", "Состояние отчётов:"])
+    for key in CORE_REPORTS:
+        payload = freshness.get(key, {})
+        label = payload.get("label", CORE_REPORTS[key])
+        lines.append(f"- {label}: {payload.get('message', 'нет свежего отчёта')}")
     lines.extend(["", "Что уже доказано:"])
     lines.extend(f"- {item}" for item in report.get("proven", [])[:5])
     lines.extend(["", "Требует наблюдения:"])
