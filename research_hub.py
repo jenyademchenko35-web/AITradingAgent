@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
+from best_candidate_ranker import rank_candidates
+
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -137,35 +139,7 @@ def signal_edge(row: Mapping[str, str]) -> float:
 
 def is_near_setup(row: Mapping[str, str]) -> bool:
     """Detect near setup from stored signal values."""
-    signal = row.get("signal", "")
-    if signal in {"WATCH", "SETUP", "HIGH PRIORITY"}:
-        return True
-    return (
-        signal == "NO TRADE"
-        and safe_float(row.get("score")) == 0
-        and safe_float(row.get("confidence")) >= 60
-        and signal_weighted_score(row) >= 18
-        and signal_edge(row) >= 7
-    )
-
-
-def opportunity_rank(row: Mapping[str, str]) -> tuple[int, float, float, float]:
-    """Rank candidates by status, confidence, edge and weighted score."""
-    signal = row.get("signal", "")
-    if signal in {"SETUP", "HIGH PRIORITY"}:
-        status_rank = 4
-    elif signal == "WATCH":
-        status_rank = 3
-    elif is_near_setup(row):
-        status_rank = 2
-    else:
-        status_rank = 1
-    return (
-        status_rank,
-        safe_float(row.get("confidence")),
-        signal_edge(row),
-        signal_weighted_score(row),
-    )
+    return rank_candidates([row])[0].status in {"SETUP", "WATCH", "NEAR SETUP"}
 
 
 def trade_metrics(rows: list[dict[str, str]]) -> dict[str, Any]:
@@ -298,15 +272,8 @@ class ResearchHub:
             if symbol and row.get("timestamp", "") >= latest_by_symbol.get(symbol, {}).get("timestamp", ""):
                 latest_by_symbol[symbol] = row
         near_rows = [row for row in latest_by_symbol.values() if is_near_setup(row)]
-        best = sorted(
-            near_rows or list(latest_by_symbol.values()),
-            key=opportunity_rank,
-            reverse=True,
-        )
-        best_symbol = (
-            best[0].get("symbol", "N/A").replace("/USDT", "")
-            if best else "N/A"
-        )
+        ranked = rank_candidates(latest_by_symbol.values())
+        best_symbol = ranked[0].symbol.replace("/USDT", "") if ranked else "N/A"
 
         dry_run_candidates = sum(
             dry_run_count(SOURCES[name])

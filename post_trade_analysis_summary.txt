@@ -1,15 +1,15 @@
 AITradingAgent Post Trade Analysis
-Generated at: 2026-07-02T14:50:00.470764+00:00
-Closed trades: 19
+Generated at: 2026-07-05T11:34:24.351963+00:00
+Closed trades: 20
 Wins: 3
-Losses: 16
-Winrate: 15.79%
+Losses: 17
+Winrate: 15.0%
 
 Top LOSS reasons:
 - bad Risk: 9
 - unclassified LOSS: 5
+- weak Momentum: 3
 - low Confidence: 3
-- weak Momentum: 2
 
 Top WIN factors:
 - strong Trend: 3

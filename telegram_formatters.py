@@ -8,6 +8,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from best_candidate_ranker import (
+    RankedCandidate,
+    explain_selection,
+    rank_candidates,
+    select_best_candidate,
+)
 from config import MIN_EDGE, RUN_INTERVAL
 
 
@@ -274,32 +280,27 @@ def near_setup_category(row: Mapping[str, str]) -> str:
 
 def is_near_setup(row: Mapping[str, str]) -> bool:
     """Return True for actionable or near-actionable rows."""
-    signal = row.get("signal", "")
-    if signal in {"WATCH", "SETUP", "HIGH PRIORITY"}:
-        return True
-    return (
-        signal == "NO TRADE"
-        and safe_float(row.get("score")) == 0
-        and safe_float(row.get("confidence")) >= 60
-        and weighted_score(row) >= 18
-        and safe_float(row.get("diff")) >= MIN_EDGE - 8
-    )
+    return rank_candidates([row], min_edge=MIN_EDGE)[0].status in {
+        "SETUP",
+        "WATCH",
+        "NEAR SETUP",
+    }
+
+
+def latest_ranked_candidates() -> list[RankedCandidate]:
+    """Return latest candidates sorted by the shared display ranker."""
+    latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
+    return [
+        candidate for candidate in rank_candidates(latest.values(), min_edge=MIN_EDGE)
+        if candidate.status in {"SETUP", "WATCH", "NEAR SETUP"}
+    ]
 
 
 def latest_candidates() -> list[dict[str, str]]:
-    """Return latest candidate rows sorted by closeness to SETUP."""
+    """Return latest candidate rows for legacy callers."""
     latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
-    candidates = [row for row in latest.values() if is_near_setup(row)]
-    return sorted(
-        candidates,
-        key=lambda row: (
-            row.get("signal") in {"HIGH PRIORITY", "SETUP", "WATCH"},
-            safe_float(row.get("diff")),
-            safe_float(row.get("confidence")),
-            weighted_score(row),
-        ),
-        reverse=True,
-    )
+    ranked_symbols = [candidate.symbol for candidate in latest_ranked_candidates()]
+    return [latest[symbol] for symbol in ranked_symbols if symbol in latest]
 
 
 def missing_factors(symbol: str) -> str:
@@ -316,32 +317,22 @@ def missing_factors(symbol: str) -> str:
     return ", ".join(factors[:3]) if factors else "Directional Edge"
 
 
-def best_opportunity() -> dict[str, str]:
+def best_opportunity() -> RankedCandidate | None:
     """Return the current best opportunity row."""
-    candidates = latest_candidates()
-    if candidates:
-        return candidates[0]
     latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
     if not latest:
-        return {}
-    return max(
-        latest.values(),
-        key=lambda row: (
-            safe_float(row.get("confidence")),
-            weighted_score(row),
-            safe_float(row.get("diff")),
-        ),
-    )
+        return None
+    return select_best_candidate(latest.values(), min_edge=MIN_EDGE)
 
 
 def market_status(row: Mapping[str, str]) -> str:
     """Return a compact market status label."""
-    signal = row.get("signal", "N/A")
-    if signal in {"SETUP", "HIGH PRIORITY"}:
+    status = rank_candidates([row], min_edge=MIN_EDGE)[0].status
+    if status == "SETUP":
         return "🟢 SETUP"
-    if signal == "WATCH":
+    if status == "WATCH":
         return "🟡 WATCH"
-    if is_near_setup(row):
+    if status == "NEAR SETUP":
         return "🔵 NEAR SETUP"
     return "⚪ NO TRADE"
 
@@ -366,8 +357,7 @@ def format_dashboard() -> str:
     status = agent_status()
     stats = trade_stats()
     best = best_opportunity()
-    best_symbol = symbol_short(best.get("symbol", "нет")) if best else "нет"
-    diff = safe_float(best.get("diff")) if best else 0.0
+    best_symbol = symbol_short(best.symbol) if best else "нет"
     lines = [
         "🟢 AITradingAgent" if status["online"] else "🔴 AITradingAgent",
         "",
@@ -386,11 +376,13 @@ def format_dashboard() -> str:
         lines.extend(
             [
                 "Confidence",
-                fmt_pct(best.get("confidence")),
+                fmt_pct(best.confidence),
+                "Weighted Score",
+                fmt_score(best.weighted_score),
                 "Edge",
-                f"{fmt_score(diff)} / {MIN_EDGE}",
+                f"{fmt_score(best.edge)} / {MIN_EDGE}",
                 "Status",
-                market_status(best).replace("🔵 ", "").replace("⚪ ", ""),
+                best.status,
             ]
         )
     lines.extend(
@@ -449,16 +441,8 @@ def format_opportunities() -> str:
     candidates = latest_candidates()
     if not candidates:
         latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
-        closest = sorted(
-            latest.values(),
-            key=lambda row: (
-                safe_float(row.get("confidence")),
-                weighted_score(row),
-                safe_float(row.get("diff")),
-            ),
-            reverse=True,
-        )[:3]
-        names = "\n".join(symbol_short(row.get("symbol", "")) for row in closest) or "нет"
+        closest = rank_candidates(latest.values(), min_edge=MIN_EDGE)[:3]
+        names = "\n".join(symbol_short(candidate.symbol) for candidate in closest) or "нет"
         return "\n".join(
             [
                 "🎯 Opportunities",
@@ -471,20 +455,25 @@ def format_opportunities() -> str:
 
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
     lines = ["🎯 Opportunities", ""]
-    for index, row in enumerate(candidates[:5]):
-        diff = safe_float(row.get("diff"))
+    ranked = latest_ranked_candidates()
+    for index, candidate in enumerate(ranked[:5]):
+        missing = missing_factors(candidate.symbol)
         lines.extend(
             [
-                f"{medals[index]} {symbol_short(row.get('symbol', 'N/A'))}",
-                display_direction(row),
+                f"{medals[index]} {symbol_short(candidate.symbol)}",
+                candidate.direction,
                 "Confidence",
-                fmt_pct(row.get("confidence")),
+                fmt_pct(candidate.confidence),
                 "Weighted Score",
-                fmt_score(weighted_score(row)),
+                fmt_score(candidate.weighted_score),
                 "Edge",
-                f"{fmt_score(diff)} / {MIN_EDGE}",
+                f"{fmt_score(candidate.edge)} / {MIN_EDGE}",
+                "Статус",
+                candidate.status,
                 "Missing",
-                missing_factors(row.get("symbol", "")),
+                missing,
+                "Причина выбора",
+                explain_selection(candidate, min_edge=MIN_EDGE, missing=missing.split(", ")),
                 SEPARATOR,
             ]
         )

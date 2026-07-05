@@ -40,6 +40,7 @@ from notification_manager import (
 from explainable_ai import ExplainableAI
 from decision_diagnostics import DecisionDiagnostics
 from logging_manager import ConsoleOutputManager
+from best_candidate_ranker import select_best_candidate
 from protective_filter_dry_run import ProtectiveFilterDryRun
 from sl_quality_protective_dry_run import SLQualityProtectiveDryRun
 from confidence_sl_quality_d_dry_run import ConfidenceSLQualityDDryRun
@@ -1236,10 +1237,13 @@ def run_once():
     if not decisions:
         LOGGER.no_symbols_analyzed()
         return
-    # Sort descending by score
-    decisions.sort(key=lambda x: x[1].score, reverse=True)
-    symbol, decision = decisions[0]
-    LOGGER.best_setup(symbol, decision)
+    best_candidate = select_best_candidate(decisions)
+    if best_candidate:
+        decision_by_symbol = {item_symbol: item_decision for item_symbol, item_decision in decisions}
+        LOGGER.best_setup(
+            best_candidate.symbol,
+            decision_by_symbol[best_candidate.symbol],
+        )
     LOGGER.ranked_summary(decisions)
 
     # Count signals by type

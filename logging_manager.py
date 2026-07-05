@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
+from best_candidate_ranker import explain_selection, rank_candidates
+
 
 LEVELS = {
     "QUIET": 0,
@@ -95,26 +97,39 @@ class ConsoleOutputManager:
         self._print("No symbols analyzed this cycle.")
 
     def best_setup(self, symbol: str, decision: Any) -> None:
+        candidate = rank_candidates([(symbol, decision)])[0]
         self._print(
-            "\nBEST SETUP:",
+            "\nBEST CANDIDATE:",
             "=" * 60,
             (
-                f"{symbol}: {decision.direction} | {decision.signal} | "
+                f"{candidate.symbol}: {candidate.direction} | "
+                f"{candidate.decision} | Status={candidate.status} | "
                 f"Quality={decision.quality} | Score={decision.score} | "
-                f"Confidence={decision.confidence}%"
+                f"Confidence={candidate.confidence}% | "
+                f"Weighted Score={candidate.weighted_score:g} | "
+                f"Edge={candidate.edge:g}"
             ),
+            "Причина:",
+            explain_selection(candidate),
             "=" * 60,
         )
 
     def ranked_summary(self, decisions: Iterable[tuple[str, Any]]) -> None:
         if not self.allows("NORMAL"):
             return
-        self._print("Ranked summary by score:", "=" * 60)
-        for symbol, decision in decisions:
+        decision_items = list(decisions)
+        ranked = rank_candidates(decision_items)
+        self._print("Ranked summary by candidate quality:", "=" * 60)
+        decision_by_symbol = {symbol: decision for symbol, decision in decision_items}
+        for candidate in ranked:
+            decision = decision_by_symbol.get(candidate.symbol)
+            quality = getattr(decision, "quality", "") if decision else ""
             self._print(
-                f"{symbol}: {decision.direction} | {decision.signal} | "
-                f"Quality={decision.quality} | Score={decision.score} | "
-                f"Confidence={decision.confidence}%"
+                f"{candidate.symbol}: {candidate.direction} | "
+                f"{candidate.decision} | Status={candidate.status} | "
+                f"Quality={quality} | Score={candidate.score:g} | "
+                f"Confidence={candidate.confidence:g}% | "
+                f"Weighted={candidate.weighted_score:g} | Edge={candidate.edge:g}"
             )
         self._print("=" * 60)
 

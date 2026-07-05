@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-07-02T14:50:00.470764+00:00",
+  "generated_at": "2026-07-05T11:34:24.351963+00:00",
   "status": "OK",
-  "closed_trades": 19,
+  "closed_trades": 20,
   "wins": 3,
-  "losses": 16,
-  "winrate": 15.79,
+  "losses": 17,
+  "winrate": 15.0,
   "top_loss_reasons": {
     "bad Risk": 9,
     "unclassified LOSS": 5,
-    "low Confidence": 3,
-    "weak Momentum": 2
+    "weak Momentum": 3,
+    "low Confidence": 3
   },
   "top_win_factors": {
     "strong Trend": 3,
@@ -19,6 +19,13 @@
     "good Risk": 1
   },
   "by_symbol": {
+    "BNB/USDT": {
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate": 0.0,
+      "pnl": -4.9
+    },
     "BTC/USDT": {
       "trades": 10,
       "wins": 2,
@@ -50,11 +57,11 @@
       "pnl": 0.0
     },
     "SHORT": {
-      "trades": 18,
+      "trades": 19,
       "wins": 3,
-      "losses": 15,
-      "winrate": 16.67,
-      "pnl": -3034.85
+      "losses": 16,
+      "winrate": 15.79,
+      "pnl": -3039.75
     }
   },
   "best_symbol": "SOL/USDT",
@@ -654,6 +661,37 @@
       "volatility_regime": "Low Volatility",
       "loss_reasons": [
         "unclassified LOSS"
+      ],
+      "win_factors": []
+    },
+    {
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "pnl": -4.9,
+      "entry": 563.3,
+      "stop_loss": 567.4147183769353,
+      "take_profit": 555.0705632461293,
+      "opened_at": "2026-07-02T15:34:55.567557",
+      "closed_at": "2026-07-03T15:09:00.592930",
+      "matched_signal_time": "2026-07-02T15:34:55.534210+00:00",
+      "matched_debug_time": "2026-07-02T15:34:55.566671+00:00",
+      "signal_age_minutes": 0.0,
+      "score": 26.0,
+      "confidence": 98.0,
+      "primary_blocker": "Momentum",
+      "passed_filters": [
+        "Trend",
+        "Structure",
+        "Risk"
+      ],
+      "failed_filters": [
+        "Momentum"
+      ],
+      "market_regime": "Range",
+      "volatility_regime": "Low Volatility",
+      "loss_reasons": [
+        "weak Momentum"
       ],
       "win_factors": []
     }
