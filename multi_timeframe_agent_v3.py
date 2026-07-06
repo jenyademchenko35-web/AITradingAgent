@@ -48,6 +48,7 @@ from portfolio_manager import PortfolioManager
 from ada_opportunity_dry_run import ADAOpportunityDryRun
 from doge_link_opportunity_dry_run import DogeLinkOpportunityDryRun
 from long_rebound_opportunity_dry_run import LongReboundOpportunityDryRun
+from relaxed_edge_dry_run import RelaxedEdgeDryRun
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -70,6 +71,7 @@ PORTFOLIO_MANAGER = PortfolioManager()
 ADA_OPPORTUNITY_DRY_RUN = ADAOpportunityDryRun()
 DOGE_LINK_OPPORTUNITY_DRY_RUN = DogeLinkOpportunityDryRun()
 LONG_REBOUND_OPPORTUNITY_DRY_RUN = LongReboundOpportunityDryRun()
+RELAXED_EDGE_DRY_RUN = RelaxedEdgeDryRun()
 
 # ==========================
 # # ==========================
@@ -1101,6 +1103,10 @@ def analyze_symbol(symbol: str):
         decision=decision,
         risk=risk,
         trend=trend,
+    )
+    RELAXED_EDGE_DRY_RUN.evaluate(
+        symbol=symbol,
+        decision=decision,
     )
     LOGGER.analysis_reports(
         xai.format_report(xai_report),
