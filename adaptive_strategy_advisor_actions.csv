@@ -1,0 +1,4 @@
+priority,action,status,reason
+1,COLLECT_MORE_DATA,ACTIVE,Нужно больше закрытых сделок и outcome по Dry-run.
+2,OBSERVE_NEAR_SETUP,ACTIVE,Лучший символ: DOGE
+3,KEEP_LIVE_LOGIC_UNCHANGED,REQUIRED,Adaptive Mode: CONSERVATIVE
