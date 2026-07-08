@@ -20,3 +20,4 @@ protective_filter_dry_run.csv
 sl_quality_protective_dry_run.csv
 confidence_sl_quality_d_dry_run.csv
 *_dry_run.csv
+trade_close_notifications.json

@@ -1,0 +1,1 @@
+timestamp,dry_run_type,symbol,direction,decision,confidence,weighted_score,edge,edge_gap,filter_name,reason,entry_price,1h_return,1h_favorable,2h_return,2h_favorable,4h_return,4h_favorable,8h_return,8h_favorable,12h_return,12h_favorable,24h_return,24h_favorable

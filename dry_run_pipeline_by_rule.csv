@@ -1,0 +1,5 @@
+rule,label,historical_matches,actual_logged_rows,capture_gap,main_bottleneck,main_bottleneck_drop,avg_confidence,avg_weighted_score,avg_edge,top_symbols
+relaxed_edge,Relaxed Edge,450,0,450,status == NEAR SETUP,6136,84.9067,23.3644,11.6356,"{""BTC/USDT"": 200, ""ETH/USDT"": 72, ""BNB/USDT"": 66, ""DOGE/USDT"": 58, ""SOL/USDT"": 23, ""ADA/USDT"": 21, ""XRP/USDT"": 9, ""AVAX/USDT"": 1}"
+long_rebound,Long Rebound,91,0,91,confidence >= 60,3032,85.1429,23.6813,11.7143,"{""BTC/USDT"": 53, ""DOGE/USDT"": 18, ""SOL/USDT"": 12, ""BNB/USDT"": 4, ""ETH/USDT"": 3, ""LINK/USDT"": 1}"
+ada_opportunity,ADA Opportunity,45,0,45,symbol == ADA/USDT,10241,78.8667,21.4,9.6222,"{""ADA/USDT"": 45}"
+doge_link_opportunity,DOGE/LINK Opportunity,244,0,244,"symbol in DOGE/USDT, LINK/USDT",9640,80.3443,22.5287,10.1148,"{""DOGE/USDT"": 239, ""LINK/USDT"": 5}"

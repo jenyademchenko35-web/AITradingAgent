@@ -1,0 +1,34 @@
+rule,stage,label,count,percent_of_total,drop_count,drop_percent_from_previous,avg_confidence,avg_weighted_score,avg_edge,top_symbols_lost
+relaxed_edge,total,Всего решений,10842,100.0,0,0.0,67.5672,20.5164,7.2078,{}
+relaxed_edge,no_trade,decision == NO TRADE,8644,79.73,2198,20.27,63.4494,19.3786,4.72,"{""BTC/USDT"": 1104, ""ETH/USDT"": 881, ""SOL/USDT"": 208, ""BNB/USDT"": 5}"
+relaxed_edge,score_zero,score == 0,7912,72.98,732,8.47,63.7271,19.4707,4.5757,"{""SOL/USDT"": 510, ""BTC/USDT"": 149, ""ETH/USDT"": 73}"
+relaxed_edge,near_setup,status == NEAR SETUP,1776,16.38,6136,77.55,77.7331,21.487,9.2444,"{""SOL/USDT"": 1379, ""ETH/USDT"": 1139, ""BTC/USDT"": 829, ""XRP/USDT"": 575, ""ADA/USDT"": 537}"
+relaxed_edge,confidence_ge_75,confidence >= 75,921,8.49,855,48.14,83.1238,21.8621,11.0413,"{""DOGE/USDT"": 180, ""ETH/USDT"": 154, ""SOL/USDT"": 143, ""BNB/USDT"": 107, ""LINK/USDT"": 93}"
+relaxed_edge,weighted_ge_22,weighted_score >= 22,450,4.15,471,51.14,84.9067,23.3644,11.6356,"{""SOL/USDT"": 149, ""ETH/USDT"": 93, ""BNB/USDT"": 59, ""DOGE/USDT"": 52, ""AVAX/USDT"": 50}"
+relaxed_edge,edge_ge_9,edge >= 9,450,4.15,0,0.0,84.9067,23.3644,11.6356,{}
+relaxed_edge,edge_lt_min_edge,edge < MIN_EDGE,450,4.15,0,0.0,84.9067,23.3644,11.6356,{}
+long_rebound,total,Всего решений,10842,100.0,0,0.0,67.5672,20.5164,7.2078,{}
+long_rebound,no_trade,decision == NO TRADE,8644,79.73,2198,20.27,63.4494,19.3786,4.72,"{""BTC/USDT"": 1104, ""ETH/USDT"": 881, ""SOL/USDT"": 208, ""BNB/USDT"": 5}"
+long_rebound,score_zero,score == 0,7912,72.98,732,8.47,63.7271,19.4707,4.5757,"{""SOL/USDT"": 510, ""BTC/USDT"": 149, ""ETH/USDT"": 73}"
+long_rebound,direction_neutral,direction == NEUTRAL,7912,72.98,0,0.0,63.7271,19.4707,4.5757,{}
+long_rebound,confidence_ge_60,confidence >= 60,4880,45.01,3032,38.32,69.3279,20.1199,6.4426,"{""SOL/USDT"": 1005, ""ETH/USDT"": 566, ""AVAX/USDT"": 362, ""BTC/USDT"": 279, ""LINK/USDT"": 247}"
+long_rebound,weighted_ge_20,weighted_score >= 20,3271,30.17,1609,32.97,71.398,21.3641,7.1327,"{""BTC/USDT"": 290, ""ETH/USDT"": 284, ""SOL/USDT"": 239, ""LINK/USDT"": 229, ""BNB/USDT"": 174}"
+long_rebound,diff_8_14,diff between 8 and 14,1062,9.8,2209,67.53,81.8107,21.951,10.6036,"{""ETH/USDT"": 440, ""BTC/USDT"": 350, ""XRP/USDT"": 288, ""SOL/USDT"": 275, ""ADA/USDT"": 273}"
+long_rebound,risk_low_volatility,"risk_text содержит ""Низкая волатильность""",841,7.76,221,20.81,82.1617,22.1308,10.7206,"{""SOL/USDT"": 144, ""ADA/USDT"": 48, ""DOGE/USDT"": 21, ""ETH/USDT"": 8}"
+long_rebound,risk_good_long_zone,"risk_text содержит ""Хорошая зона для LONG""",91,0.84,750,89.18,85.1429,23.6813,11.7143,"{""DOGE/USDT"": 200, ""BTC/USDT"": 185, ""ETH/USDT"": 157, ""BNB/USDT"": 113, ""AVAX/USDT"": 60}"
+long_rebound,no_clear_edge,reason содержит No clear directional edge,91,0.84,0,0.0,85.1429,23.6813,11.7143,{}
+ada_opportunity,total,Всего решений,10842,100.0,0,0.0,67.5672,20.5164,7.2078,{}
+ada_opportunity,symbol_ada,symbol == ADA/USDT,601,5.54,10241,94.46,61.2363,19.9684,3.7454,"{""ETH/USDT"": 2412, ""SOL/USDT"": 2412, ""BTC/USDT"": 2410, ""BNB/USDT"": 602, ""XRP/USDT"": 602}"
+ada_opportunity,no_trade,decision == NO TRADE,601,5.54,0,0.0,61.2363,19.9684,3.7454,{}
+ada_opportunity,score_zero,score == 0,601,5.54,0,0.0,61.2363,19.9684,3.7454,{}
+ada_opportunity,confidence_ge_60,confidence >= 60,370,3.41,231,38.44,65.8108,20.6324,5.2703,"{""ADA/USDT"": 231}"
+ada_opportunity,weighted_ge_18,weighted_score >= 18,364,3.36,6,1.62,65.8242,20.6951,5.2747,"{""ADA/USDT"": 6}"
+ada_opportunity,edge_close,0 <= MIN_EDGE - diff <= 6,45,0.42,319,87.64,78.8667,21.4,9.6222,"{""ADA/USDT"": 319}"
+doge_link_opportunity,total,Всего решений,10842,100.0,0,0.0,67.5672,20.5164,7.2078,{}
+doge_link_opportunity,symbol_doge_link,"symbol in DOGE/USDT, LINK/USDT",1202,11.09,9640,88.91,65.1922,19.4617,5.0641,"{""ETH/USDT"": 2412, ""SOL/USDT"": 2412, ""BTC/USDT"": 2410, ""BNB/USDT"": 602, ""XRP/USDT"": 602}"
+doge_link_opportunity,no_trade,decision == NO TRADE,1202,11.09,0,0.0,65.1922,19.4617,5.0641,{}
+doge_link_opportunity,score_zero,score == 0,1202,11.09,0,0.0,65.1922,19.4617,5.0641,{}
+doge_link_opportunity,weighted_ge_20,weighted_score >= 20,506,4.67,696,57.9,72.8202,21.7194,7.6067,"{""LINK/USDT"": 475, ""DOGE/USDT"": 221}"
+doge_link_opportunity,confidence_ge_70,confidence >= 70,301,2.78,205,40.51,78.5748,22.3854,9.5249,"{""LINK/USDT"": 109, ""DOGE/USDT"": 96}"
+doge_link_opportunity,diff_8_14,diff between 8 and 14,244,2.25,57,18.94,80.3443,22.5287,10.1148,"{""DOGE/USDT"": 45, ""LINK/USDT"": 12}"
+doge_link_opportunity,edge_reason,reason contains directional edge,244,2.25,0,0.0,80.3443,22.5287,10.1148,{}

@@ -55,6 +55,7 @@ from trade_tracker import (
     get_open_trades,
     close_trade,
 )
+from trade_close_notifier import TradeCloseNotifier
 from dotenv import load_dotenv
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -72,6 +73,7 @@ ADA_OPPORTUNITY_DRY_RUN = ADAOpportunityDryRun()
 DOGE_LINK_OPPORTUNITY_DRY_RUN = DogeLinkOpportunityDryRun()
 LONG_REBOUND_OPPORTUNITY_DRY_RUN = LongReboundOpportunityDryRun()
 RELAXED_EDGE_DRY_RUN = RelaxedEdgeDryRun()
+TRADE_CLOSE_NOTIFIER = TradeCloseNotifier(bot_token=BOT_TOKEN)
 
 # ==========================
 # # ==========================
@@ -974,6 +976,47 @@ async def send_notification(
     await bot.send_message(chat_id=chat_id, text=text)
     mark_as_sent(text)
 
+
+def send_trade_close_notification(
+    trade: dict,
+    result: str,
+    exit_price=None,
+    pnl=None,
+) -> None:
+    """Send a one-time Telegram notification after a trade is closed."""
+    try:
+        outcome = asyncio.run(
+            TRADE_CLOSE_NOTIFIER.notify_closed_trade(
+                trade_hint=trade,
+                result=result,
+                exit_price=exit_price,
+                pnl=pnl,
+            )
+        )
+    except Exception as exc:
+        LOGGER.timestamped(
+            f"Trade close notification error: {exc}",
+            minimum="NORMAL",
+        )
+        return
+
+    if outcome.get("sent"):
+        LOGGER.timestamped(
+            f"Trade close notification sent for {trade.get('symbol', 'N/A')}",
+            minimum="NORMAL",
+        )
+        return
+
+    reason = outcome.get("reason", "unknown")
+    minimum = "DEBUG" if reason in {"duplicate", "missing_chat_id"} else "NORMAL"
+    LOGGER.timestamped(
+        (
+            f"Trade close notification skipped for "
+            f"{trade.get('symbol', 'N/A')}: {reason}"
+        ),
+        minimum=minimum,
+    )
+
 # ==========================
 # EXECUTION
 # ==========================
@@ -1203,13 +1246,26 @@ def update_open_trades(current_prices):
         if direction == "LONG":
 
             if price <= sl:
+                pnl = price - float(trade["entry"])
                 close_trade(symbol, "LOSS")
                 LOGGER.trade_result(symbol, "LOSS")
+                send_trade_close_notification(
+                    trade,
+                    "LOSS",
+                    exit_price=price,
+                    pnl=round(pnl, 2),
+                )
 
             elif price >= tp:
                 pnl = abs(price - float(trade["entry"]))
                 close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
                 LOGGER.trade_result(symbol, "WIN")
+                send_trade_close_notification(
+                    trade,
+                    "WIN",
+                    exit_price=price,
+                    pnl=round(pnl, 2),
+                )
 
         else:
 
@@ -1217,11 +1273,23 @@ def update_open_trades(current_prices):
                 pnl = -abs(price - float(trade["entry"]))
                 close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
                 LOGGER.trade_result(symbol, "LOSS")
+                send_trade_close_notification(
+                    trade,
+                    "LOSS",
+                    exit_price=price,
+                    pnl=round(pnl, 2),
+                )
 
             elif price <= tp:
                 pnl = abs(float(trade["entry"]) - price)
                 close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
                 LOGGER.trade_result(symbol, "WIN")
+                send_trade_close_notification(
+                    trade,
+                    "WIN",
+                    exit_price=price,
+                    pnl=round(pnl, 2),
+                )
 # Main analysis pipeline for one execution cycle
 def run_once():
     decisions = []

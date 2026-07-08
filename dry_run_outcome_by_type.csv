@@ -1,0 +1,5 @@
+dry_run_type,label,candidate_count,best_symbol,worst_symbol,best_horizon,4h_checked,4h_favorable_rate,4h_avg_return,8h_favorable_rate,24h_favorable_rate,sim_24h_winrate,sim_24h_profit_factor,sim_24h_net_R,conclusion
+relaxed_edge,Relaxed Edge,0,,,,0,0.0,,0.0,0.0,0.0,,,insufficient_data
+long_rebound,Long Rebound,0,,,,0,0.0,,0.0,0.0,0.0,,,insufficient_data
+ada_opportunity,ADA Opportunity,0,,,,0,0.0,,0.0,0.0,0.0,,,insufficient_data
+doge_link_opportunity,DOGE/LINK Opportunity,0,,,,0,0.0,,0.0,0.0,0.0,,,insufficient_data
