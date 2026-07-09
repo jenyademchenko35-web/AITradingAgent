@@ -6,7 +6,7 @@ import csv
 import json
 import os
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Mapping, Optional
@@ -99,6 +99,10 @@ VENV_PYTHON = BASE_DIR / "venv" / "bin" / "python"
 
 MAX_MESSAGE_LENGTH = 3900
 FRESHNESS_GRACE_SECONDS = 60 * 60
+NEWS_UPDATE_INTERVAL_SECONDS = 30 * 60
+NEWS_WARNING_SECONDS = 2 * 60 * 60
+NEWS_STALE_SECONDS = 6 * 60 * 60
+LOCAL_TZ = timezone(timedelta(hours=3), "MSK")
 BOT_COMMANDS = BOT_COMMANDS_V5
 
 
@@ -184,6 +188,109 @@ def format_time(value: str) -> str:
     if parsed is None:
         return value or "N/A"
     return parsed.strftime("%Y-%m-%d %H:%M UTC")
+
+
+def format_local_time(value: datetime) -> str:
+    """Format a datetime in Moscow time for Telegram."""
+    return value.astimezone(LOCAL_TZ).strftime("%Y-%m-%d %H:%M MSK")
+
+
+def news_human_age(seconds: float) -> str:
+    """Return a compact Russian age string."""
+    if seconds < 60:
+        return "меньше минуты назад"
+    minutes = int(seconds // 60)
+    if minutes < 60:
+        return f"{minutes} мин назад"
+    hours = minutes // 60
+    rest_minutes = minutes % 60
+    if hours < 24:
+        return f"{hours} ч {rest_minutes} мин назад"
+    days = hours // 24
+    rest_hours = hours % 24
+    return f"{days} д {rest_hours} ч назад"
+
+
+def news_last_update() -> Optional[datetime]:
+    """Return last real news update time from JSON generated_at or file mtime."""
+    report = read_json(MARKET_NEWS_FILE)
+    generated_at = parse_time(str(report.get("generated_at", "")))
+    if generated_at:
+        return generated_at
+    candidates = [
+        path for path in (MARKET_NEWS_FILE, MARKET_NEWS_SUMMARY_FILE)
+        if path.exists() and path.stat().st_size > 0
+    ]
+    if not candidates:
+        return None
+    latest_mtime = max(path.stat().st_mtime for path in candidates)
+    return datetime.fromtimestamp(latest_mtime, tz=timezone.utc)
+
+
+def news_freshness() -> Dict[str, Any]:
+    """Build Telegram freshness metadata for market news."""
+    updated_at = news_last_update()
+    if updated_at is None:
+        return {
+            "updated_text": "нет данных",
+            "age_text": "нет данных",
+            "next_update_text": "неизвестно",
+            "warning": "Market News пока не обновлялись.",
+        }
+    age_seconds = max(
+        0.0,
+        (datetime.now(timezone.utc) - updated_at).total_seconds(),
+    )
+    remaining = max(0, int(NEWS_UPDATE_INTERVAL_SECONDS - age_seconds))
+    if remaining <= 0:
+        next_update = "примерно сейчас"
+    else:
+        next_update = f"примерно через {(remaining + 59) // 60} мин"
+    warning = ""
+    if age_seconds >= NEWS_STALE_SECONDS:
+        warning = "🔴 Новости устарели"
+    elif age_seconds >= NEWS_WARNING_SECONDS:
+        warning = "⚠️ Новости могли устареть"
+    return {
+        "updated_text": format_local_time(updated_at),
+        "age_text": news_human_age(age_seconds),
+        "next_update_text": next_update,
+        "warning": warning,
+    }
+
+
+def news_freshness_lines(include_next: bool = True) -> List[str]:
+    """Return freshness lines for Telegram messages."""
+    freshness = news_freshness()
+    lines = [
+        "Последнее обновление:",
+        freshness["updated_text"],
+        "Обновлено:",
+        freshness["age_text"],
+    ]
+    if include_next:
+        lines.extend(["Следующее обновление:", freshness["next_update_text"]])
+    if freshness["warning"]:
+        lines.append(str(freshness["warning"]))
+    return lines
+
+
+def inject_news_freshness_into_summary(text: str) -> str:
+    """Insert news freshness right after the News block in intelligence text."""
+    lines = text.splitlines()
+    freshness = news_freshness()
+    insert = ["Обновлено:", freshness["age_text"]]
+    if freshness["warning"]:
+        insert.append(str(freshness["warning"]))
+    for index, line in enumerate(lines):
+        if line.strip() == "Новости":
+            position = min(index + 2, len(lines))
+            lines[position:position] = insert
+            return "\n".join(lines)
+    lines.extend(["", "Новости", "Обновлено:", freshness["age_text"]])
+    if freshness["warning"]:
+        lines.append(str(freshness["warning"]))
+    return "\n".join(lines)
 
 
 def safe_float(value: Any, default: float = 0.0) -> float:
@@ -1939,6 +2046,8 @@ def format_news() -> str:
         f"Настроение: {summary.get('market_sentiment', 'Neutral')}",
         f"Новостей за 24ч: {summary.get('recent_24h', 0)}",
         "",
+        *news_freshness_lines(include_next=True),
+        "",
         "Последние новости:",
     ]
     for item in news_items[:5]:
@@ -2003,30 +2112,25 @@ def format_heatmap() -> str:
 
 
 def format_intelligence() -> str:
-    """Format combined market intelligence summary."""
-    error = run_readonly_module("market_intelligence_hub.py")
+    """Run Market Intelligence Hub and return its text summary."""
+    error = run_readonly_module("market_intelligence_hub.py", timeout=120)
     if error:
-        return f"🧠 Market Intelligence\n\n{error}"
-    if MARKET_INTELLIGENCE_SUMMARY_FILE.exists():
+        brief_error = " ".join(error.split())[:600]
+        return f"Ошибка Market Intelligence: {brief_error}"
+
+    try:
         text = MARKET_INTELLIGENCE_SUMMARY_FILE.read_text(encoding="utf-8").strip()
-        if text:
-            return "🧠 Market Intelligence\n\n" + text
-    report = read_json(MARKET_INTELLIGENCE_FILE)
-    if not report:
-        return (
-            "🧠 Market Intelligence\n\n"
-            "Файл market_intelligence_report.json пуст или повреждён."
-        )
-    return "\n".join(
-        [
-            "🧠 Market Intelligence",
-            "",
-            f"Рынок: {report.get('market', {}).get('regime', 'Недостаточно данных')}",
-            f"Новости: {report.get('market', {}).get('news_sentiment', 'Neutral')}",
-            f"Рекомендация: {report.get('recommendation', 'N/A')}",
-            f"Следующее исследование: {report.get('next_research', 'N/A')}",
-        ]
-    )
+    except OSError as exc:
+        brief_error = " ".join(str(exc).split())[:600]
+        return f"Ошибка Market Intelligence: {brief_error}"
+
+    if not text:
+        return "Market Intelligence пока недоступен. Попробуй позже."
+
+    text = inject_news_freshness_into_summary(text)
+    if len(text) > MAX_MESSAGE_LENGTH:
+        return text[:MAX_MESSAGE_LENGTH - 3].rstrip() + "..."
+    return text
 
 
 def format_memory(symbol: str = "") -> str:

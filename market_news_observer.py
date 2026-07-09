@@ -104,11 +104,15 @@ class MarketNewsObserver:
 
     def build_report(self) -> dict[str, Any]:
         """Build and save news feed artifacts."""
+        existing = read_json(JSON_OUTPUT)
         items = self.fetch_news() if self.fetch_enabled else self.load_existing_items()
         unique_items = self.deduplicate(items)
         summary = self.news_summary(unique_items)
+        generated_at = utc_now()
+        if not self.fetch_enabled and existing.get("generated_at"):
+            generated_at = str(existing["generated_at"])
         report = {
-            "generated_at": utc_now(),
+            "generated_at": generated_at,
             "status": "OK" if unique_items else "NO_DATA",
             "mode": "read-only news observer",
             "sources": RSS_SOURCES,
