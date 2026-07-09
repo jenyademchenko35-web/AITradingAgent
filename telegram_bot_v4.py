@@ -92,6 +92,8 @@ MARKET_INTELLIGENCE_FILE = BASE_DIR / "market_intelligence_report.json"
 MARKET_INTELLIGENCE_SUMMARY_FILE = BASE_DIR / "market_intelligence_summary.txt"
 TRADE_MARKET_CONTEXT_FILE = BASE_DIR / "trade_market_context.csv"
 TRADE_MEMORY_SUMMARY_FILE = BASE_DIR / "trade_memory_summary.txt"
+STRATEGY_LAB_REPORT_FILE = BASE_DIR / "strategy_lab_report.json"
+STRATEGY_LAB_SUMMARY_FILE = BASE_DIR / "strategy_lab_summary.txt"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -2215,6 +2217,68 @@ def format_context() -> str:
     return "\n".join(context_lines).rstrip("────────────").rstrip()
 
 
+def format_lab(args: List[str]) -> str:
+    """Run Strategy Lab and format Telegram output."""
+    error = run_readonly_module("strategy_lab/runner.py", timeout=120)
+    if error:
+        return f"Ошибка Strategy Lab: {' '.join(error.split())[:600]}"
+
+    command = args[0].lower() if args else ""
+    if command in {"", "compare"}:
+        try:
+            text = STRATEGY_LAB_SUMMARY_FILE.read_text(encoding="utf-8").strip()
+        except OSError:
+            text = ""
+        return text or "Strategy Lab пока недоступен. Попробуй позже."
+
+    report = read_json(STRATEGY_LAB_REPORT_FILE)
+    metrics = report.get("metrics", [])
+    aliases = {
+        "current": ["Current"],
+        "momentum": ["Momentum+"],
+        "news": ["News Filter"],
+        "atr": ["ATR"],
+        "edge": ["Edge"],
+        "quality": ["Quality"],
+    }
+    names = aliases.get(command)
+    if not names:
+        return (
+            "🧪 Strategy Lab\n\n"
+            "Использование: /lab, /lab compare, /lab current, /lab momentum, "
+            "/lab news, /lab atr, /lab edge, /lab quality"
+        )
+    selected = [
+        row for row in metrics
+        if any(str(row.get("strategy", "")).startswith(name) for name in names)
+    ]
+    if not selected:
+        return "Strategy Lab пока не нашёл данные по этому разделу."
+
+    lines = [
+        "🧪 Strategy Lab",
+        "",
+        "Shadow Research",
+        "Live-стратегия не меняется.",
+        "",
+    ]
+    for row in selected[:8]:
+        lines.extend(
+            [
+                str(row.get("strategy")),
+                f"Trades: {row.get('trades', 0)}",
+                f"Winrate: {row.get('winrate', 0)}%",
+                f"PF: {row.get('profit_factor', 0)}",
+                f"ROI: {row.get('roi', 0)} R",
+                f"Skipped: {row.get('skipped_trades', 0)}",
+                f"Status: {row.get('sample_status', 'N/A')}",
+                "────────────",
+            ]
+        )
+    lines.append("Это исследовательские результаты, не сигнал к live-изменениям.")
+    return "\n".join(lines).rstrip("────────────").rstrip()
+
+
 def format_dashboard() -> str:
     """Format the simplified UI v5 dashboard."""
     return v5_format_dashboard()
@@ -2330,6 +2394,7 @@ def help_text() -> str:
             "/blocked Momentum|Structure|Risk|Trend|ALL",
             "/research /experiments /calibration /quality",
             "/news /heatmap /intelligence /memory BTC /context",
+            "/lab compare|current|momentum|news|atr|edge|quality",
         ]
     )
 
@@ -2543,6 +2608,13 @@ async def context_command(
     await reply(update, format_context())
 
 
+async def lab_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_lab(context.args))
+
+
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle inline keyboard callbacks."""
     query = update.callback_query
@@ -2666,6 +2738,7 @@ def build_app():
     app.add_handler(CommandHandler("intelligence", intelligence_command))
     app.add_handler(CommandHandler("memory", memory_command))
     app.add_handler(CommandHandler("context", context_command))
+    app.add_handler(CommandHandler("lab", lab_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app

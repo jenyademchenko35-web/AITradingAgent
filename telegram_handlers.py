@@ -20,7 +20,8 @@ BOT_COMMANDS_V5 = [
     BotCommand("heatmap", "🗺 Тепловая карта рынка"),
     BotCommand("intelligence", "🧠 Market Intelligence"),
     BotCommand("memory", "🧾 Память сделок"),
-    BotCommand("context", "🔎 Контекст сделок"),
+    BotCommand("context", "🔎 Контекст рынка"),
+    BotCommand("lab", "🧪 Strategy Lab"),
     BotCommand("help", "❔ Помощь"),
 ]
 
