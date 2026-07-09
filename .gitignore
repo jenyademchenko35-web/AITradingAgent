@@ -21,3 +21,13 @@ sl_quality_protective_dry_run.csv
 confidence_sl_quality_d_dry_run.csv
 *_dry_run.csv
 trade_close_notifications.json
+market_news_feed.json
+market_news_feed.csv
+market_heatmap.csv
+trade_market_context.csv
+post_trade_intelligence.json
+post_trade_intelligence.csv
+trade_memory_matches.csv
+news_impact_shadow.csv
+news_trade_memory.csv
+news_statistics.csv

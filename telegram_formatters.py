@@ -28,6 +28,7 @@ DATA_QUALITY_FILE = BASE_DIR / "data_quality_report.json"
 PIPELINE_FILE = BASE_DIR / "decision_pipeline_profile_report.json"
 OPPORTUNITY_FILE = BASE_DIR / "trade_opportunity_expansion_report.json"
 REPLAY_FILE = BASE_DIR / "strategy_replay_report.json"
+NEWS_IMPACT_FILE = BASE_DIR / "news_impact_advisor_report.json"
 AGENT_VERSION = "v1.0 / Telegram UI v5"
 SEPARATOR = "────────────"
 
@@ -317,6 +318,16 @@ def missing_factors(symbol: str) -> str:
     return ", ".join(factors[:3]) if factors else "Directional Edge"
 
 
+def news_impact_for_symbol(symbol: str) -> dict[str, Any]:
+    """Return Shadow News Advisor row for a symbol when available."""
+    report = read_json(NEWS_IMPACT_FILE)
+    short = symbol_short(symbol)
+    for row in report.get("active_ideas", []):
+        if symbol_short(str(row.get("symbol", ""))) == short:
+            return dict(row)
+    return {}
+
+
 def best_opportunity() -> RankedCandidate | None:
     """Return the current best opportunity row."""
     latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
@@ -419,6 +430,7 @@ def format_symbol_detail(symbol: str) -> str:
     if not row:
         return f"📈 {full_symbol}\n\nДанных по символу пока нет." + footer()
     diff = safe_float(row.get("diff"))
+    news = news_impact_for_symbol(full_symbol)
     return "\n".join(
         [
             f"📈 {symbol_short(full_symbol)}",
@@ -431,6 +443,18 @@ def format_symbol_detail(symbol: str) -> str:
             f"Edge: {fmt_score(diff)} / {MIN_EDGE}",
             "Missing:",
             missing_factors(full_symbol),
+            "",
+            "📰 Новости",
+            f"Статус: {news.get('news_status', 'NEWS_NEUTRAL')}",
+            (
+                "Sentiment: "
+                f"{news.get('news_sentiment', 'Neutral')} "
+                f"{news.get('news_strength', 0)}/5"
+            ),
+            (
+                "Комментарий: "
+                f"{news.get('reason', 'Shadow Advisor ждёт свежий отчёт.')}"
+            ),
             f"Причина: {row.get('summary', 'N/A')}",
         ]
     ) + footer()

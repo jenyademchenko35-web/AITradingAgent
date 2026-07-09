@@ -12,6 +12,8 @@ from typing import Any, Mapping
 from market_intelligence_utils import BASE_DIR, read_json, safe_float, utc_now, write_json
 from market_news_observer import MarketNewsObserver
 from market_heatmap import MarketHeatmap
+from news_impact_advisor import NewsImpactAdvisor
+from news_statistics import NewsStatistics
 from post_trade_intelligence import PostTradeIntelligence
 from trade_market_context import TradeMarketContext
 from trade_memory import TradeMemory
@@ -25,6 +27,8 @@ TRADE_LOSS_FILE = BASE_DIR / "trade_loss_report.json"
 OUTCOME_FILE = BASE_DIR / "dry_run_outcome_report.json"
 REGIME_ADVISOR_FILE = BASE_DIR / "market_regime_advisor_report.json"
 NEWS_FILE = BASE_DIR / "market_news_feed.json"
+NEWS_IMPACT_FILE = BASE_DIR / "news_impact_advisor_report.json"
+NEWS_STATS_FILE = BASE_DIR / "news_statistics_report.json"
 HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
 POST_TRADE_FILE = BASE_DIR / "post_trade_intelligence.json"
 MEMORY_FILE = BASE_DIR / "trade_memory_report.json"
@@ -45,6 +49,8 @@ class MarketIntelligenceHub:
         outcome = read_json(OUTCOME_FILE)
         regime = read_json(REGIME_ADVISOR_FILE)
         news = read_json(NEWS_FILE)
+        news_impact = read_json(NEWS_IMPACT_FILE)
+        news_stats = read_json(NEWS_STATS_FILE)
         heatmap = read_json(HEATMAP_FILE)
         post_trade = read_json(POST_TRADE_FILE)
         memory = read_json(MEMORY_FILE)
@@ -54,10 +60,11 @@ class MarketIntelligenceHub:
             "status": "OK",
             "mode": "read-only market intelligence hub",
             "market": self.market_block(regime, news),
-            "signals": self.signal_block(heatmap, research),
-            "trades": self.trade_block(loss, post_trade, memory),
+            "news_impact": self.news_impact_block(news_impact, news_stats),
+            "signals": self.signal_block(heatmap, research, news_impact),
+            "trades": self.trade_block(loss, post_trade, memory, news_impact),
             "dry_run": self.dry_run_block(outcome),
-            "recommendation": self.recommendation(loss, post_trade, outcome),
+            "recommendation": self.recommendation(loss, post_trade, outcome, news_stats),
             "next_research": self.next_research(loss, outcome),
             "warnings": self.warnings,
             "source_reports": {
@@ -66,6 +73,8 @@ class MarketIntelligenceHub:
                 "dry_run_outcome": OUTCOME_FILE.exists(),
                 "market_regime_advisor": REGIME_ADVISOR_FILE.exists(),
                 "news": NEWS_FILE.exists(),
+                "news_impact": NEWS_IMPACT_FILE.exists(),
+                "news_statistics": NEWS_STATS_FILE.exists(),
                 "heatmap": HEATMAP_FILE.exists(),
                 "post_trade_intelligence": POST_TRADE_FILE.exists(),
                 "trade_memory": MEMORY_FILE.exists(),
@@ -92,6 +101,14 @@ class MarketIntelligenceHub:
             TradeMarketContext().build_context()
         except Exception as exc:
             self.warnings.append(f"Trade context не построен: {exc}")
+        try:
+            NewsImpactAdvisor().build_report()
+        except Exception as exc:
+            self.warnings.append(f"News Impact Advisor не построен: {exc}")
+        try:
+            NewsStatistics().build_report()
+        except Exception as exc:
+            self.warnings.append(f"News Statistics не построен: {exc}")
         try:
             PostTradeIntelligence().build_report()
         except Exception as exc:
@@ -122,9 +139,49 @@ class MarketIntelligenceHub:
         }
 
     @staticmethod
+    def news_impact_block(
+        news_impact: Mapping[str, Any],
+        news_stats: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """Build News Risk block."""
+        active = news_impact.get("active_ideas", [])
+        severity = {
+            "NEWS_CONFLICT": 4,
+            "NEWS_RISK": 3,
+            "NEWS_SUPPORTIVE": 2,
+            "NEWS_NEUTRAL": 1,
+        }
+        sorted_active = sorted(
+            active,
+            key=lambda row: (
+                severity.get(str(row.get("news_status")), 0),
+                safe_float(row.get("news_strength")),
+            ),
+            reverse=True,
+        )
+        risk_rows = [
+            {
+                "symbol": row.get("symbol"),
+                "status": row.get("news_status"),
+                "sentiment": row.get("news_sentiment"),
+                "strength": row.get("news_strength"),
+                "action": row.get("shadow_action"),
+            }
+            for row in sorted_active[:10]
+        ]
+        return {
+            "shadow_advisor": "Активен" if news_impact else "Нет данных",
+            "risk_rows": risk_rows,
+            "strongest_news": news_impact.get("strongest_news", {}),
+            "most_dangerous_news": news_impact.get("most_dangerous_news", {}),
+            "statistics": news_stats.get("summary", {}),
+        }
+
+    @staticmethod
     def signal_block(
         heatmap: Mapping[str, Any],
         research: Mapping[str, Any],
+        news_impact: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Build signal status block."""
         symbols = heatmap.get("symbols", [])
@@ -145,6 +202,14 @@ class MarketIntelligenceHub:
             "best_signals": [row.get("symbol") for row in sorted_symbols[:3]],
             "risky_symbols": risky,
             "research_next_action": research.get("next_best_action") or research.get("summary", {}).get("next_best_action"),
+            "news_risk": [
+                {
+                    "symbol": row.get("symbol"),
+                    "news_status": row.get("news_status"),
+                    "shadow_action": row.get("shadow_action"),
+                }
+                for row in news_impact.get("active_ideas", [])[:5]
+            ],
         }
 
     @staticmethod
@@ -152,18 +217,36 @@ class MarketIntelligenceHub:
         loss: Mapping[str, Any],
         post_trade: Mapping[str, Any],
         memory: Mapping[str, Any],
+        news_impact: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Build trade intelligence block."""
         top_loss = next(iter(loss.get("patterns", []) or []), {})
         top_post_loss = next(iter(post_trade.get("top_loss_causes", {}).items()), ("Недостаточно данных", 0))
         top_win = next(iter(post_trade.get("top_win_causes", {}).items()), ("Недостаточно данных", 0))
+        trade_news_counts = news_impact.get("summary", {}).get("trade_news_status_counts", {})
+        raw_loss_pattern = top_loss.get("pattern")
+        generic_loss_patterns = {
+            "SHORT",
+            "LONG",
+            "score_ge_25",
+            "quality_A",
+            "quality_B",
+            "confidence_ge_95",
+        }
+        loss_primary = (
+            top_post_loss[0]
+            if raw_loss_pattern in generic_loss_patterns
+            or str(raw_loss_pattern).startswith("symbol=")
+            else raw_loss_pattern or top_post_loss[0]
+        )
         return {
             "closed_trades": post_trade.get("stats", {}).get("trades", loss.get("sample", {}).get("closed_trades", 0)),
-            "last_loss_primary": top_loss.get("pattern") or top_post_loss[0],
+            "last_loss_primary": loss_primary,
             "last_win_primary": top_win[0],
             "memory_matches": memory.get("matches_count", 0),
             "memory_winrate": memory.get("stats", {}).get("winrate", 0),
             "memory_pf": memory.get("stats", {}).get("profit_factor", 0),
+            "news_conflict_trades": trade_news_counts.get("NEWS_CONFLICT", 0),
         }
 
     @staticmethod
@@ -180,6 +263,7 @@ class MarketIntelligenceHub:
         loss: Mapping[str, Any],
         post_trade: Mapping[str, Any],
         outcome: Mapping[str, Any],
+        news_stats: Mapping[str, Any],
     ) -> str:
         """Return top-level conservative recommendation."""
         loss_count = safe_float(loss.get("sample", {}).get("loss_trades"))
@@ -190,6 +274,9 @@ class MarketIntelligenceHub:
         causes = post_trade.get("top_loss_causes", {})
         if causes:
             return f"Проверить dry-run защиту для причины: {next(iter(causes))}."
+        news_recommendation = news_stats.get("summary", {}).get("recommendation")
+        if news_recommendation:
+            return str(news_recommendation)
         return "Продолжать сбор статистики."
 
     @staticmethod
@@ -214,6 +301,15 @@ class MarketIntelligenceHub:
         market = report.get("market", {})
         signals = report.get("signals", {})
         trades = report.get("trades", {})
+        news_impact = report.get("news_impact", {})
+        risk_rows = news_impact.get("risk_rows", [])
+        top_risks = risk_rows[:3]
+        strongest = news_impact.get("strongest_news", {})
+        dangerous = news_impact.get("most_dangerous_news", {})
+        risk_lines = [
+            f"{row.get('symbol')} {row.get('status')}"
+            for row in top_risks
+        ] or ["нет данных"]
         return "\n".join([
             "====================================",
             "Market Intelligence",
@@ -222,6 +318,20 @@ class MarketIntelligenceHub:
             str(market.get("regime", "Недостаточно данных")),
             "Новости",
             str(market.get("news_sentiment", "Neutral")),
+            "News Risk",
+            ", ".join(risk_lines),
+            "Последние новости",
+            (
+                f"{strongest.get('coin', 'N/A')} {strongest.get('sentiment', 'Neutral')} "
+                f"{strongest.get('strength', 0)}/5"
+                if strongest else "нет данных"
+            ),
+            "Самая опасная новость",
+            (
+                f"{dangerous.get('symbol')} {dangerous.get('news_status')} "
+                f"{dangerous.get('news_strength')}/5"
+                if dangerous else "нет активного NEWS_CONFLICT"
+            ),
             "Fear & Greed",
             str(market.get("fear_greed") or "нет данных"),
             "Лучшие сигналы",
@@ -230,6 +340,7 @@ class MarketIntelligenceHub:
             ", ".join(signals.get("risky_symbols", []) or ["нет данных"]),
             "Последние LOSS",
             f"Главная причина: {trades.get('last_loss_primary')}",
+            f"News Conflict: {trades.get('news_conflict_trades', 0)} сделок в памяти",
             "Последние WIN",
             f"Главная причина: {trades.get('last_win_primary')}",
             "Trade Memory",
@@ -238,6 +349,8 @@ class MarketIntelligenceHub:
             f"PF: {trades.get('memory_pf')}",
             "Рекомендация",
             str(report.get("recommendation")),
+            "Shadow News Advisor",
+            str(news_impact.get("shadow_advisor", "Нет данных")),
             "Следующее исследование",
             str(report.get("next_research")),
         ])

@@ -1968,7 +1968,21 @@ def format_heatmap() -> str:
     if not report:
         return "🗺 Heatmap\n\nФайл market_heatmap_report.json пуст или повреждён."
 
-    lines = ["🗺 Heatmap", ""]
+    summary = report.get("summary", {})
+    lines = [
+        "🗺 Heatmap",
+        "",
+        "Heatmap Summary",
+        f"HIGH PRIORITY: {summary.get('HIGH PRIORITY', 0)}",
+        f"SETUP: {summary.get('SETUP', 0)}",
+        f"WATCH: {summary.get('WATCH', 0)}",
+        f"NEAR SETUP: {summary.get('NEAR SETUP', 0)}",
+        f"NO TRADE: {summary.get('NO TRADE', 0)}",
+        f"Bullish News: {summary.get('Bullish News', 0)}",
+        f"Bearish News: {summary.get('Bearish News', 0)}",
+        f"Neutral News: {summary.get('Neutral News', 0)}",
+        "",
+    ]
     for row in report.get("symbols", [])[:12]:
         lines.append(
             f"{str(row.get('symbol', '')).replace('/USDT', '')} {row.get('overall', '⚪')} "
@@ -1982,6 +1996,7 @@ def format_heatmap() -> str:
             f"Edge {row.get('edge', 0)} | "
             f"{row.get('decision', 'N/A')}"
         )
+        lines.append(f"Причина: {row.get('reason', 'N/A')}")
     lines.append("")
     lines.append("Heatmap только показывает контекст рынка.")
     return "\n".join(lines)
@@ -2028,38 +2043,72 @@ def format_memory(symbol: str = "") -> str:
 
 
 def format_context() -> str:
-    """Format latest trade market context."""
-    error = run_readonly_module("trade_market_context.py")
+    """Format current market context; always return a useful response."""
+    error = run_readonly_module("market_intelligence_hub.py")
     if error:
-        return f"🔎 Контекст сделок\n\n{error}"
+        return f"🔎 Контекст рынка\n\n{error}\n\nКонтекст пока не накоплен."
+
+    report = read_json(MARKET_INTELLIGENCE_FILE)
+    market = report.get("market", {}) if report else {}
+    signals = report.get("signals", {}) if report else {}
+    trades = report.get("trades", {}) if report else {}
+    news_impact = report.get("news_impact", {}) if report else {}
+    best_signal = next(iter(signals.get("best_signals", []) or []), "нет данных")
+    top_risk = next(iter(news_impact.get("risk_rows", []) or []), {})
+    stats = calculate_trade_stats()
+    loss_rows = [
+        row for row in read_csv_rows(TRADES_FILE)
+        if row.get("status") == "LOSS" or row.get("result") == "LOSS"
+    ]
+    last_loss = loss_rows[-1] if loss_rows else {}
+    last_loss_label = (
+        f"{last_loss.get('symbol')} {last_loss.get('direction', '')}".strip()
+        if last_loss else "нет данных"
+    )
+    context_lines = [
+        "🔎 Контекст рынка",
+        "",
+        f"Режим: {market.get('regime', 'Недостаточно данных')}",
+        f"Новости: {market.get('news_sentiment', 'Neutral')}",
+        f"Fear & Greed: {market.get('fear_greed') or 'нет данных'}",
+        f"Лучший сигнал: {best_signal}",
+        f"Открытые сделки: {stats.get('open', 0)}",
+        f"Последний LOSS: {last_loss_label}",
+        f"Главный риск: {top_risk.get('status', 'Momentum FAIL')}",
+        f"Причина LOSS: {trades.get('last_loss_primary', 'нет данных')}",
+        "Рекомендация:",
+        str(report.get("recommendation", "Ждать подтверждения.") if report else "Ждать подтверждения."),
+        "",
+        "Shadow News Advisor:",
+        str(news_impact.get("shadow_advisor", "Нет данных")),
+    ]
+
     rows = read_csv_rows(TRADE_MARKET_CONTEXT_FILE)
     if not rows:
-        return (
-            "🔎 Контекст сделок\n\n"
-            "trade_market_context.csv пока пуст. Сделок для контекста нет."
-        )
+        context_lines.extend(["", "Контекст сделок пока не накоплен."])
+        return "\n".join(context_lines)
 
-    lines = ["🔎 Контекст сделок", ""]
+    context_lines.extend(["", "Последний контекст сделок:"])
     for row in rows[-5:]:
-        lines.append(
+        context_lines.append(
             f"{row.get('symbol', 'N/A')} {row.get('direction', '')} "
             f"{row.get('result') or row.get('status') or 'N/A'}"
         )
-        lines.append(
+        context_lines.append(
             f"Score {row.get('score', 'N/A')} | "
             f"Confidence {row.get('confidence', 'N/A')} | "
             f"Edge {row.get('directional_edge', 'N/A')}"
         )
-        lines.append(
+        context_lines.append(
             f"Momentum {row.get('momentum', 'N/A')} | "
             f"Trend {row.get('trend', 'N/A')} | "
             f"News {row.get('news_sentiment', 'Neutral')}"
         )
         if row.get("context_notes"):
-            lines.append(f"Контекст: {row.get('context_notes')}")
-        lines.append("────────────")
-    lines.append("Контекст не влияет на открытие/закрытие сделок.")
-    return "\n".join(lines).rstrip("────────────").rstrip()
+            context_lines.append(f"Контекст: {row.get('context_notes')}")
+        context_lines.append("────────────")
+    context_lines.append("Контекст не влияет на открытие/закрытие сделок.")
+    return "\n".join(context_lines).rstrip("────────────").rstrip()
 
 
 def format_dashboard() -> str:
