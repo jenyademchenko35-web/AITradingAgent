@@ -85,6 +85,13 @@ AI_COACH_SUMMARY_FILE = BASE_DIR / "ai_coach_summary.txt"
 POST_TRADE_REPORT_FILE = BASE_DIR / "post_trade_analysis_report.json"
 POST_TRADE_SUMMARY_FILE = BASE_DIR / "post_trade_analysis_summary.txt"
 POST_TRADE_TRADES_FILE = BASE_DIR / "post_trade_analysis_trades.csv"
+MARKET_NEWS_FILE = BASE_DIR / "market_news_feed.json"
+MARKET_NEWS_SUMMARY_FILE = BASE_DIR / "market_news_summary.txt"
+MARKET_HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
+MARKET_INTELLIGENCE_FILE = BASE_DIR / "market_intelligence_report.json"
+MARKET_INTELLIGENCE_SUMMARY_FILE = BASE_DIR / "market_intelligence_summary.txt"
+TRADE_MARKET_CONTEXT_FILE = BASE_DIR / "trade_market_context.csv"
+TRADE_MEMORY_SUMMARY_FILE = BASE_DIR / "trade_memory_summary.txt"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -125,6 +132,37 @@ def read_json(path: Path) -> Dict[str, Any]:
     except json.JSONDecodeError:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def run_readonly_module(
+    script_name: str,
+    *args: str,
+    timeout: int = 90,
+) -> Optional[str]:
+    """Run a read-only analytics module through the project venv."""
+    if not VENV_PYTHON.exists():
+        return (
+            "Не найден проектный Python: "
+            f"{VENV_PYTHON}. Сначала проверь venv."
+        )
+    script_path = BASE_DIR / script_name
+    if not script_path.exists():
+        return f"Модуль {script_name} не найден."
+    try:
+        subprocess.run(
+            [str(VENV_PYTHON), str(script_path), *args],
+            cwd=BASE_DIR,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return f"Модуль {script_name} не успел завершиться за {timeout} сек."
+    except subprocess.CalledProcessError as exc:
+        details = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+        return f"Не удалось выполнить {script_name}: {details}"
+    return None
 
 
 def parse_time(value: str) -> Optional[datetime]:
@@ -1877,6 +1915,153 @@ def format_daily_report() -> str:
     return "\n".join(lines)
 
 
+def format_news() -> str:
+    """Format market news observer output for Telegram."""
+    if not MARKET_NEWS_FILE.exists() or MARKET_NEWS_FILE.stat().st_size == 0:
+        error = run_readonly_module("market_news_observer.py", "--offline")
+        if error:
+            return f"📰 Новости рынка\n\n{error}"
+
+    report = read_json(MARKET_NEWS_FILE)
+    if not report:
+        return (
+            "📰 Новости рынка\n\n"
+            "Файл market_news_feed.json пока отсутствует или повреждён.\n"
+            "Для обновления запусти: venv/bin/python market_news_observer.py"
+        )
+
+    summary = report.get("summary", {})
+    news_items = report.get("news", [])
+    lines = [
+        "📰 Новости рынка",
+        "",
+        f"Статус: {report.get('status', 'N/A')}",
+        f"Настроение: {summary.get('market_sentiment', 'Neutral')}",
+        f"Новостей за 24ч: {summary.get('recent_24h', 0)}",
+        "",
+        "Последние новости:",
+    ]
+    for item in news_items[:5]:
+        lines.append(
+            f"{item.get('coin', 'MARKET')} | {item.get('sentiment', 'Neutral')} "
+            f"{item.get('strength', 1)}/5"
+        )
+        lines.append(str(item.get("title", "Без заголовка"))[:160])
+    if not news_items:
+        lines.append("Пока нет загруженных новостей.")
+        lines.append("Обновление: venv/bin/python market_news_observer.py")
+    if report.get("warnings"):
+        lines.append("")
+        lines.append("Предупреждения:")
+        lines.extend(f"- {warning}" for warning in report["warnings"][:3])
+    lines.append("")
+    lines.append("Новости не влияют на сделки.")
+    return "\n".join(lines)
+
+
+def format_heatmap() -> str:
+    """Format market heatmap output for Telegram."""
+    error = run_readonly_module("market_heatmap.py")
+    if error:
+        return f"🗺 Heatmap\n\n{error}"
+    report = read_json(MARKET_HEATMAP_FILE)
+    if not report:
+        return "🗺 Heatmap\n\nФайл market_heatmap_report.json пуст или повреждён."
+
+    lines = ["🗺 Heatmap", ""]
+    for row in report.get("symbols", [])[:12]:
+        lines.append(
+            f"{str(row.get('symbol', '')).replace('/USDT', '')} {row.get('overall', '⚪')} "
+            f"Trend {row.get('trend', '⚪')} "
+            f"Momentum {row.get('momentum', '⚪')} "
+            f"Volume {row.get('volume', '⚪')} "
+            f"News {row.get('news', '⚪')}"
+        )
+        lines.append(
+            f"Confidence {row.get('confidence', 0)} | "
+            f"Edge {row.get('edge', 0)} | "
+            f"{row.get('decision', 'N/A')}"
+        )
+    lines.append("")
+    lines.append("Heatmap только показывает контекст рынка.")
+    return "\n".join(lines)
+
+
+def format_intelligence() -> str:
+    """Format combined market intelligence summary."""
+    error = run_readonly_module("market_intelligence_hub.py")
+    if error:
+        return f"🧠 Market Intelligence\n\n{error}"
+    if MARKET_INTELLIGENCE_SUMMARY_FILE.exists():
+        text = MARKET_INTELLIGENCE_SUMMARY_FILE.read_text(encoding="utf-8").strip()
+        if text:
+            return "🧠 Market Intelligence\n\n" + text
+    report = read_json(MARKET_INTELLIGENCE_FILE)
+    if not report:
+        return (
+            "🧠 Market Intelligence\n\n"
+            "Файл market_intelligence_report.json пуст или повреждён."
+        )
+    return "\n".join(
+        [
+            "🧠 Market Intelligence",
+            "",
+            f"Рынок: {report.get('market', {}).get('regime', 'Недостаточно данных')}",
+            f"Новости: {report.get('market', {}).get('news_sentiment', 'Neutral')}",
+            f"Рекомендация: {report.get('recommendation', 'N/A')}",
+            f"Следующее исследование: {report.get('next_research', 'N/A')}",
+        ]
+    )
+
+
+def format_memory(symbol: str = "") -> str:
+    """Format trade memory for a symbol or current best setup."""
+    args = [symbol.upper()] if symbol else []
+    error = run_readonly_module("trade_memory.py", *args)
+    if error:
+        return f"🧾 Trade Memory\n\n{error}"
+    if TRADE_MEMORY_SUMMARY_FILE.exists():
+        text = TRADE_MEMORY_SUMMARY_FILE.read_text(encoding="utf-8").strip()
+        if text:
+            return "🧾 Trade Memory\n\n" + text
+    return "🧾 Trade Memory\n\nПохожих ситуаций пока нет."
+
+
+def format_context() -> str:
+    """Format latest trade market context."""
+    error = run_readonly_module("trade_market_context.py")
+    if error:
+        return f"🔎 Контекст сделок\n\n{error}"
+    rows = read_csv_rows(TRADE_MARKET_CONTEXT_FILE)
+    if not rows:
+        return (
+            "🔎 Контекст сделок\n\n"
+            "trade_market_context.csv пока пуст. Сделок для контекста нет."
+        )
+
+    lines = ["🔎 Контекст сделок", ""]
+    for row in rows[-5:]:
+        lines.append(
+            f"{row.get('symbol', 'N/A')} {row.get('direction', '')} "
+            f"{row.get('result') or row.get('status') or 'N/A'}"
+        )
+        lines.append(
+            f"Score {row.get('score', 'N/A')} | "
+            f"Confidence {row.get('confidence', 'N/A')} | "
+            f"Edge {row.get('directional_edge', 'N/A')}"
+        )
+        lines.append(
+            f"Momentum {row.get('momentum', 'N/A')} | "
+            f"Trend {row.get('trend', 'N/A')} | "
+            f"News {row.get('news_sentiment', 'Neutral')}"
+        )
+        if row.get("context_notes"):
+            lines.append(f"Контекст: {row.get('context_notes')}")
+        lines.append("────────────")
+    lines.append("Контекст не влияет на открытие/закрытие сделок.")
+    return "\n".join(lines).rstrip("────────────").rstrip()
+
+
 def format_dashboard() -> str:
     """Format the simplified UI v5 dashboard."""
     return v5_format_dashboard()
@@ -1991,6 +2176,7 @@ def help_text() -> str:
             "/diagnostics BTC",
             "/blocked Momentum|Structure|Risk|Trend|ALL",
             "/research /experiments /calibration /quality",
+            "/news /heatmap /intelligence /memory BTC /context",
         ]
     )
 
@@ -2174,6 +2360,36 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await reply(update, format_daily_report())
 
 
+async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_news())
+
+
+async def heatmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_heatmap())
+
+
+async def intelligence_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_intelligence())
+
+
+async def memory_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    symbol = context.args[0] if context.args else ""
+    await reply(update, format_memory(symbol))
+
+
+async def context_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_context())
+
+
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle inline keyboard callbacks."""
     query = update.callback_query
@@ -2292,6 +2508,11 @@ def build_app():
     app.add_handler(CommandHandler("regime", regime_command))
     app.add_handler(CommandHandler("history", history_command))
     app.add_handler(CommandHandler("report", report_command))
+    app.add_handler(CommandHandler("news", news_command))
+    app.add_handler(CommandHandler("heatmap", heatmap_command))
+    app.add_handler(CommandHandler("intelligence", intelligence_command))
+    app.add_handler(CommandHandler("memory", memory_command))
+    app.add_handler(CommandHandler("context", context_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app

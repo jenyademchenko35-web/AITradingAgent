@@ -625,6 +625,7 @@ def format_developer() -> str:
             "",
             "Здесь собраны редкие исследовательские разделы:",
             "Replay, Diagnostics, Research, Experiments, Dry Runs, Reports.",
+            "Market Intelligence: /news, /heatmap, /intelligence, /memory BTC, /context.",
             "",
             "Ежедневная работа вынесена в Dashboard, Market и Opportunities.",
         ]
@@ -648,6 +649,10 @@ def format_reports_status() -> str:
         REPLAY_FILE,
         AI_COACH_FILE,
         BASE_DIR / "meta_strategy_validation_report.json",
+        BASE_DIR / "market_news_feed.json",
+        BASE_DIR / "market_heatmap_report.json",
+        BASE_DIR / "market_intelligence_report.json",
+        BASE_DIR / "trade_market_context.csv",
     ]
     lines = ["📄 Reports", ""]
     for path in reports:

@@ -16,6 +16,11 @@ BOT_COMMANDS_V5 = [
     BotCommand("coach", "🧠 AI Coach"),
     BotCommand("settings", "⚙️ Settings"),
     BotCommand("developer", "🛠 Developer"),
+    BotCommand("news", "📰 Новости рынка"),
+    BotCommand("heatmap", "🗺 Тепловая карта рынка"),
+    BotCommand("intelligence", "🧠 Market Intelligence"),
+    BotCommand("memory", "🧾 Память сделок"),
+    BotCommand("context", "🔎 Контекст сделок"),
     BotCommand("help", "❔ Помощь"),
 ]
 
