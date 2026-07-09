@@ -9,7 +9,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping
 
-from market_intelligence_utils import BASE_DIR, read_json, safe_float, utc_now, write_json
+from market_intelligence_utils import (
+    BASE_DIR,
+    latest_by_symbol,
+    normalize_decision,
+    read_csv_rows,
+    read_json,
+    safe_float,
+    utc_now,
+    write_json,
+)
 from market_news_observer import MarketNewsObserver
 from market_heatmap import MarketHeatmap
 from news_impact_advisor import NewsImpactAdvisor
@@ -26,6 +35,8 @@ RESEARCH_HUB_FILE = BASE_DIR / "research_hub_report.json"
 TRADE_LOSS_FILE = BASE_DIR / "trade_loss_report.json"
 OUTCOME_FILE = BASE_DIR / "dry_run_outcome_report.json"
 REGIME_ADVISOR_FILE = BASE_DIR / "market_regime_advisor_report.json"
+SIGNALS_FILE = BASE_DIR / "signals_v3.csv"
+DEBUG_FILE = BASE_DIR / "decision_debug.csv"
 NEWS_FILE = BASE_DIR / "market_news_feed.json"
 NEWS_IMPACT_FILE = BASE_DIR / "news_impact_advisor_report.json"
 NEWS_STATS_FILE = BASE_DIR / "news_statistics_report.json"
@@ -59,7 +70,7 @@ class MarketIntelligenceHub:
             "generated_at": utc_now(),
             "status": "OK",
             "mode": "read-only market intelligence hub",
-            "market": self.market_block(regime, news),
+            "market": self.market_block(regime, news, heatmap),
             "news_impact": self.news_impact_block(news_impact, news_stats),
             "signals": self.signal_block(heatmap, research, news_impact),
             "trades": self.trade_block(loss, post_trade, memory, news_impact),
@@ -123,20 +134,108 @@ class MarketIntelligenceHub:
             self.warnings.append(f"Trade Memory не построена: {exc}")
 
     @staticmethod
-    def market_block(regime: Mapping[str, Any], news: Mapping[str, Any]) -> dict[str, Any]:
+    def market_block(
+        regime: Mapping[str, Any],
+        news: Mapping[str, Any],
+        heatmap: Mapping[str, Any],
+    ) -> dict[str, Any]:
         """Build market status block."""
         news_summary = news.get("summary", {})
+        raw_regime = MarketIntelligenceHub.extract_market_regime(regime)
+        market_regime = (
+            MarketIntelligenceHub.normalize_market_regime(raw_regime)
+            or MarketIntelligenceHub.fallback_market_regime(heatmap)
+        )
         return {
-            "regime": (
-                regime.get("current_regime")
-                or regime.get("market_regime")
-                or regime.get("status")
-                or "Недостаточно данных"
-            ),
+            "regime": market_regime,
             "news_sentiment": news_summary.get("market_sentiment", "Neutral"),
             "news_count_24h": news_summary.get("recent_24h", 0),
             "fear_greed": "",
         }
+
+    @staticmethod
+    def extract_market_regime(regime: Mapping[str, Any]) -> str:
+        """Extract a raw market regime from advisor reports."""
+        current_market = regime.get("current_market", {})
+        if isinstance(current_market, Mapping):
+            value = current_market.get("regime")
+            if value:
+                return str(value)
+        for key in ("current_regime", "market_regime", "regime"):
+            value = regime.get(key)
+            if value:
+                return str(value)
+        status = str(regime.get("status", ""))
+        return status if status in {"BULLISH", "BEARISH", "NEUTRAL", "MIXED"} else ""
+
+    @staticmethod
+    def normalize_market_regime(value: str) -> str:
+        """Normalize regime names to Telegram-facing labels."""
+        normalized = str(value or "").strip().upper().replace(" ", "_")
+        if normalized in {"BULLISH", "BULL", "TRENDING_UP", "UP"}:
+            return "BULLISH"
+        if normalized in {"BEARISH", "BEAR", "TRENDING_DOWN", "DOWN"}:
+            return "BEARISH"
+        if normalized in {"NEUTRAL", "RANGING", "RANGE", "SIDEWAYS", "LOW_VOLATILITY"}:
+            return "NEUTRAL"
+        if normalized in {"MIXED", "UNCERTAIN", "HIGH_VOLATILITY"}:
+            return "MIXED"
+        return ""
+
+    @staticmethod
+    def fallback_market_regime(heatmap: Mapping[str, Any]) -> str:
+        """Estimate a coarse market regime from heatmap and latest signals."""
+        heatmap_rows = [
+            row for row in heatmap.get("symbols", [])
+            if isinstance(row, Mapping)
+        ]
+        decision_rows = [
+            normalize_decision(row)
+            for row in latest_by_symbol(read_csv_rows(DEBUG_FILE)).values()
+        ]
+        if not decision_rows:
+            decision_rows = [
+                normalize_decision(row)
+                for row in latest_by_symbol(read_csv_rows(SIGNALS_FILE)).values()
+            ]
+        if len(decision_rows) < 3 and len(heatmap_rows) < 3:
+            return "Недостаточно данных"
+
+        top_rows = sorted(
+            decision_rows,
+            key=lambda row: (
+                safe_float(row.get("score")),
+                safe_float(row.get("confidence")),
+                safe_float(row.get("edge")),
+            ),
+            reverse=True,
+        )[:5]
+        long_count = sum(1 for row in top_rows if row.get("direction") == "LONG")
+        short_count = sum(1 for row in top_rows if row.get("direction") == "SHORT")
+        bullish_trend = sum(
+            1 for row in decision_rows
+            if safe_float(row.get("trend_long")) > safe_float(row.get("trend_short"))
+        )
+        bearish_trend = sum(
+            1 for row in decision_rows
+            if safe_float(row.get("trend_short")) > safe_float(row.get("trend_long"))
+        )
+        red_heatmap = sum(1 for row in heatmap_rows if row.get("overall") == "🔴")
+        green_heatmap = sum(1 for row in heatmap_rows if row.get("overall") == "🟢")
+
+        if short_count >= 3 and bearish_trend >= bullish_trend:
+            return "BEARISH"
+        if long_count >= 3 and bullish_trend >= bearish_trend:
+            return "BULLISH"
+        if short_count >= 3 and red_heatmap >= green_heatmap + 2:
+            return "BEARISH"
+        if long_count >= 3 and green_heatmap >= red_heatmap:
+            return "BULLISH"
+        if long_count and short_count and abs(long_count - short_count) <= 1:
+            return "MIXED"
+        if red_heatmap >= len(heatmap_rows) * 0.6 and heatmap_rows:
+            return "NEUTRAL"
+        return "MIXED"
 
     @staticmethod
     def news_impact_block(
@@ -314,8 +413,7 @@ class MarketIntelligenceHub:
             "====================================",
             "Market Intelligence",
             "====================================",
-            "Рынок",
-            str(market.get("regime", "Недостаточно данных")),
+            f"Рынок: {market.get('regime', 'Недостаточно данных')}",
             "Новости",
             str(market.get("news_sentiment", "Neutral")),
             "News Risk",
