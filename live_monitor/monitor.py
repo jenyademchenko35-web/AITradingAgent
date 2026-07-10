@@ -20,6 +20,9 @@ class LiveMarketMonitor:
         self.provider = PriceProvider(provider=provider)
         self.tracker = TradeTracker()
         self.state_manager = StateManager()
+        self._last_trade_diagnostic: tuple[Any, ...] | None = None
+        self._last_provider_error = ""
+        self._last_provider_error_at = ""
 
     def run_forever(self) -> None:
         """Run the monitor loop until interrupted."""
@@ -35,6 +38,7 @@ class LiveMarketMonitor:
         """Collect targets, prices and persist state once."""
         timestamp = utc_now()
         targets = self.tracker.collect_targets()
+        self.log_trade_diagnostics()
         symbols = sorted({item.symbol for item in targets if item.symbol})
         quotes = self.provider.fetch_prices(symbols)
         items = []
@@ -51,6 +55,11 @@ class LiveMarketMonitor:
             fallback_used=self.provider.fallback_used,
         )
         provider_label = self.provider_label(quotes)
+        last_error, last_error_at = self.provider_error(
+            status=status,
+            provider_label=provider_label,
+            timestamp=timestamp,
+        )
         state = {
             "generated_at": timestamp,
             "status": status,
@@ -61,7 +70,8 @@ class LiveMarketMonitor:
             "tracked_count": len(targets),
             "priced_count": priced_count,
             "fallback_used": self.provider.fallback_used,
-            "last_error": self.provider.last_error,
+            "last_error": last_error,
+            "last_error_at": last_error_at,
             "items": items,
             "roles": self.role_counts(items),
             "restrictions": [
@@ -76,6 +86,44 @@ class LiveMarketMonitor:
             f"tracked={len(targets)} priced={priced_count}"
         )
         return state
+
+    def log_trade_diagnostics(self) -> None:
+        """Log the trade source and parsed count when their state changes."""
+        diagnostic = self.tracker.trade_diagnostics
+        signature = (
+            diagnostic.get("source"),
+            diagnostic.get("exists"),
+            diagnostic.get("rows_found"),
+            diagnostic.get("open_trades_loaded"),
+            diagnostic.get("warning"),
+        )
+        if signature == self._last_trade_diagnostic:
+            return
+        self._last_trade_diagnostic = signature
+        self.state_manager.log(f"INFO trades source={diagnostic.get('source')}")
+        warning = str(diagnostic.get("warning", ""))
+        if warning:
+            self.state_manager.log(f"WARNING {warning}")
+        self.state_manager.log(
+            f"INFO open trades loaded={diagnostic.get('open_trades_loaded', 0)}"
+        )
+
+    def provider_error(
+        self,
+        status: str,
+        provider_label: str,
+        timestamp: str,
+    ) -> tuple[str, str]:
+        """Keep only a current provider error for Telegram diagnostics."""
+        if status == "ONLINE" and provider_label == "REST":
+            self._last_provider_error = ""
+            self._last_provider_error_at = ""
+            return "", ""
+        error = str(self.provider.last_error or "").strip()
+        if error and error != self._last_provider_error:
+            self._last_provider_error = error
+            self._last_provider_error_at = timestamp
+        return self._last_provider_error, self._last_provider_error_at
 
     @staticmethod
     def unpriced_item(target: TrackedInstrument, timestamp: str) -> dict[str, Any]:

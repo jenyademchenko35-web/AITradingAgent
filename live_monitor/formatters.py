@@ -42,7 +42,7 @@ def format_live(args: list[str] | None = None) -> str:
         )
     command = args[0].strip().lower() if args else ""
     if command == "trades":
-        return format_items(state, "OPEN_TRADE", "📡 Live / Trades")
+        return format_trades(state)
     if command == "setups":
         return format_setups(state)
     if command:
@@ -79,9 +79,71 @@ def format_overview(state: Mapping[str, Any]) -> str:
             lines.extend(format_item_lines(item, compact=True))
     else:
         lines.append("нет")
-    if state.get("last_error"):
+    if show_last_error(state):
         lines.extend(["", f"Последняя ошибка: {str(state.get('last_error'))[:180]}"])
     return "\n".join(lines)
+
+
+def format_trades(state: Mapping[str, Any]) -> str:
+    """Format /live trades and always return a non-empty response."""
+    items = [
+        item for item in state.get("items", [])
+        if str(item.get("role", "")).upper() == "OPEN_TRADE"
+    ]
+    lines = [
+        "📡 Live / Сделки",
+        "",
+        f"Статус: {display_status(state)}",
+        f"Обновлено: {state_age_text(state)}",
+        "",
+    ]
+    if not items:
+        lines.append("Открытых сделок сейчас нет.")
+        return "\n".join(lines)
+    for item in items:
+        lines.extend(format_trade_lines(item))
+    text = "\n".join(lines).strip()
+    return text or "📡 Live / Сделки\n\nОткрытых сделок сейчас нет."
+
+
+def format_trade_lines(item: Mapping[str, Any]) -> list[str]:
+    """Format one open trade using compact Russian labels."""
+    symbol = str(item.get("symbol", "N/A"))
+    direction = str(item.get("direction", "")).upper()
+    lines = [
+        f"{symbol} {direction}".strip(),
+        (
+            f"Цена: {compact_float(item.get('price'))}"
+            if item.get("price") not in (None, "")
+            else "Цена: недоступна"
+        ),
+    ]
+    if item.get("entry") not in (None, ""):
+        lines.append(f"Вход: {compact_float(item.get('entry'))}")
+    if item.get("pnl_percent") not in (None, ""):
+        lines.append(f"PnL: {compact_float(item.get('pnl_percent'), 2)}%")
+    if item.get("current_r") not in (None, ""):
+        lines.append(f"R: {compact_float(item.get('current_r'), 2)}")
+    if item.get("distance_to_tp_percent") not in (None, ""):
+        lines.append(
+            f"До TP: {compact_float(item.get('distance_to_tp_percent'), 2)}%"
+        )
+    if item.get("distance_to_sl_percent") not in (None, ""):
+        lines.append(
+            f"До SL: {compact_float(item.get('distance_to_sl_percent'), 2)}%"
+        )
+    lines.append("────────────")
+    return lines
+
+
+def show_last_error(state: Mapping[str, Any]) -> bool:
+    """Show only a fresh error, unless the provider is degraded."""
+    if not state.get("last_error"):
+        return False
+    if str(state.get("status", "")).upper() == "DEGRADED":
+        return True
+    error_age = age_seconds(state.get("last_error_at"))
+    return error_age is not None and error_age < 5 * 60
 
 
 def format_items(state: Mapping[str, Any], role: str, title: str) -> str:

@@ -11,13 +11,25 @@ from typing import Any, Mapping
 from best_candidate_ranker import rank_candidates
 from live_monitor.price_provider import PriceQuote
 from live_monitor.service_health import normalize_symbol, safe_float, strip_empty
+from trade_tracker import TRADES_FILE as AGENT_TRADES_FILE
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-TRADES_FILE = BASE_DIR / "trades.csv"
+TRADES_FILE = AGENT_TRADES_FILE
 ACTIVE_SETUPS_FILE = BASE_DIR / "active_setups_v3.json"
 SIGNALS_FILE = BASE_DIR / "signals_v3.csv"
 DEBUG_FILE = BASE_DIR / "decision_debug.csv"
+
+OPEN_STATUSES = {"OPEN", "ACTIVE", "PENDING"}
+CLOSED_STATUSES = {
+    "CLOSED",
+    "WIN",
+    "LOSS",
+    "TP",
+    "SL",
+    "TAKE PROFIT",
+    "STOP LOSS",
+}
 
 
 @dataclass
@@ -55,6 +67,47 @@ def read_csv_tail(path: Path, limit: int = 500) -> list[dict[str, str]]:
         return []
 
 
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
+    """Read all CSV rows safely.
+
+    Open positions can be older than the compact tail used for signal files, so
+    the trades source must be scanned in full just like the main agent does.
+    """
+    if not path.exists() or path.stat().st_size == 0:
+        return []
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as file:
+            return [
+                dict(row)
+                for row in csv.DictReader(file)
+                if row and any(str(value or "").strip() for value in row.values())
+            ]
+    except (OSError, csv.Error, UnicodeDecodeError):
+        return []
+
+
+def normalized_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Return a row with normalized, case-insensitive column names."""
+    return {
+        str(key or "").strip().lstrip("\ufeff").lower(): value
+        for key, value in row.items()
+        if key is not None
+    }
+
+
+def first_value(row: Mapping[str, Any], *names: str) -> Any:
+    """Return the first value found under one of the supported aliases."""
+    for name in names:
+        if name in row:
+            return row.get(name)
+    return ""
+
+
+def has_any_column(row: Mapping[str, Any], *names: str) -> bool:
+    """Return whether at least one alias exists in the row schema."""
+    return any(name in row for name in names)
+
+
 def read_json(path: Path) -> dict[str, Any]:
     """Read JSON safely."""
     if not path.exists() or path.stat().st_size == 0:
@@ -82,6 +135,16 @@ def latest_by_symbol(rows: list[Mapping[str, str]]) -> dict[str, dict[str, str]]
 class TradeTracker:
     """Select open trades and strong candidates without changing decisions."""
 
+    def __init__(self, trades_file: Path = TRADES_FILE) -> None:
+        self.trades_file = Path(trades_file)
+        self.trade_diagnostics: dict[str, Any] = {
+            "source": str(self.trades_file),
+            "exists": self.trades_file.exists(),
+            "rows_found": 0,
+            "open_trades_loaded": 0,
+            "warning": "",
+        }
+
     def collect_targets(self) -> list[TrackedInstrument]:
         """Return unique instruments to monitor."""
         targets: list[TrackedInstrument] = []
@@ -95,22 +158,66 @@ class TradeTracker:
         return targets
 
     def open_trades(self) -> list[TrackedInstrument]:
-        """Return OPEN rows from trades.csv."""
-        targets = []
-        for row in read_csv_tail(TRADES_FILE):
-            if str(row.get("status", "")).upper() != "OPEN":
+        """Return active rows from the exact trades source used by the agent."""
+        exists = self.trades_file.exists()
+        rows = read_csv_rows(self.trades_file)
+        targets: list[TrackedInstrument] = []
+        for raw_row in rows:
+            row = normalized_row(raw_row)
+            if not self.is_open_row(row):
                 continue
+            symbol = normalize_symbol(str(first_value(row, "symbol", "pair")))
+            if not symbol:
+                continue
+            direction = str(first_value(row, "direction", "side")).strip().upper()
+            direction = {"BUY": "LONG", "SELL": "SHORT"}.get(direction, direction)
             targets.append(
                 TrackedInstrument(
-                    symbol=normalize_symbol(row.get("symbol", "")),
+                    symbol=symbol,
                     role="OPEN_TRADE",
-                    direction=str(row.get("direction", "")).upper(),
-                    entry=safe_float(row.get("entry")),
-                    sl=safe_float(row.get("stop_loss")),
-                    tp=safe_float(row.get("take_profit")),
+                    direction=direction,
+                    entry=safe_float(first_value(row, "entry", "entry_price")),
+                    sl=safe_float(first_value(row, "sl", "stop_loss")),
+                    tp=safe_float(first_value(row, "tp", "take_profit")),
                 )
             )
+        warning = ""
+        if not exists:
+            warning = "trades file missing"
+        elif rows and not targets:
+            warning = "trades rows found but open trades parsed=0"
+        self.trade_diagnostics = {
+            "source": str(self.trades_file),
+            "exists": exists,
+            "rows_found": len(rows),
+            "open_trades_loaded": len(targets),
+            "warning": warning,
+        }
         return targets
+
+    @staticmethod
+    def is_open_row(row: Mapping[str, Any]) -> bool:
+        """Classify one trade row without mutating or guessing its source."""
+        status_columns = ("status", "state")
+        if has_any_column(row, *status_columns):
+            status = str(first_value(row, *status_columns)).strip().upper()
+            if status in OPEN_STATUSES:
+                return True
+            if status in CLOSED_STATUSES:
+                return False
+            return False
+
+        result = str(first_value(row, "result")).strip().upper()
+        if result in CLOSED_STATUSES:
+            return False
+        entry = safe_float(first_value(row, "entry", "entry_price"))
+        sl = safe_float(first_value(row, "sl", "stop_loss"))
+        tp = safe_float(first_value(row, "tp", "take_profit"))
+        exit_price = safe_float(first_value(row, "exit", "exit_price"))
+        close_time = str(
+            first_value(row, "close_timestamp", "closed_at", "close_time")
+        ).strip()
+        return entry > 0 and sl > 0 and tp > 0 and exit_price <= 0 and not close_time
 
     def strong_candidates(self) -> list[TrackedInstrument]:
         """Return HIGH PRIORITY, SETUP and up to 3 NEAR SETUP candidates."""

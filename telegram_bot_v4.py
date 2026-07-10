@@ -2705,7 +2705,23 @@ async def live_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    await reply(update, format_live_monitor(context.args))
+    try:
+        text = format_live_monitor(context.args)
+    except Exception as exc:  # noqa: BLE001 - Telegram command must answer
+        print(f"Ошибка /live formatter: {type(exc).__name__}: {exc}")
+        text = (
+            "📡 Live / Сделки\n\n"
+            "Данные Live Monitor временно недоступны. Попробуй позже."
+            if context.args and context.args[0].strip().lower() == "trades"
+            else "📡 Live Monitor\n\nДанные временно недоступны. Попробуй позже."
+        )
+    if not str(text or "").strip():
+        text = (
+            "📡 Live / Сделки\n\nОткрытых сделок сейчас нет."
+            if context.args and context.args[0].strip().lower() == "trades"
+            else "📡 Live Monitor\n\nДанные пока недоступны."
+        )
+    await reply(update, text)
 
 
 async def system_command(
