@@ -149,6 +149,7 @@ class StrategyLabEngine:
         duration = self.duration_hours(opened_at, closed_at)
         news = self.news_memory.get(self.trade_id(trade, index), {})
         momentum = diagnostics.get("momentum") or self.engine_status(decision, "momentum")
+        atr_pct = self.atr_pct(symbol, opened_at, entry)
         return {
             "id": self.trade_id(trade, index),
             "timestamp": trade.get("opened_at", ""),
@@ -165,7 +166,9 @@ class StrategyLabEngine:
             "confidence": decision.get("confidence", ""),
             "quality": decision.get("quality", ""),
             "edge": decision.get("edge", ""),
+            "trend_reason": decision.get("trend_reason", ""),
             "momentum": momentum,
+            "atr_pct": atr_pct,
             "news_status": news.get("news_status", "NEWS_NEUTRAL"),
             "news_strength": safe_float(news.get("news_strength")),
             "news_sentiment": news.get("news_sentiment", "Neutral"),
@@ -173,6 +176,19 @@ class StrategyLabEngine:
             "_closed_at": closed_at,
             "_atr_simulator": self.simulate_atr_variant,
         }
+
+    def atr_pct(
+        self,
+        symbol: str,
+        opened_at: datetime | None,
+        entry: float,
+    ) -> float:
+        """Return ATR as percent of entry from local OHLCV."""
+        index = self.ohlcv.index_at_or_before(symbol, opened_at)
+        if index is None or entry <= 0:
+            return 0.0
+        atr = self.ohlcv.atr(symbol, index)
+        return round(atr / entry * 100, 4) if atr else 0.0
 
     @staticmethod
     def trade_id(trade: Mapping[str, Any], index: int) -> str:

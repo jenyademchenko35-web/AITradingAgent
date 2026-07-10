@@ -23,10 +23,10 @@ from telegram.ext import (
 from config import RUN_INTERVAL
 from calibration_report import build_calibration_report, save_report
 from decision_diagnostics import DecisionDiagnostics
+from dashboard.dashboard_formatter import format_dashboard as format_live_dashboard
 from notification_manager import save_chat_id
 from telegram_formatters import (
     format_ai_coach as v5_format_ai_coach,
-    format_dashboard as v5_format_dashboard,
     format_developer as v5_format_developer,
     format_dry_run as v5_format_dry_run,
     footer as v5_footer,
@@ -94,6 +94,8 @@ TRADE_MARKET_CONTEXT_FILE = BASE_DIR / "trade_market_context.csv"
 TRADE_MEMORY_SUMMARY_FILE = BASE_DIR / "trade_memory_summary.txt"
 STRATEGY_LAB_REPORT_FILE = BASE_DIR / "strategy_lab_report.json"
 STRATEGY_LAB_SUMMARY_FILE = BASE_DIR / "strategy_lab_summary.txt"
+HYPOTHESIS_REPORT_FILE = BASE_DIR / "hypothesis_report.json"
+HYPOTHESIS_SUMMARY_FILE = BASE_DIR / "hypothesis_summary.txt"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -2219,11 +2221,77 @@ def format_context() -> str:
 
 def format_lab(args: List[str]) -> str:
     """Run Strategy Lab and format Telegram output."""
+    command = args[0].lower() if args else ""
+    hypothesis_commands = {
+        "hypotheses",
+        "cooldown",
+        "trend",
+        "momentum",
+        "atr",
+        "news",
+        "duplicate",
+        "volatility",
+        "edge",
+    }
+    if command in hypothesis_commands:
+        runner_args = [] if command == "hypotheses" else [command]
+        error = run_readonly_module(
+            "strategy_lab/hypothesis_runner.py",
+            *runner_args,
+            timeout=120,
+        )
+        if error:
+            return f"Ошибка Strategy Lab v2: {' '.join(error.split())[:600]}"
+        if command == "hypotheses":
+            try:
+                text = HYPOTHESIS_SUMMARY_FILE.read_text(encoding="utf-8").strip()
+            except OSError:
+                text = ""
+            return text or "Strategy Lab v2 пока недоступен. Попробуй позже."
+
+        report = read_json(HYPOTHESIS_REPORT_FILE)
+        metrics = [
+            row for row in report.get("metrics", [])
+            if row.get("group") == command and row.get("hypothesis") != "baseline"
+        ]
+        if not metrics:
+            return "Strategy Lab v2 пока не нашёл данные по этой гипотезе."
+        lines = [
+            "🧪 Strategy Lab v2",
+            "",
+            f"Гипотеза: {command}",
+            "Shadow Research",
+            "Live-стратегия не меняется.",
+            "",
+        ]
+        for row in metrics[:8]:
+            lines.extend(
+                [
+                    str(row.get("hypothesis")),
+                    f"Trades: {row.get('trades', 0)}",
+                    f"Winrate: {row.get('winrate', 0)}%",
+                    f"PF: {row.get('profit_factor', 0)}",
+                    f"Saved Losses: {row.get('saved_losses', 0)}",
+                    f"Lost Winners: {row.get('lost_winners', 0)}",
+                    f"Net Benefit: {row.get('net_benefit', 0)}",
+                    f"Verdict: {row.get('verdict', 'N/A')}",
+                    "────────────",
+                ]
+            )
+        lines.extend(
+            [
+                "Рекомендация:",
+                str(report.get("recommendation", "Продолжить исследование.")),
+                "",
+                "Это исследовательские результаты, не сигнал к live-изменениям.",
+            ]
+        )
+        return "\n".join(lines).rstrip("─").rstrip()
+
     error = run_readonly_module("strategy_lab/runner.py", timeout=120)
     if error:
         return f"Ошибка Strategy Lab: {' '.join(error.split())[:600]}"
 
-    command = args[0].lower() if args else ""
     if command in {"", "compare"}:
         try:
             text = STRATEGY_LAB_SUMMARY_FILE.read_text(encoding="utf-8").strip()
@@ -2245,8 +2313,10 @@ def format_lab(args: List[str]) -> str:
     if not names:
         return (
             "🧪 Strategy Lab\n\n"
-            "Использование: /lab, /lab compare, /lab current, /lab momentum, "
-            "/lab news, /lab atr, /lab edge, /lab quality"
+            "Strategy Lab v1: /lab, /lab compare, /lab current, /lab quality\n\n"
+            "Strategy Lab v2: /lab hypotheses, /lab cooldown, /lab trend, "
+            "/lab momentum, /lab atr, /lab news, /lab edge, "
+            "/lab duplicate, /lab volatility"
         )
     selected = [
         row for row in metrics
@@ -2279,9 +2349,10 @@ def format_lab(args: List[str]) -> str:
     return "\n".join(lines).rstrip("────────────").rstrip()
 
 
-def format_dashboard() -> str:
-    """Format the simplified UI v5 dashboard."""
-    return v5_format_dashboard()
+def format_dashboard(args: Optional[List[str]] = None) -> str:
+    """Format the Live Dashboard Core screen."""
+    section = args[0] if args else "overview"
+    return format_live_dashboard(section)
 
 
 def format_market() -> str:
@@ -2391,10 +2462,12 @@ def help_text() -> str:
             "",
             "Прямые команды для глубокой аналитики всё ещё доступны:",
             "/diagnostics BTC",
+            "/dashboard trading|live|news|lab|memory",
             "/blocked Momentum|Structure|Risk|Trend|ALL",
             "/research /experiments /calibration /quality",
             "/news /heatmap /intelligence /memory BTC /context",
-            "/lab compare|current|momentum|news|atr|edge|quality",
+            "/lab hypotheses|cooldown|trend|momentum|atr|news|edge",
+            "/lab duplicate|volatility|compare|current|quality",
         ]
     )
 
@@ -2407,7 +2480,7 @@ async def dashboard_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    await reply(update, format_dashboard())
+    await reply(update, format_dashboard(context.args))
 
 
 async def coach_command(
