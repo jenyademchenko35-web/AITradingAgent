@@ -24,6 +24,8 @@ BOT_COMMANDS_V5 = [
     BotCommand("memory", "🧾 Память сделок"),
     BotCommand("context", "🔎 Контекст рынка"),
     BotCommand("lab", "🧪 Strategy Lab"),
+    BotCommand("replay", "🔁 Trade Replay Lab"),
+    BotCommand("consensus", "🧠 Research Consensus"),
     BotCommand("help", "❔ Помощь"),
 ]
 

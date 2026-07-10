@@ -165,6 +165,12 @@ def format_lab(state: Mapping[str, Any]) -> str:
     """Format Strategy Lab block."""
     lab = state.get("strategy_lab", {})
     baseline = lab.get("baseline", {}) if isinstance(lab.get("baseline"), Mapping) else {}
+    replay = lab.get("replay", {}) if isinstance(lab.get("replay"), Mapping) else {}
+    consensus = (
+        lab.get("consensus", {})
+        if isinstance(lab.get("consensus"), Mapping)
+        else {}
+    )
     return "\n".join(
         [
             "🖥 Dashboard / Strategy Lab",
@@ -180,6 +186,22 @@ def format_lab(state: Mapping[str, Any]) -> str:
             f"Leader: {value(lab, 'leader')}",
             f"Verdict: {value(lab, 'verdict')}",
             f"Возраст отчёта: {value(lab, 'last_research_age')}",
+            "",
+            "Trade Replay Lab",
+            f"Статус: {value(replay, 'status', 'WARNING')}",
+            f"Закрытых сделок: {value(replay, 'trades', 0)}",
+            f"Средний Improvement Score: {value(replay, 'average_improvement', 0)}",
+            f"Главная причина LOSS: {value(replay, 'top_loss_reason')}",
+            f"Возраст Replay: {value(replay, 'age', 'нет данных')}",
+            "",
+            "Research Consensus",
+            f"Статус: {value(consensus, 'status', 'WARNING')}",
+            f"Гипотез: {value(consensus, 'hypotheses', 0)}",
+            f"Лидер: {value(consensus, 'leader')}",
+            f"Momentum: {value(consensus, 'momentum')}",
+            f"Edge20: {value(consensus, 'edge20')}",
+            f"News: {value(consensus, 'news')}",
+            f"Возраст Consensus: {value(consensus, 'age', 'нет данных')}",
         ]
     )
 

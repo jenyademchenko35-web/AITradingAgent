@@ -43,6 +43,8 @@ NEWS_STATS_FILE = BASE_DIR / "news_statistics_report.json"
 HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
 POST_TRADE_FILE = BASE_DIR / "post_trade_intelligence.json"
 MEMORY_FILE = BASE_DIR / "trade_memory_report.json"
+TRADE_REPLAY_FILE = BASE_DIR / "trade_replay_report.json"
+RESEARCH_CONSENSUS_FILE = BASE_DIR / "research_consensus_report.json"
 
 
 class MarketIntelligenceHub:
@@ -65,6 +67,8 @@ class MarketIntelligenceHub:
         heatmap = read_json(HEATMAP_FILE)
         post_trade = read_json(POST_TRADE_FILE)
         memory = read_json(MEMORY_FILE)
+        replay = read_json(TRADE_REPLAY_FILE)
+        consensus = read_json(RESEARCH_CONSENSUS_FILE)
 
         report = {
             "generated_at": utc_now(),
@@ -74,6 +78,8 @@ class MarketIntelligenceHub:
             "news_impact": self.news_impact_block(news_impact, news_stats),
             "signals": self.signal_block(heatmap, research, news_impact),
             "trades": self.trade_block(loss, post_trade, memory, news_impact),
+            "replay": self.replay_block(replay),
+            "consensus": self.consensus_block(consensus),
             "dry_run": self.dry_run_block(outcome),
             "recommendation": self.recommendation(loss, post_trade, outcome, news_stats),
             "next_research": self.next_research(loss, outcome),
@@ -89,6 +95,8 @@ class MarketIntelligenceHub:
                 "heatmap": HEATMAP_FILE.exists(),
                 "post_trade_intelligence": POST_TRADE_FILE.exists(),
                 "trade_memory": MEMORY_FILE.exists(),
+                "trade_replay": TRADE_REPLAY_FILE.exists(),
+                "research_consensus": RESEARCH_CONSENSUS_FILE.exists(),
             },
             "restrictions": [
                 "DecisionEngine не менялся.",
@@ -101,6 +109,44 @@ class MarketIntelligenceHub:
         write_json(REPORT_PATH, report)
         SUMMARY_PATH.write_text(self.format_summary(report), encoding="utf-8")
         return report
+
+    @staticmethod
+    def replay_block(replay: Mapping[str, Any]) -> dict[str, Any]:
+        """Read the ready Trade Replay report without launching Replay Lab."""
+        sample = replay.get("sample", {}) if isinstance(replay.get("sample"), Mapping) else {}
+        summary = replay.get("summary", {}) if isinstance(replay.get("summary"), Mapping) else {}
+        top_reason = next(iter(summary.get("top_loss_reasons", []) or []), {})
+        top_improvement = next(iter(summary.get("top_improvements", []) or []), {})
+        return {
+            "status": replay.get("status", "Нет готового отчёта"),
+            "closed_trades": sample.get("closed_trades", 0),
+            "ohlcv_coverage": sample.get("ohlcv_coverage", 0),
+            "average_improvement_score": summary.get("average_improvement_score", 0),
+            "top_loss_reason": top_reason.get("reason", "Недостаточно данных"),
+            "top_improvement": top_improvement.get("name", "Недостаточно данных"),
+            "generated_at": replay.get("generated_at", ""),
+        }
+
+    @staticmethod
+    def consensus_block(consensus: Mapping[str, Any]) -> dict[str, Any]:
+        """Read ready Research Consensus without invoking its engine."""
+        summary = (
+            consensus.get("summary", {})
+            if isinstance(consensus.get("summary"), Mapping)
+            else {}
+        )
+        main_name = str(summary.get("main_hypothesis", "Недостаточно данных"))
+        main = consensus.get("hypotheses", {}).get(main_name, {})
+        return {
+            "status": consensus.get("status", "Нет готового отчёта"),
+            "main_hypothesis": main_name,
+            "support": f"{main.get('support', 0)}/{main.get('modules', 0)}",
+            "support_percent": main.get("support_percent", 0),
+            "verdict": main.get("verdict", "INSUFFICIENT_DATA"),
+            "confidence": main.get("confidence", 0),
+            "closed_trades": consensus.get("closed_trades", 0),
+            "generated_at": consensus.get("generated_at", ""),
+        }
 
     def ensure_reports(self) -> None:
         """Build lightweight dependent reports if possible."""
@@ -401,6 +447,8 @@ class MarketIntelligenceHub:
         signals = report.get("signals", {})
         trades = report.get("trades", {})
         news_impact = report.get("news_impact", {})
+        replay = report.get("replay", {})
+        consensus = report.get("consensus", {})
         risk_rows = news_impact.get("risk_rows", [])
         top_risks = risk_rows[:3]
         strongest = news_impact.get("strongest_news", {})
@@ -445,6 +493,18 @@ class MarketIntelligenceHub:
             f"Похожих сделок: {trades.get('memory_matches')} | "
             f"Winrate: {trades.get('memory_winrate')}% | "
             f"PF: {trades.get('memory_pf')}",
+            "Trade Replay Lab",
+            f"Статус: {replay.get('status', 'Нет готового отчёта')}",
+            f"Сделок: {replay.get('closed_trades', 0)} | "
+            f"OHLCV: {replay.get('ohlcv_coverage', 0)}%",
+            f"Главная причина LOSS: {replay.get('top_loss_reason', 'Недостаточно данных')}",
+            f"Чаще помогало: {replay.get('top_improvement', 'Недостаточно данных')}",
+            f"Средний Improvement Score: {replay.get('average_improvement_score', 0)}",
+            "Research Consensus",
+            f"Главная гипотеза: {consensus.get('main_hypothesis', 'Недостаточно данных')}",
+            f"Support: {consensus.get('support', '0/0')} "
+            f"({consensus.get('support_percent', 0)}%)",
+            f"Verdict: {consensus.get('verdict', 'INSUFFICIENT_DATA')}",
             "Рекомендация",
             str(report.get("recommendation")),
             "Shadow News Advisor",

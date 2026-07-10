@@ -49,6 +49,8 @@ NEWS_SHADOW_FILE = BASE_DIR / "news_impact_advisor_report.json"
 STRATEGY_LAB_FILE = BASE_DIR / "hypothesis_report.json"
 STRATEGY_LAB_V1_FILE = BASE_DIR / "strategy_lab_report.json"
 TRADE_MEMORY_FILE = BASE_DIR / "trade_memory_report.json"
+TRADE_REPLAY_FILE = BASE_DIR / "trade_replay_report.json"
+RESEARCH_CONSENSUS_FILE = BASE_DIR / "research_consensus_report.json"
 HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
 LIVE_MONITOR_FILE = BASE_DIR / "live_monitor_state.json"
 BOT_LOG_FILE = BASE_DIR / "logs" / "telegram_bot.log"
@@ -253,6 +255,8 @@ class DashboardCore:
     def strategy_lab_block(self) -> dict[str, Any]:
         """Collect Strategy Lab v2 state."""
         lab = read_json(STRATEGY_LAB_FILE) or read_json(STRATEGY_LAB_V1_FILE)
+        replay = read_json(TRADE_REPLAY_FILE)
+        consensus = read_json(RESEARCH_CONSENSUS_FILE)
         metrics = lab.get("metrics", [])
         ranking = lab.get("ranking", [])
         baseline = lab.get("baseline", {}) if isinstance(lab.get("baseline"), dict) else {}
@@ -279,6 +283,35 @@ class DashboardCore:
             "leader": leader.get("hypothesis") or leader.get("strategy") or "N/A",
             "verdict": leader.get("verdict") or leader.get("sample_status") or "N/A",
             "source": STRATEGY_LAB_FILE.name if STRATEGY_LAB_FILE.exists() else STRATEGY_LAB_V1_FILE.name,
+            "replay": {
+                "status": replay.get("status", "WARNING") if replay else "WARNING",
+                "trades": replay.get("sample", {}).get("closed_trades", 0),
+                "average_improvement": replay.get("summary", {}).get(
+                    "average_improvement_score", 0
+                ),
+                "top_loss_reason": next(
+                    iter(replay.get("summary", {}).get("top_loss_reasons", []) or []),
+                    {},
+                ).get("reason", "N/A"),
+                "age": human_age(age_seconds(replay.get("generated_at"))),
+            },
+            "consensus": {
+                "status": consensus.get("status", "WARNING") if consensus else "WARNING",
+                "hypotheses": consensus.get("summary", {}).get("total_hypotheses", 0),
+                "leader": consensus.get("summary", {}).get(
+                    "main_hypothesis", "N/A"
+                ),
+                "momentum": consensus.get("hypotheses", {}).get(
+                    "Momentum Filter", {}
+                ).get("verdict", "N/A"),
+                "edge20": consensus.get("hypotheses", {}).get(
+                    "Edge >= 20", {}
+                ).get("verdict", "N/A"),
+                "news": consensus.get("hypotheses", {}).get(
+                    "News Filter", {}
+                ).get("verdict", "N/A"),
+                "age": human_age(age_seconds(consensus.get("generated_at"))),
+            },
         }
 
     def telegram_block(self) -> dict[str, Any]:

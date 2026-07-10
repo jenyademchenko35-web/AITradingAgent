@@ -31,6 +31,11 @@ from live_monitor.formatters import (
     state_age_text as live_state_age_text,
 )
 from notification_manager import save_chat_id
+from research_consensus.consensus_formatter import (
+    format_group as format_consensus_group,
+    format_overview as format_consensus_overview,
+    format_summary_command as format_consensus_summary,
+)
 from telegram_formatters import (
     format_ai_coach as v5_format_ai_coach,
     format_developer as v5_format_developer,
@@ -103,6 +108,9 @@ STRATEGY_LAB_REPORT_FILE = BASE_DIR / "strategy_lab_report.json"
 STRATEGY_LAB_SUMMARY_FILE = BASE_DIR / "strategy_lab_summary.txt"
 HYPOTHESIS_REPORT_FILE = BASE_DIR / "hypothesis_report.json"
 HYPOTHESIS_SUMMARY_FILE = BASE_DIR / "hypothesis_summary.txt"
+TRADE_REPLAY_REPORT_FILE = BASE_DIR / "trade_replay_report.json"
+TRADE_REPLAY_SUMMARY_FILE = BASE_DIR / "replay_summary.txt"
+RESEARCH_CONSENSUS_REPORT_FILE = BASE_DIR / "research_consensus_report.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -2390,6 +2398,176 @@ def format_lab(args: List[str]) -> str:
     return "\n".join(lines).rstrip("────────────").rstrip()
 
 
+def format_replay(args: List[str] | None = None) -> str:
+    """Format ready Trade Replay Lab reports without running Replay."""
+    args = args or []
+    command = args[0].strip().lower() if args else ""
+    report = read_json(TRADE_REPLAY_REPORT_FILE)
+    if not report:
+        return (
+            "🔁 Trade Replay Lab\n\n"
+            "Готовый отчёт пока отсутствует.\n"
+            "Запуск из терминала:\n"
+            "venv/bin/python trade_replay_lab/replay_runner.py"
+        )
+    if command == "summary":
+        try:
+            text = TRADE_REPLAY_SUMMARY_FILE.read_text(encoding="utf-8").strip()
+        except OSError:
+            text = ""
+        return text or format_replay_overview(report)
+    if command == "patterns":
+        return format_replay_patterns(report)
+
+    trades = [row for row in report.get("trades", []) if isinstance(row, Mapping)]
+    if command == "last":
+        selected = max(trades, key=lambda row: str(row.get("opened_at", "")), default={})
+        return format_replay_trade(selected) if selected else format_replay_overview(report)
+    if command:
+        symbol = normalize_replay_symbol(command)
+        matches = [row for row in trades if row.get("symbol") == symbol]
+        if not matches:
+            return (
+                f"🔁 Trade Replay / {symbol}\n\n"
+                "Закрытых сделок для этого символа в отчёте нет."
+            )
+        selected = max(matches, key=lambda row: str(row.get("opened_at", "")))
+        return format_replay_trade(selected)
+    return format_replay_overview(report)
+
+
+def normalize_replay_symbol(value: str) -> str:
+    """Normalize BTC, BTCUSDT or BTC/USDT for Replay lookup."""
+    text = str(value or "").strip().upper().replace("-", "").replace("_", "")
+    if "/" in text:
+        return text
+    if text.endswith("USDT"):
+        return f"{text[:-4]}/USDT"
+    return f"{text}/USDT"
+
+
+def format_replay_overview(report: Mapping[str, Any]) -> str:
+    """Format compact /replay overview."""
+    sample = report.get("sample", {})
+    summary = report.get("summary", {})
+    top_reason = next(iter(summary.get("top_loss_reasons", []) or []), {})
+    top_improvement = next(iter(summary.get("top_improvements", []) or []), {})
+    return "\n".join([
+        "🔁 Trade Replay Lab",
+        "",
+        f"Статус: {report.get('status', 'NO_DATA')}",
+        f"Закрытых сделок: {sample.get('closed_trades', 0)}",
+        f"WIN / LOSS: {sample.get('wins', 0)} / {sample.get('losses', 0)}",
+        f"Winrate: {sample.get('winrate', 0)}%",
+        f"OHLCV coverage: {sample.get('ohlcv_coverage', 0)}%",
+        f"Средний Improvement Score: {summary.get('average_improvement_score', 0)}",
+        "",
+        f"Главная причина LOSS: {top_reason.get('reason', 'Недостаточно данных')}",
+        f"Чаще помогало: {top_improvement.get('name', 'Недостаточно данных')}",
+        "",
+        str(report.get("recommendation", "Продолжать наблюдение.")),
+        "",
+        "/replay last | /replay BTC | /replay summary | /replay patterns",
+    ])
+
+
+def format_replay_trade(trade: Mapping[str, Any]) -> str:
+    """Format one replayed closed trade."""
+    if not trade:
+        return "🔁 Trade Replay\n\nСделка не найдена."
+    verdict = trade.get("verdict", {})
+    improvements = trade.get("improvements", [])
+    worsened = trade.get("what_would_worsen", [])
+    memory = trade.get("memory", {})
+    timeline = trade.get("scenarios", {}).get("timeline", {})
+    result = str(trade.get("result", "N/A"))
+    result_icon = "🟢" if result == "WIN" else "🔴" if result == "LOSS" else "⚪"
+    lines = [
+        "🔁 Trade Replay",
+        "",
+        f"{trade.get('symbol', 'N/A')} {trade.get('direction', '')}",
+        f"Результат: {result_icon} {result}",
+        f"Открыта: {trade.get('opened_at', 'N/A')}",
+        f"Score {trade.get('score', 0)} | Confidence {trade.get('confidence', 0)}%",
+        f"Quality {trade.get('quality') or 'N/A'} | Edge {trade.get('edge', 0)}",
+        "",
+        "Replay Verdict",
+        f"Главная причина: {verdict.get('main_reason_label', 'Недостаточно данных')}",
+    ]
+    for reason in list(verdict.get("reason_labels", []))[1:5]:
+        lines.append(f"- {reason}")
+    lines.extend([
+        "",
+        f"Лучший вариант: {trade.get('best_variant', 'Нет подтверждённого варианта')}",
+        f"Improvement Score: {trade.get('improvement_score', 0)}",
+        f"Replay Confidence: {trade.get('replay_confidence', 0)}%",
+    ])
+    if improvements:
+        lines.extend(["", "Что могло улучшить:"])
+        for item in improvements[:4]:
+            lines.append(
+                f"- {item.get('label')}: ΔR {item.get('delta_r', 0)}"
+            )
+    if worsened:
+        lines.extend(["", "Что могло ухудшить:"])
+        for item in worsened[:3]:
+            lines.append(
+                f"- {item.get('label')}: ΔR {item.get('delta_r', 0)}"
+            )
+    available_timeline = [
+        f"{horizon}: {data.get('return_pct', 0)}%"
+        for horizon, data in timeline.items()
+        if horizon in {"1h", "4h", "8h", "24h"} and data.get("available")
+    ]
+    if available_timeline:
+        lines.extend(["", "Движение относительно входа:", *available_timeline])
+    lines.extend([
+        "",
+        "Trade Memory",
+        f"Похожих сделок: {memory.get('matches_count', 0)}",
+        f"Winrate: {memory.get('winrate', 0)}% | PF: {memory.get('profit_factor', 0)}",
+        "",
+        "Replay носит исследовательский характер и не влияет на LIVE.",
+    ])
+    return "\n".join(lines)
+
+
+def format_replay_patterns(report: Mapping[str, Any]) -> str:
+    """Format recurring Replay Lab patterns."""
+    patterns = report.get("patterns", [])
+    lines = ["🔁 Replay Patterns", ""]
+    if not patterns:
+        return "\n".join([*lines, "Паттерны пока не найдены."])
+    for index, row in enumerate(patterns[:10], start=1):
+        lines.append(
+            f"{index}. {row.get('reason_label') or row.get('reason')}"
+        )
+        lines.append(
+            f"Сделок {row.get('count', 0)} | WIN {row.get('wins', 0)} | "
+            f"LOSS {row.get('losses', 0)} | Confidence {row.get('confidence', 0)}%"
+        )
+    lines.extend(["", "Паттерны не применяются к LIVE автоматически."])
+    return "\n".join(lines)
+
+
+def format_consensus(args: List[str] | None = None) -> str:
+    """Format ready Research Consensus report without running its engine."""
+    report = read_json(RESEARCH_CONSENSUS_REPORT_FILE)
+    if not report:
+        return (
+            "🧠 Research Consensus\n\n"
+            "Готовый отчёт пока отсутствует.\n"
+            "Запуск из терминала:\n"
+            "venv/bin/python research_consensus/consensus_engine.py"
+        )
+    command = args[0].strip().lower() if args else ""
+    if command == "summary":
+        return format_consensus_summary(report)
+    if command:
+        return format_consensus_group(report, command)
+    return format_consensus_overview(report)
+
+
 def format_dashboard(args: Optional[List[str]] = None) -> str:
     """Format the Live Dashboard Core screen."""
     section = args[0] if args else "overview"
@@ -2510,6 +2688,8 @@ def help_text() -> str:
             "/live /live SOL /live trades /live setups /system",
             "/lab hypotheses|cooldown|trend|momentum|atr|news|edge",
             "/lab duplicate|volatility|compare|current|quality",
+            "/replay last|BTC|summary|patterns",
+            "/consensus momentum|edge|news|summary",
         ]
     )
 
@@ -2760,6 +2940,20 @@ async def lab_command(
     await reply(update, format_lab(context.args))
 
 
+async def replay_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_replay(context.args))
+
+
+async def consensus_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_consensus(context.args))
+
+
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle inline keyboard callbacks."""
     query = update.callback_query
@@ -2773,11 +2967,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         reply_markup = v5_market_keyboard(v5_market_symbols())
     elif query.data and query.data.startswith("dev:"):
         developer_actions = {
-            "dev:replay": lambda: (
-                "Replay report доступен через strategy_replay_report.json."
-                if read_json(BASE_DIR / "strategy_replay_report.json")
-                else "Replay report пока отсутствует."
-            ),
+            "dev:replay": lambda: format_replay([]),
             "dev:experiments": lambda: with_v5_footer(format_experiments(full=False)),
             "dev:research": lambda: with_v5_footer(format_research()),
             "dev:diagnostics": lambda: (
@@ -2886,6 +3076,8 @@ def build_app():
     app.add_handler(CommandHandler("memory", memory_command))
     app.add_handler(CommandHandler("context", context_command))
     app.add_handler(CommandHandler("lab", lab_command))
+    app.add_handler(CommandHandler("replay", replay_command))
+    app.add_handler(CommandHandler("consensus", consensus_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app
