@@ -18,6 +18,8 @@ BOT_COMMANDS_V5 = [
     BotCommand("developer", "🛠 Developer"),
     BotCommand("news", "📰 Новости рынка"),
     BotCommand("heatmap", "🗺 Тепловая карта рынка"),
+    BotCommand("live", "📡 Live Monitor"),
+    BotCommand("system", "🖥 Система"),
     BotCommand("intelligence", "🧠 Market Intelligence"),
     BotCommand("memory", "🧾 Память сделок"),
     BotCommand("context", "🔎 Контекст рынка"),

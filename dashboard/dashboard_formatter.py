@@ -62,8 +62,11 @@ def format_overview(state: Mapping[str, Any]) -> str:
     system = state.get("system", {})
     return "\n".join(
         [
-            "🖥 Dashboard",
+            "🖥 Live Dashboard",
             SEPARATOR,
+            "Общий статус",
+            f"{system.get('emoji', '⚪')} {system.get('label', 'UNKNOWN')}",
+            "",
             "Trading",
             line_status("Trading", trading),
             "Последний цикл",
@@ -93,9 +96,6 @@ def format_overview(state: Mapping[str, Any]) -> str:
             "Telegram",
             line_status("Telegram", telegram),
             f"Команд: {value(telegram, 'commands_24h')}",
-            "",
-            "Общий статус",
-            f"{system.get('emoji', '⚪')} {system.get('label', 'UNKNOWN')}",
         ]
     )
 
@@ -105,13 +105,16 @@ def format_trading(state: Mapping[str, Any]) -> str:
     trading = state.get("trading", {})
     return "\n".join(
         [
-            "🖥 Dashboard / Trading",
+            "🖥 Dashboard / Торговля",
             SEPARATOR,
-            line_status("Trading", trading),
+            line_status("Статус агента", trading),
             f"Последний цикл: {value(trading, 'last_cycle_age')}",
             f"Время цикла: {value(trading, 'cycle_duration')}",
             f"Следующий цикл: {value(trading, 'next_cycle')}",
             f"Открытые сделки: {value(trading, 'open_trades', 0)}",
+            f"Закрытые сделки: {value(trading, 'closed_trades', 0)}",
+            f"Winrate: {value(trading, 'winrate', 0)}%",
+            f"Profit Factor: {value(trading, 'profit_factor', 0)}",
             f"Последний сигнал: {value(trading, 'last_signal')}",
             f"Последний WIN: {value(trading, 'last_win')}",
             f"Последний LOSS: {value(trading, 'last_loss')}",
@@ -126,9 +129,10 @@ def format_live(state: Mapping[str, Any]) -> str:
     live = state.get("live_monitor", {})
     return "\n".join(
         [
-            "🖥 Dashboard / Live",
+            "🖥 Dashboard / Live Monitor",
             SEPARATOR,
-            line_status("Live", live),
+            line_status("Live Monitor", live),
+            str(value(live, "message", "")),
             f"Provider: {value(live, 'provider')}",
             f"WebSocket: {value(live, 'websocket')}",
             f"REST: {value(live, 'rest')}",
@@ -144,15 +148,15 @@ def format_news(state: Mapping[str, Any]) -> str:
     news = state.get("news", {})
     return "\n".join(
         [
-            "🖥 Dashboard / News",
+            "🖥 Dashboard / Новости",
             SEPARATOR,
-            line_status("News", news),
+            line_status("Статус", news),
             f"Настроение: {value(news, 'sentiment')}",
-            f"Новости: {value(news, 'news_count', 0)}",
-            f"Последнее обновление: {value(news, 'age')}",
+            f"Количество новостей: {value(news, 'news_count', 0)}",
+            f"Свежесть: {value(news, 'age')}",
             f"Shadow: {value(news, 'shadow')}",
-            f"Conflict: {value(news, 'conflict', 0)}",
-            f"Risk: {value(news, 'risk')}",
+            f"NEWS_CONFLICT: {value(news, 'conflict', 0)}",
+            f"NEWS_RISK: {value(news, 'risk')}",
         ]
     )
 
@@ -160,16 +164,22 @@ def format_news(state: Mapping[str, Any]) -> str:
 def format_lab(state: Mapping[str, Any]) -> str:
     """Format Strategy Lab block."""
     lab = state.get("strategy_lab", {})
+    baseline = lab.get("baseline", {}) if isinstance(lab.get("baseline"), Mapping) else {}
     return "\n".join(
         [
             "🖥 Dashboard / Strategy Lab",
             SEPARATOR,
-            line_status("Lab", lab),
-            f"Последнее исследование: {value(lab, 'last_research_age')}",
-            f"Лучший кандидат: {value(lab, 'best_candidate')}",
+            line_status("Статус", lab),
             f"Количество гипотез: {value(lab, 'hypotheses', 0)}",
+            (
+                "Baseline: "
+                f"Trades {value(baseline, 'trades', 0)} | "
+                f"Winrate {value(baseline, 'winrate', 0)}% | "
+                f"PF {value(baseline, 'profit_factor', 0)}"
+            ),
             f"Leader: {value(lab, 'leader')}",
-            f"Статус: {value(lab, 'verdict')}",
+            f"Verdict: {value(lab, 'verdict')}",
+            f"Возраст отчёта: {value(lab, 'last_research_age')}",
         ]
     )
 

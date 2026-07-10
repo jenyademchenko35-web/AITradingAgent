@@ -363,8 +363,8 @@ def blocker_distribution() -> list[tuple[str, float]]:
     )
 
 
-def format_dashboard() -> str:
-    """Return the v5 daily dashboard."""
+def format_legacy_v5_dashboard() -> str:
+    """Return the legacy v5 daily dashboard."""
     status = agent_status()
     stats = trade_stats()
     best = best_opportunity()

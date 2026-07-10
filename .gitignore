@@ -16,6 +16,10 @@ diagnostics_report.json
 signals_v3.csv
 agent_v3_stats.json
 ai_coach_report.json
+dashboard_state.json
+live_monitor_state.json
+live_price_history.csv
+live_monitor.log
 protective_filter_dry_run.csv
 sl_quality_protective_dry_run.csv
 confidence_sl_quality_d_dry_run.csv
@@ -31,3 +35,9 @@ trade_memory_matches.csv
 news_impact_shadow.csv
 news_trade_memory.csv
 news_statistics.csv
+strategy_metrics.csv
+strategy_shadow_trades.csv
+strategy_comparison.csv
+strategy_comparison.json
+hypothesis_comparison.csv
+hypothesis_shadow_trades.csv

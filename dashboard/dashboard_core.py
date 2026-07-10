@@ -143,6 +143,11 @@ class DashboardCore:
             row for row in trade_rows
             if trade_result(row) in {"WIN", "LOSS"}
         ]
+        wins = [row for row in closed if trade_result(row) == "WIN"]
+        pnl_values = [safe_float(row.get("pnl")) for row in closed if row.get("pnl") not in (None, "")]
+        gross_profit = sum(value for value in pnl_values if value > 0)
+        gross_loss = abs(sum(value for value in pnl_values if value < 0))
+        profit_factor = round(gross_profit / gross_loss, 4) if gross_loss else 0.0
         open_rows = [
             row for row in trade_rows
             if str(row.get("status", "")).upper() == "OPEN"
@@ -170,6 +175,9 @@ class DashboardCore:
             "last_cycle_age": human_age(latest_age),
             "cycle_duration": self.last_cycle_duration(),
             "open_trades": len(open_rows) or len(active_setups),
+            "closed_trades": len(closed),
+            "winrate": round(len(wins) / len(closed) * 100, 2) if closed else 0.0,
+            "profit_factor": profit_factor,
             "last_signal": self.format_signal(latest_decision),
             "last_win": self.format_trade(last_win),
             "last_loss": self.format_trade(last_loss),
@@ -184,13 +192,18 @@ class DashboardCore:
         monitor = read_json(LIVE_MONITOR_FILE)
         if monitor:
             updated_at = monitor.get("updated_at") or monitor.get("generated_at")
+            state_age = age_seconds(updated_at)
+            status = str(monitor.get("status", "ONLINE")).upper()
+            if state_age is not None and state_age > 30:
+                status = "OFFLINE"
+            symbols = monitor.get("symbols", [])
             return {
-                "status": monitor.get("status", "ONLINE"),
+                "status": status,
                 "provider": monitor.get("provider", "N/A"),
                 "websocket": monitor.get("websocket", "N/A"),
                 "rest": monitor.get("rest", "N/A"),
-                "symbols": monitor.get("symbols", "N/A"),
-                "update_age": human_age(age_seconds(updated_at)),
+                "symbols": len(symbols) if isinstance(symbols, list) else symbols,
+                "update_age": human_age(state_age),
                 "interval": monitor.get("interval", "N/A"),
             }
         heatmap = read_json(HEATMAP_FILE)
@@ -199,6 +212,11 @@ class DashboardCore:
         return {
             "status": "WARNING" if heatmap else "NOT_CONFIGURED",
             "provider": "heatmap fallback" if heatmap else "нет live monitor",
+            "message": (
+                "Отдельный Live Monitor ещё не запущен. Используется fallback из Heatmap."
+                if heatmap
+                else "Отдельный Live Monitor ещё не запущен."
+            ),
             "websocket": "N/A",
             "rest": "N/A",
             "symbols": len(symbols) if isinstance(symbols, list) else "N/A",
@@ -237,6 +255,15 @@ class DashboardCore:
         lab = read_json(STRATEGY_LAB_FILE) or read_json(STRATEGY_LAB_V1_FILE)
         metrics = lab.get("metrics", [])
         ranking = lab.get("ranking", [])
+        baseline = lab.get("baseline", {}) if isinstance(lab.get("baseline"), dict) else {}
+        if not baseline:
+            baseline = next(
+                (
+                    row for row in metrics
+                    if row.get("hypothesis") == "baseline" or row.get("strategy") == "Current"
+                ),
+                {},
+            )
         leader = ranking[0] if ranking else self.best_metric(metrics)
         return {
             "status": "READY" if lab else "WARNING",
@@ -244,6 +271,11 @@ class DashboardCore:
             "last_research_age": human_age(age_seconds(lab.get("generated_at"))),
             "best_candidate": leader.get("hypothesis") or leader.get("strategy") or "N/A",
             "hypotheses": len(lab.get("hypotheses", [])) if lab else 0,
+            "baseline": {
+                "trades": baseline.get("trades", 0),
+                "winrate": baseline.get("winrate", 0),
+                "profit_factor": baseline.get("profit_factor", 0),
+            },
             "leader": leader.get("hypothesis") or leader.get("strategy") or "N/A",
             "verdict": leader.get("verdict") or leader.get("sample_status") or "N/A",
             "source": STRATEGY_LAB_FILE.name if STRATEGY_LAB_FILE.exists() else STRATEGY_LAB_V1_FILE.name,

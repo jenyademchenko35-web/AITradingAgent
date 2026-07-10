@@ -24,6 +24,12 @@ from config import RUN_INTERVAL
 from calibration_report import build_calibration_report, save_report
 from decision_diagnostics import DecisionDiagnostics
 from dashboard.dashboard_formatter import format_dashboard as format_live_dashboard
+from live_monitor.formatters import (
+    format_live as format_live_monitor,
+    format_system as format_live_system,
+    load_state as load_live_monitor_state,
+    state_age_text as live_state_age_text,
+)
 from notification_manager import save_chat_id
 from telegram_formatters import (
     format_ai_coach as v5_format_ai_coach,
@@ -90,6 +96,7 @@ MARKET_NEWS_SUMMARY_FILE = BASE_DIR / "market_news_summary.txt"
 MARKET_HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
 MARKET_INTELLIGENCE_FILE = BASE_DIR / "market_intelligence_report.json"
 MARKET_INTELLIGENCE_SUMMARY_FILE = BASE_DIR / "market_intelligence_summary.txt"
+LIVE_MONITOR_STATE_FILE = BASE_DIR / "live_monitor_state.json"
 TRADE_MARKET_CONTEXT_FILE = BASE_DIR / "trade_market_context.csv"
 TRADE_MEMORY_SUMMARY_FILE = BASE_DIR / "trade_memory_summary.txt"
 STRATEGY_LAB_REPORT_FILE = BASE_DIR / "strategy_lab_report.json"
@@ -1179,8 +1186,8 @@ def report_freshness_snapshot(latest_signal: str) -> Dict[str, Any]:
     }
 
 
-def format_dashboard() -> str:
-    """Build a one-screen health dashboard from existing reports."""
+def format_analytics_status() -> str:
+    """Build the legacy analytics health snapshot for Developer use."""
     health = agent_health_snapshot()
     trade_stats = calculate_trade_stats()
     freshness = report_freshness_snapshot(health["latest_signal"])
@@ -2132,9 +2139,40 @@ def format_intelligence() -> str:
         return "Market Intelligence пока недоступен. Попробуй позже."
 
     text = inject_news_freshness_into_summary(text)
+    text = inject_live_monitor_into_text(text)
     if len(text) > MAX_MESSAGE_LENGTH:
         return text[:MAX_MESSAGE_LENGTH - 3].rstrip() + "..."
     return text
+
+
+def live_monitor_snippet() -> str:
+    """Return compact Live Monitor status for shared Telegram screens."""
+    state = load_live_monitor_state()
+    if not state:
+        return "Live Monitor:\n🔴 OFFLINE\nЦены обновлены:\nнет данных"
+    status = str(state.get("status", "OFFLINE"))
+    emoji = {
+        "ONLINE": "🟢",
+        "IDLE": "🟡",
+        "DEGRADED": "🟡",
+        "OFFLINE": "🔴",
+    }.get(status, "⚪")
+    return "\n".join(
+        [
+            "Live Monitor:",
+            f"{emoji} {status}",
+            "Цены обновлены:",
+            live_state_age_text(state),
+        ]
+    )
+
+
+def inject_live_monitor_into_text(text: str) -> str:
+    """Append Live Monitor status to an existing text response."""
+    snippet = live_monitor_snippet()
+    if "Live Monitor:" in text:
+        return text
+    return text.rstrip() + "\n\n" + snippet
 
 
 def format_memory(symbol: str = "") -> str:
@@ -2181,6 +2219,9 @@ def format_context() -> str:
         f"Fear & Greed: {market.get('fear_greed') or 'нет данных'}",
         f"Лучший сигнал: {best_signal}",
         f"Открытые сделки: {stats.get('open', 0)}",
+        "",
+        live_monitor_snippet(),
+        "",
         f"Последний LOSS: {last_loss_label}",
         f"Главный риск: {top_risk.get('status', 'Momentum FAIL')}",
         f"Причина LOSS: {trades.get('last_loss_primary', 'нет данных')}",
@@ -2466,6 +2507,7 @@ def help_text() -> str:
             "/blocked Momentum|Structure|Risk|Trend|ALL",
             "/research /experiments /calibration /quality",
             "/news /heatmap /intelligence /memory BTC /context",
+            "/live /live SOL /live trades /live setups /system",
             "/lab hypotheses|cooldown|trend|momentum|atr|news|edge",
             "/lab duplicate|volatility|compare|current|quality",
         ]
@@ -2659,6 +2701,20 @@ async def heatmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     await reply(update, format_heatmap())
 
 
+async def live_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_live_monitor(context.args))
+
+
+async def system_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_live_system())
+
+
 async def intelligence_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -2808,6 +2864,8 @@ def build_app():
     app.add_handler(CommandHandler("report", report_command))
     app.add_handler(CommandHandler("news", news_command))
     app.add_handler(CommandHandler("heatmap", heatmap_command))
+    app.add_handler(CommandHandler("live", live_command))
+    app.add_handler(CommandHandler("system", system_command))
     app.add_handler(CommandHandler("intelligence", intelligence_command))
     app.add_handler(CommandHandler("memory", memory_command))
     app.add_handler(CommandHandler("context", context_command))
