@@ -31,6 +31,13 @@ from dashboard.dashboard_state import (  # noqa: E402
     save_dashboard_state,
     utc_now,
 )
+from live_monitor.trade_tracker import (  # noqa: E402
+    CLOSED_STATUSES,
+    TradeTracker,
+    first_value,
+    normalized_row,
+    read_csv_rows as read_trade_rows,
+)
 
 
 try:
@@ -43,7 +50,6 @@ STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 SIGNALS_FILE = BASE_DIR / "signals_v3.csv"
 DEBUG_FILE = BASE_DIR / "decision_debug.csv"
 TRADES_FILE = BASE_DIR / "trades.csv"
-ACTIVE_SETUPS_FILE = BASE_DIR / "active_setups_v3.json"
 MARKET_NEWS_FILE = BASE_DIR / "market_news_feed.json"
 NEWS_SHADOW_FILE = BASE_DIR / "news_impact_advisor_report.json"
 STRATEGY_LAB_FILE = BASE_DIR / "hypothesis_report.json"
@@ -93,12 +99,73 @@ def local_clock(value: Any) -> str:
 
 def trade_result(row: Mapping[str, Any]) -> str:
     """Return normalized trade result."""
-    return str(row.get("result") or row.get("status") or "").upper()
+    return str(row.get("result") or row.get("status") or "").strip().upper()
 
 
 def signal_status(row: Mapping[str, Any]) -> str:
     """Return signal/decision label."""
     return str(row.get("signal") or row.get("decision") or "N/A").upper()
+
+
+def is_open_trade(row: Mapping[str, Any]) -> bool:
+    """Classify an open trade using Live Monitor rules plus close guards."""
+    normalized = normalized_row(row)
+    status = str(first_value(normalized, "status", "state")).strip().upper()
+    result = str(first_value(normalized, "result")).strip().upper()
+    if status in CLOSED_STATUSES or result in CLOSED_STATUSES:
+        return False
+    exit_price = str(first_value(normalized, "exit", "exit_price")).strip()
+    close_timestamp = str(
+        first_value(
+            normalized,
+            "close_timestamp",
+            "closed_at",
+            "close_time",
+        )
+    ).strip()
+    if exit_price or close_timestamp:
+        return False
+    return TradeTracker.is_open_row(normalized)
+
+
+def news_item_time(item: Mapping[str, Any]) -> datetime | None:
+    """Read supported news timestamp aliases."""
+    for field in ("published_at", "timestamp", "time", "published"):
+        parsed = parse_time(item.get(field))
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def recent_news_count(
+    items: Any,
+    now: datetime | None = None,
+) -> int:
+    """Count feed items published during the latest rolling 24 hours."""
+    if not isinstance(items, list):
+        return 0
+    current = now or datetime.now(timezone.utc)
+    cutoff = current - timedelta(hours=24)
+    return sum(
+        1
+        for item in items
+        if isinstance(item, Mapping)
+        and (published := news_item_time(item)) is not None
+        and published >= cutoff
+    )
+
+
+def report_freshness_status(
+    report: Mapping[str, Any],
+    ready_seconds: int,
+) -> tuple[str, float | None]:
+    """Return READY/STALE/OFFLINE using a report generation timestamp."""
+    if not report:
+        return "OFFLINE", None
+    age = age_seconds(report.get("generated_at"))
+    if age is None:
+        return "OFFLINE", None
+    return ("READY" if age <= ready_seconds else "STALE"), age
 
 
 class DashboardCore:
@@ -132,8 +199,7 @@ class DashboardCore:
         """Collect trading agent status from existing runtime artifacts."""
         debug_rows = read_csv_tail(DEBUG_FILE, 300)
         signal_rows = read_csv_tail(SIGNALS_FILE, 300)
-        trade_rows = read_csv_tail(TRADES_FILE, 300)
-        active_setups = read_json(ACTIVE_SETUPS_FILE)
+        trade_rows = read_trade_rows(TRADES_FILE)
         stats = read_json(STATS_FILE)
 
         latest_decision = latest_row(debug_rows or signal_rows)
@@ -150,10 +216,7 @@ class DashboardCore:
         gross_profit = sum(value for value in pnl_values if value > 0)
         gross_loss = abs(sum(value for value in pnl_values if value < 0))
         profit_factor = round(gross_profit / gross_loss, 4) if gross_loss else 0.0
-        open_rows = [
-            row for row in trade_rows
-            if str(row.get("status", "")).upper() == "OPEN"
-        ]
+        open_rows = [row for row in trade_rows if is_open_trade(row)]
         last_win = next(
             (row for row in reversed(closed) if trade_result(row) == "WIN"),
             {},
@@ -176,7 +239,7 @@ class DashboardCore:
             "last_cycle": latest_ts or "N/A",
             "last_cycle_age": human_age(latest_age),
             "cycle_duration": self.last_cycle_duration(),
-            "open_trades": len(open_rows) or len(active_setups),
+            "open_trades": len(open_rows),
             "closed_trades": len(closed),
             "winrate": round(len(wins) / len(closed) * 100, 2) if closed else 0.0,
             "profit_factor": profit_factor,
@@ -232,6 +295,8 @@ class DashboardCore:
         shadow = read_json(NEWS_SHADOW_FILE)
         generated_at = news.get("generated_at")
         summary = news.get("summary", {}) if isinstance(news.get("summary"), dict) else {}
+        items = news.get("news", []) if news else []
+        recent_24h = recent_news_count(items)
         news_age = age_seconds(generated_at)
         conflict = (
             shadow.get("summary", {})
@@ -244,7 +309,9 @@ class DashboardCore:
         return {
             "status": status,
             "sentiment": summary.get("market_sentiment", "Neutral"),
-            "news_count": summary.get("total", len(news.get("news", [])) if news else 0),
+            "news_count": recent_24h,
+            "news_count_24h": recent_24h,
+            "feed_total": len(items) if isinstance(items, list) else 0,
             "last_update": generated_at or "N/A",
             "age": human_age(news_age),
             "shadow": shadow.get("status", "N/A"),
@@ -257,6 +324,7 @@ class DashboardCore:
         lab = read_json(STRATEGY_LAB_FILE) or read_json(STRATEGY_LAB_V1_FILE)
         replay = read_json(TRADE_REPLAY_FILE)
         consensus = read_json(RESEARCH_CONSENSUS_FILE)
+        lab_status, lab_age = report_freshness_status(lab, 6 * 3600)
         metrics = lab.get("metrics", [])
         ranking = lab.get("ranking", [])
         baseline = lab.get("baseline", {}) if isinstance(lab.get("baseline"), dict) else {}
@@ -270,9 +338,9 @@ class DashboardCore:
             )
         leader = ranking[0] if ranking else self.best_metric(metrics)
         return {
-            "status": "READY" if lab else "WARNING",
+            "status": lab_status,
             "last_research": lab.get("generated_at", "N/A"),
-            "last_research_age": human_age(age_seconds(lab.get("generated_at"))),
+            "last_research_age": human_age(lab_age),
             "best_candidate": leader.get("hypothesis") or leader.get("strategy") or "N/A",
             "hypotheses": len(lab.get("hypotheses", [])) if lab else 0,
             "baseline": {
@@ -330,10 +398,11 @@ class DashboardCore:
         """Collect Trade Memory state."""
         memory = read_json(TRADE_MEMORY_FILE)
         stats = memory.get("stats", {}) if isinstance(memory.get("stats"), dict) else {}
+        memory_status, memory_age = report_freshness_status(memory, 24 * 3600)
         return {
-            "status": "READY" if memory else "WARNING",
+            "status": memory_status,
             "last_analysis": memory.get("generated_at", "N/A"),
-            "last_analysis_age": human_age(age_seconds(memory.get("generated_at"))),
+            "last_analysis_age": human_age(memory_age),
             "matches": memory.get("matches_count", 0),
             "winrate": stats.get("winrate", 0),
             "profit_factor": stats.get("profit_factor", 0),
