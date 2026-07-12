@@ -56,9 +56,12 @@ def verdict_for(
     baseline_pf: float,
     net_benefit: int,
     wins_lost: int,
+    shadow_sample_size: int,
 ) -> str:
     """Classify one hypothesis as research-only."""
-    if trades < 30:
+    if trades == 0:
+        return "OVERFILTERED" if wins_lost > 0 else "NO_TRADES"
+    if shadow_sample_size < 30 or trades < 10:
         return "INSUFFICIENT_DATA"
     if net_benefit >= 5 and profit_factor_value > baseline_pf and wins_lost <= 2:
         return "STRONG"
@@ -103,7 +106,14 @@ def calculate_hypothesis_metrics(
         baseline_pf,
         net_benefit,
         len(lost_winners),
+        total_opportunities,
     )
+    if verdict in {"OVERFILTERED", "NO_TRADES"}:
+        sample_status = verdict
+    elif total_opportunities >= 30 and len(trades) >= 10:
+        sample_status = "OK"
+    else:
+        sample_status = "INSUFFICIENT_DATA"
     return {
         "hypothesis": hypothesis,
         "group": group,
@@ -123,7 +133,7 @@ def calculate_hypothesis_metrics(
         "lost_winners": len(lost_winners),
         "net_benefit": net_benefit,
         "verdict": verdict,
-        "sample_status": "OK" if len(trades) >= 30 else "INSUFFICIENT_DATA",
+        "sample_status": sample_status,
     }
 
 

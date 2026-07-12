@@ -20,6 +20,7 @@ from strategy_lab.hypothesis_metrics import (  # noqa: E402
 )
 from strategy_lab.hypothesis_registry import hypotheses_by_key  # noqa: E402
 from strategy_lab.hypothesis_report import (  # noqa: E402
+    eligible_leader,
     format_hypothesis_summary,
     ranked_metrics,
     save_hypothesis_reports,
@@ -73,10 +74,12 @@ def recommendation_for(metrics: list[Mapping[str, Any]], baseline: Mapping[str, 
     """Return conservative research recommendation."""
     if safe_float(baseline.get("trades")) < 30:
         return "Статистика пока недостаточна. Рекомендуется продолжить исследование."
-    ranking = ranked_metrics(metrics)
-    if not ranking:
-        return "Нет достаточных данных для вывода."
-    leader = ranking[0]
+    leader = eligible_leader(metrics, baseline)
+    if not leader:
+        return (
+            "Ни одна гипотеза пока не прошла условия лидерства: минимум 10 сделок, "
+            "PF и ROI выше baseline без потери всех baseline WIN. Продолжить наблюдение."
+        )
     if leader.get("verdict") in {"STRONG", "PROMISING"}:
         return (
             f"{leader.get('hypothesis')} выглядит перспективно. "
@@ -105,6 +108,8 @@ def build_report(key: str = "") -> dict[str, Any]:
                 safe_float(baseline.get("profit_factor")),
             )
         )
+    ranking = ranked_metrics(metrics)
+    leader = eligible_leader(metrics, baseline)
     report = {
         "generated_at": utc_now(),
         "mode": "Shadow Research",
@@ -114,7 +119,13 @@ def build_report(key: str = "") -> dict[str, Any]:
         "baseline": baseline,
         "hypotheses": [hypothesis.report() for hypothesis in hypotheses],
         "metrics": metrics,
-        "ranking": ranked_metrics(metrics),
+        "ranking_mode": (
+            "EVIDENCE_GATED"
+            if safe_float(baseline.get("trades")) >= 30
+            else "OBSERVATION_ONLY"
+        ),
+        "ranking": ranking,
+        "leader": leader,
         "shadow_trades": all_rows,
         "recommendation": recommendation_for(metrics, baseline),
         "restrictions": [

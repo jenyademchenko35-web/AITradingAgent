@@ -41,3 +41,5 @@ strategy_comparison.csv
 strategy_comparison.json
 hypothesis_comparison.csv
 hypothesis_shadow_trades.csv
+replay_patterns.csv
+research_consensus.csv

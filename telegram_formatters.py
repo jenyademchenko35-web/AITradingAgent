@@ -21,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent
 SIGNALS_FILE = BASE_DIR / "signals_v3.csv"
 DECISION_DEBUG_FILE = BASE_DIR / "decision_debug.csv"
 DIAGNOSTICS_FILE = BASE_DIR / "decision_diagnostics.csv"
+EXPLANATIONS_FILE = BASE_DIR / "decision_explanations.csv"
 TRADES_FILE = BASE_DIR / "trades.csv"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 AI_COACH_FILE = BASE_DIR / "ai_coach_report.json"
@@ -152,6 +153,87 @@ def latest_by_symbol(rows: Iterable[Mapping[str, str]]) -> dict[str, dict[str, s
         if symbol not in latest or row.get("timestamp", "") > latest[symbol].get("timestamp", ""):
             latest[symbol] = dict(row)
     return latest
+
+
+FILTER_NAMES = ("Trend", "Structure", "Momentum", "Risk")
+
+
+def _symbol_key(value: str) -> str:
+    """Normalize a symbol for joins between runtime CSV files."""
+    return "".join(character for character in str(value).upper() if character.isalnum())
+
+
+def _canonical_filters(value: Any) -> list[str]:
+    """Parse a delimited filter list into canonical display names."""
+    text = str(value or "")
+    for delimiter in ("|", ",", ";", "/"):
+        text = text.replace(delimiter, " ")
+    words = {word.strip().lower() for word in text.split() if word.strip()}
+    return [name for name in FILTER_NAMES if name.lower() in words]
+
+
+def _nearest_symbol_row(
+    rows: Iterable[Mapping[str, str]],
+    symbol: str,
+    timestamp: str = "",
+) -> dict[str, str]:
+    """Return the row for symbol nearest to a decision timestamp."""
+    key = _symbol_key(symbol)
+    matches = [dict(row) for row in rows if _symbol_key(row.get("symbol", "")) == key]
+    if not matches:
+        return {}
+
+    target = parse_time(timestamp)
+    if target:
+        timed = []
+        for row in matches:
+            row_time = parse_time(row.get("timestamp", ""))
+            if row_time:
+                timed.append((abs((row_time - target).total_seconds()), row))
+        if timed:
+            return min(timed, key=lambda item: item[0])[1]
+    return max(matches, key=lambda row: row.get("timestamp", ""))
+
+
+def failed_filters_for(
+    symbol: str,
+    decision_timestamp: str = "",
+    diagnostics_rows: Iterable[Mapping[str, str]] | None = None,
+    explanation_rows: Iterable[Mapping[str, str]] | None = None,
+) -> list[str]:
+    """Return real failed filters from diagnostics and explanations."""
+    diagnostics_source = (
+        list(diagnostics_rows)
+        if diagnostics_rows is not None
+        else read_csv_rows(DIAGNOSTICS_FILE)
+    )
+    explanations_source = (
+        list(explanation_rows)
+        if explanation_rows is not None
+        else read_csv_rows(EXPLANATIONS_FILE)
+    )
+    diagnostics = _nearest_symbol_row(
+        diagnostics_source,
+        symbol,
+        decision_timestamp,
+    )
+    explanation = _nearest_symbol_row(
+        explanations_source,
+        symbol,
+        decision_timestamp,
+    )
+
+    failed: set[str] = set()
+    for name in FILTER_NAMES:
+        if str(diagnostics.get(name.lower(), "")).strip().upper() == "FAIL":
+            failed.add(name)
+    failed.update(
+        _canonical_filters(
+            explanation.get("failed") or explanation.get("failed_filters")
+        )
+    )
+    failed.update(_canonical_filters(diagnostics.get("primary_blocker")))
+    return [name for name in FILTER_NAMES if name in failed]
 
 
 def git_branch() -> str:
@@ -288,9 +370,13 @@ def is_near_setup(row: Mapping[str, str]) -> bool:
     }
 
 
-def latest_ranked_candidates() -> list[RankedCandidate]:
+def latest_ranked_candidates(
+    rows: Iterable[Mapping[str, str]] | None = None,
+) -> list[RankedCandidate]:
     """Return latest candidates sorted by the shared display ranker."""
-    latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
+    latest = latest_by_symbol(
+        rows if rows is not None else read_csv_rows(DECISION_DEBUG_FILE)
+    )
     return [
         candidate for candidate in rank_candidates(latest.values(), min_edge=MIN_EDGE)
         if candidate.status in {"SETUP", "WATCH", "NEAR SETUP"}
@@ -304,18 +390,20 @@ def latest_candidates() -> list[dict[str, str]]:
     return [latest[symbol] for symbol in ranked_symbols if symbol in latest]
 
 
-def missing_factors(symbol: str) -> str:
+def missing_factors(
+    symbol: str,
+    decision_timestamp: str = "",
+    diagnostics_rows: Iterable[Mapping[str, str]] | None = None,
+    explanation_rows: Iterable[Mapping[str, str]] | None = None,
+) -> str:
     """Return a compact explanation of missing filters."""
-    diagnostics = latest_by_symbol(read_csv_rows(DIAGNOSTICS_FILE)).get(symbol, {})
-    failed = [
-        name for name in ("trend", "structure", "momentum", "risk")
-        if diagnostics.get(name) == "FAIL"
-    ]
-    blocker = diagnostics.get("primary_blocker")
-    factors = [item.title() for item in failed]
-    if blocker and blocker not in factors:
-        factors.append(blocker)
-    return ", ".join(factors[:3]) if factors else "Directional Edge"
+    factors = failed_filters_for(
+        symbol,
+        decision_timestamp,
+        diagnostics_rows,
+        explanation_rows,
+    )
+    return " + ".join(factors) if factors else "Directional Edge"
 
 
 def news_impact_for_symbol(symbol: str) -> dict[str, Any]:
@@ -441,8 +529,10 @@ def format_symbol_detail(symbol: str) -> str:
             f"Confidence: {fmt_pct(row.get('confidence'))}",
             f"Weighted Score: {fmt_score(weighted_score(row))}",
             f"Edge: {fmt_score(diff)} / {MIN_EDGE}",
-            "Missing:",
-            missing_factors(full_symbol),
+            (
+                "Не хватает: "
+                f"{missing_factors(full_symbol, row.get('timestamp', ''))}"
+            ),
             "",
             "📰 Новости",
             f"Статус: {news.get('news_status', 'NEWS_NEUTRAL')}",
@@ -462,9 +552,10 @@ def format_symbol_detail(symbol: str) -> str:
 
 def format_opportunities() -> str:
     """Return the top near-setup candidates."""
-    candidates = latest_candidates()
-    if not candidates:
-        latest = latest_by_symbol(read_csv_rows(DECISION_DEBUG_FILE))
+    debug_rows = read_csv_rows(DECISION_DEBUG_FILE)
+    latest = latest_by_symbol(debug_rows)
+    ranked = latest_ranked_candidates(debug_rows)
+    if not ranked:
         closest = rank_candidates(latest.values(), min_edge=MIN_EDGE)[:3]
         names = "\n".join(symbol_short(candidate.symbol) for candidate in closest) or "нет"
         return "\n".join(
@@ -479,9 +570,16 @@ def format_opportunities() -> str:
 
     medals = ["🥇", "🥈", "🥉", "4.", "5."]
     lines = ["🎯 Opportunities", ""]
-    ranked = latest_ranked_candidates()
+    diagnostics_rows = read_csv_rows(DIAGNOSTICS_FILE)
+    explanation_rows = read_csv_rows(EXPLANATIONS_FILE)
     for index, candidate in enumerate(ranked[:5]):
-        missing = missing_factors(candidate.symbol)
+        decision_row = latest.get(candidate.symbol, {})
+        missing = missing_factors(
+            candidate.symbol,
+            decision_row.get("timestamp", ""),
+            diagnostics_rows,
+            explanation_rows,
+        )
         lines.extend(
             [
                 f"{medals[index]} {symbol_short(candidate.symbol)}",
@@ -494,10 +592,13 @@ def format_opportunities() -> str:
                 f"{fmt_score(candidate.edge)} / {MIN_EDGE}",
                 "Статус",
                 candidate.status,
-                "Missing",
-                missing,
+                f"Не хватает: {missing}",
                 "Причина выбора",
-                explain_selection(candidate, min_edge=MIN_EDGE, missing=missing.split(", ")),
+                explain_selection(
+                    candidate,
+                    min_edge=MIN_EDGE,
+                    missing=missing.split(" + "),
+                ),
                 SEPARATOR,
             ]
         )

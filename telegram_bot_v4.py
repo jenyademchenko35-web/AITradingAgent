@@ -49,6 +49,7 @@ from telegram_formatters import (
     format_symbol_detail as v5_format_symbol_detail,
     format_trades as v5_format_trades,
     format_watchlist as v5_format_watchlist,
+    failed_filters_for as v5_failed_filters_for,
     market_symbols as v5_market_symbols,
 )
 from telegram_handlers import (
@@ -80,6 +81,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 SIGNALS_FILE = BASE_DIR / "signals_v3.csv"
 DECISION_DEBUG_FILE = BASE_DIR / "decision_debug.csv"
 DIAGNOSTICS_FILE = BASE_DIR / "decision_diagnostics.csv"
+EXPLANATIONS_FILE = BASE_DIR / "decision_explanations.csv"
 CALIBRATION_FILE = BASE_DIR / "calibration_report.json"
 RESEARCH_REPORT_FILE = BASE_DIR / "strategy_research_report.json"
 RESEARCH_SUMMARY_FILE = BASE_DIR / "strategy_research_summary.txt"
@@ -2111,6 +2113,8 @@ def format_heatmap() -> str:
         f"Neutral News: {summary.get('Neutral News', 0)}",
         "",
     ]
+    diagnostics_rows = read_csv_rows(DIAGNOSTICS_FILE)
+    explanation_rows = read_csv_rows(EXPLANATIONS_FILE)
     for row in report.get("symbols", [])[:12]:
         lines.append(
             f"{str(row.get('symbol', '')).replace('/USDT', '')} {row.get('overall', '⚪')} "
@@ -2124,7 +2128,17 @@ def format_heatmap() -> str:
             f"Edge {row.get('edge', 0)} | "
             f"{row.get('decision', 'N/A')}"
         )
-        lines.append(f"Причина: {row.get('reason', 'N/A')}")
+        failed_filters = v5_failed_filters_for(
+            str(row.get("symbol", "")),
+            diagnostics_rows=diagnostics_rows,
+            explanation_rows=explanation_rows,
+        )
+        reason = (
+            f"Не хватает: {' + '.join(failed_filters)}"
+            if failed_filters
+            else str(row.get("reason", "N/A"))
+        )
+        lines.append(f"Причина: {reason}")
     lines.append("")
     lines.append("Heatmap только показывает контекст рынка.")
     return "\n".join(lines)

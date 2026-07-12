@@ -1,51 +1,128 @@
 {
-  "generated_at": "2026-07-02T11:42:11.552228+00:00",
+  "generated_at": "2026-07-10T14:27:06.802184+00:00",
   "source": "/Users/jeynademcenko/AITradingAgent/decision_diagnostics.csv",
   "status": "ok",
-  "total_decisions": 36,
-  "no_trade_decisions": 36,
+  "total_decisions": 7283,
+  "no_trade_decisions": 7101,
   "primary_blockers": {
-    "Momentum": 24,
-    "Structure": 12
+    "Momentum": 2730,
+    "Structure": 1182,
+    "Risk": 2206,
+    "Trend": 1117,
+    "Score Threshold": 47,
+    "None": 1
   },
   "engine_failures": {
-    "Risk": 12,
-    "Trend": 0,
-    "Structure": 12,
-    "Momentum": 30
+    "Risk": 4783,
+    "Trend": 1488,
+    "Structure": 3913,
+    "Momentum": 3840
   },
-  "average_lost_score": 3.98,
-  "average_potential_score": 25.07,
+  "average_lost_score": 2.41,
+  "average_potential_score": 20.4,
   "near_setup_symbols": {
-    "SOL": {
-      "near_setup_count": 12,
-      "avg_potential_score": 28.35,
-      "max_potential_score": 28.45,
+    "ADA": {
+      "near_setup_count": 431,
+      "avg_potential_score": 25.83,
+      "max_potential_score": 28.75,
       "primary_blockers": {
-        "Structure": 12
+        "Risk": 296,
+        "Trend": 43,
+        "Structure": 68,
+        "Score Threshold": 21,
+        "Momentum": 3
+      }
+    },
+    "DOGE": {
+      "near_setup_count": 390,
+      "avg_potential_score": 25.38,
+      "max_potential_score": 32.45,
+      "primary_blockers": {
+        "Momentum": 297,
+        "Trend": 5,
+        "Risk": 57,
+        "Structure": 31
       }
     },
     "ETH": {
-      "near_setup_count": 12,
-      "avg_potential_score": 23.45,
-      "max_potential_score": 23.6,
+      "near_setup_count": 389,
+      "avg_potential_score": 24.86,
+      "max_potential_score": 28.75,
       "primary_blockers": {
-        "Momentum": 12
+        "Momentum": 34,
+        "Risk": 161,
+        "Trend": 149,
+        "Structure": 45
       }
     },
     "BTC": {
-      "near_setup_count": 12,
-      "avg_potential_score": 23.4,
-      "max_potential_score": 23.4,
+      "near_setup_count": 360,
+      "avg_potential_score": 24.49,
+      "max_potential_score": 28.75,
       "primary_blockers": {
-        "Momentum": 12
+        "Momentum": 158,
+        "Trend": 20,
+        "Risk": 163,
+        "Score Threshold": 4,
+        "Structure": 15
+      }
+    },
+    "BNB": {
+      "near_setup_count": 332,
+      "avg_potential_score": 24.45,
+      "max_potential_score": 26.25,
+      "primary_blockers": {
+        "Momentum": 176,
+        "Risk": 154,
+        "Score Threshold": 2
+      }
+    },
+    "AVAX": {
+      "near_setup_count": 311,
+      "avg_potential_score": 26.84,
+      "max_potential_score": 28.95,
+      "primary_blockers": {
+        "Structure": 181,
+        "Trend": 26,
+        "Risk": 66,
+        "Momentum": 38
+      }
+    },
+    "XRP": {
+      "near_setup_count": 266,
+      "avg_potential_score": 25.7,
+      "max_potential_score": 26.25,
+      "primary_blockers": {
+        "Momentum": 6,
+        "Risk": 259,
+        "Trend": 1
+      }
+    },
+    "SOL": {
+      "near_setup_count": 213,
+      "avg_potential_score": 26.06,
+      "max_potential_score": 28.45,
+      "primary_blockers": {
+        "Structure": 46,
+        "Risk": 90,
+        "Trend": 68,
+        "Momentum": 9
+      }
+    },
+    "LINK": {
+      "near_setup_count": 171,
+      "avg_potential_score": 25.33,
+      "max_potential_score": 28.75,
+      "primary_blockers": {
+        "Risk": 91,
+        "Trend": 57,
+        "Structure": 23
       }
     }
   },
   "recommendations": [
-    "Momentum is the most frequent primary blocker (66.7% of decisions).",
-    "Score threshold may be strict: many non-actionable decisions cluster between WATCH and SETUP potential scores.",
-    "Average potential score is near WATCH/SETUP territory; review score thresholds only after confirming blocker quality.",
-    "Keep these symbols in the watchlist: SOL, ETH, BTC."
+    "Momentum is the most frequent primary blocker (37.5% of decisions).",
+    "Risk filter looks strict. Review Risk thresholds and price-zone rules before changing score thresholds.",
+    "Keep these symbols in the watchlist: ADA, DOGE, ETH, BTC, BNB."
   ]
 }
