@@ -14,6 +14,8 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Iterable, Mapping
 
+from report_metadata import build_report_metadata, timestamp_bounds
+
 
 BASE_DIR = Path(__file__).resolve().parent
 TRADES_FILE = BASE_DIR / "trades.csv"
@@ -25,6 +27,8 @@ CLOSED_MARKERS = {"WIN", "LOSS", "CLOSED", "TP", "SL"}
 OPEN_MARKERS = {"OPEN", "ACTIVE", "PENDING"}
 
 NORMALIZED_FIELDS = [
+    "trade_id",
+    "source_row_id",
     "source_index",
     "symbol",
     "direction",
@@ -86,6 +90,62 @@ def source_result(row: Mapping[str, Any]) -> str:
     return result
 
 
+def canonical_symbol(value: Any) -> str:
+    """Normalize a symbol for stable analytics-only joins."""
+    text = str(value or "").strip().upper().replace("-", "/")
+    if "/" not in text and text.endswith("USDT"):
+        text = f"{text[:-4]}/USDT"
+    return text
+
+
+def canonical_timestamp(value: Any) -> str:
+    """Normalize an ISO timestamp while preserving unparseable legacy values."""
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return text
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc)
+    return parsed.isoformat()
+
+
+def trade_identity_keys(
+    row: Mapping[str, Any],
+    source_index: int = 0,
+) -> list[tuple[str, tuple[str, ...]]]:
+    """Return stable linkage keys ordered from strongest to legacy fallback."""
+    keys: list[tuple[str, tuple[str, ...]]] = []
+    trade_id = str(first_value(row, ("trade_id", "id"))).strip()
+    source_row_id = str(
+        first_value(row, ("source_row_id", "row_id", "source_index"))
+        or source_index
+        or ""
+    ).strip()
+    symbol = canonical_symbol(first_value(row, ("symbol", "pair")))
+    direction = str(first_value(row, ("direction", "side"))).strip().upper()
+    opened_at = canonical_timestamp(
+        first_value(row, ("opened_at", "open_timestamp", "timestamp"))
+    )
+    closed_at = canonical_timestamp(
+        first_value(row, ("closed_at", "close_timestamp"))
+    )
+
+    if trade_id:
+        keys.append(("TRADE_ID", (trade_id,)))
+    if source_row_id:
+        keys.append(("SOURCE_ROW_ID", (source_row_id,)))
+    if symbol and direction and opened_at and closed_at:
+        keys.append(
+            ("SYMBOL_DIRECTION_OPEN_CLOSE", (symbol, direction, opened_at, closed_at))
+        )
+    if symbol and direction and opened_at:
+        keys.append(("LEGACY_FALLBACK", (symbol, direction, opened_at)))
+    return keys
+
+
 def is_closed_trade(row: Mapping[str, Any]) -> bool:
     """Return whether a row represents a closed trade."""
     status = str(row.get("status") or row.get("state") or "").strip().upper()
@@ -112,6 +172,12 @@ def normalize_trade(
     recorded_result = source_result(row)
     status = str(row.get("status") or row.get("state") or "").strip().upper()
     raw_pnl = first_value(row, ("pnl", "profit", "profit_loss"))
+    trade_id = str(first_value(row, ("trade_id", "id"))).strip()
+    source_row_id = str(
+        first_value(row, ("source_row_id", "row_id", "source_index"))
+        or source_index
+        or ""
+    ).strip()
 
     reasons: list[str] = []
     if direction not in {"LONG", "SHORT"}:
@@ -166,8 +232,10 @@ def normalize_trade(
         and calculated_result != recorded_result
     )
     return {
+        "trade_id": trade_id,
+        "source_row_id": source_row_id,
         "source_index": source_index,
-        "symbol": str(row.get("symbol") or row.get("pair") or "").strip().upper(),
+        "symbol": canonical_symbol(row.get("symbol") or row.get("pair")),
         "direction": direction,
         "opened_at": first_value(row, ("opened_at", "open_timestamp", "timestamp")),
         "closed_at": first_value(row, ("closed_at", "close_timestamp")),
@@ -289,6 +357,11 @@ def build_audit_report(path: Path = TRADES_FILE) -> dict[str, Any]:
     metrics = aggregate_trade_metrics(source_rows)
     incomplete = [row for row in normalized if row.get("metrics_status") == "INCOMPLETE"]
     mismatches = [row for row in normalized if row.get("result_mismatch")]
+    generated_at = utc_now()
+    period_start, period_end = timestamp_bounds(
+        normalized,
+        fields=("opened_at", "closed_at"),
+    )
     warnings = []
     if incomplete:
         warnings.append(
@@ -299,7 +372,18 @@ def build_audit_report(path: Path = TRADES_FILE) -> dict[str, Any]:
             f"{len(mismatches)} сделок имеют расхождение записанного и рассчитанного result."
         )
     report = {
-        "generated_at": utc_now(),
+        "generated_at": generated_at,
+        "metadata": build_report_metadata(
+            generator="trade_metrics_normalizer",
+            metric_unit="R",
+            source_files=[path],
+            base_dir=BASE_DIR,
+            data_period_start=period_start,
+            data_period_end=period_end,
+            closed_trades_total=metrics.get("closed_trades", 0),
+            complete_metrics_total=metrics.get("metrics_trades", 0),
+            generated_at=generated_at,
+        ),
         "status": "WARNING" if incomplete or mismatches else "OK",
         "mode": "read-only unified trade metrics audit",
         "source": str(path),

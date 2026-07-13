@@ -63,10 +63,20 @@ class ConsoleOutputManager:
     def symbol_summary(self, symbol: str, decision: Any, elapsed: float) -> None:
         if not self.allows("NORMAL"):
             return
+        raw_status = getattr(decision, "raw_signal_status", decision.signal)
+        final_status = getattr(decision, "final_filter_status", "N/A")
+        execution_status = getattr(decision, "execution_status", "N/A")
+        failed_filters = list(getattr(decision, "failed_filters", []) or [])
+        veto_reasons = list(getattr(decision, "veto_reasons", []) or [])
         line = (
-            f"{symbol} | {decision.direction} | {decision.signal} | "
+            f"{symbol} | {decision.direction} | Raw signal={raw_status} | "
+            f"Final filters={final_status} | Execution={execution_status} | "
             f"Score={decision.score} | Confidence={decision.confidence}%"
         )
+        if failed_filters:
+            line += f" | Failed={', '.join(failed_filters)}"
+        if veto_reasons:
+            line += f" | Veto={'; '.join(veto_reasons)}"
         if self.allows("DEBUG"):
             line += f" | Quality={decision.quality} | {decision.summary} ({elapsed:.2f}s)"
         self._print(line)
@@ -108,12 +118,18 @@ class ConsoleOutputManager:
 
         candidate = rank_candidates([(symbol, decision)])[0]
         filter_match = failed_filters_match(
-            symbol,
-            str(getattr(decision, "timestamp", "") or ""),
-            analysis_started_at,
-            analysis_finished_at,
+            symbol=symbol,
+            direction=candidate.direction,
+            decision_timestamp=(
+                candidate.decision_timestamp
+                or str(getattr(decision, "timestamp", "") or "")
+            ),
+            cycle_id=candidate.cycle_id,
+            stage=candidate.stage or "EXECUTION",
+            cycle_started_at=analysis_started_at,
+            cycle_finished_at=analysis_finished_at,
         )
-        missing = list(filter_match.filters)
+        missing = list(filter_match.filters or candidate.failed_filters)
         if not missing and candidate.edge < DEFAULT_MIN_EDGE:
             missing = ["Directional Edge"]
         reason = (
@@ -126,7 +142,10 @@ class ConsoleOutputManager:
             "=" * 60,
             (
                 f"{candidate.symbol}: {candidate.direction} | "
-                f"{candidate.decision} | Status={candidate.status} | "
+                f"Raw signal={candidate.raw_signal_status or candidate.decision} | "
+                f"Final filters={candidate.final_filter_status or 'N/A'} | "
+                f"Execution={candidate.execution_status or 'N/A'} | "
+                f"Status={candidate.status} | "
                 f"Quality={decision.quality} | Score={decision.score} | "
                 f"Confidence={candidate.confidence}% | "
                 f"Weighted Score={candidate.weighted_score:g} | "
@@ -134,6 +153,11 @@ class ConsoleOutputManager:
             ),
             "Причина:",
             reason,
+            (
+                "Veto reasons: " + "; ".join(candidate.veto_reasons)
+                if candidate.veto_reasons
+                else "Veto reasons: None"
+            ),
             f"Match quality: {filter_match.quality}",
             "=" * 60,
         )
@@ -150,7 +174,10 @@ class ConsoleOutputManager:
             quality = getattr(decision, "quality", "") if decision else ""
             self._print(
                 f"{candidate.symbol}: {candidate.direction} | "
-                f"{candidate.decision} | Status={candidate.status} | "
+                f"Raw={candidate.raw_signal_status or candidate.decision} | "
+                f"Final={candidate.final_filter_status or 'N/A'} | "
+                f"Execution={candidate.execution_status or 'N/A'} | "
+                f"Status={candidate.status} | "
                 f"Quality={quality} | Score={candidate.score:g} | "
                 f"Confidence={candidate.confidence:g}% | "
                 f"Weighted={candidate.weighted_score:g} | Edge={candidate.edge:g}"
@@ -159,7 +186,7 @@ class ConsoleOutputManager:
 
     def signal_counts(self, counts: Mapping[str, int]) -> None:
         self._print(
-            "Signal counts this cycle:",
+            "Raw signal counts this cycle:",
             f"HIGH PRIORITY: {counts.get('HIGH PRIORITY', 0)}",
             f"SETUP       : {counts.get('SETUP', 0)}",
             f"WATCH       : {counts.get('WATCH', 0)}",

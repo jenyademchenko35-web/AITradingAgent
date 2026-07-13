@@ -1019,7 +1019,7 @@ def analyze_market(market: MarketSnapshot, symbol: str):
 
     return decision, trend, structure, momentum, risk, weights
 
-def analyze_symbol(symbol: str):
+def analyze_symbol(symbol: str, cycle_id: str = ""):
     market = load_market(symbol)
     # Higher timeframe trend filter
     higher_tf_bull = (
@@ -1036,6 +1036,16 @@ def analyze_symbol(symbol: str):
         market=market,
         symbol=symbol,
     )
+    decision_timestamp = datetime.now(timezone.utc).isoformat()
+    decision.timestamp = decision_timestamp
+    decision.decision_timestamp = decision_timestamp
+    decision.cycle_id = cycle_id or decision_timestamp
+    decision.stage = "RAW_DECISION"
+    decision.raw_signal_status = decision.signal
+    decision.final_filter_status = "PENDING"
+    decision.execution_status = "NO_TRADE"
+    decision.veto_reasons = []
+    decision.failed_filters = []
     save_signal(symbol, decision, trend, structure, momentum, risk)
 
     save_decision_debug(
@@ -1047,7 +1057,7 @@ def analyze_symbol(symbol: str):
         risk,
     )
 
-    xai = ExplainableAI(symbol=symbol)
+    xai = ExplainableAI(symbol=symbol, auto_log=False)
     xai_report = xai.explain(
         decision,
         trend,
@@ -1056,7 +1066,11 @@ def analyze_symbol(symbol: str):
         risk,
     )
 
-    diagnostics = DecisionDiagnostics(symbol=symbol, weights=weights)
+    diagnostics = DecisionDiagnostics(
+        symbol=symbol,
+        weights=weights,
+        auto_log=False,
+    )
     diagnostics_report = diagnostics.analyze(
         decision,
         trend,
@@ -1064,6 +1078,40 @@ def analyze_symbol(symbol: str):
         momentum,
         risk,
     )
+    reports_logged = False
+
+    def log_final_status() -> None:
+        nonlocal reports_logged
+        if reports_logged:
+            return
+        diagnostics.sync_report_status(diagnostics_report, decision)
+        for key in (
+            "raw_signal_status",
+            "final_filter_status",
+            "execution_status",
+            "veto_reasons",
+            "failed_filters",
+            "cycle_id",
+            "decision_timestamp",
+            "stage",
+        ):
+            xai_report[key] = getattr(decision, key, xai_report.get(key, ""))
+        for label, writer, report in (
+            ("XAI", xai.log_report, xai_report),
+            ("Diagnostics", diagnostics.log, diagnostics_report),
+        ):
+            try:
+                writer(report)
+            except (OSError, RuntimeError, ValueError) as exc:
+                LOGGER.timestamped(
+                    f"[{symbol}] {label} status log error: {exc}",
+                    minimum="NORMAL",
+                )
+        LOGGER.analysis_reports(
+            xai.format_report(xai_report),
+            diagnostics.format_report(diagnostics_report),
+        )
+        reports_logged = True
     PROTECTIVE_FILTER_DRY_RUN.evaluate(
         symbol=symbol,
         decision=decision,
@@ -1115,23 +1163,25 @@ def analyze_symbol(symbol: str):
         symbol=symbol,
         decision=decision,
     )
-    LOGGER.analysis_reports(
-        xai.format_report(xai_report),
-        diagnostics.format_report(diagnostics_report),
-    )
-
     # Setup tracking logic
     setup_id = f"{symbol.replace('/', '_')}_{decision.direction}"
-    if (
+    qualifies_for_execution = (
             decision.signal in ("SETUP", "HIGH PRIORITY")
             and decision.quality in ("A", "B")
             and decision.confidence >= MIN_CONFIDENCE
             and abs(decision.long_total - decision.short_total) >= MIN_EDGE
-        ):
+    )
+    if qualifies_for_execution:
         if is_setup_active(setup_id):
             decision.summary += " | COOLDOWN"
+            diagnostics.set_execution_status(
+                decision,
+                "BLOCKED_COOLDOWN",
+                f"Cooldown active for {setup_id}",
+            )
             LOGGER.cooldown_active(symbol, setup_id)
         else:
+            diagnostics.set_execution_status(decision, "ELIGIBLE")
             mark_setup_active(setup_id)
             entry = market.tf1h.close
 
@@ -1148,15 +1198,33 @@ def analyze_symbol(symbol: str):
             )
 
             if existing_trade:
+                diagnostics.set_execution_status(
+                    decision,
+                    "ALREADY_OPEN",
+                    f"Open trade already exists for {symbol}",
+                )
                 LOGGER.open_trade_exists(symbol)
+                log_final_status()
                 return decision, market
 
             if decision.direction == "LONG" and not higher_tf_bull:
+                diagnostics.set_execution_status(
+                    decision,
+                    "BLOCKED_HIGHER_TF",
+                    "LONG rejected by higher timeframe trend filter",
+                )
                 LOGGER.higher_tf_rejected(symbol, "LONG")
+                log_final_status()
                 return decision, market
 
             if decision.direction == "SHORT" and not higher_tf_bear:
+                diagnostics.set_execution_status(
+                    decision,
+                    "BLOCKED_HIGHER_TF",
+                    "SHORT rejected by higher timeframe trend filter",
+                )
                 LOGGER.higher_tf_rejected(symbol, "SHORT")
+                log_final_status()
                 return decision, market
 
             open_trade(
@@ -1181,9 +1249,17 @@ def analyze_symbol(symbol: str):
                     )
                 )
                 LOGGER.notification_sent()
+    elif decision.raw_signal_status in ("SETUP", "HIGH PRIORITY"):
+        diagnostics.set_execution_status(
+            decision,
+            "BLOCKED_FILTERS",
+            "Mandatory execution thresholds were not satisfied",
+        )
+    else:
+        diagnostics.set_execution_status(decision, "NO_TRADE")
 
     # No logging of compact signal or summary here
-
+    log_final_status()
     return decision, market
 
 def update_open_trades(current_prices):
@@ -1260,11 +1336,12 @@ def run_once():
     api_errors = 0
     current_prices = {}
     analysis_contexts = {}
+    cycle_id = datetime.now(timezone.utc).isoformat()
     for symbol in SYMBOLS:
         analysis_started_at = datetime.now(timezone.utc)
         t0 = time.time()
         try:
-            decision, market = analyze_symbol(symbol)
+            decision, market = analyze_symbol(symbol, cycle_id=cycle_id)
             analysis_finished_at = datetime.now(timezone.utc)
             analysis_contexts[symbol] = (analysis_started_at, analysis_finished_at)
             current_prices[symbol] = market.tf1h.close

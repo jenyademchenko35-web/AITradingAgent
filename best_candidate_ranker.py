@@ -31,6 +31,23 @@ class RankedCandidate:
     status: str
     quality: str = ""
     summary: str = ""
+    raw_signal_status: str = ""
+    final_filter_status: str = ""
+    execution_status: str = ""
+    veto_reasons: tuple[str, ...] = ()
+    failed_filters: tuple[str, ...] = ()
+    cycle_id: str = ""
+    decision_timestamp: str = ""
+    stage: str = ""
+
+
+EXECUTION_BLOCKING_STATUSES = {
+    "BLOCKED_COOLDOWN",
+    "BLOCKED_DUPLICATE",
+    "BLOCKED_HIGHER_TF",
+    "BLOCKED_FILTERS",
+    "ALREADY_OPEN",
+}
 
 
 def safe_float(value: Any, default: float = 0.0) -> float:
@@ -48,6 +65,21 @@ def read_value(source: Any, key: str, default: Any = "") -> Any:
     if isinstance(source, Mapping):
         return source.get(key, default)
     return getattr(source, key, default)
+
+
+def read_string_items(source: Any, key: str) -> tuple[str, ...]:
+    """Read a list-like diagnostic field without changing its meaning."""
+    value = read_value(source, key, ())
+    if isinstance(value, str):
+        normalized = value
+        for delimiter in (",", ";"):
+            normalized = normalized.replace(delimiter, "|")
+        return tuple(
+            item.strip() for item in normalized.split("|") if item.strip()
+        )
+    if isinstance(value, Iterable):
+        return tuple(str(item) for item in value if str(item).strip())
+    return ()
 
 
 def normalize_symbol(symbol: str, payload: Any) -> str:
@@ -96,9 +128,27 @@ def normalize_candidate(
     )
     edge = safe_float(read_value(payload, "diff", abs(long_score - short_score)))
     decision = str(read_value(payload, "signal", read_value(payload, "decision", "")))
+    raw_signal_status = str(
+        read_value(payload, "raw_signal_status", decision)
+    ).upper()
+    final_filter_status = str(
+        read_value(payload, "final_filter_status", "")
+    ).upper()
+    execution_status = str(
+        read_value(payload, "execution_status", "")
+    ).upper()
     score = safe_float(read_value(payload, "score", 0.0))
     confidence = safe_float(read_value(payload, "confidence", 0.0))
-    status = candidate_status(decision, score, confidence, weighted_score, edge, min_edge)
+    status = candidate_status(
+        raw_signal_status or decision,
+        score,
+        confidence,
+        weighted_score,
+        edge,
+        min_edge,
+        final_filter_status=final_filter_status,
+        execution_status=execution_status,
+    )
 
     return RankedCandidate(
         symbol=normalize_symbol(str(symbol), payload),
@@ -114,6 +164,14 @@ def normalize_candidate(
         status=status,
         quality=str(read_value(payload, "quality", "")),
         summary=str(read_value(payload, "summary", "")),
+        raw_signal_status=raw_signal_status or decision,
+        final_filter_status=final_filter_status,
+        execution_status=execution_status,
+        veto_reasons=read_string_items(payload, "veto_reasons"),
+        failed_filters=read_string_items(payload, "failed_filters"),
+        cycle_id=str(read_value(payload, "cycle_id", "")),
+        decision_timestamp=str(read_value(payload, "decision_timestamp", "")),
+        stage=str(read_value(payload, "stage", "")),
     )
 
 
@@ -124,8 +182,16 @@ def candidate_status(
     weighted_score: float,
     edge: float,
     min_edge: float = DEFAULT_MIN_EDGE,
+    final_filter_status: str = "",
+    execution_status: str = "",
 ) -> str:
-    """Return SETUP/WATCH/NEAR SETUP/NO TRADE display status."""
+    """Return the final display status while preserving the raw signal."""
+    execution = str(execution_status or "").upper()
+    if execution in EXECUTION_BLOCKING_STATUSES:
+        return execution
+    final_filters = str(final_filter_status or "").upper()
+    if final_filters == "BLOCKED_FILTERS":
+        return "BLOCKED_FILTERS"
     signal = str(decision or "").upper()
     if signal in {"SETUP", "HIGH PRIORITY"}:
         return "SETUP"
@@ -145,9 +211,14 @@ def candidate_status(
 def rank_sort_key(candidate: RankedCandidate) -> tuple[Any, ...]:
     """Sort key: status, confidence, weighted score, edge, total, symbol."""
     status_rank = {
-        "SETUP": 4,
-        "WATCH": 3,
-        "NEAR SETUP": 2,
+        "SETUP": 7,
+        "WATCH": 6,
+        "NEAR SETUP": 5,
+        "BLOCKED_FILTERS": 4,
+        "BLOCKED_COOLDOWN": 3,
+        "BLOCKED_DUPLICATE": 3,
+        "BLOCKED_HIGHER_TF": 3,
+        "ALREADY_OPEN": 3,
         "NO TRADE": 1,
     }.get(candidate.status, 0)
     return (
@@ -189,8 +260,10 @@ def explain_selection(
     missing: Iterable[str] | None = None,
 ) -> str:
     """Return Russian explanation for why the candidate was selected."""
-    missing_items = [item for item in (missing or []) if item]
-    missing_text = "\n".join(f"- {item}" for item in missing_items) or "- Directional Edge"
+    if missing is None:
+        missing_items = ["Directional Edge"] if candidate.edge < min_edge else []
+    else:
+        missing_items = [item for item in missing if item]
     reasons = [
         "Лучший кандидат выбран потому что:",
         f"Статус: {candidate.status}",
@@ -204,6 +277,8 @@ def explain_selection(
         reasons.append("Среди NO TRADE у него лучший набор confidence/score/edge.")
     else:
         reasons.append(f"Приоритет статуса выше, чем у {candidate.status.lower()} альтернатив.")
-    reasons.extend(["Не хватает:", missing_text])
+    if missing_items:
+        reasons.extend(
+            ["Не хватает:", "\n".join(f"- {item}" for item in missing_items)]
+        )
     return "\n".join(reasons)
-
