@@ -53,13 +53,18 @@ def format_summary(report: Mapping[str, Any]) -> str:
                 f"Trades: {row.get('trades', 0)}",
                 f"Winrate: {row.get('winrate', 0)}%",
                 f"PF: {row.get('profit_factor', 0)}",
-                f"ROI: {row.get('roi', 0)} R",
+                f"Net R: {row.get('net_r', row.get('roi', 0))}",
                 "---",
             ]
         )
     lines.extend(
         [
             f"Leader: {winner.get('leader', 'N/A')}",
+            (
+                f"Observed only: {winner.get('observed_leader')}"
+                if winner.get("observed_leader")
+                else ""
+            ),
             str(winner.get("message", "")),
             "",
             "Важно: это исследовательские shadow-результаты.",

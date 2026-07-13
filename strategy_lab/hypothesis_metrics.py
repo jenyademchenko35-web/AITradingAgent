@@ -6,27 +6,17 @@ from statistics import mean
 from typing import Any, Mapping
 
 from market_intelligence_utils import safe_float
+from trade_metrics_normalizer import max_drawdown_r, profit_factor_from_r
 
 
 def max_drawdown(returns: list[float]) -> float:
-    """Return max drawdown over cumulative R curve."""
-    equity = 0.0
-    peak = 0.0
-    drawdown = 0.0
-    for value in returns:
-        equity += value
-        peak = max(peak, equity)
-        drawdown = min(drawdown, equity - peak)
-    return round(drawdown, 4)
+    """Return unified maximum drawdown in R."""
+    return max_drawdown_r(returns)
 
 
 def profit_factor(returns: list[float]) -> float:
-    """Return Profit Factor from R returns."""
-    gross_profit = sum(value for value in returns if value > 0)
-    gross_loss = abs(sum(value for value in returns if value < 0))
-    if gross_loss:
-        return round(gross_profit / gross_loss, 4)
-    return round(gross_profit, 4) if gross_profit else 0.0
+    """Return unified Profit Factor from R returns."""
+    return profit_factor_from_r(returns)
 
 
 def baseline_metrics(opportunities: list[Mapping[str, Any]]) -> dict[str, Any]:
@@ -100,6 +90,7 @@ def calculate_hypothesis_metrics(
     ]
     profit_factor_value = profit_factor(returns)
     net_benefit = len(saved_losses) - len(lost_winners)
+    net_r = round(sum(returns), 6)
     verdict = force_verdict or verdict_for(
         len(trades),
         profit_factor_value,
@@ -125,9 +116,11 @@ def calculate_hypothesis_metrics(
         "winrate": round(len(wins) / len(trades) * 100, 2) if trades else 0.0,
         "profit_factor": profit_factor_value,
         "expectancy": round(mean(returns), 4) if returns else 0.0,
-        "roi": round(sum(returns), 4),
+        "net_r": net_r,
+        "roi": net_r,
         "average_hold_time": round(mean(hold_times), 2) if hold_times else 0.0,
         "average_r": round(mean(returns), 4) if returns else 0.0,
+        "max_drawdown_r": max_drawdown(returns),
         "max_drawdown": max_drawdown(returns),
         "saved_losses": len(saved_losses),
         "lost_winners": len(lost_winners),
@@ -148,9 +141,11 @@ HYPOTHESIS_FIELDS = [
     "winrate",
     "profit_factor",
     "expectancy",
+    "net_r",
     "roi",
     "average_hold_time",
     "average_r",
+    "max_drawdown_r",
     "max_drawdown",
     "saved_losses",
     "lost_winners",

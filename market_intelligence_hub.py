@@ -26,6 +26,7 @@ from news_statistics import NewsStatistics
 from post_trade_intelligence import PostTradeIntelligence
 from trade_market_context import TradeMarketContext
 from trade_memory import TradeMemory
+from trade_metrics_normalizer import aggregate_trade_metrics
 
 
 REPORT_PATH = BASE_DIR / "market_intelligence_report.json"
@@ -45,6 +46,7 @@ POST_TRADE_FILE = BASE_DIR / "post_trade_intelligence.json"
 MEMORY_FILE = BASE_DIR / "trade_memory_report.json"
 TRADE_REPLAY_FILE = BASE_DIR / "trade_replay_report.json"
 RESEARCH_CONSENSUS_FILE = BASE_DIR / "research_consensus_report.json"
+TRADES_FILE = BASE_DIR / "trades.csv"
 
 
 class MarketIntelligenceHub:
@@ -69,6 +71,7 @@ class MarketIntelligenceHub:
         memory = read_json(MEMORY_FILE)
         replay = read_json(TRADE_REPLAY_FILE)
         consensus = read_json(RESEARCH_CONSENSUS_FILE)
+        unified_trade_metrics = aggregate_trade_metrics(read_csv_rows(TRADES_FILE))
 
         report = {
             "generated_at": utc_now(),
@@ -77,7 +80,13 @@ class MarketIntelligenceHub:
             "market": self.market_block(regime, news, heatmap),
             "news_impact": self.news_impact_block(news_impact, news_stats),
             "signals": self.signal_block(heatmap, research, news_impact),
-            "trades": self.trade_block(loss, post_trade, memory, news_impact),
+            "trades": self.trade_block(
+                loss,
+                post_trade,
+                memory,
+                news_impact,
+                unified_trade_metrics,
+            ),
             "replay": self.replay_block(replay),
             "consensus": self.consensus_block(consensus),
             "dry_run": self.dry_run_block(outcome),
@@ -363,6 +372,7 @@ class MarketIntelligenceHub:
         post_trade: Mapping[str, Any],
         memory: Mapping[str, Any],
         news_impact: Mapping[str, Any],
+        unified_metrics: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Build trade intelligence block."""
         top_loss = next(iter(loss.get("patterns", []) or []), {})
@@ -385,7 +395,16 @@ class MarketIntelligenceHub:
             else raw_loss_pattern or top_post_loss[0]
         )
         return {
-            "closed_trades": post_trade.get("stats", {}).get("trades", loss.get("sample", {}).get("closed_trades", 0)),
+            "closed_trades": unified_metrics.get("closed_trades", 0),
+            "metrics_trades": unified_metrics.get("metrics_trades", 0),
+            "incomplete_metrics": unified_metrics.get("incomplete_metrics", 0),
+            "wins": unified_metrics.get("wins", 0),
+            "losses": unified_metrics.get("losses", 0),
+            "winrate": unified_metrics.get("winrate", 0),
+            "profit_factor": unified_metrics.get("profit_factor", 0),
+            "net_r": unified_metrics.get("net_r", 0),
+            "max_drawdown_r": unified_metrics.get("max_drawdown_r", 0),
+            "metrics_method": unified_metrics.get("method", ""),
             "last_loss_primary": loss_primary,
             "last_win_primary": top_win[0],
             "memory_matches": memory.get("matches_count", 0),
@@ -489,6 +508,14 @@ class MarketIntelligenceHub:
             f"News Conflict: {trades.get('news_conflict_trades', 0)} сделок в памяти",
             "Последние WIN",
             f"Главная причина: {trades.get('last_win_primary')}",
+            "Единые метрики сделок",
+            f"Закрытых: {trades.get('closed_trades', 0)} | "
+            f"полных: {trades.get('metrics_trades', 0)} | "
+            f"Incomplete: {trades.get('incomplete_metrics', 0)}",
+            f"Winrate: {trades.get('winrate', 0)}% | "
+            f"PF: {trades.get('profit_factor', 0)}",
+            f"Net R: {trades.get('net_r', 0)} | "
+            f"Max Drawdown: {trades.get('max_drawdown_r', 0)} R",
             "Trade Memory",
             f"Похожих сделок: {trades.get('memory_matches')} | "
             f"Winrate: {trades.get('memory_winrate')}% | "

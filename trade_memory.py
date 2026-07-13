@@ -25,6 +25,11 @@ from market_intelligence_utils import (
     write_csv,
     write_json,
 )
+from trade_metrics_normalizer import (
+    aggregate_trade_metrics,
+    is_closed_trade,
+    normalize_trade,
+)
 
 
 TRADES_FILE = BASE_DIR / "trades.csv"
@@ -39,7 +44,15 @@ FIELDS = [
     "matched_symbol",
     "direction",
     "result",
-    "pnl",
+    "entry",
+    "stop_loss",
+    "take_profit",
+    "exit_price",
+    "pnl_percent",
+    "pnl_r",
+    "metrics_status",
+    "incomplete_reasons",
+    "raw_pnl",
     "opened_at",
     "score",
     "confidence",
@@ -69,12 +82,15 @@ class TradeMemory:
         target = normalize_decision(self.latest.get(target_symbol, {"symbol": target_symbol}))
         matches = self.find_matches(target)
         stats = trade_stats(matches)
+        portfolio_metrics = aggregate_trade_metrics(read_csv_rows(TRADES_FILE))
         report = {
             "generated_at": utc_now(),
             "status": "OK" if matches else "NO_MATCHES",
             "target": self.target_summary(target),
             "matches_count": len(matches),
+            "metrics_scope": "similar_closed_trades",
             "stats": stats,
+            "portfolio_metrics": portfolio_metrics,
             "matches": matches[:50],
             "recommendation": self.recommendation(matches, stats),
             "restrictions": [
@@ -101,8 +117,11 @@ class TradeMemory:
     def find_matches(self, target: Mapping[str, Any]) -> list[dict[str, Any]]:
         """Find similar closed trades."""
         rows = []
-        for trade in read_csv_rows(TRADES_FILE):
-            if trade_result(trade) not in {"WIN", "LOSS"}:
+        for index, trade in enumerate(read_csv_rows(TRADES_FILE), start=1):
+            if not is_closed_trade(trade):
+                continue
+            normalized = normalize_trade(trade, index)
+            if normalized.get("result") not in {"WIN", "LOSS"}:
                 continue
             decision = nearest_before(self.debug_rows, str(trade.get("symbol", "")), normalize_decision({"timestamp": trade.get("opened_at")}).get("_time"), max_hours=24)
             if not decision:
@@ -115,9 +134,17 @@ class TradeMemory:
                 "matched_symbol": trade.get("symbol", ""),
                 "symbol": trade.get("symbol", ""),
                 "direction": trade.get("direction", ""),
-                "status": trade_result(trade),
-                "result": trade_result(trade),
-                "pnl": trade.get("pnl", ""),
+                "status": normalized.get("result") or trade_result(trade),
+                "result": normalized.get("result") or trade_result(trade),
+                "entry": normalized.get("entry", ""),
+                "stop_loss": normalized.get("stop_loss", ""),
+                "take_profit": normalized.get("take_profit", ""),
+                "exit_price": normalized.get("exit_price", ""),
+                "pnl_percent": normalized.get("pnl_percent", ""),
+                "pnl_r": normalized.get("pnl_r", ""),
+                "metrics_status": normalized.get("metrics_status", "INCOMPLETE"),
+                "incomplete_reasons": normalized.get("incomplete_reasons", ""),
+                "raw_pnl": normalized.get("raw_pnl", ""),
                 "opened_at": trade.get("opened_at", ""),
                 "score": decision.get("score", ""),
                 "confidence": decision.get("confidence", ""),
@@ -205,7 +232,11 @@ class TradeMemory:
             f"Похожих сделок: {report.get('matches_count', 0)}",
             f"Winrate: {stats.get('winrate', 0)}%",
             f"Profit Factor: {stats.get('profit_factor', 0)}",
-            f"Средний PnL: {stats.get('average_pnl', 0)}",
+            f"Net R: {stats.get('net_r', 0)}",
+            f"Средний R: {stats.get('average_r', 0)}",
+            f"Max Drawdown: {stats.get('max_drawdown_r', 0)} R",
+            f"Incomplete metrics: {stats.get('incomplete_metrics', 0)}",
+            "Выборка метрик: только найденные похожие сделки.",
             f"Рекомендация: {report.get('recommendation')}",
         ])
 

@@ -25,6 +25,7 @@ from market_intelligence_utils import (
     utc_now,
 )
 from news_impact_advisor import NewsImpactAdvisor, TRADE_MEMORY_CSV
+from trade_metrics_normalizer import normalize_trade
 from strategy_lab.metrics import calculate_metrics
 from strategy_lab.strategy_base import ResearchStrategy
 from strategy_lab.strategy_registry import registered_strategies
@@ -77,6 +78,7 @@ class StrategyLabEngine:
             for row in read_csv_rows(DIAGNOSTICS_FILE)
         ]
         self.news_memory = self.load_news_memory()
+        self.metrics_incomplete = 0
 
     def run(self) -> dict[str, Any]:
         """Run all strategies and return report payload."""
@@ -92,6 +94,7 @@ class StrategyLabEngine:
             "mode": "Shadow Research",
             "status": "OK" if opportunities else "NO_DATA",
             "opportunities": len(opportunities),
+            "incomplete_metrics": self.metrics_incomplete,
             "strategies": [strategy.report() for strategy in self.strategies],
             "metrics": metrics,
             "shadow_trades": all_shadow_rows,
@@ -118,6 +121,7 @@ class StrategyLabEngine:
     def build_opportunities(self) -> list[dict[str, Any]]:
         """Build common opportunity stream from closed live trades."""
         opportunities = []
+        self.metrics_incomplete = 0
         for index, trade in enumerate(read_csv_rows(TRADES_FILE)):
             result = trade_result(trade)
             if result not in {"WIN", "LOSS"}:
@@ -125,6 +129,8 @@ class StrategyLabEngine:
             opportunity = self.opportunity_from_trade(trade, index)
             if opportunity:
                 opportunities.append(opportunity)
+            else:
+                self.metrics_incomplete += 1
         return sorted(opportunities, key=lambda row: row.get("timestamp", ""))
 
     def opportunity_from_trade(
@@ -133,19 +139,22 @@ class StrategyLabEngine:
         index: int,
     ) -> dict[str, Any]:
         """Build one normalized opportunity."""
+        normalized = normalize_trade(trade, index + 1)
+        if normalized.get("metrics_status") != "COMPLETE":
+            return {}
         symbol = symbol_full(str(trade.get("symbol", "")))
         opened_at = parse_time(trade.get("opened_at"))
         closed_at = parse_time(trade.get("closed_at"))
         decision = nearest_before(self.debug_rows, symbol, opened_at, max_hours=24)
         diagnostics = nearest_before(self.diagnostics, symbol, opened_at, max_hours=24)
-        entry = safe_float(trade.get("entry"))
-        stop_loss = safe_float(trade.get("stop_loss"))
-        take_profit = safe_float(trade.get("take_profit"))
+        entry = safe_float(normalized.get("entry"))
+        stop_loss = safe_float(normalized.get("stop_loss"))
+        take_profit = safe_float(normalized.get("take_profit"))
         risk = abs(entry - stop_loss)
         reward = abs(take_profit - entry)
         rr = round(reward / risk, 4) if risk else 0.0
-        result = trade_result(trade)
-        actual_r = rr if result == "WIN" else -1.0
+        result = str(normalized.get("result", ""))
+        actual_r = safe_float(normalized.get("pnl_r"))
         duration = self.duration_hours(opened_at, closed_at)
         news = self.news_memory.get(self.trade_id(trade, index), {})
         momentum = diagnostics.get("momentum") or self.engine_status(decision, "momentum")
@@ -160,6 +169,7 @@ class StrategyLabEngine:
             "tp": take_profit,
             "result": result,
             "actual_r": actual_r,
+            "pnl_percent": normalized.get("pnl_percent", ""),
             "rr": rr,
             "duration_hours": duration,
             "score": decision.get("score", ""),

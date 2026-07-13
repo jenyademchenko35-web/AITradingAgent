@@ -51,6 +51,11 @@ def _baseline(metrics: list[Mapping[str, Any]]) -> dict[str, Any]:
     return {}
 
 
+def _net_r(row: Mapping[str, Any]) -> float:
+    """Read unified Net R with compatibility for older reports."""
+    return _number(row.get("net_r", row.get("roi")))
+
+
 def is_overfiltered(row: Mapping[str, Any]) -> bool:
     """Return True when a hypothesis removed every observed trade."""
     return (
@@ -71,7 +76,7 @@ def is_leader_eligible(
         baseline_trades >= 30
         and int(_number(row.get("trades"))) >= 10
         and _number(row.get("profit_factor")) > _number(baseline.get("profit_factor"))
-        and _number(row.get("roi")) > _number(baseline.get("roi"))
+        and _net_r(row) > _net_r(baseline)
         and baseline_wins > 0
         and int(_number(row.get("lost_winners"))) < baseline_wins
         and not is_overfiltered(row)
@@ -100,7 +105,7 @@ def ranked_metrics(metrics: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
                 is_overfiltered(row) or int(_number(row.get("trades"))) == 0,
                 -int(_number(row.get("trades"))),
                 -_number(row.get("profit_factor")),
-                -_number(row.get("roi")),
+                -_net_r(row),
                 str(row.get("hypothesis", "")),
             ),
         )
@@ -112,7 +117,7 @@ def ranked_metrics(metrics: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
             is_overfiltered(row) or int(_number(row.get("trades"))) == 0,
             -verdict_rank.get(str(row.get("verdict")), 0),
             -_number(row.get("profit_factor")),
-            -_number(row.get("roi")),
+            -_net_r(row),
             -int(_number(row.get("net_benefit"))),
             -int(_number(row.get("trades"))),
             str(row.get("hypothesis", "")),
@@ -166,6 +171,8 @@ def format_hypothesis_summary(report: Mapping[str, Any]) -> str:
         f"Closed trades: {baseline.get('trades', 0)}",
         f"Baseline Winrate: {baseline.get('winrate', 0)}%",
         f"Baseline PF: {baseline.get('profit_factor', 0)}",
+        f"Baseline Net R: {_net_r(baseline)}",
+        f"Incomplete metrics: {report.get('incomplete_metrics', 0)}",
         "",
     ]
     if baseline_trades < 30:
@@ -204,6 +211,7 @@ def format_hypothesis_summary(report: Mapping[str, Any]) -> str:
                 f"{index}. {row.get('hypothesis')}",
                 f"Trades: {row.get('trades', 0)}",
                 f"PF: {row.get('profit_factor', 0)}",
+                f"Net R: {_net_r(row)}",
                 f"Winrate: {row.get('winrate', 0)}%",
                 f"Saved Losses: {row.get('saved_losses', 0)}",
                 f"Lost Winners: {row.get('lost_winners', 0)}",

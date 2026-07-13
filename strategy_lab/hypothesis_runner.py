@@ -78,7 +78,7 @@ def recommendation_for(metrics: list[Mapping[str, Any]], baseline: Mapping[str, 
     if not leader:
         return (
             "Ни одна гипотеза пока не прошла условия лидерства: минимум 10 сделок, "
-            "PF и ROI выше baseline без потери всех baseline WIN. Продолжить наблюдение."
+            "PF и Net R выше baseline без потери всех baseline WIN. Продолжить наблюдение."
         )
     if leader.get("verdict") in {"STRONG", "PROMISING"}:
         return (
@@ -116,6 +116,7 @@ def build_report(key: str = "") -> dict[str, Any]:
         "status": "OK" if opportunities else "NO_DATA",
         "key": key or "all",
         "opportunities": len(opportunities),
+        "incomplete_metrics": engine.metrics_incomplete,
         "baseline": baseline,
         "hypotheses": [hypothesis.report() for hypothesis in hypotheses],
         "metrics": metrics,

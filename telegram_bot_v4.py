@@ -58,6 +58,11 @@ from telegram_handlers import (
     main_keyboard as v5_main_keyboard,
     market_keyboard as v5_market_keyboard,
 )
+from trade_metrics_normalizer import (
+    aggregate_trade_metrics,
+    is_closed_trade,
+    normalize_closed_trades,
+)
 
 
 try:
@@ -1231,14 +1236,7 @@ def format_analytics_status() -> str:
     else:
         current_regime = ", ".join(regimes[:3])
 
-    max_drawdown = "N/A"
-    baseline_metrics = {}
-    for row in experiments.get("results", []):
-        if row.get("scenario") == "baseline":
-            baseline_metrics = row.get("trade_metrics", {})
-            break
-    if baseline_metrics:
-        max_drawdown = baseline_metrics.get("max_drawdown", "N/A")
+    max_drawdown = trade_stats.get("max_drawdown_r", 0)
 
     next_action = "Проверить актуальность отчётов."
     if freshness["status"] == "STALE":
@@ -1279,7 +1277,7 @@ def format_analytics_status() -> str:
             f"🚧 Главный blocker: {main_blocker}",
             f"📈 Winrate: {trade_stats['win_rate']:.1f}%",
             f"💰 Profit Factor: {trade_stats['profit_factor']:.2f}",
-            f"📉 Max Drawdown: {max_drawdown}",
+            f"📉 Max Drawdown: {max_drawdown} R",
             "",
             f"🎯 Следующее действие: {next_action}",
     ]
@@ -1466,17 +1464,10 @@ def format_diagnostics(symbol: str) -> str:
 
 
 def calculate_trade_stats() -> Dict[str, Any]:
-    """Calculate trade stats from trades.csv."""
+    """Calculate trade stats from one shared direction-aware R method."""
     rows = read_csv_rows(TRADES_FILE)
-    closed = [row for row in rows if row.get("status") in {"WIN", "LOSS"}]
+    metrics = aggregate_trade_metrics(rows)
     open_trades = [row for row in rows if row.get("status") == "OPEN"]
-    wins = [row for row in closed if row.get("status") == "WIN"]
-    losses = [row for row in closed if row.get("status") == "LOSS"]
-
-    gross_profit = sum(max(safe_float(row.get("pnl")), 0) for row in closed)
-    gross_loss = sum(abs(min(safe_float(row.get("pnl")), 0)) for row in closed)
-    win_rate = len(wins) / len(closed) * 100 if closed else 0.0
-    profit_factor = gross_profit / gross_loss if gross_loss else 0.0
 
     rr_values = []
     for row in rows:
@@ -1491,12 +1482,16 @@ def calculate_trade_stats() -> Dict[str, Any]:
     avg_rr = sum(rr_values) / len(rr_values) if rr_values else 0.0
     return {
         "total": len(rows),
-        "closed": len(closed),
+        "closed": metrics["closed_trades"],
+        "metrics_trades": metrics["metrics_trades"],
+        "incomplete_metrics": metrics["incomplete_metrics"],
         "open": len(open_trades),
-        "wins": len(wins),
-        "losses": len(losses),
-        "win_rate": win_rate,
-        "profit_factor": profit_factor,
+        "wins": metrics["wins"],
+        "losses": metrics["losses"],
+        "win_rate": metrics["winrate"],
+        "profit_factor": metrics["profit_factor"],
+        "net_r": metrics["net_r"],
+        "max_drawdown_r": metrics["max_drawdown_r"],
         "avg_rr": avg_rr,
     }
 
@@ -1505,34 +1500,27 @@ def closed_trade_rows() -> List[Dict[str, str]]:
     """Return closed trades from trades.csv in chronological order."""
     rows = [
         row for row in read_csv_rows(TRADES_FILE)
-        if row.get("status") in {"WIN", "LOSS"}
-        or row.get("result") in {"WIN", "LOSS"}
+        if is_closed_trade(row)
     ]
     return sorted(rows, key=lambda row: row.get("closed_at") or row.get("opened_at", ""))
 
 
 def trade_metrics(rows: Iterable[Mapping[str, str]]) -> Dict[str, Any]:
-    """Calculate compact trade metrics for an iterable of trade rows."""
-    items = list(rows)
-    wins = [
-        row for row in items
-        if (row.get("status") or row.get("result")) == "WIN"
-    ]
-    losses = [
-        row for row in items
-        if (row.get("status") or row.get("result")) == "LOSS"
-    ]
-    pnls = [safe_float(row.get("pnl")) for row in items]
-    gross_profit = sum(max(pnl, 0.0) for pnl in pnls)
-    gross_loss = sum(abs(min(pnl, 0.0)) for pnl in pnls)
+    """Calculate compact metrics in R; aliases keep old readers working."""
+    metrics = aggregate_trade_metrics(rows)
     return {
-        "trades": len(items),
-        "wins": len(wins),
-        "losses": len(losses),
-        "winrate": round((len(wins) / len(items) * 100) if items else 0.0, 2),
-        "profit_factor": round((gross_profit / gross_loss) if gross_loss else 0.0, 2),
-        "average_pnl": round((sum(pnls) / len(pnls)) if pnls else 0.0, 2),
-        "pnl": round(sum(pnls), 2),
+        "closed_trades": metrics["closed_trades"],
+        "trades": metrics["metrics_trades"],
+        "incomplete_metrics": metrics["incomplete_metrics"],
+        "wins": metrics["wins"],
+        "losses": metrics["losses"],
+        "winrate": metrics["winrate"],
+        "profit_factor": metrics["profit_factor"],
+        "average_r": metrics["average_r"],
+        "net_r": metrics["net_r"],
+        "max_drawdown_r": metrics["max_drawdown_r"],
+        "average_pnl": metrics["average_r"],
+        "pnl": metrics["net_r"],
     }
 
 
@@ -1633,7 +1621,7 @@ def format_symbols_report() -> str:
             (symbol, trade_metrics(rows))
             for symbol, rows in by_symbol.items()
         ),
-        key=lambda item: (item[1]["pnl"], item[1]["profit_factor"], item[1]["winrate"]),
+        key=lambda item: (item[1]["net_r"], item[1]["profit_factor"], item[1]["winrate"]),
         reverse=True,
     )
     best = ranked[0][0]
@@ -1642,43 +1630,42 @@ def format_symbols_report() -> str:
     for symbol, metrics in ranked:
         lines.append(
             f"{symbol}: WR {metrics['winrate']}% | PF {metrics['profit_factor']} | "
-            f"trades {metrics['trades']} | avg PnL {metrics['average_pnl']}"
+            f"trades {metrics['trades']} | avg R {metrics['average_r']} | "
+            f"Net R {metrics['net_r']}"
         )
     return "\n".join(lines)
 
 
 def format_equity_report() -> str:
-    """Format equity and PnL report from closed trades."""
+    """Format performance in R without inventing a percent ROI or balance."""
     trades = closed_trade_rows()
     if not trades:
         return "💰 Equity\n\nЗакрытых сделок пока нет."
-    pnls = [safe_float(row.get("pnl")) for row in trades]
-    total_pnl = round(sum(pnls), 2)
-    stats = read_json(STATS_FILE)
-    start_balance = safe_float(stats.get("start_balance"))
-    current_balance = (
-        round(start_balance + total_pnl, 2)
-        if start_balance else "N/A"
-    )
+    metrics = aggregate_trade_metrics(trades)
+    normalized = [
+        row for row in normalize_closed_trades(trades)
+        if row.get("metrics_status") == "COMPLETE"
+    ]
     streaks = best_worst_streaks(trades)
     by_day: Dict[str, float] = {}
-    for row in trades:
+    for row in normalized:
         closed_at = parse_time(row.get("closed_at", ""))
         day = closed_at.date().isoformat() if closed_at else "N/A"
-        by_day[day] = by_day.get(day, 0.0) + safe_float(row.get("pnl"))
+        by_day[day] = by_day.get(day, 0.0) + safe_float(row.get("pnl_r"))
     best_day = max(by_day, key=by_day.get) if by_day else "N/A"
     worst_day = min(by_day, key=by_day.get) if by_day else "N/A"
     return "\n".join(
         [
             "💰 Equity",
             "",
-            f"Общий PnL: {total_pnl}",
-            f"Текущий баланс: {current_balance}",
-            f"Max Drawdown: {max_drawdown_from_pnls(pnls)}",
+            f"Net R: {metrics['net_r']}",
+            f"Max Drawdown: {metrics['max_drawdown_r']} R",
+            f"Incomplete metrics: {metrics['incomplete_metrics']}",
+            "Баланс и процентный ROI: недоступны без position size.",
             f"Лучшая серия побед: {streaks['best_win']}",
             f"Худшая серия поражений: {streaks['worst_loss']}",
-            f"Лучший день: {best_day} ({round(by_day.get(best_day, 0), 2)})",
-            f"Худший день: {worst_day} ({round(by_day.get(worst_day, 0), 2)})",
+            f"Лучший день: {best_day} ({round(by_day.get(best_day, 0), 2)} R)",
+            f"Худший день: {worst_day} ({round(by_day.get(worst_day, 0), 2)} R)",
         ]
     )
 
@@ -1698,8 +1685,6 @@ def format_timeline_report() -> str:
     first_window = trades[: min(5, len(trades))]
     current = trade_metrics(trades)
     early = trade_metrics(first_window)
-    current_dd = max_drawdown_from_pnls(safe_float(row.get("pnl")) for row in trades)
-    early_dd = max_drawdown_from_pnls(safe_float(row.get("pnl")) for row in first_window)
     first_date = parse_time(trades[0].get("closed_at", "")) or parse_time(trades[0].get("opened_at", ""))
     last_date = parse_time(trades[-1].get("closed_at", "")) or parse_time(trades[-1].get("opened_at", ""))
     lines = [
@@ -1709,18 +1694,23 @@ def format_timeline_report() -> str:
         f"Сделки: {early['trades']} -> {current['trades']}",
         f"Winrate: {early['winrate']}% -> {current['winrate']}%",
         f"Profit Factor: {early['profit_factor']} -> {current['profit_factor']}",
-        f"Max Drawdown: {early_dd} -> {current_dd}",
+        f"Net R: {early['net_r']} -> {current['net_r']}",
+        f"Max Drawdown: {early['max_drawdown_r']} R -> "
+        f"{current['max_drawdown_r']} R",
     ]
     if baseline:
-        lines.extend(
-            [
-                "",
-                "Experiments baseline:",
-                f"WR: {baseline.get('winrate', 0)}%",
-                f"PF: {baseline.get('profit_factor', 0)}",
-                f"Max DD: {baseline.get('max_drawdown', 0)}",
-            ]
-        )
+        lines.extend(["", "Experiments baseline:"])
+        if "net_r" in baseline and "max_drawdown_r" in baseline:
+            lines.extend(
+                [
+                    f"WR: {baseline.get('winrate', 0)}%",
+                    f"PF: {baseline.get('profit_factor', 0)}",
+                    f"Net R: {baseline.get('net_r', 0)}",
+                    f"Max DD: {baseline.get('max_drawdown_r', 0)} R",
+                ]
+            )
+        else:
+            lines.append("Legacy units: метрики не показаны до пересчёта в R.")
     return "\n".join(lines)
 
 
@@ -2402,7 +2392,7 @@ def format_lab(args: List[str]) -> str:
                 f"Trades: {row.get('trades', 0)}",
                 f"Winrate: {row.get('winrate', 0)}%",
                 f"PF: {row.get('profit_factor', 0)}",
-                f"ROI: {row.get('roi', 0)} R",
+                f"Net R: {row.get('net_r', row.get('roi', 0))}",
                 f"Skipped: {row.get('skipped_trades', 0)}",
                 f"Status: {row.get('sample_status', 'N/A')}",
                 "────────────",

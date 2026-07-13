@@ -5,6 +5,8 @@ from __future__ import annotations
 from statistics import mean
 from typing import Any, Mapping
 
+from trade_metrics_normalizer import max_drawdown_r, profit_factor_from_r
+
 
 def safe_float(value: Any, default: float = 0.0) -> float:
     """Convert value to float."""
@@ -14,18 +16,6 @@ def safe_float(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
-
-
-def max_drawdown(returns: list[float]) -> float:
-    """Return max drawdown over cumulative R curve."""
-    equity = 0.0
-    peak = 0.0
-    drawdown = 0.0
-    for value in returns:
-        equity += value
-        peak = max(peak, equity)
-        drawdown = min(drawdown, equity - peak)
-    return round(drawdown, 4)
 
 
 def calculate_metrics(
@@ -39,8 +29,6 @@ def calculate_metrics(
     wins = [row for row in trades if row.get("result") == "WIN"]
     losses = [row for row in trades if row.get("result") == "LOSS"]
     returns = [safe_float(row.get("r")) for row in trades]
-    gross_profit = sum(value for value in returns if value > 0)
-    gross_loss = abs(sum(value for value in returns if value < 0))
     hold_times = [
         safe_float(row.get("duration_hours") or row.get("duration"))
         for row in trades
@@ -53,7 +41,8 @@ def calculate_metrics(
         row for row in skipped
         if row.get("baseline_result") == "LOSS"
     ]
-    profit_factor = round(gross_profit / gross_loss, 4) if gross_loss else 0.0
+    profit_factor = profit_factor_from_r(returns)
+    net_r = round(sum(returns), 4)
     return {
         "strategy": strategy,
         "opportunities": total_opportunities,
@@ -65,8 +54,10 @@ def calculate_metrics(
         "expectancy": round(mean(returns), 4) if returns else 0.0,
         "average_r": round(mean(returns), 4) if returns else 0.0,
         "average_hold_time": round(mean(hold_times), 2) if hold_times else 0.0,
-        "max_drawdown": max_drawdown(returns),
-        "roi": round(sum(returns), 4),
+        "max_drawdown_r": max_drawdown_r(returns),
+        "max_drawdown": max_drawdown_r(returns),
+        "net_r": net_r,
+        "roi": net_r,
         "skipped_trades": len(skipped),
         "false_positives": len(losses),
         "false_negatives": len(skipped_wins),
@@ -86,7 +77,9 @@ METRIC_FIELDS = [
     "expectancy",
     "average_r",
     "average_hold_time",
+    "max_drawdown_r",
     "max_drawdown",
+    "net_r",
     "roi",
     "skipped_trades",
     "false_positives",

@@ -16,6 +16,12 @@ from pathlib import Path
 from statistics import median
 from typing import Any, Iterable, Mapping
 
+from trade_metrics_normalizer import (
+    aggregate_trade_metrics,
+    is_closed_trade,
+    normalize_trade,
+)
+
 
 BASE_DIR = Path(__file__).resolve().parent
 OHLCV_CACHE_DIR = BASE_DIR / "ohlcv_cache"
@@ -267,9 +273,17 @@ class TradeLossAnalyzer:
     def build_report(self) -> dict[str, Any]:
         """Build and save the loss analysis report."""
         trades = read_csv_rows(TRADES_FILE)
-        closed = [row for row in trades if self._trade_result(row) in {"WIN", "LOSS"}]
-        losses = [row for row in closed if self._trade_result(row) == "LOSS"]
-        cases = [self._analyze_loss(row) for row in losses]
+        closed = [row for row in trades if is_closed_trade(row)]
+        losses = [
+            row for row in closed
+            if normalize_trade(row).get("result") == "LOSS"
+        ]
+        wins = [
+            row for row in closed
+            if normalize_trade(row).get("result") == "WIN"
+        ]
+        cases = [self._analyze_loss(row, index) for index, row in enumerate(losses, start=1)]
+        metrics = aggregate_trade_metrics(closed)
         quality_stats = self._quality_advantage(closed)
         patterns = self._patterns(cases)
         report = {
@@ -282,9 +296,10 @@ class TradeLossAnalyzer:
             "sample": {
                 "closed_trades": len(closed),
                 "loss_trades": len(losses),
-                "win_trades": sum(1 for row in closed if self._trade_result(row) == "WIN"),
+                "win_trades": len(wins),
                 "loss_rate": percent(len(losses), len(closed)),
             },
+            "metrics": metrics,
             "loss_cases": cases,
             "patterns": patterns,
             "quality_edge_confidence": quality_stats,
@@ -377,8 +392,13 @@ class TradeLossAnalyzer:
     def _trade_result(row: Mapping[str, Any]) -> str:
         return str(row.get("result") or row.get("status", "")).upper()
 
-    def _analyze_loss(self, trade: Mapping[str, Any]) -> dict[str, Any]:
+    def _analyze_loss(
+        self,
+        trade: Mapping[str, Any],
+        source_index: int = 0,
+    ) -> dict[str, Any]:
         """Analyze one LOSS trade."""
+        normalized = normalize_trade(trade, source_index)
         symbol = str(trade.get("symbol", "")).upper()
         opened_at = parse_time(trade.get("opened_at"))
         closed_at = parse_time(trade.get("closed_at"))
@@ -391,10 +411,10 @@ class TradeLossAnalyzer:
         candle_context = self._candle_loss_context(trade)
         patterns = self._case_patterns(trade, decision, diagnostics, candle_context)
 
-        entry = safe_float(trade.get("entry"))
-        exit_price = safe_float(trade.get("exit_price"))
-        stop_loss = safe_float(trade.get("stop_loss"))
-        take_profit = safe_float(trade.get("take_profit"))
+        entry = safe_float(normalized.get("entry"))
+        exit_price = safe_float(normalized.get("exit_price"))
+        stop_loss = safe_float(normalized.get("stop_loss"))
+        take_profit = safe_float(normalized.get("take_profit"))
 
         return {
             "symbol": symbol,
@@ -406,7 +426,11 @@ class TradeLossAnalyzer:
             "opened_at": trade.get("opened_at", ""),
             "closed_at": trade.get("closed_at", ""),
             "duration": duration_text(trade.get("opened_at"), trade.get("closed_at")),
-            "pnl": safe_float(trade.get("pnl")),
+            "raw_pnl": normalized.get("raw_pnl", ""),
+            "pnl_percent": normalized.get("pnl_percent", ""),
+            "pnl_r": normalized.get("pnl_r", ""),
+            "metrics_status": normalized.get("metrics_status", "INCOMPLETE"),
+            "incomplete_reasons": normalized.get("incomplete_reasons", ""),
             "atr": candle_context.get("atr", 0.0),
             "confidence": decision.get("confidence", 0.0),
             "weighted_score": decision.get("weighted_score", 0.0),
@@ -916,18 +940,18 @@ class TradeLossAnalyzer:
     @staticmethod
     def _trade_group_stats(items: list[Mapping[str, Any]]) -> dict[str, Any]:
         trades = [item["trade"] for item in items]
-        wins = [row for row in trades if TradeLossAnalyzer._trade_result(row) == "WIN"]
-        losses = [row for row in trades if TradeLossAnalyzer._trade_result(row) == "LOSS"]
-        pnls = [safe_float(row.get("pnl")) for row in trades]
-        gross_profit = sum(max(pnl, 0.0) for pnl in pnls)
-        gross_loss = abs(sum(min(pnl, 0.0) for pnl in pnls))
+        metrics = aggregate_trade_metrics(trades)
         return {
-            "trades": len(trades),
-            "wins": len(wins),
-            "losses": len(losses),
-            "winrate": percent(len(wins), len(trades)),
-            "avg_pnl": mean(pnls),
-            "profit_factor": round(gross_profit / gross_loss, 4) if gross_loss else 0.0,
+            "closed_trades": metrics["closed_trades"],
+            "trades": metrics["metrics_trades"],
+            "incomplete_metrics": metrics["incomplete_metrics"],
+            "wins": metrics["wins"],
+            "losses": metrics["losses"],
+            "winrate": metrics["winrate"],
+            "average_r": metrics["average_r"],
+            "net_r": metrics["net_r"],
+            "max_drawdown_r": metrics["max_drawdown_r"],
+            "profit_factor": metrics["profit_factor"],
         }
 
     @staticmethod
@@ -1022,7 +1046,11 @@ class TradeLossAnalyzer:
             "opened_at",
             "closed_at",
             "duration",
-            "pnl",
+            "raw_pnl",
+            "pnl_percent",
+            "pnl_r",
+            "metrics_status",
+            "incomplete_reasons",
             "atr",
             "confidence",
             "weighted_score",
@@ -1073,6 +1101,7 @@ class TradeLossAnalyzer:
         patterns = report.get("patterns", [])
         quality = report.get("quality_edge_confidence", {})
         post_sl = report.get("post_sl_tp_check", {})
+        metrics = report.get("metrics", {})
         lines = [
             "====================================",
             "Trade Loss Analyzer v1",
@@ -1082,6 +1111,12 @@ class TradeLossAnalyzer:
             f"LOSS: {sample.get('loss_trades', 0)}",
             f"WIN: {sample.get('win_trades', 0)}",
             f"Loss rate: {sample.get('loss_rate', 0)}%",
+            f"Метрик рассчитано: {metrics.get('metrics_trades', 0)}",
+            f"Incomplete metrics: {metrics.get('incomplete_metrics', 0)}",
+            f"Winrate: {metrics.get('winrate', 0)}%",
+            f"Profit Factor: {metrics.get('profit_factor', 0)}",
+            f"Net R: {metrics.get('net_r', 0)}",
+            f"Max Drawdown: {metrics.get('max_drawdown_r', 0)} R",
             "",
             "Главные паттерны LOSS:",
         ]
@@ -1132,7 +1167,9 @@ class TradeLossAnalyzer:
         return (
             f"- {label}: trades={stats.get('trades', 0)}, "
             f"Winrate={stats.get('winrate', 0)}%, "
-            f"PF={stats.get('profit_factor', 0)}"
+            f"PF={stats.get('profit_factor', 0)}, "
+            f"Net R={stats.get('net_r', 0)}, "
+            f"Incomplete={stats.get('incomplete_metrics', 0)}"
         )
 
 

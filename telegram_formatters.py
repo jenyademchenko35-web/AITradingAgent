@@ -15,6 +15,11 @@ from best_candidate_ranker import (
     select_best_candidate,
 )
 from config import MIN_EDGE, RUN_INTERVAL
+from trade_metrics_normalizer import (
+    aggregate_trade_metrics,
+    is_closed_trade,
+    normalize_closed_trades,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -283,10 +288,7 @@ def agent_status() -> dict[str, Any]:
 def closed_trades() -> list[dict[str, str]]:
     """Return closed trade rows."""
     rows = read_csv_rows(TRADES_FILE)
-    return [
-        row for row in rows
-        if (row.get("status") or row.get("result")) in {"WIN", "LOSS"}
-    ]
+    return [row for row in rows if is_closed_trade(row)]
 
 
 def open_trades() -> list[dict[str, str]]:
@@ -298,32 +300,24 @@ def open_trades() -> list[dict[str, str]]:
 
 
 def trade_stats() -> dict[str, Any]:
-    """Calculate concise trade metrics."""
+    """Calculate concise metrics with the shared R normalizer."""
     rows = closed_trades()
-    wins = [row for row in rows if (row.get("status") or row.get("result")) == "WIN"]
-    losses = [row for row in rows if (row.get("status") or row.get("result")) == "LOSS"]
-    pnls = [safe_float(row.get("pnl")) for row in rows]
-    gross_profit = sum(max(pnl, 0.0) for pnl in pnls)
-    gross_loss = sum(abs(min(pnl, 0.0)) for pnl in pnls)
-    cumulative = 0.0
-    peak = 0.0
-    max_drawdown = 0.0
-    for pnl in pnls:
-        cumulative += pnl
-        peak = max(peak, cumulative)
-        max_drawdown = min(max_drawdown, cumulative - peak)
+    metrics = aggregate_trade_metrics(rows)
+    normalized = normalize_closed_trades(rows)
     return {
-        "closed": len(rows),
+        "closed": metrics["closed_trades"],
+        "metrics_trades": metrics["metrics_trades"],
+        "incomplete_metrics": metrics["incomplete_metrics"],
         "open": len(open_trades()),
-        "wins": len(wins),
-        "losses": len(losses),
-        "winrate": (len(wins) / len(rows) * 100) if rows else 0.0,
-        "profit_factor": (gross_profit / gross_loss) if gross_loss else 0.0,
-        "roi": sum(pnls),
-        "drawdown": max_drawdown,
+        "wins": metrics["wins"],
+        "losses": metrics["losses"],
+        "winrate": metrics["winrate"],
+        "profit_factor": metrics["profit_factor"],
+        "net_r": metrics["net_r"],
+        "drawdown_r": metrics["max_drawdown_r"],
         "last_results": [
-            row.get("status") or row.get("result") or "?"
-            for row in rows[-20:]
+            str(row.get("result") or "?")
+            for row in normalized[-20:]
         ],
     }
 
@@ -629,20 +623,16 @@ def format_statistics() -> str:
     last = "".join(icons.get(result, "⚪") for result in stats["last_results"]) or "нет"
     return "\n".join(
         [
-            "📊 Statistics",
-            "",
-            "Winrate",
-            f"{stats['winrate']:.1f}%",
-            "Profit Factor",
-            f"{stats['profit_factor']:.2f}",
-            "ROI",
-            f"{stats['roi']:.2f}",
-            "Drawdown",
-            f"{stats['drawdown']:.2f}",
-            "Последние 20 результатов",
-            last,
+            "📊 Статистика",
             "",
             f"Закрытых сделок: {stats['closed']}",
+            f"Winrate: {stats['winrate']:.2f}%",
+            f"Profit Factor: {stats['profit_factor']:.4f}",
+            f"Net R: {stats['net_r']:.4f}",
+            f"Max Drawdown: {stats['drawdown_r']:.4f} R",
+            f"Incomplete metrics: {stats['incomplete_metrics']}",
+            "Последние 20 результатов",
+            last,
         ]
     ) + footer()
 
