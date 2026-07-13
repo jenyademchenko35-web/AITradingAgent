@@ -19,6 +19,7 @@ def format_summary(report: Mapping[str, Any]) -> str:
     """Format the required research_consensus_summary.txt."""
     summary = report.get("summary", {})
     ranking = report.get("ranking", [])
+    freshness = report.get("report_freshness", {})
     lines = [
         "====================================",
         "Research Consensus Engine v1",
@@ -27,6 +28,9 @@ def format_summary(report: Mapping[str, Any]) -> str:
         f"Доступных исследований: {report.get('available_reports', 0)}",
         f"Закрытых сделок: {report.get('closed_trades', 0)} / 50",
         f"Всего гипотез: {summary.get('total_hypotheses', 0)}",
+        f"Принято отчётов: {len(freshness.get('accepted_reports', []))}",
+        f"Устаревших отчётов: {len(freshness.get('stale_reports', []))}",
+        f"Несовместимых отчётов: {len(freshness.get('incompatible_reports', []))}",
         "",
         "Рейтинг гипотез:",
     ]
@@ -47,6 +51,18 @@ def format_summary(report: Mapping[str, Any]) -> str:
         "",
         "Consensus является read-only исследованием и не применяется к LIVE.",
     ])
+    for title, key in (
+        ("Принятые отчёты", "accepted_reports"),
+        ("Устаревшие отчёты", "stale_reports"),
+        ("Несовместимые отчёты", "incompatible_reports"),
+    ):
+        items = freshness.get(key, [])
+        if not items:
+            continue
+        lines.extend(["", f"{title}:"])
+        for item in items:
+            reasons = "; ".join(item.get("reasons", [])) or "проверка пройдена"
+            lines.append(f"- {item.get('file')}: {reasons}")
     return "\n".join(lines)
 
 

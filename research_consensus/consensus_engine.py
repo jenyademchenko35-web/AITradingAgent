@@ -28,6 +28,7 @@ from research_consensus.consensus_metrics import (
 )
 from research_consensus.consensus_report import save_report
 from research_consensus.consensus_rules import HYPOTHESES, collect_evidence
+from report_metadata import build_report_metadata
 
 
 VERDICT_ORDER = {
@@ -109,11 +110,17 @@ class ResearchConsensusEngine:
         verdict_counts = Counter(row.get("verdict") for row in ranking)
         main = next(
             (row for row in ranking if row.get("verdict") in {"SUPPORTED", "LIKELY"}),
-            ranking[0] if ranking else {},
+            next((row for row in ranking if row.get("modules", 0) > 0), {}),
         )
         available_reports = sum(
             1 for item in self.loader.source_status.values() if item.get("valid")
         )
+        report_groups = self.loader.report_groups()
+        generated_at = datetime.now(timezone.utc).isoformat()
+        accepted_source_files = [self.loader.trades_file] + [
+            self.loader.base_dir / item["file"]
+            for item in report_groups["accepted_reports"]
+        ]
         overall_quality = research_quality(
             closed_trades,
             len({
@@ -123,7 +130,18 @@ class ResearchConsensusEngine:
             }),
         )
         report = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": generated_at,
+            "metadata": build_report_metadata(
+                generator="research_consensus.ResearchConsensusEngine",
+                metric_unit="R",
+                source_files=accepted_source_files,
+                base_dir=self.loader.base_dir,
+                closed_trades_total=closed_trades,
+                complete_metrics_total=self.loader.canonical_metrics.get(
+                    "metrics_trades", 0
+                ),
+                generated_at=generated_at,
+            ),
             "status": "OK" if available_reports else "NO_DATA",
             "mode": "read-only research consensus",
             "closed_trades": closed_trades,
@@ -155,6 +173,10 @@ class ResearchConsensusEngine:
             },
             "context": self.loader.context(),
             "source_status": self.loader.source_status,
+            "report_freshness": report_groups,
+            "incompatible_metric_units": (
+                self.loader.incompatible_metric_units()
+            ),
             "warnings": self.loader.warnings,
             "methodology": [
                 "Strategy Lab v1/v2 объединены в один голос, чтобы не удваивать одну историю.",

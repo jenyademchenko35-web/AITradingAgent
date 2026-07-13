@@ -1,6 +1,5 @@
 import time
 from dataclasses import dataclass
-import csv
 from datetime import datetime, timezone, timedelta
 import argparse
 import os
@@ -49,6 +48,7 @@ from ada_opportunity_dry_run import ADAOpportunityDryRun
 from doge_link_opportunity_dry_run import DogeLinkOpportunityDryRun
 from long_rebound_opportunity_dry_run import LongReboundOpportunityDryRun
 from relaxed_edge_dry_run import RelaxedEdgeDryRun
+from runtime_csv import append_row_atomic_or_locked, ensure_header
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -156,37 +156,15 @@ DECISION_DEBUG_FIELDS = [
 ]
 
 def ensure_csv_schema(file_path: str, fieldnames: list[str]) -> None:
-    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-        return
-
-    with open(file_path, "r", newline="", encoding="utf-8") as f:
-        rows = list(csv.reader(f))
-
-    if not rows or rows[0] == fieldnames:
-        return
-
-    old_header = rows[0]
-    if "quality" not in old_header and "quality" in fieldnames:
-        quality_index = fieldnames.index("quality")
-        migrated_rows = [fieldnames]
-
-        for row in rows[1:]:
-            if not row:
-                migrated_rows.append(row)
-                continue
-            if len(row) == len(fieldnames):
-                migrated_rows.append(row)
-                continue
-            if len(row) == len(fieldnames) - 1:
-                migrated = row[:quality_index] + [""] + row[quality_index:]
-                migrated_rows.append(migrated)
-                continue
-            migrated_rows.append(row)
-
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerows(migrated_rows)
+    """Validate a runtime CSV without scanning its data rows."""
+    result = ensure_header(file_path, fieldnames)
+    if result.migrated:
         LOGGER.schema_migrated(file_path)
+        LOGGER.timestamped(
+            f"CSV schema migration rows={result.rows_migrated} "
+            f"backup={result.backup_path}",
+            minimum="NORMAL",
+        )
         LOGGER.csv_write(file_path)
 
 def fetch_with_retry(symbol, timeframe):
@@ -297,16 +275,11 @@ def save_setup_history(symbol, decision):
     # Only save for SETUP or HIGH PRIORITY
     if decision.signal not in ("SETUP", "HIGH PRIORITY"):
         return
-    ensure_csv_schema(SETUP_HISTORY_FILE, SETUP_HISTORY_FIELDS)
-    file_exists = os.path.exists(SETUP_HISTORY_FILE)
-    needs_header = (not file_exists) or os.path.getsize(SETUP_HISTORY_FILE) == 0
-    with open(SETUP_HISTORY_FILE, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if needs_header:
-            writer.writerow(SETUP_HISTORY_FIELDS)
-        timestamp = datetime.now(timezone.utc).isoformat()
-        writer.writerow([
-            timestamp,
+    append_row_atomic_or_locked(
+        SETUP_HISTORY_FILE,
+        SETUP_HISTORY_FIELDS,
+        [
+            datetime.now(timezone.utc).isoformat(),
             symbol,
             decision.direction,
             decision.signal,
@@ -316,7 +289,8 @@ def save_setup_history(symbol, decision):
             decision.long_total,
             decision.short_total,
             decision.summary,
-        ])
+        ],
+    )
     LOGGER.csv_write(SETUP_HISTORY_FILE)
 
 def save_signal(
@@ -327,16 +301,11 @@ def save_signal(
     momentum: "EngineResult",
     risk: "EngineResult",
 ):
-    ensure_csv_schema(SIGNALS_FILE, SIGNAL_FIELDS)
-    file_exists = os.path.exists(SIGNALS_FILE)
-    needs_header = (not file_exists) or os.path.getsize(SIGNALS_FILE) == 0
-    with open(SIGNALS_FILE, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if needs_header:
-            writer.writerow(SIGNAL_FIELDS)
-        timestamp = datetime.now(timezone.utc).isoformat()
-        writer.writerow([
-            timestamp,
+    append_row_atomic_or_locked(
+        SIGNALS_FILE,
+        SIGNAL_FIELDS,
+        [
+            datetime.now(timezone.utc).isoformat(),
             symbol,
             decision.direction,
             decision.signal,
@@ -354,7 +323,8 @@ def save_signal(
             decision.long_total,
             decision.short_total,
             decision.summary,
-        ])
+        ],
+    )
     LOGGER.csv_write(SIGNALS_FILE)
 
 def save_decision_debug(
@@ -365,17 +335,10 @@ def save_decision_debug(
     momentum: "EngineResult",
     risk: "EngineResult",
 ):
-    ensure_csv_schema(DECISION_DEBUG_FILE, DECISION_DEBUG_FIELDS)
-    file_exists = os.path.exists(DECISION_DEBUG_FILE)
-    needs_header = (not file_exists) or os.path.getsize(DECISION_DEBUG_FILE) == 0
-
-    with open(DECISION_DEBUG_FILE, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-
-        if needs_header:
-            writer.writerow(DECISION_DEBUG_FIELDS)
-
-        writer.writerow([
+    append_row_atomic_or_locked(
+        DECISION_DEBUG_FILE,
+        DECISION_DEBUG_FIELDS,
+        [
             datetime.now(timezone.utc).isoformat(),
             symbol,
             decision.direction,
@@ -400,7 +363,8 @@ def save_decision_debug(
             momentum.reason.replace("\n", " | "),
             risk.reason.replace("\n", " | "),
             decision.summary,
-        ])
+        ],
+    )
     LOGGER.csv_write(DECISION_DEBUG_FILE)
 
 # ==========================
