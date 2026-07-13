@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from config import MIN_EDGE
+from report_metadata import build_report_metadata, parse_utc_timestamp
+from runtime_csv import append_row_atomic_or_locked
 
 
 ENGINE_ORDER: Sequence[Tuple[str, str]] = (
@@ -32,6 +34,15 @@ DEFAULT_WEIGHTS: Mapping[str, float] = {
 }
 
 ACTIONABLE_SIGNALS = {"HIGH PRIORITY", "SETUP"}
+EXECUTION_STATUSES = {
+    "ELIGIBLE",
+    "BLOCKED_COOLDOWN",
+    "BLOCKED_DUPLICATE",
+    "BLOCKED_HIGHER_TF",
+    "BLOCKED_FILTERS",
+    "ALREADY_OPEN",
+    "NO_TRADE",
+}
 
 
 class DecisionDiagnostics:
@@ -39,7 +50,16 @@ class DecisionDiagnostics:
 
     CSV_FIELDS: Sequence[str] = (
         "timestamp",
+        "decision_timestamp",
+        "cycle_id",
+        "stage",
         "symbol",
+        "direction",
+        "raw_signal_status",
+        "final_filter_status",
+        "execution_status",
+        "veto_reasons",
+        "failed_filters",
         "decision",
         "trend",
         "structure",
@@ -121,9 +141,40 @@ class DecisionDiagnostics:
             statuses=statuses,
         )
 
+        failed_filters = [
+            label
+            for key, label in ENGINE_ORDER
+            if statuses.get(key) == "FAIL"
+        ]
+        raw_signal_status = str(self._read(decision, "raw_signal_status") or self._read(
+            decision, "signal"
+        ))
+        final_filter_status = (
+            "BLOCKED_FILTERS" if failed_filters else "PASSED"
+        )
+        execution_status = str(self._read(decision, "execution_status") or "")
+        if execution_status not in EXECUTION_STATUSES:
+            if raw_signal_status not in ACTIONABLE_SIGNALS:
+                execution_status = "NO_TRADE"
+            elif failed_filters:
+                execution_status = "BLOCKED_FILTERS"
+            else:
+                execution_status = "ELIGIBLE"
+
         report = {
             "symbol": self.symbol,
             "decision": self._read(decision, "signal"),
+            "decision_timestamp": self._read(decision, "decision_timestamp"),
+            "cycle_id": self._read(decision, "cycle_id"),
+            "stage": "FINAL_FILTERS",
+            "direction": candidate_direction,
+            "raw_signal_status": raw_signal_status,
+            "final_filter_status": final_filter_status,
+            "execution_status": execution_status,
+            "veto_reasons": self._as_items(
+                self._read(decision, "veto_reasons")
+            ),
+            "failed_filters": failed_filters,
             "candidate_direction": candidate_direction,
             "trend": statuses["trend"],
             "structure": statuses["structure"],
@@ -136,6 +187,7 @@ class DecisionDiagnostics:
             "lost_score": lost_score,
             "single_filter_scenarios": scenarios,
         }
+        self.apply_status_to_decision(decision, report)
 
         if self.auto_log:
             self.log(report)
@@ -154,8 +206,13 @@ class DecisionDiagnostics:
         return "\n".join(
             [
                 "Decision Diagnostics",
-                f"Decision        : {report.get('decision', '')}",
+                f"Raw signal      : {report.get('raw_signal_status', '')}",
+                f"Final filters   : {report.get('final_filter_status', '')}",
+                f"Execution       : {report.get('execution_status', '')}",
+                f"Stage           : {report.get('stage', '')}",
                 f"Candidate       : {report.get('candidate_direction', '')}",
+                f"Failed filters  : {self._join_items(report.get('failed_filters')) or 'None'}",
+                f"Veto reasons    : {self._join_items(report.get('veto_reasons')) or 'None'}",
                 "Filters",
                 f"Trend           : {report.get('trend', '')}",
                 f"Structure       : {report.get('structure', '')}",
@@ -180,20 +237,17 @@ class DecisionDiagnostics:
     def log(self, report: Mapping[str, Any]) -> None:
         """Append diagnostics to CSV and build aggregate JSON every interval."""
         try:
-            self.csv_file.parent.mkdir(parents=True, exist_ok=True)
-            needs_header = (
-                not self.csv_file.exists() or self.csv_file.stat().st_size == 0
+            append_result = append_row_atomic_or_locked(
+                self.csv_file,
+                self.CSV_FIELDS,
+                self._csv_row(report),
             )
-            with self.csv_file.open("a", newline="", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, fieldnames=self.CSV_FIELDS)
-                if needs_header:
-                    writer.writeheader()
-                writer.writerow(self._csv_row(report))
-
-            rows_count = self._count_csv_rows()
-            if self.report_interval > 0 and rows_count % self.report_interval == 0:
+            if (
+                self.report_interval > 0
+                and append_result.process_append_count % self.report_interval == 0
+            ):
                 self.build_json_report()
-        except OSError as exc:
+        except (OSError, RuntimeError) as exc:
             raise RuntimeError(
                 f"Could not write decision diagnostics to {self.csv_file}: {exc}"
             ) from exc
@@ -203,9 +257,16 @@ class DecisionDiagnostics:
         primary_blockers: Counter[str] = Counter()
         lost_scores = []
         symbols: Dict[str, Counter[str]] = defaultdict(Counter)
+        timestamps: list[datetime] = []
 
         if not self.csv_file.exists():
             report = {
+                "metadata": build_report_metadata(
+                    generator="decision_diagnostics.DecisionDiagnostics",
+                    metric_unit="SCORE_POINTS",
+                    source_files=[self.csv_file],
+                    base_dir=self.report_file.parent,
+                ),
                 "primary_blockers": {},
                 "average_lost_score": 0,
                 "symbols": {},
@@ -216,6 +277,9 @@ class DecisionDiagnostics:
         with self.csv_file.open("r", newline="", encoding="utf-8") as file:
             reader = csv.DictReader(file)
             for row in reader:
+                parsed_timestamp = parse_utc_timestamp(row.get("timestamp"))
+                if parsed_timestamp is not None:
+                    timestamps.append(parsed_timestamp)
                 blocker = row.get("primary_blocker", "")
                 symbol = self._normalize_symbol(row.get("symbol", ""))
                 if blocker:
@@ -233,6 +297,14 @@ class DecisionDiagnostics:
             else 0
         )
         report = {
+            "metadata": build_report_metadata(
+                generator="decision_diagnostics.DecisionDiagnostics",
+                metric_unit="SCORE_POINTS",
+                source_files=[self.csv_file],
+                base_dir=self.report_file.parent,
+                data_period_start=(min(timestamps).isoformat() if timestamps else ""),
+                data_period_end=(max(timestamps).isoformat() if timestamps else ""),
+            ),
             "primary_blockers": dict(primary_blockers),
             "average_lost_score": average_lost_score,
             "symbols": {
@@ -246,7 +318,16 @@ class DecisionDiagnostics:
     def _csv_row(self, report: Mapping[str, Any]) -> Dict[str, Any]:
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "decision_timestamp": report.get("decision_timestamp", ""),
+            "cycle_id": report.get("cycle_id", ""),
+            "stage": report.get("stage", ""),
             "symbol": report.get("symbol", self.symbol),
+            "direction": report.get("direction", report.get("candidate_direction", "")),
+            "raw_signal_status": report.get("raw_signal_status", ""),
+            "final_filter_status": report.get("final_filter_status", ""),
+            "execution_status": report.get("execution_status", ""),
+            "veto_reasons": self._join_items(report.get("veto_reasons")),
+            "failed_filters": self._join_items(report.get("failed_filters")),
             "decision": report.get("decision", ""),
             "trend": report.get("trend", ""),
             "structure": report.get("structure", ""),
@@ -256,6 +337,82 @@ class DecisionDiagnostics:
             "lost_score": report.get("lost_score", 0),
             "potential_score": report.get("potential_score", 0),
         }
+
+    @classmethod
+    def apply_status_to_decision(
+        cls,
+        decision: Any,
+        report: Mapping[str, Any],
+    ) -> None:
+        """Attach diagnostic status fields without changing the raw decision."""
+        for key in (
+            "raw_signal_status",
+            "final_filter_status",
+            "execution_status",
+            "veto_reasons",
+            "failed_filters",
+            "cycle_id",
+            "decision_timestamp",
+            "stage",
+        ):
+            try:
+                setattr(decision, key, report.get(key, ""))
+            except (AttributeError, TypeError):
+                continue
+
+    @classmethod
+    def set_execution_status(
+        cls,
+        decision: Any,
+        execution_status: str,
+        reason: str = "",
+    ) -> None:
+        """Update diagnostic execution metadata only; never change signal/score."""
+        normalized = str(execution_status or "").strip().upper()
+        if normalized not in EXECUTION_STATUSES:
+            raise ValueError(f"Unsupported execution status: {execution_status}")
+        reasons = cls._as_items(getattr(decision, "veto_reasons", []))
+        if reason and reason not in reasons:
+            reasons.append(reason)
+        setattr(decision, "execution_status", normalized)
+        setattr(decision, "veto_reasons", reasons)
+        setattr(decision, "stage", "EXECUTION")
+
+    @classmethod
+    def sync_report_status(
+        cls,
+        report: Dict[str, Any],
+        decision: Any,
+    ) -> None:
+        """Copy the final diagnostic snapshot into a persisted report row."""
+        for key in (
+            "raw_signal_status",
+            "final_filter_status",
+            "execution_status",
+            "veto_reasons",
+            "failed_filters",
+            "cycle_id",
+            "decision_timestamp",
+            "stage",
+        ):
+            report[key] = getattr(decision, key, report.get(key, ""))
+
+    @staticmethod
+    def _join_items(value: Any) -> str:
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return ""
+        return " | ".join(str(item) for item in value if str(item).strip())
+
+    @staticmethod
+    def _as_items(value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            normalized = value.replace(",", "|").replace(";", "|")
+            return [item.strip() for item in normalized.split("|") if item.strip()]
+        return [str(item) for item in value if str(item).strip()]
 
     def _contributions(
         self,
@@ -421,12 +578,6 @@ class DecisionDiagnostics:
     @staticmethod
     def _normalize_symbol(symbol: str) -> str:
         return symbol.split("/")[0] if symbol else ""
-
-    def _count_csv_rows(self) -> int:
-        if not self.csv_file.exists():
-            return 0
-        with self.csv_file.open("r", newline="", encoding="utf-8") as file:
-            return max(sum(1 for _ in file) - 1, 0)
 
     def _write_json(self, report: Mapping[str, Any]) -> None:
         self.report_file.parent.mkdir(parents=True, exist_ok=True)
