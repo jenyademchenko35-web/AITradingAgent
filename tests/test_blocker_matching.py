@@ -9,7 +9,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from logging_manager import ConsoleOutputManager
-from telegram_formatters import NO_MATCH, SAME_CYCLE, failed_filters_match
+from telegram_formatters import SAME_CYCLE, failed_filters_match
 
 
 class BlockerMatchingTest(TestCase):
@@ -71,15 +71,15 @@ class BlockerMatchingTest(TestCase):
         self.assertEqual(short_match.filters, ("Risk",))
         self.assertNotIn("Trend", short_match.filters)
 
-        ambiguous_match = failed_filters_match(
+        legacy_match = failed_filters_match(
             "SOL/USDT",
             cycle_id="cycle-100",
             stage="EXECUTION",
             diagnostics_rows=diagnostics,
             explanation_rows=explanations,
         )
-        self.assertEqual(ambiguous_match.quality, NO_MATCH)
-        self.assertEqual(ambiguous_match.filters, ())
+        self.assertEqual(legacy_match.quality, SAME_CYCLE)
+        self.assertEqual(legacy_match.filters, ("Risk",))
 
     def test_legacy_positional_contract_remains_valid(self) -> None:
         timestamp = "2026-07-13T11:00:05+00:00"

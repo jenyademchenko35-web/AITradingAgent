@@ -173,6 +173,8 @@ class FailedFiltersMatch:
 
     filters: tuple[str, ...]
     quality: str
+    stage: str = ""
+    cycle_id: str = ""
 
 
 def _symbol_key(value: str) -> str:
@@ -215,19 +217,41 @@ def _nearest_symbol_row(
 def _current_cycle_symbol_row(
     rows: Iterable[Mapping[str, str]],
     symbol: str,
+    direction: str | None = None,
     decision_timestamp: str = "",
+    cycle_id: str = "",
+    stage: str = "",
     cycle_started_at: str = "",
     cycle_finished_at: str = "",
 ) -> tuple[dict[str, str], str]:
-    """Return only a row proven to match the timestamp or current cycle."""
+    """Return a row proven to match symbol, direction, cycle and stage."""
     key = _symbol_key(symbol)
-    matches = [dict(row) for row in rows if _symbol_key(row.get("symbol", "")) == key]
+    direction_key = str(direction or "").strip().upper()
+    stage_key = str(stage or "").strip().upper()
+    matches = []
+    for source_row in rows:
+        row = dict(source_row)
+        if _symbol_key(row.get("symbol", "")) != key:
+            continue
+        if direction_key and str(row.get("direction", "")).strip().upper() != direction_key:
+            continue
+        if stage_key and str(row.get("stage", "")).strip().upper() != stage_key:
+            continue
+        if cycle_id and str(row.get("cycle_id", "")).strip() != str(cycle_id).strip():
+            continue
+        matches.append(row)
+
     target = parse_time(decision_timestamp)
     if target:
         for row in matches:
-            row_time = parse_time(row.get("timestamp", ""))
+            row_time = parse_time(
+                row.get("decision_timestamp") or row.get("timestamp", "")
+            )
             if row_time == target:
                 return row, EXACT_TIMESTAMP
+
+    if cycle_id and matches:
+        return max(matches, key=lambda row: row.get("timestamp", "")), SAME_CYCLE
 
     cycle_start = parse_time(cycle_started_at)
     cycle_finish = parse_time(cycle_finished_at)
@@ -250,8 +274,17 @@ def failed_filters_match(
     cycle_finished_at: str = "",
     diagnostics_rows: Iterable[Mapping[str, str]] | None = None,
     explanation_rows: Iterable[Mapping[str, str]] | None = None,
+    *,
+    direction: str | None = None,
+    cycle_id: str = "",
+    stage: str = "",
 ) -> FailedFiltersMatch:
-    """Return failed filters without falling back to persisted stale rows."""
+    """Return failed filters proven to match one decision-stage identity.
+
+    The original positional argument order is intentionally preserved. When
+    ``direction`` is omitted, matching keeps the legacy symbol/time behavior.
+    When supplied, rows from the opposite direction are excluded.
+    """
     diagnostics_source = (
         list(diagnostics_rows)
         if diagnostics_rows is not None
@@ -263,18 +296,24 @@ def failed_filters_match(
         else read_csv_rows(EXPLANATIONS_FILE)
     )
     diagnostics, diagnostics_quality = _current_cycle_symbol_row(
-        diagnostics_source,
-        symbol,
-        decision_timestamp,
-        cycle_started_at,
-        cycle_finished_at,
+        rows=diagnostics_source,
+        symbol=symbol,
+        direction=direction,
+        decision_timestamp=decision_timestamp,
+        cycle_id=cycle_id,
+        stage=stage,
+        cycle_started_at=cycle_started_at,
+        cycle_finished_at=cycle_finished_at,
     )
     explanation, explanation_quality = _current_cycle_symbol_row(
-        explanations_source,
-        symbol,
-        decision_timestamp,
-        cycle_started_at,
-        cycle_finished_at,
+        rows=explanations_source,
+        symbol=symbol,
+        direction=direction,
+        decision_timestamp=decision_timestamp,
+        cycle_id=cycle_id,
+        stage=stage,
+        cycle_started_at=cycle_started_at,
+        cycle_finished_at=cycle_finished_at,
     )
 
     qualities = {diagnostics_quality, explanation_quality}
@@ -283,7 +322,7 @@ def failed_filters_match(
     elif SAME_CYCLE in qualities:
         quality = SAME_CYCLE
     else:
-        return FailedFiltersMatch((), NO_MATCH)
+        return FailedFiltersMatch((), NO_MATCH, stage, cycle_id)
 
     failed: set[str] = set()
     for name in FILTER_NAMES:
@@ -296,7 +335,7 @@ def failed_filters_match(
     )
     failed.update(_canonical_filters(diagnostics.get("primary_blocker")))
     ordered = tuple(name for name in FILTER_NAMES if name in failed)
-    return FailedFiltersMatch(ordered, quality)
+    return FailedFiltersMatch(ordered, quality, stage, cycle_id)
 
 
 def failed_filters_for(
