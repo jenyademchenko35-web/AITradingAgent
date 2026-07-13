@@ -36,6 +36,9 @@ from research_consensus.consensus_formatter import (
     format_overview as format_consensus_overview,
     format_summary_command as format_consensus_summary,
 )
+from research_orchestrator.formatter import (
+    format_telegram as format_research_orchestrator,
+)
 from telegram_formatters import (
     format_ai_coach as v5_format_ai_coach,
     format_developer as v5_format_developer,
@@ -118,6 +121,7 @@ HYPOTHESIS_SUMMARY_FILE = BASE_DIR / "hypothesis_summary.txt"
 TRADE_REPLAY_REPORT_FILE = BASE_DIR / "trade_replay_report.json"
 TRADE_REPLAY_SUMMARY_FILE = BASE_DIR / "replay_summary.txt"
 RESEARCH_CONSENSUS_REPORT_FILE = BASE_DIR / "research_consensus_report.json"
+RESEARCH_ORCHESTRATOR_REPORT_FILE = BASE_DIR / "research_orchestrator_report.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -1894,74 +1898,14 @@ def ensure_research_report() -> Optional[str]:
     return None
 
 
-def format_research() -> str:
-    """Format strategy research for Telegram."""
-    error = ensure_research_report()
-    if error:
-        return f"🔬 Research\n\n{error}"
-
-    report = read_json(RESEARCH_REPORT_FILE)
-    if not report:
-        return (
-            "🔬 Research\n\n"
-            "Файл strategy_research_report.json пуст или повреждён."
-        )
-    summary_generated_at = "N/A"
-    if RESEARCH_SUMMARY_FILE.exists():
-        summary_text = RESEARCH_SUMMARY_FILE.read_text(encoding="utf-8")
-        for line in summary_text.splitlines():
-            if line.startswith("Generated at:"):
-                summary_generated_at = line.split(":", 1)[1].strip()
-                break
-
-    decision_overview = report.get("decision_overview", {})
-    diagnostics_overview = report.get("diagnostics_overview", {})
-    trade_overview = report.get("trade_overview", {})
-
-    blockers = diagnostics_overview.get("primary_blockers", {})
-    primary_blocker = "N/A"
-    if blockers:
-        primary_blocker = max(
-            blockers.items(),
-            key=lambda item: safe_float(item[1]),
-        )[0]
-
-    near_setup = diagnostics_overview.get("near_setup_symbols", {})
-    near_lines = []
-    for symbol, payload in list(near_setup.items())[:3]:
-        near_lines.append(
-            f"- {symbol}: near={payload.get('near_setup_count', 0)}, "
-            f"avg_potential={payload.get('average_potential_score', 0)}"
-        )
-    if not near_lines:
-        near_lines.append("- Пока нет данных")
-
-    recommendations = report.get("recommendations", [])
-    recommendation_lines = [
-        f"- {localize_research_item(item)}" for item in recommendations[:4]
-    ] or ["- Пока нет рекомендаций"]
-
-    lines = [
-        "🔬 Research",
-        "",
-        f"Отчёт обновлён: {summary_generated_at}",
-        f"Всего решений: {decision_overview.get('total_rows', 0)}",
-        f"NO TRADE: {decision_overview.get('signal_counts', {}).get('NO TRADE', 0)}",
-        f"Главный blocker: {primary_blocker}",
-        (
-            "Средний lost_score: "
-            f"{diagnostics_overview.get('average_lost_score', 0)}"
-        ),
-        f"Winrate: {trade_overview.get('winrate', 0)}%",
-        f"Average PnL: {trade_overview.get('average_pnl', 0)}",
-        "",
-        "Near-setup лидеры:",
-        *near_lines,
-        "",
-        "Главные рекомендации:",
-        *recommendation_lines,
-    ]
-    return "\n".join(lines)
+def format_research(section: str = "overview") -> str:
+    """Read and format the saved orchestrator report without recomputation."""
+    report = read_json(RESEARCH_ORCHESTRATOR_REPORT_FILE)
+    return format_research_orchestrator(
+        report,
+        section=section,
+        query=section,
+    )
 
 
 def format_history(limit: int = 10) -> str:
@@ -2807,7 +2751,8 @@ async def research_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    await reply(update, format_research())
+    section = context.args[0].strip().lower() if context.args else "overview"
+    await reply(update, format_research(section))
 
 
 async def experiments_command(
