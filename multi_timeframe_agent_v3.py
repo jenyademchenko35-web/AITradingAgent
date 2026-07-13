@@ -1295,10 +1295,14 @@ def run_once():
     decisions = []
     api_errors = 0
     current_prices = {}
+    analysis_contexts = {}
     for symbol in SYMBOLS:
+        analysis_started_at = datetime.now(timezone.utc)
         t0 = time.time()
         try:
             decision, market = analyze_symbol(symbol)
+            analysis_finished_at = datetime.now(timezone.utc)
+            analysis_contexts[symbol] = (analysis_started_at, analysis_finished_at)
             current_prices[symbol] = market.tf1h.close
             t1 = time.time()
             elapsed = t1 - t0
@@ -1314,9 +1318,12 @@ def run_once():
     best_candidate = select_best_candidate(decisions)
     if best_candidate:
         decision_by_symbol = {item_symbol: item_decision for item_symbol, item_decision in decisions}
+        analysis_started_at, analysis_finished_at = analysis_contexts[best_candidate.symbol]
         LOGGER.best_setup(
             best_candidate.symbol,
             decision_by_symbol[best_candidate.symbol],
+            analysis_started_at.isoformat(),
+            analysis_finished_at.isoformat(),
         )
     LOGGER.ranked_summary(decisions)
 

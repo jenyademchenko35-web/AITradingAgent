@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
-from best_candidate_ranker import explain_selection, rank_candidates
+from best_candidate_ranker import DEFAULT_MIN_EDGE, explain_selection, rank_candidates
 
 
 LEVELS = {
@@ -96,8 +96,31 @@ class ConsoleOutputManager:
     def no_symbols_analyzed(self) -> None:
         self._print("No symbols analyzed this cycle.")
 
-    def best_setup(self, symbol: str, decision: Any) -> None:
+    def best_setup(
+        self,
+        symbol: str,
+        decision: Any,
+        analysis_started_at: str = "",
+        analysis_finished_at: str = "",
+    ) -> None:
+        # Import lazily to keep the console manager independent at startup.
+        from telegram_formatters import NO_MATCH, failed_filters_match
+
         candidate = rank_candidates([(symbol, decision)])[0]
+        filter_match = failed_filters_match(
+            symbol,
+            str(getattr(decision, "timestamp", "") or ""),
+            analysis_started_at,
+            analysis_finished_at,
+        )
+        missing = list(filter_match.filters)
+        if not missing and candidate.edge < DEFAULT_MIN_EDGE:
+            missing = ["Directional Edge"]
+        reason = (
+            "Причина фильтра недоступна для текущего цикла"
+            if filter_match.quality == NO_MATCH
+            else explain_selection(candidate, missing=missing)
+        )
         self._print(
             "\nBEST CANDIDATE:",
             "=" * 60,
@@ -110,7 +133,8 @@ class ConsoleOutputManager:
                 f"Edge={candidate.edge:g}"
             ),
             "Причина:",
-            explain_selection(candidate),
+            reason,
+            f"Match quality: {filter_match.quality}",
             "=" * 60,
         )
 

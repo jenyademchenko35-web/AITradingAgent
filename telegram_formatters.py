@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -161,6 +162,17 @@ def latest_by_symbol(rows: Iterable[Mapping[str, str]]) -> dict[str, dict[str, s
 
 
 FILTER_NAMES = ("Trend", "Structure", "Momentum", "Risk")
+EXACT_TIMESTAMP = "EXACT_TIMESTAMP"
+SAME_CYCLE = "SAME_CYCLE"
+NO_MATCH = "NO_MATCH"
+
+
+@dataclass(frozen=True)
+class FailedFiltersMatch:
+    """Failed filters that are proven to belong to one analysis cycle."""
+
+    filters: tuple[str, ...]
+    quality: str
 
 
 def _symbol_key(value: str) -> str:
@@ -198,6 +210,93 @@ def _nearest_symbol_row(
         if timed:
             return min(timed, key=lambda item: item[0])[1]
     return max(matches, key=lambda row: row.get("timestamp", ""))
+
+
+def _current_cycle_symbol_row(
+    rows: Iterable[Mapping[str, str]],
+    symbol: str,
+    decision_timestamp: str = "",
+    cycle_started_at: str = "",
+    cycle_finished_at: str = "",
+) -> tuple[dict[str, str], str]:
+    """Return only a row proven to match the timestamp or current cycle."""
+    key = _symbol_key(symbol)
+    matches = [dict(row) for row in rows if _symbol_key(row.get("symbol", "")) == key]
+    target = parse_time(decision_timestamp)
+    if target:
+        for row in matches:
+            row_time = parse_time(row.get("timestamp", ""))
+            if row_time == target:
+                return row, EXACT_TIMESTAMP
+
+    cycle_start = parse_time(cycle_started_at)
+    cycle_finish = parse_time(cycle_finished_at)
+    if cycle_start and cycle_finish:
+        current_cycle_rows = []
+        for row in matches:
+            row_time = parse_time(row.get("timestamp", ""))
+            if row_time and cycle_start <= row_time <= cycle_finish:
+                current_cycle_rows.append((row_time, row))
+        if current_cycle_rows:
+            return max(current_cycle_rows, key=lambda item: item[0])[1], SAME_CYCLE
+
+    return {}, NO_MATCH
+
+
+def failed_filters_match(
+    symbol: str,
+    decision_timestamp: str = "",
+    cycle_started_at: str = "",
+    cycle_finished_at: str = "",
+    diagnostics_rows: Iterable[Mapping[str, str]] | None = None,
+    explanation_rows: Iterable[Mapping[str, str]] | None = None,
+) -> FailedFiltersMatch:
+    """Return failed filters without falling back to persisted stale rows."""
+    diagnostics_source = (
+        list(diagnostics_rows)
+        if diagnostics_rows is not None
+        else read_csv_rows(DIAGNOSTICS_FILE)
+    )
+    explanations_source = (
+        list(explanation_rows)
+        if explanation_rows is not None
+        else read_csv_rows(EXPLANATIONS_FILE)
+    )
+    diagnostics, diagnostics_quality = _current_cycle_symbol_row(
+        diagnostics_source,
+        symbol,
+        decision_timestamp,
+        cycle_started_at,
+        cycle_finished_at,
+    )
+    explanation, explanation_quality = _current_cycle_symbol_row(
+        explanations_source,
+        symbol,
+        decision_timestamp,
+        cycle_started_at,
+        cycle_finished_at,
+    )
+
+    qualities = {diagnostics_quality, explanation_quality}
+    if EXACT_TIMESTAMP in qualities:
+        quality = EXACT_TIMESTAMP
+    elif SAME_CYCLE in qualities:
+        quality = SAME_CYCLE
+    else:
+        return FailedFiltersMatch((), NO_MATCH)
+
+    failed: set[str] = set()
+    for name in FILTER_NAMES:
+        if str(diagnostics.get(name.lower(), "")).strip().upper() == "FAIL":
+            failed.add(name)
+    failed.update(
+        _canonical_filters(
+            explanation.get("failed") or explanation.get("failed_filters")
+        )
+    )
+    failed.update(_canonical_filters(diagnostics.get("primary_blocker")))
+    ordered = tuple(name for name in FILTER_NAMES if name in failed)
+    return FailedFiltersMatch(ordered, quality)
 
 
 def failed_filters_for(
