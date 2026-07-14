@@ -6,10 +6,11 @@ human-readable explanation. It does not recalculate or modify trading logic.
 
 from __future__ import annotations
 
-import csv
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+from runtime_csv import append_row_atomic_or_locked
 
 
 Report = Dict[str, Any]
@@ -20,7 +21,16 @@ class ExplainableAI:
 
     FIELDNAMES: Sequence[str] = (
         "timestamp",
+        "decision_timestamp",
+        "cycle_id",
+        "stage",
         "symbol",
+        "direction",
+        "raw_signal_status",
+        "final_filter_status",
+        "execution_status",
+        "veto_reasons",
+        "failed_filters",
         "decision",
         "quality",
         "score",
@@ -117,6 +127,19 @@ class ExplainableAI:
 
         report: Report = {
             "decision": decision_name,
+            "decision_timestamp": self._read(decision, "decision_timestamp", ""),
+            "cycle_id": self._read(decision, "cycle_id", ""),
+            "stage": self._read(decision, "stage", "FINAL_FILTERS"),
+            "direction": candidate_direction,
+            "raw_signal_status": self._read(
+                decision, "raw_signal_status", decision_name
+            ),
+            "final_filter_status": (
+                "BLOCKED_FILTERS" if failed else "PASSED"
+            ),
+            "execution_status": self._read(decision, "execution_status", ""),
+            "veto_reasons": list(self._read(decision, "veto_reasons", []) or []),
+            "failed_filters": list(failed),
             "quality": quality,
             "score": score,
             "confidence": confidence,
@@ -141,7 +164,10 @@ class ExplainableAI:
         return "\n".join(
             [
                 "Decision Analysis",
-                f"Decision : {report.get('decision', '')}",
+                f"Raw signal: {report.get('raw_signal_status', report.get('decision', ''))}",
+                f"Final filters: {report.get('final_filter_status', '')}",
+                f"Execution: {report.get('execution_status', '')}",
+                f"Stage: {report.get('stage', '')}",
                 f"Quality  : {report.get('quality', '')}",
                 f"Score    : {report.get('score', '')}",
                 f"Confidence: {report.get('confidence', '')}",
@@ -160,17 +186,12 @@ class ExplainableAI:
     def log_report(self, report: Report) -> None:
         """Append an explanation report to decision_explanations.csv."""
         try:
-            self.log_file.parent.mkdir(parents=True, exist_ok=True)
-            needs_header = (
-                not self.log_file.exists() or self.log_file.stat().st_size == 0
+            append_row_atomic_or_locked(
+                self.log_file,
+                self.FIELDNAMES,
+                self._csv_row(report),
             )
-
-            with self.log_file.open("a", newline="", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, fieldnames=self.FIELDNAMES)
-                if needs_header:
-                    writer.writeheader()
-                writer.writerow(self._csv_row(report))
-        except OSError as exc:
+        except (OSError, RuntimeError) as exc:
             raise RuntimeError(
                 f"Could not write XAI log to {self.log_file}: {exc}"
             ) from exc
@@ -182,7 +203,16 @@ class ExplainableAI:
     def _csv_row(self, report: Report) -> Dict[str, Any]:
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "decision_timestamp": report.get("decision_timestamp", ""),
+            "cycle_id": report.get("cycle_id", ""),
+            "stage": report.get("stage", ""),
             "symbol": self.symbol,
+            "direction": report.get("direction", report.get("candidate_direction", "")),
+            "raw_signal_status": report.get("raw_signal_status", ""),
+            "final_filter_status": report.get("final_filter_status", ""),
+            "execution_status": report.get("execution_status", ""),
+            "veto_reasons": self._join_list(report.get("veto_reasons", [])),
+            "failed_filters": self._join_list(report.get("failed_filters", [])),
             "decision": report.get("decision", ""),
             "quality": report.get("quality", ""),
             "score": report.get("score", ""),

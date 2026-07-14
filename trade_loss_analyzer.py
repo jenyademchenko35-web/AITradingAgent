@@ -16,6 +16,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any, Iterable, Mapping
 
+from report_metadata import build_report_metadata, timestamp_bounds
 from trade_metrics_normalizer import (
     aggregate_trade_metrics,
     is_closed_trade,
@@ -286,8 +287,35 @@ class TradeLossAnalyzer:
         metrics = aggregate_trade_metrics(closed)
         quality_stats = self._quality_advantage(closed)
         patterns = self._patterns(cases)
+        generated_at = utc_now()
+        period_start, period_end = timestamp_bounds(
+            closed,
+            fields=(
+                "opened_at",
+                "open_timestamp",
+                "timestamp",
+                "closed_at",
+                "close_timestamp",
+            ),
+        )
         report = {
-            "generated_at": utc_now(),
+            "generated_at": generated_at,
+            "metadata": {
+                **build_report_metadata(
+                    generator="trade_loss_analyzer.TradeLossAnalyzer",
+                    generator_version="1.0",
+                    metric_unit="R",
+                    source_files=[TRADES_FILE],
+                    base_dir=BASE_DIR,
+                    data_period_start=period_start,
+                    data_period_end=period_end,
+                    closed_trades_total=metrics.get("closed_trades", 0),
+                    complete_metrics_total=metrics.get("metrics_trades", 0),
+                    generated_at=generated_at,
+                ),
+                "freshness_ttl_hours": 24,
+                "context_sources": [path.name for path in SOURCE_FILES[1:]],
+            },
             "status": self._status(losses, cases),
             "mode": "read-only loss analysis",
             "source_status": self.source_status,

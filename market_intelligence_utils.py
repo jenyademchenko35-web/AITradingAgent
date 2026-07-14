@@ -10,6 +10,8 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Iterable, Mapping
 
+from trade_metrics_normalizer import aggregate_trade_metrics
+
 
 BASE_DIR = Path(__file__).resolve().parent
 OHLCV_CACHE_DIR = BASE_DIR / "ohlcv_cache"
@@ -292,18 +294,18 @@ def trade_result(row: Mapping[str, Any]) -> str:
 
 
 def trade_stats(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
-    """Calculate basic trade stats."""
-    items = [row for row in rows if trade_result(row) in {"WIN", "LOSS"}]
-    wins = [row for row in items if trade_result(row) == "WIN"]
-    pnls = [safe_float(row.get("pnl")) for row in items]
-    gross_profit = sum(max(pnl, 0.0) for pnl in pnls)
-    gross_loss = abs(sum(min(pnl, 0.0) for pnl in pnls))
+    """Calculate unified trade stats exclusively from normalized R values."""
+    metrics = aggregate_trade_metrics(rows)
     return {
-        "trades": len(items),
-        "wins": len(wins),
-        "losses": len(items) - len(wins),
-        "winrate": percent(len(wins), len(items)),
-        "profit_factor": round(gross_profit / gross_loss, 4) if gross_loss else 0.0,
-        "average_pnl": avg(pnls),
-        "net_pnl": round(sum(pnls), 4),
+        "trades": metrics["metrics_trades"],
+        "closed_trades": metrics["closed_trades"],
+        "incomplete_metrics": metrics["incomplete_metrics"],
+        "wins": metrics["wins"],
+        "losses": metrics["losses"],
+        "winrate": metrics["winrate"],
+        "profit_factor": metrics["profit_factor"],
+        "average_r": metrics["average_r"],
+        "net_r": metrics["net_r"],
+        "max_drawdown_r": metrics["max_drawdown_r"],
+        "metric_unit": "R",
     }

@@ -18,6 +18,7 @@ DEFAULT_ARTIFACTS = (
     ArtifactSpec("trade_loss_report", "TRADE_ANALYSIS", "trade_loss_report.json", False, "1.0", ("R",), 24, "trade_loss_analyzer.py", True),
     ArtifactSpec("trade_memory_report", "MEMORY", "trade_memory_report.json", False, "1.0", ("R",), 6, "trade_memory.py", True),
     ArtifactSpec("trade_replay_report", "REPLAY", "trade_replay_report.json", False, "1.0", ("R",), 72, "trade_replay_lab", True),
+    ArtifactSpec("shadow_replay_report", "REPLAY", "shadow_replay_report.json", False, "2.0", ("R",), 72, "shadow_replay.py", True),
     ArtifactSpec("market_intelligence_report", "CONTEXT", "market_intelligence_report.json", False, "1.0", ("CONTEXT",), 2, "market_intelligence_hub.py"),
     ArtifactSpec("post_trade_intelligence", "TRADE_ANALYSIS", "post_trade_intelligence.json", False, "1.0", ("R",), 24, "post_trade_intelligence.py", True),
     ArtifactSpec("news_statistics_report", "NEWS", "news_statistics_report.json", False, "1.0", ("R", "COUNT"), 24, "news_statistics.py", True),

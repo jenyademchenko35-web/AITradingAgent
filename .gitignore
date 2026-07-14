@@ -43,3 +43,12 @@ hypothesis_comparison.csv
 hypothesis_shadow_trades.csv
 replay_patterns.csv
 research_consensus.csv
+research_orchestrator.log
+research_orchestrator_evidence.csv
+research_orchestrator_conflicts.csv
+shadow_replay_trades.csv
+trade_metrics_audit.json
+trade_metrics_audit_summary.txt
+normalized_trade_metrics.csv
+adaptive_research_state.json
+.adaptive_research.lock

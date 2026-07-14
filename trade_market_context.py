@@ -24,6 +24,7 @@ from market_intelligence_utils import (
     trade_result,
     write_csv,
 )
+from trade_metrics_normalizer import normalize_trade
 
 
 TRADES_FILE = BASE_DIR / "trades.csv"
@@ -43,8 +44,14 @@ FIELDS = [
     "opened_at",
     "closed_at",
     "entry",
+    "stop_loss",
+    "take_profit",
     "exit_price",
-    "pnl",
+    "pnl_percent",
+    "pnl_r",
+    "metrics_status",
+    "incomplete_reasons",
+    "raw_pnl",
     "atr",
     "momentum",
     "directional_edge",
@@ -89,6 +96,7 @@ class TradeMarketContext:
 
     def context_for_trade(self, trade: Mapping[str, Any], index: int) -> dict[str, Any]:
         """Build one context row."""
+        normalized = normalize_trade(trade, index + 1)
         symbol = symbol_full(str(trade.get("symbol", "")))
         opened_at = parse_time(trade.get("opened_at"))
         decision = nearest_before(self.debug_rows, symbol, opened_at, max_hours=24)
@@ -109,12 +117,18 @@ class TradeMarketContext:
             "symbol": symbol,
             "direction": str(trade.get("direction", "")).upper(),
             "status": str(trade.get("status", "")),
-            "result": trade_result(trade),
+            "result": normalized.get("result") or trade_result(trade),
             "opened_at": trade.get("opened_at", ""),
             "closed_at": trade.get("closed_at", ""),
-            "entry": trade.get("entry", ""),
-            "exit_price": trade.get("exit_price", ""),
-            "pnl": trade.get("pnl", ""),
+            "entry": normalized.get("entry", ""),
+            "stop_loss": normalized.get("stop_loss", ""),
+            "take_profit": normalized.get("take_profit", ""),
+            "exit_price": normalized.get("exit_price", ""),
+            "pnl_percent": normalized.get("pnl_percent", ""),
+            "pnl_r": normalized.get("pnl_r", ""),
+            "metrics_status": normalized.get("metrics_status", "INCOMPLETE"),
+            "incomplete_reasons": normalized.get("incomplete_reasons", ""),
+            "raw_pnl": normalized.get("raw_pnl", ""),
             "atr": candle.get("atr", ""),
             "momentum": diagnostics.get("momentum") or self.engine_status(decision, "momentum"),
             "directional_edge": decision.get("edge", ""),

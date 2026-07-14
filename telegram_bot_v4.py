@@ -20,6 +20,12 @@ from telegram.ext import (
     ContextTypes,
 )
 
+from adaptive_research.formatter import (
+    format_overview as format_adaptive_overview,
+    format_recommendations as format_adaptive_recommendations,
+    format_stages as format_adaptive_stages,
+    format_status as format_adaptive_status,
+)
 from config import RUN_INTERVAL
 from calibration_report import build_calibration_report, save_report
 from decision_diagnostics import DecisionDiagnostics
@@ -120,8 +126,12 @@ HYPOTHESIS_REPORT_FILE = BASE_DIR / "hypothesis_report.json"
 HYPOTHESIS_SUMMARY_FILE = BASE_DIR / "hypothesis_summary.txt"
 TRADE_REPLAY_REPORT_FILE = BASE_DIR / "trade_replay_report.json"
 TRADE_REPLAY_SUMMARY_FILE = BASE_DIR / "replay_summary.txt"
+SHADOW_REPLAY_REPORT_FILE = BASE_DIR / "shadow_replay_report.json"
+SHADOW_REPLAY_SUMMARY_FILE = BASE_DIR / "shadow_replay_summary.txt"
 RESEARCH_CONSENSUS_REPORT_FILE = BASE_DIR / "research_consensus_report.json"
 RESEARCH_ORCHESTRATOR_REPORT_FILE = BASE_DIR / "research_orchestrator_report.json"
+ADAPTIVE_RESEARCH_REPORT_FILE = BASE_DIR / "adaptive_research_report.json"
+ADAPTIVE_RESEARCH_STATE_FILE = BASE_DIR / "adaptive_research_state.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -2346,10 +2356,114 @@ def format_lab(args: List[str]) -> str:
     return "\n".join(lines).rstrip("────────────").rstrip()
 
 
+def format_shadow_replay_overview(report: Mapping[str, Any]) -> str:
+    """Format the execution-aware Shadow Replay v2 overview."""
+    sample = report.get("sample", {})
+    metrics = report.get("metrics", {})
+    ideal = metrics.get("ideal_all", {})
+    effective = metrics.get("effective_portfolio", {})
+    execution = report.get("execution_quality", {})
+    return "\n".join([
+        "🔁 Shadow Replay v2",
+        "",
+        f"Статус: {report.get('status', 'INSUFFICIENT_DATA')}",
+        f"Сделки: {effective.get('trades', 0)}",
+        f"Effective PF: {safe_float(effective.get('profit_factor')):.4f}",
+        f"Ideal PF: {safe_float(ideal.get('profit_factor')):.4f}",
+        f"Effective Net R: {safe_float(effective.get('net_r')):+.4f}",
+        f"Ideal Net R: {safe_float(ideal.get('net_r')):+.4f}",
+        f"Average Fee: {safe_float(execution.get('average_fee_r')):.4f} R",
+        (
+            "Average Slippage: "
+            f"{safe_float(execution.get('average_slippage_impact_r')):+.4f} R"
+        ),
+        f"Average Delay: {safe_float(execution.get('average_delay_seconds')):.2f} сек",
+        "",
+        str(report.get("recommendation", "Продолжать Shadow Research.")),
+        "",
+        (
+            "Полные R-метрики: "
+            f"{sample.get('complete_metrics_total', 0)} / "
+            f"{sample.get('closed_trades_total', 0)}"
+        ),
+        "/replay details",
+        "",
+        "Replay не влияет на LIVE.",
+    ])
+
+
+def format_shadow_replay_details(report: Mapping[str, Any]) -> str:
+    """Format execution impacts, portfolio limits and latency scenarios."""
+    metrics = report.get("metrics", {})
+    impact = metrics.get("impact", {})
+    execution = report.get("execution_quality", {})
+    portfolio = report.get("portfolio", {})
+    lines = [
+        "🔁 Shadow Replay / Детали",
+        "",
+        f"Execution Quality: {execution.get('status', 'N/A')}",
+        f"Комиссии: {safe_float(impact.get('fee_impact_r')):+.4f} R",
+        f"Slippage: {safe_float(impact.get('slippage_impact_r')):+.4f} R",
+        f"Funding: {safe_float(impact.get('funding_impact_r')):+.4f} R",
+        f"Latency: {safe_float(impact.get('latency_impact_r')):+.4f} R",
+        (
+            "Общее влияние исполнения: "
+            f"{safe_float(impact.get('total_execution_impact_r')):+.4f} R"
+        ),
+        "",
+        "Replay Portfolio",
+        f"Исполнено: {portfolio.get('trades_executed', 0)}",
+        f"Пропущено: {portfolio.get('trades_skipped', 0)}",
+        (
+            "Максимальный риск: "
+            f"{safe_float(portfolio.get('max_risk_used_pct')):.2f}%"
+        ),
+        f"Correlation warnings: {portfolio.get('correlation_warning_count', 0)}",
+        "",
+        "Latency scenarios",
+    ]
+    for scenario in report.get("latency_scenarios", []):
+        if not isinstance(scenario, Mapping):
+            continue
+        result = scenario.get("effective_portfolio", {})
+        lines.append(
+            f"{scenario.get('latency_seconds', 0)} сек: "
+            f"PF {safe_float(result.get('profit_factor')):.4f}, "
+            f"Net R {safe_float(result.get('net_r')):+.4f}"
+        )
+    lines.extend([
+        "",
+        "Все параметры являются research-assumptions.",
+        "LIVE-логика не изменялась.",
+    ])
+    return "\n".join(lines)
+
+
 def format_replay(args: List[str] | None = None) -> str:
-    """Format ready Trade Replay Lab reports without running Replay."""
+    """Format ready Shadow Replay v2, with legacy drill-down compatibility."""
     args = args or []
     command = args[0].strip().lower() if args else ""
+    shadow_report = read_json(SHADOW_REPLAY_REPORT_FILE)
+    if command in {"", "details", "summary"}:
+        if not shadow_report:
+            return (
+                "🔁 Shadow Replay v2\n\n"
+                "Готовый отчёт пока отсутствует.\n"
+                "Запуск из терминала:\n"
+                "venv/bin/python shadow_replay.py"
+            )
+        if command == "details":
+            return format_shadow_replay_details(shadow_report)
+        if command == "summary":
+            try:
+                text = SHADOW_REPLAY_SUMMARY_FILE.read_text(
+                    encoding="utf-8"
+                ).strip()
+            except OSError:
+                text = ""
+            return text or format_shadow_replay_overview(shadow_report)
+        return format_shadow_replay_overview(shadow_report)
+
     report = read_json(TRADE_REPLAY_REPORT_FILE)
     if not report:
         return (
@@ -2358,12 +2472,6 @@ def format_replay(args: List[str] | None = None) -> str:
             "Запуск из терминала:\n"
             "venv/bin/python trade_replay_lab/replay_runner.py"
         )
-    if command == "summary":
-        try:
-            text = TRADE_REPLAY_SUMMARY_FILE.read_text(encoding="utf-8").strip()
-        except OSError:
-            text = ""
-        return text or format_replay_overview(report)
     if command == "patterns":
         return format_replay_patterns(report)
 
@@ -2516,6 +2624,36 @@ def format_consensus(args: List[str] | None = None) -> str:
     return format_consensus_overview(report)
 
 
+def format_adaptive(args: List[str] | None = None) -> str:
+    """Format ready Adaptive Research artifacts without running the pipeline."""
+    report = read_json(ADAPTIVE_RESEARCH_REPORT_FILE)
+    state = read_json(ADAPTIVE_RESEARCH_STATE_FILE)
+    if not report:
+        return (
+            "🧠 Adaptive Research\n\n"
+            "Готовый отчёт пока отсутствует.\n"
+            "Запуск из терминала:\n"
+            "venv/bin/python adaptive_research.py"
+        )
+    command = args[0].strip().lower() if args else ""
+    if command == "status":
+        return format_adaptive_status(report, state)
+    if command in {"recommendation", "recommendations"}:
+        return format_adaptive_recommendations(report)
+    if command == "stages":
+        return format_adaptive_stages(report)
+    if command:
+        return (
+            "🧠 Adaptive Research\n\n"
+            "Использование:\n"
+            "/adaptive\n"
+            "/adaptive status\n"
+            "/adaptive recommendations\n"
+            "/adaptive stages"
+        )
+    return format_adaptive_overview(report)
+
+
 def format_dashboard(args: Optional[List[str]] = None) -> str:
     """Format the Live Dashboard Core screen."""
     section = args[0] if args else "overview"
@@ -2638,6 +2776,7 @@ def help_text() -> str:
             "/lab duplicate|volatility|compare|current|quality",
             "/replay last|BTC|summary|patterns",
             "/consensus momentum|edge|news|summary",
+            "/adaptive status|recommendations|stages",
         ]
     )
 
@@ -2903,6 +3042,13 @@ async def consensus_command(
     await reply(update, format_consensus(context.args))
 
 
+async def adaptive_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_adaptive(context.args))
+
+
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle inline keyboard callbacks."""
     query = update.callback_query
@@ -3027,6 +3173,7 @@ def build_app():
     app.add_handler(CommandHandler("lab", lab_command))
     app.add_handler(CommandHandler("replay", replay_command))
     app.add_handler(CommandHandler("consensus", consensus_command))
+    app.add_handler(CommandHandler("adaptive", adaptive_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app

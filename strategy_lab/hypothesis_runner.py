@@ -12,6 +12,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from market_intelligence_utils import safe_float, utc_now  # noqa: E402
+from report_metadata import build_report_metadata, timestamp_bounds  # noqa: E402
+from trade_metrics_normalizer import (  # noqa: E402
+    aggregate_trade_metrics,
+    read_trade_rows,
+)
 from strategy_lab.engine import StrategyLabEngine  # noqa: E402
 from strategy_lab.hypotheses.base import ResearchHypothesis  # noqa: E402
 from strategy_lab.hypothesis_metrics import (  # noqa: E402
@@ -110,8 +115,37 @@ def build_report(key: str = "") -> dict[str, Any]:
         )
     ranking = ranked_metrics(metrics)
     leader = eligible_leader(metrics, baseline)
+    generated_at = utc_now()
+    period_start, period_end = timestamp_bounds(
+        opportunities,
+        fields=("timestamp", "opened_at", "closed_at"),
+    )
+    canonical_metrics = aggregate_trade_metrics(
+        read_trade_rows(PROJECT_ROOT / "trades.csv")
+    )
     report = {
-        "generated_at": utc_now(),
+        "generated_at": generated_at,
+        "metadata": {
+            **build_report_metadata(
+                generator="strategy_lab.hypothesis_runner",
+                generator_version="1.0",
+                metric_unit="R",
+                source_files=[PROJECT_ROOT / "trades.csv"],
+                base_dir=PROJECT_ROOT,
+                data_period_start=period_start,
+                data_period_end=period_end,
+                closed_trades_total=canonical_metrics.get("closed_trades", 0),
+                complete_metrics_total=canonical_metrics.get("metrics_trades", 0),
+                generated_at=generated_at,
+            ),
+            "freshness_ttl_hours": 24,
+            "context_sources": [
+                "decision_debug.csv",
+                "decision_diagnostics.csv",
+                "news_trade_memory.csv",
+                "ohlcv_cache/*.csv",
+            ],
+        },
         "mode": "Shadow Research",
         "status": "OK" if opportunities else "NO_DATA",
         "key": key or "all",

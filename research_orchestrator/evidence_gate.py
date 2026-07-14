@@ -160,6 +160,53 @@ class EvidenceBuilder:
                 notes="Replay-наблюдение; не является LIVE-рекомендацией.",
             ))
 
+        shadow_replay = payloads.get("shadow_replay_report", {})
+        shadow_sample = shadow_replay.get("sample", {})
+        shadow_metrics = shadow_replay.get("metrics", {})
+        if isinstance(shadow_metrics, Mapping) and shadow_metrics:
+            ideal = shadow_metrics.get("ideal_all", {})
+            effective = shadow_metrics.get("effective_portfolio", {})
+            impact = shadow_metrics.get("impact", {})
+            if isinstance(ideal, Mapping) and isinstance(effective, Mapping):
+                ideal_pf = safe_float(ideal.get("profit_factor"))
+                effective_pf = safe_float(effective.get("profit_factor"))
+                ideal_net = safe_float(ideal.get("net_r"))
+                effective_net = safe_float(effective.get("net_r"))
+                if effective_pf < ideal_pf or effective_net < ideal_net:
+                    direction = "CONTRADICTS"
+                elif effective_pf > ideal_pf and effective_net > ideal_net:
+                    direction = "SUPPORTS"
+                else:
+                    direction = "NEUTRAL"
+                sample_size = safe_int(
+                    shadow_sample.get("complete_metrics_total")
+                    if isinstance(shadow_sample, Mapping)
+                    else effective.get("trades")
+                )
+                evidence.append(self._make(
+                    source="shadow_replay_report",
+                    category="EXECUTION",
+                    hypothesis="Execution Realism",
+                    metric="ideal_vs_effective_r",
+                    value={
+                        "ideal_profit_factor": ideal_pf,
+                        "effective_profit_factor": effective_pf,
+                        "ideal_net_r": ideal_net,
+                        "effective_net_r": effective_net,
+                        "execution_impact_r": (
+                            impact.get("total_execution_impact_r")
+                            if isinstance(impact, Mapping)
+                            else None
+                        ),
+                    },
+                    sample_size=sample_size,
+                    direction=direction,
+                    notes=(
+                        "Shadow Replay v2: комиссии, slippage, funding, "
+                        "latency и portfolio capacity; только research."
+                    ),
+                ))
+
         consensus = payloads.get("research_consensus_report", {})
         ranking = consensus.get("ranking", [])
         for row in ranking if isinstance(ranking, list) else []:

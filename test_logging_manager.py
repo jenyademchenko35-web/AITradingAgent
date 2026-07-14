@@ -16,25 +16,71 @@ class BestSetupCycleTest(TestCase):
             {
                 "timestamp": "2026-07-13T10:00:05+00:00",
                 "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "cycle_id": "old-cycle",
+                "stage": "EXECUTION",
+                "trend": "FAIL",
+                "primary_blocker": "Trend",
+            },
+            {
+                "timestamp": "2026-07-13T11:00:04+00:00",
+                "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "cycle_id": "current-cycle",
+                "stage": "FINAL_FILTERS",
                 "trend": "FAIL",
                 "primary_blocker": "Trend",
             },
             {
                 "timestamp": "2026-07-13T11:00:05+00:00",
                 "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "cycle_id": "current-cycle",
+                "stage": "EXECUTION",
                 "trend": "PASS",
+            },
+            {
+                "timestamp": "2026-07-13T11:00:07+00:00",
+                "symbol": "BTC/USDT",
+                "direction": "SHORT",
+                "cycle_id": "current-cycle",
+                "stage": "EXECUTION",
+                "trend": "FAIL",
+                "primary_blocker": "Trend",
             },
         ]
         explanations = [
             {
                 "timestamp": "2026-07-13T10:00:06+00:00",
                 "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "cycle_id": "old-cycle",
+                "stage": "EXECUTION",
+                "failed_filters": "Trend",
+            },
+            {
+                "timestamp": "2026-07-13T11:00:04+00:00",
+                "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "cycle_id": "current-cycle",
+                "stage": "FINAL_FILTERS",
                 "failed_filters": "Trend",
             },
             {
                 "timestamp": "2026-07-13T11:00:06+00:00",
                 "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "cycle_id": "current-cycle",
+                "stage": "EXECUTION",
                 "failed_filters": "",
+            },
+            {
+                "timestamp": "2026-07-13T11:00:07+00:00",
+                "symbol": "BTC/USDT",
+                "direction": "SHORT",
+                "cycle_id": "current-cycle",
+                "stage": "EXECUTION",
+                "failed_filters": "Trend",
             },
         ]
         started = "2026-07-13T11:00:00+00:00"
@@ -42,6 +88,9 @@ class BestSetupCycleTest(TestCase):
 
         match = failed_filters_match(
             "BTC/USDT",
+            direction="LONG",
+            cycle_id="current-cycle",
+            stage="EXECUTION",
             cycle_started_at=started,
             cycle_finished_at=finished,
             diagnostics_rows=diagnostics,
@@ -59,6 +108,14 @@ class BestSetupCycleTest(TestCase):
             long_total=23,
             short_total=5,
             summary="current cycle",
+            raw_signal_status="WATCH",
+            final_filter_status="PASSED",
+            execution_status="ELIGIBLE",
+            failed_filters=[],
+            veto_reasons=[],
+            cycle_id="current-cycle",
+            decision_timestamp="",
+            stage="EXECUTION",
         )
 
         def rows_for(path):
@@ -77,4 +134,3 @@ class BestSetupCycleTest(TestCase):
         rendered = output.getvalue()
         self.assertIn("Match quality: SAME_CYCLE", rendered)
         self.assertNotIn("Не хватает Trend", rendered)
-
