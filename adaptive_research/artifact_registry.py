@@ -36,6 +36,7 @@ ARTIFACT_SPECS = (
     ArtifactSpec("lab", "hypothesis_report.json", "1.0", ("R",), 24, True, "strategy_lab/hypothesis_runner.py"),
     ArtifactSpec("orchestrator", "research_orchestrator_report.json", "1.0", ("R",), 24, False, "research_orchestrator.py"),
     ArtifactSpec("consensus", "research_consensus_report.json", "1.0", ("R",), 24, True, "research_consensus/consensus_engine.py"),
+    ArtifactSpec("news", "market_news_feed.json", "1.0", ("SENTIMENT", "CONTEXT"), 2, False, "market_news_observer.py"),
 )
 
 SPEC_BY_KEY = {spec.key: spec for spec in ARTIFACT_SPECS}
@@ -161,6 +162,11 @@ class ArtifactRegistry:
             status = "STALE"
         elif gate_result.status != "VALID":
             status = "IGNORED"
+        if spec.key == "news" and status == "CURRENT":
+            news_reasons = self._news_reasons(payload, metadata)
+            if news_reasons:
+                reasons.extend(news_reasons)
+                status = "STALE"
 
         record = ArtifactRecord(
             key=spec.key,
@@ -170,17 +176,66 @@ class ArtifactRegistry:
             reasons=list(dict.fromkeys(reasons)),
             schema=str(metadata.get("schema_version") or ""),
             freshness=status,
-            source="trades.csv",
+            source=(
+                "market_news_feed.json"
+                if spec.key == "news"
+                else "trades.csv"
+            ),
             version=str(metadata.get("generator_version") or ""),
             hash=report_hash,
             created_at=created_at,
             metric_unit=normalize_metric_unit(metadata.get("metric_unit")),
-            source_trade_hash=self.fingerprint.trade_hash,
-            trade_count=self.fingerprint.trade_count,
+            source_trade_hash=(
+                "" if spec.key == "news" else self.fingerprint.trade_hash
+            ),
+            trade_count=(
+                0 if spec.key == "news" else self.fingerprint.trade_count
+            ),
             age_hours=gate_result.age_hours,
             payload=payload,
         )
         return record
+
+    def _news_reasons(
+        self,
+        payload: Mapping[str, Any],
+        metadata: Mapping[str, Any],
+    ) -> list[str]:
+        """Reject stale Shadow News without ever running its fetcher."""
+        reasons: list[str] = []
+        observer_status = str(
+            payload.get("status") or metadata.get("status") or ""
+        ).strip().upper()
+        if observer_status not in {"OK", "PARTIAL"}:
+            reasons.append(
+                f"news observer status={observer_status or 'UNKNOWN'}"
+            )
+        summary = payload.get("summary", {})
+        recent = summary.get("recent_24h", 0) if isinstance(summary, Mapping) else 0
+        if self._safe_int(metadata.get("news_24h") or recent) <= 0:
+            reasons.append("news_24h=0")
+        last_success = self._parse_timestamp(
+            metadata.get("last_success_at")
+            or payload.get("last_success_at")
+        )
+        if last_success is None:
+            reasons.append("last_success_at отсутствует")
+        elif (self.now - last_success).total_seconds() > 2 * 3600:
+            reasons.append("news feed старше 2 часов")
+        return reasons
+
+    @staticmethod
+    def _parse_timestamp(value: Any) -> datetime | None:
+        text = str(value or "").strip()
+        if not text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
 
     def accepted_payloads(self) -> dict[str, dict[str, Any]]:
         """Return payloads that passed every research gate."""
@@ -262,10 +317,18 @@ class ArtifactRegistry:
             accepted=False,
             reasons=reasons,
             freshness=status,
-            source="trades.csv",
+            source=(
+                "market_news_feed.json"
+                if spec.key == "news"
+                else "trades.csv"
+            ),
             hash=sha256_file(path),
-            source_trade_hash=self.fingerprint.trade_hash,
-            trade_count=self.fingerprint.trade_count,
+            source_trade_hash=(
+                "" if spec.key == "news" else self.fingerprint.trade_hash
+            ),
+            trade_count=(
+                0 if spec.key == "news" else self.fingerprint.trade_count
+            ),
             payload=payload,
         )
 

@@ -284,7 +284,57 @@ class EvidenceBuilder:
                 ),
             ))
 
+        news_feed = payloads.get("market_news_feed", {})
+        if news_feed:
+            evidence.append(self.build_news_context(news_feed, accepted=True))
+
         return evidence, candidates, baseline
+
+    def build_news_context(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        accepted: bool,
+        reasons: Iterable[str] = (),
+    ) -> Evidence:
+        """Build neutral Shadow News context or an insufficient marker."""
+        summary = payload.get("summary", {})
+        metadata = payload.get("metadata", {})
+        summary = summary if isinstance(summary, Mapping) else {}
+        metadata = metadata if isinstance(metadata, Mapping) else {}
+        news_24h = safe_int(
+            metadata.get("news_24h") or summary.get("recent_24h")
+        )
+        observer_status = str(
+            payload.get("status") or metadata.get("status") or "UNKNOWN"
+        ).upper()
+        direction = "NEUTRAL" if accepted else "INSUFFICIENT"
+        reason_text = "; ".join(str(item) for item in reasons if item)
+        return self._make(
+            source="market_news_feed",
+            category="NEWS",
+            hypothesis="News Context",
+            metric="shadow_news_context",
+            value={
+                "status": observer_status,
+                "market_sentiment": summary.get(
+                    "market_sentiment", "NEUTRAL"
+                ),
+                "news_24h": news_24h,
+                "high_critical_risk": summary.get(
+                    "high_critical_risk", 0
+                ),
+            },
+            sample_size=news_24h,
+            direction=direction,
+            notes=(
+                "Shadow News Advisor: только контекст, без влияния на LIVE."
+                if accepted
+                else f"Новостной feed исключён: {reason_text or observer_status}."
+            ),
+            freshness_status="VALID" if accepted else "STALE",
+            quality_status="VALID" if accepted else "INSUFFICIENT",
+        )
 
     def _make(
         self,
@@ -297,6 +347,8 @@ class EvidenceBuilder:
         sample_size: int,
         direction: str,
         notes: str,
+        freshness_status: str = "VALID",
+        quality_status: str = "VALID",
     ) -> Evidence:
         self._counter += 1
         digest = hashlib.sha1(
@@ -311,8 +363,8 @@ class EvidenceBuilder:
             value=value,
             sample_size=sample_size,
             confidence=confidence_level(sample_size),
-            freshness_status="VALID",
-            quality_status="VALID",
+            freshness_status=freshness_status,
+            quality_status=quality_status,
             direction=direction,
             notes=notes,
         )

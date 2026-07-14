@@ -70,7 +70,15 @@ class ResearchOrchestrator:
                 "; ".join(record.reasons) or "none",
             )
 
-        evidence, candidates, baseline = EvidenceBuilder().build(payloads)
+        evidence_builder = EvidenceBuilder()
+        evidence, candidates, baseline = evidence_builder.build(payloads)
+        news_record = records.get("market_news_feed")
+        if news_record is not None and not news_record.accepted:
+            evidence.append(evidence_builder.build_news_context(
+                news_record.payload,
+                accepted=False,
+                reasons=news_record.reasons,
+            ))
         critical_quality = self._critical_data_quality(payloads, records)
         assessments = EvidenceGate().assess_all(
             candidates,

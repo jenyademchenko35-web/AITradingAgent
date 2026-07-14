@@ -154,6 +154,11 @@ class ArtifactRegistry:
             result = gate.validate(spec, payload, metadata)
             status = result.status
             reasons = list(result.reasons)
+            if spec.artifact_name == "market_news_feed" and status == "VALID":
+                news_reasons = self._news_evidence_reasons(payload, metadata)
+                if news_reasons:
+                    status = "STALE"
+                    reasons.extend(news_reasons)
 
         generated_at = str(
             metadata.get("generated_at")
@@ -177,6 +182,63 @@ class ArtifactRegistry:
             ),
             age_hours=result.age_hours if result else None,
         )
+
+    def _news_evidence_reasons(
+        self,
+        payload: Mapping[str, Any],
+        metadata: Mapping[str, Any],
+    ) -> list[str]:
+        """Return reasons why the ready news feed is not current evidence."""
+        reasons: list[str] = []
+        observer_status = str(
+            payload.get("status") or metadata.get("status") or ""
+        ).strip().upper()
+        if observer_status not in {"OK", "PARTIAL"}:
+            reasons.append(
+                f"news observer status={observer_status or 'UNKNOWN'}"
+            )
+
+        summary = payload.get("summary", {})
+        summary_count = (
+            summary.get("recent_24h", 0)
+            if isinstance(summary, Mapping)
+            else 0
+        )
+        news_24h = self._safe_int(
+            metadata.get("news_24h") or summary_count
+        )
+        if news_24h <= 0:
+            reasons.append("news_24h=0")
+
+        last_success = self._parse_timestamp(
+            metadata.get("last_success_at")
+            or payload.get("last_success_at")
+        )
+        if last_success is None:
+            reasons.append("last_success_at отсутствует")
+        else:
+            age_hours = max(
+                0.0,
+                (self.now - last_success).total_seconds() / 3600.0,
+            )
+            if age_hours > 2:
+                reasons.append(
+                    f"news feed age {age_hours:.2f}h exceeds 2.00h"
+                )
+        return reasons
+
+    @staticmethod
+    def _parse_timestamp(value: Any) -> datetime | None:
+        text = str(value or "").strip()
+        if not text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
 
     @staticmethod
     def _read_json(path: Path) -> tuple[dict[str, Any], str, list[str]]:

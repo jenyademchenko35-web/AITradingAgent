@@ -37,6 +37,7 @@ from live_monitor.formatters import (
     state_age_text as live_state_age_text,
 )
 from notification_manager import save_chat_id
+from news_observer.formatter import format_telegram as format_news_v2
 from research_consensus.consensus_formatter import (
     format_group as format_consensus_group,
     format_overview as format_consensus_overview,
@@ -114,6 +115,8 @@ POST_TRADE_SUMMARY_FILE = BASE_DIR / "post_trade_analysis_summary.txt"
 POST_TRADE_TRADES_FILE = BASE_DIR / "post_trade_analysis_trades.csv"
 MARKET_NEWS_FILE = BASE_DIR / "market_news_feed.json"
 MARKET_NEWS_SUMMARY_FILE = BASE_DIR / "market_news_summary.txt"
+MARKET_NEWS_SOURCES_FILE = BASE_DIR / "market_news_sources.json"
+MARKET_NEWS_HEALTH_FILE = BASE_DIR / "market_news_health.json"
 MARKET_HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
 MARKET_INTELLIGENCE_FILE = BASE_DIR / "market_intelligence_report.json"
 MARKET_INTELLIGENCE_SUMMARY_FILE = BASE_DIR / "market_intelligence_summary.txt"
@@ -254,7 +257,14 @@ def news_human_age(seconds: float) -> str:
 def news_last_update() -> Optional[datetime]:
     """Return last real news update time from JSON generated_at or file mtime."""
     report = read_json(MARKET_NEWS_FILE)
-    generated_at = parse_time(str(report.get("generated_at", "")))
+    metadata = report.get("metadata", {})
+    metadata = metadata if isinstance(metadata, Mapping) else {}
+    generated_at = parse_time(str(
+        metadata.get("last_success_at")
+        or report.get("last_success_at")
+        or metadata.get("generated_at")
+        or report.get("generated_at", "")
+    ))
     if generated_at:
         return generated_at
     candidates = [
@@ -270,6 +280,9 @@ def news_last_update() -> Optional[datetime]:
 def news_freshness() -> Dict[str, Any]:
     """Build Telegram freshness metadata for market news."""
     updated_at = news_last_update()
+    observer_status = str(
+        read_json(MARKET_NEWS_FILE).get("status", "NO_DATA")
+    ).upper()
     if updated_at is None:
         return {
             "updated_text": "нет данных",
@@ -287,7 +300,11 @@ def news_freshness() -> Dict[str, Any]:
     else:
         next_update = f"примерно через {(remaining + 59) // 60} мин"
     warning = ""
-    if age_seconds >= NEWS_STALE_SECONDS:
+    if observer_status == "STALE":
+        warning = "🔴 News data: STALE"
+    elif observer_status in {"NO_DATA", "FAILED"}:
+        warning = "🔴 Свежих новостных данных нет"
+    elif age_seconds >= NEWS_STALE_SECONDS:
         warning = "🔴 Новости устарели"
     elif age_seconds >= NEWS_WARNING_SECONDS:
         warning = "⚠️ Новости могли устареть"
@@ -1987,50 +2004,23 @@ def format_daily_report() -> str:
     return "\n".join(lines)
 
 
-def format_news() -> str:
-    """Format market news observer output for Telegram."""
-    if not MARKET_NEWS_FILE.exists() or MARKET_NEWS_FILE.stat().st_size == 0:
-        error = run_readonly_module("market_news_observer.py", "--offline")
-        if error:
-            return f"📰 Новости рынка\n\n{error}"
-
+def format_news(section: str = "overview") -> str:
+    """Format a ready News Observer artifact without network or subprocesses."""
     report = read_json(MARKET_NEWS_FILE)
     if not report:
         return (
             "📰 Новости рынка\n\n"
-            "Файл market_news_feed.json пока отсутствует или повреждён.\n"
-            "Для обновления запусти: venv/bin/python market_news_observer.py"
+            "Готовый новостной feed пока отсутствует или повреждён.\n"
+            "News Observer обновит его в следующем цикле."
         )
-
-    summary = report.get("summary", {})
-    news_items = report.get("news", [])
-    lines = [
-        "📰 Новости рынка",
-        "",
-        f"Статус: {report.get('status', 'N/A')}",
-        f"Настроение: {summary.get('market_sentiment', 'Neutral')}",
-        f"Новостей за 24ч: {summary.get('recent_24h', 0)}",
-        "",
-        *news_freshness_lines(include_next=True),
-        "",
-        "Последние новости:",
-    ]
-    for item in news_items[:5]:
-        lines.append(
-            f"{item.get('coin', 'MARKET')} | {item.get('sentiment', 'Neutral')} "
-            f"{item.get('strength', 1)}/5"
-        )
-        lines.append(str(item.get("title", "Без заголовка"))[:160])
-    if not news_items:
-        lines.append("Пока нет загруженных новостей.")
-        lines.append("Обновление: venv/bin/python market_news_observer.py")
-    if report.get("warnings"):
-        lines.append("")
-        lines.append("Предупреждения:")
-        lines.extend(f"- {warning}" for warning in report["warnings"][:3])
-    lines.append("")
-    lines.append("Новости не влияют на сделки.")
-    return "\n".join(lines)
+    sources = read_json(MARKET_NEWS_SOURCES_FILE)
+    health = read_json(MARKET_NEWS_HEALTH_FILE)
+    return format_news_v2(
+        report,
+        section=(section or "overview").strip(),
+        health=health,
+        sources=sources,
+    )
 
 
 def format_heatmap() -> str:
@@ -2770,7 +2760,8 @@ def help_text() -> str:
             "/dashboard trading|live|news|lab|memory",
             "/blocked Momentum|Structure|Risk|Trend|ALL",
             "/research /experiments /calibration /quality",
-            "/news /heatmap /intelligence /memory BTC /context",
+            "/news sources|health|BTC|risks|stale",
+            "/heatmap /intelligence /memory BTC /context",
             "/live /live SOL /live trades /live setups /system",
             "/lab hypotheses|cooldown|trend|momentum|atr|news|edge",
             "/lab duplicate|volatility|compare|current|quality",
@@ -2962,7 +2953,8 @@ async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await reply(update, format_news())
+    section = context.args[0] if context.args else "overview"
+    await reply(update, format_news(section))
 
 
 async def heatmap_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

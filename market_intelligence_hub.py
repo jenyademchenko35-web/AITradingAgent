@@ -19,7 +19,6 @@ from market_intelligence_utils import (
     utc_now,
     write_json,
 )
-from market_news_observer import MarketNewsObserver
 from market_heatmap import MarketHeatmap
 from news_impact_advisor import NewsImpactAdvisor
 from news_statistics import NewsStatistics
@@ -78,7 +77,11 @@ class MarketIntelligenceHub:
             "status": "OK",
             "mode": "read-only market intelligence hub",
             "market": self.market_block(regime, news, heatmap),
-            "news_impact": self.news_impact_block(news_impact, news_stats),
+            "news_impact": self.news_impact_block(
+                news_impact,
+                news_stats,
+                news,
+            ),
             "signals": self.signal_block(heatmap, research, news_impact),
             "trades": self.trade_block(
                 loss,
@@ -159,10 +162,10 @@ class MarketIntelligenceHub:
 
     def ensure_reports(self) -> None:
         """Build lightweight dependent reports if possible."""
-        try:
-            MarketNewsObserver(fetch_enabled=False).build_report()
-        except Exception as exc:
-            self.warnings.append(f"News observer не построен: {exc}")
+        if not NEWS_FILE.exists():
+            self.warnings.append(
+                "News Observer ещё не создал готовый feed."
+            )
         try:
             TradeMarketContext().build_context()
         except Exception as exc:
@@ -195,7 +198,10 @@ class MarketIntelligenceHub:
         heatmap: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Build market status block."""
-        news_summary = news.get("summary", {})
+        raw_summary = news.get("summary", {})
+        news_summary = raw_summary if isinstance(raw_summary, Mapping) else {}
+        raw_metadata = news.get("metadata", {})
+        news_metadata = raw_metadata if isinstance(raw_metadata, Mapping) else {}
         raw_regime = MarketIntelligenceHub.extract_market_regime(regime)
         market_regime = (
             MarketIntelligenceHub.normalize_market_regime(raw_regime)
@@ -205,6 +211,13 @@ class MarketIntelligenceHub:
             "regime": market_regime,
             "news_sentiment": news_summary.get("market_sentiment", "Neutral"),
             "news_count_24h": news_summary.get("recent_24h", 0),
+            "news_data_status": str(
+                news.get("status", "NO_DATA")
+            ).upper(),
+            "news_last_success_at": news_metadata.get("last_success_at", ""),
+            "symbol_sentiment": news_summary.get(
+                "by_symbol", news_summary.get("by_coin", {})
+            ),
             "fear_greed": "",
         }
 
@@ -296,6 +309,7 @@ class MarketIntelligenceHub:
     def news_impact_block(
         news_impact: Mapping[str, Any],
         news_stats: Mapping[str, Any],
+        news_feed: Mapping[str, Any],
     ) -> dict[str, Any]:
         """Build News Risk block."""
         active = news_impact.get("active_ideas", [])
@@ -323,9 +337,36 @@ class MarketIntelligenceHub:
             }
             for row in sorted_active[:10]
         ]
+        feed_status = str(news_feed.get("status", "NO_DATA")).upper()
+        raw_feed_items = news_feed.get("news", [])
+        feed_items = raw_feed_items if isinstance(raw_feed_items, list) else []
+        feed_risks = [
+            {
+                "symbols": row.get("symbols", [row.get("coin", "MARKET")]),
+                "sentiment": row.get("sentiment", "NEUTRAL"),
+                "risk_score": row.get("risk_score", row.get("strength", 1)),
+                "importance": row.get("importance", "LOW"),
+                "title": row.get("title", ""),
+            }
+            for row in feed_items
+            if isinstance(row, Mapping)
+            and (
+                safe_float(row.get("risk_score"), 0.0) >= 60.0
+                or (
+                    safe_float(row.get("importance"), 0.0) >= 4.0
+                    and str(row.get("sentiment", "")).upper() == "BEARISH"
+                )
+            )
+        ][:10]
         return {
-            "shadow_advisor": "Активен" if news_impact else "Нет данных",
+            "shadow_advisor": (
+                "Активен"
+                if news_impact and feed_status in {"OK", "PARTIAL"}
+                else feed_status
+            ),
+            "feed_status": feed_status,
             "risk_rows": risk_rows,
+            "feed_risks": feed_risks,
             "strongest_news": news_impact.get("strongest_news", {}),
             "most_dangerous_news": news_impact.get("most_dangerous_news", {}),
             "statistics": news_stats.get("summary", {}),
@@ -483,6 +524,7 @@ class MarketIntelligenceHub:
             f"Рынок: {market.get('regime', 'Недостаточно данных')}",
             "Новости",
             str(market.get("news_sentiment", "Neutral")),
+            f"News data: {market.get('news_data_status', 'NO_DATA')}",
             "News Risk",
             ", ".join(risk_lines),
             "Последние новости",

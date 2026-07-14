@@ -27,6 +27,10 @@ confidence_sl_quality_d_dry_run.csv
 trade_close_notifications.json
 market_news_feed.json
 market_news_feed.csv
+market_news_history.csv
+market_news_sources.json
+market_news_health.json
+market_news_observer.log
 market_heatmap.csv
 trade_market_context.csv
 post_trade_intelligence.json
