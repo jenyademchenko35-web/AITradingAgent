@@ -156,6 +156,8 @@ class AdaptiveResearchPipelineTest(unittest.TestCase):
             state = json.loads((root / "adaptive_research_state.json").read_text())
             self.assertEqual(state["last_trade_count"], 2)
             self.assertTrue(state["last_trade_hash"])
+            self.assertTrue((root / "experiment_promotion_report.json").exists())
+            self.assertIn("promotion", state)
 
     def test_stage_failure_does_not_stop_following_stages(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

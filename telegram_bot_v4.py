@@ -135,6 +135,7 @@ RESEARCH_CONSENSUS_REPORT_FILE = BASE_DIR / "research_consensus_report.json"
 RESEARCH_ORCHESTRATOR_REPORT_FILE = BASE_DIR / "research_orchestrator_report.json"
 ADAPTIVE_RESEARCH_REPORT_FILE = BASE_DIR / "adaptive_research_report.json"
 ADAPTIVE_RESEARCH_STATE_FILE = BASE_DIR / "adaptive_research_state.json"
+EXPERIMENT_PROMOTION_REPORT_FILE = BASE_DIR / "experiment_promotion_report.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -2644,6 +2645,75 @@ def format_adaptive(args: List[str] | None = None) -> str:
     return format_adaptive_overview(report)
 
 
+def format_promotion(args: List[str] | None = None) -> str:
+    """Format the ready promotion report without running research modules."""
+    report = read_json(EXPERIMENT_PROMOTION_REPORT_FILE)
+    if not report:
+        return (
+            "🧪 Experiment Promotion\n\n"
+            "Готовый отчёт пока отсутствует.\n"
+            "Запуск из терминала:\n"
+            "venv/bin/python experiment_promotion_engine.py"
+        )
+    command = args[0].strip().lower() if args else ""
+    if command not in {"", "details"}:
+        return (
+            "🧪 Experiment Promotion\n\n"
+            "Использование:\n"
+            "/promotion\n"
+            "/promotion details"
+        )
+
+    candidates = list(report.get("candidates", []) or [])
+    promoted = list(report.get("promotion_candidates", []) or [])
+    lines = [
+        "🧪 Experiment Promotion",
+        "",
+        f"Статус: {report.get('status', 'INSUFFICIENT_DATA')}",
+        f"Закрытых сделок: {report.get('closed_trades_total', 0)} / "
+        f"{report.get('minimum_closed_trades', 50)}",
+        f"Кандидатов на A/B-тест: {len(promoted)}",
+        "",
+    ]
+    if not candidates:
+        lines.append("Совместимых гипотез пока нет.")
+    elif command == "details":
+        lines.append("Подробный рейтинг:")
+        for index, candidate in enumerate(candidates[:5], start=1):
+            lines.extend([
+                "",
+                f"{index}. {candidate.get('candidate', 'Без названия')}",
+                f"Confidence: {candidate.get('confidence', 0)}%",
+                f"Risk: {candidate.get('risk', 'HIGH')}",
+                f"Статус: {candidate.get('promotion_status', 'INSUFFICIENT_DATA')}",
+                "Причины за:",
+            ])
+            lines.extend(
+                f"+ {reason}"
+                for reason in list(candidate.get("reasons_for", []) or [])[:3]
+            )
+            lines.append("Причины против:")
+            lines.extend(
+                f"- {reason}"
+                for reason in list(candidate.get("reasons_against", []) or [])[:3]
+            )
+    else:
+        lines.append("Лучшие наблюдения:")
+        for index, candidate in enumerate(candidates[:5], start=1):
+            lines.append(
+                f"{index}. {candidate.get('candidate')} | "
+                f"Confidence {candidate.get('confidence', 0)}% | "
+                f"Risk {candidate.get('risk')}"
+            )
+    lines.extend([
+        "",
+        str(report.get("recommendation") or "Продолжить сбор статистики."),
+        "",
+        "Рекомендации не применяются к LIVE автоматически.",
+    ])
+    return "\n".join(lines)
+
+
 def format_dashboard(args: Optional[List[str]] = None) -> str:
     """Format the Live Dashboard Core screen."""
     section = args[0] if args else "overview"
@@ -2768,6 +2838,7 @@ def help_text() -> str:
             "/replay last|BTC|summary|patterns",
             "/consensus momentum|edge|news|summary",
             "/adaptive status|recommendations|stages",
+            "/promotion details",
         ]
     )
 
@@ -3041,6 +3112,13 @@ async def adaptive_command(
     await reply(update, format_adaptive(context.args))
 
 
+async def promotion_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_promotion(context.args))
+
+
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle inline keyboard callbacks."""
     query = update.callback_query
@@ -3166,6 +3244,7 @@ def build_app():
     app.add_handler(CommandHandler("replay", replay_command))
     app.add_handler(CommandHandler("consensus", consensus_command))
     app.add_handler(CommandHandler("adaptive", adaptive_command))
+    app.add_handler(CommandHandler("promotion", promotion_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app

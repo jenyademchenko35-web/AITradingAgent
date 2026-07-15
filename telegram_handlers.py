@@ -27,6 +27,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("replay", "🔁 Shadow Replay"),
     BotCommand("consensus", "🧠 Research Consensus"),
     BotCommand("adaptive", "🧠 Adaptive Research"),
+    BotCommand("promotion", "🧪 Promotion Engine"),
     BotCommand("research", "🔬 Research Orchestrator"),
     BotCommand("help", "❔ Помощь"),
 ]

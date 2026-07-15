@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from experiment_promotion_engine import ExperimentPromotionEngine
 from report_metadata import build_report_metadata
 
 from adaptive_research.artifact_registry import ArtifactRegistry
@@ -175,9 +176,34 @@ class AdaptiveResearchEngine:
             records=records,
             should_run=should_run,
         )
-        write_json_atomic(self.state_path, state)
         write_json_atomic(self.report_path, report)
         write_text_atomic(self.summary_path, format_summary(report))
+        promotion_state = dict(previous_state.get("promotion", {}))
+        if should_run and not source_changed_during_run:
+            try:
+                promotion = ExperimentPromotionEngine(self.base_dir).run()
+                promotion_state = {
+                    "status": promotion.get("status", "INSUFFICIENT_DATA"),
+                    "generated_at": promotion.get("generated_at", ""),
+                    "candidates": len(promotion.get("promotion_candidates", [])),
+                    "error": "",
+                }
+            except Exception as exc:  # noqa: BLE001 - isolate research stages
+                promotion_state = {
+                    "status": "ERROR",
+                    "generated_at": utc_now(),
+                    "candidates": 0,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+        elif not promotion_state:
+            promotion_state = {
+                "status": "SKIPPED",
+                "generated_at": "",
+                "candidates": 0,
+                "error": "входные артефакты не изменились",
+            }
+        state["promotion"] = promotion_state
+        write_json_atomic(self.state_path, state)
         return report
 
     def load_report(self) -> dict[str, Any]:
