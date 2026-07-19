@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from portfolio_manager import PortfolioManager
+from trade_registry import TradeRegistry
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -225,10 +226,7 @@ class StrategyReplayEngine:
         return status
 
     def _load_trade_profiles(self) -> list[Trade]:
-        trades_rows = [
-            row for row in _read_csv(self.base_dir / "trades.csv")
-            if str(row.get("result") or row.get("status", "")).upper() in {"WIN", "LOSS"}
-        ]
+        trades_rows = TradeRegistry(self.base_dir / "trades.csv").get_complete_trades()
         comparator_rows = _read_csv(self.base_dir / "trade_comparator.csv")
         pattern_report = _read_json(self.base_dir / "trade_pattern_discovery_report.json")
         profiles = pattern_report.get("profiles", [])

@@ -12,6 +12,12 @@ BOT_COMMANDS_V5 = [
     BotCommand("opportunities", "🎯 Возможности"),
     BotCommand("watchlist", "📋 Watchlist"),
     BotCommand("trades", "📂 Сделки"),
+    BotCommand("dataquality", "📋 Data Quality"),
+    BotCommand("portfolio", "📊 Portfolio"),
+    BotCommand("execution", "⚙️ Execution Simulator"),
+    BotCommand("lossanalysis", "🔎 Loss Attribution"),
+    BotCommand("quality", "📈 Signal Quality"),
+    BotCommand("decisionv2", "🧪 DecisionEngine v2"),
     BotCommand("stats", "📊 Статистика"),
     BotCommand("coach", "🧠 AI Coach"),
     BotCommand("settings", "⚙️ Settings"),
@@ -29,6 +35,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("adaptive", "🧠 Adaptive Research"),
     BotCommand("promotion", "🧪 Promotion Engine"),
     BotCommand("research", "🔬 Research Orchestrator"),
+    BotCommand("walkforward", "📈 Walk Forward"),
     BotCommand("help", "❔ Помощь"),
 ]
 

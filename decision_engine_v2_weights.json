@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "acceptance": {
+    "minimum_calibrated_confidence": 80.0,
+    "minimum_calibrated_score": 25.0
+  },
+  "confidence_calibration": {
+    "weak_separation_penalty": -2.5,
+    "high_confidence_penalty": -0.5,
+    "winning_losing_gap_reference": 5.0
+  },
+  "predictive_power_multipliers": {
+    "NONE": 0.25,
+    "LOW": 0.5,
+    "MEDIUM": 0.75,
+    "HIGH": 1.0
+  },
+  "score_adjustments": {
+    "hour_07": -1.0,
+    "quality_B": -0.75,
+    "score_25_26": -0.5,
+    "confidence_90_plus": -0.5,
+    "weekday_Monday": -0.25,
+    "weekday_Tuesday": -0.25,
+    "symbol_SOL": -0.25
+  },
+  "limits": {
+    "maximum_absolute_confidence_change": 5.0,
+    "maximum_absolute_score_change": 3.0
+  }
+}

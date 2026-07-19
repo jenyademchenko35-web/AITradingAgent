@@ -1,0 +1,752 @@
+{
+  "generated_at": "2026-07-19T17:11:53.707259+00:00",
+  "status": "OK",
+  "mode": "SHADOW_RESEARCH_ONLY",
+  "sample": {
+    "closed_trades_total": 42,
+    "complete_metrics_total": 38,
+    "incomplete_metrics_total": 3,
+    "invalid_trades_total": 1,
+    "complete_opportunities": 38,
+    "windows": 3,
+    "test_size": null,
+    "minimum_train_size": null,
+    "chronological_split": true,
+    "random_shuffle": false
+  },
+  "candidate_sources": [
+    "hypothesis_report.json",
+    "research_orchestrator_report.json",
+    "adaptive_research_report.json"
+  ],
+  "hypotheses_count": 6,
+  "verdict_counts": {
+    "READY_FOR_AB": 0,
+    "CONTINUE_RESEARCH": 6,
+    "REJECT": 0
+  },
+  "best": {
+    "hypothesis": "News Veto",
+    "group": "news",
+    "windows": 3,
+    "window_results": [
+      {
+        "window": 1,
+        "train": {
+          "start": "2026-06-27T14:26:20.413799",
+          "end": "2026-07-01T15:24:02.821700",
+          "opportunities": 17,
+          "profit_factor": 0.390458,
+          "winrate": 17.65,
+          "net_r": -10.578402,
+          "drawdown_r": 10.578402,
+          "trades": 17,
+          "average_rr": 2.0,
+          "skipped": 0
+        },
+        "test": {
+          "start": "2026-07-02T15:34:55.567557",
+          "end": "2026-07-12T19:15:22.757539",
+          "opportunities": 7,
+          "profit_factor": 0.203884,
+          "winrate": 16.67,
+          "net_r": -10.082468,
+          "drawdown_r": 10.082468,
+          "trades": 6,
+          "average_rr": 2.0,
+          "skipped": 1
+        }
+      },
+      {
+        "window": 2,
+        "train": {
+          "start": "2026-06-27T14:26:20.413799",
+          "end": "2026-07-12T19:15:22.757539",
+          "opportunities": 24,
+          "profit_factor": 0.311746,
+          "winrate": 17.39,
+          "net_r": -20.66087,
+          "drawdown_r": 20.66087,
+          "trades": 23,
+          "average_rr": 2.0,
+          "skipped": 1
+        },
+        "test": {
+          "start": "2026-07-12T19:15:25.356153",
+          "end": "2026-07-16T12:39:35.808445",
+          "opportunities": 7,
+          "profit_factor": 0.140187,
+          "winrate": 14.29,
+          "net_r": -16.574239,
+          "drawdown_r": 19.276573,
+          "trades": 7,
+          "average_rr": 2.0,
+          "skipped": 0
+        }
+      },
+      {
+        "window": 3,
+        "train": {
+          "start": "2026-06-27T14:26:20.413799",
+          "end": "2026-07-16T12:39:35.808445",
+          "opportunities": 31,
+          "profit_factor": 0.24466,
+          "winrate": 16.67,
+          "net_r": -37.235109,
+          "drawdown_r": 37.235109,
+          "trades": 30,
+          "average_rr": 2.0,
+          "skipped": 1
+        },
+        "test": {
+          "start": "2026-07-16T19:01:54.245613",
+          "end": "2026-07-17T23:25:44.993413",
+          "opportunities": 7,
+          "profit_factor": 0.749234,
+          "winrate": 28.57,
+          "net_r": -1.490466,
+          "drawdown_r": 3.874985,
+          "trades": 7,
+          "average_rr": 2.0,
+          "skipped": 0
+        }
+      }
+    ],
+    "average_pf": 0.364435,
+    "worst_pf": 0.140187,
+    "best_pf": 0.749234,
+    "average_net_r": -9.382391,
+    "pf_stddev": 0.273334,
+    "net_r_stddev": 6.17779,
+    "total_test_trades": 20,
+    "stability_score": 21,
+    "stability": "Unstable",
+    "confidence": "LOW",
+    "verdict": "CONTINUE_RESEARCH",
+    "recommendation": "Continue Shadow Research"
+  },
+  "hypotheses": [
+    {
+      "hypothesis": "News Veto",
+      "group": "news",
+      "windows": 3,
+      "window_results": [
+        {
+          "window": 1,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-01T15:24:02.821700",
+            "opportunities": 17,
+            "profit_factor": 0.390458,
+            "winrate": 17.65,
+            "net_r": -10.578402,
+            "drawdown_r": 10.578402,
+            "trades": 17,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-02T15:34:55.567557",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 7,
+            "profit_factor": 0.203884,
+            "winrate": 16.67,
+            "net_r": -10.082468,
+            "drawdown_r": 10.082468,
+            "trades": 6,
+            "average_rr": 2.0,
+            "skipped": 1
+          }
+        },
+        {
+          "window": 2,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 24,
+            "profit_factor": 0.311746,
+            "winrate": 17.39,
+            "net_r": -20.66087,
+            "drawdown_r": 20.66087,
+            "trades": 23,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-12T19:15:25.356153",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 7,
+            "profit_factor": 0.140187,
+            "winrate": 14.29,
+            "net_r": -16.574239,
+            "drawdown_r": 19.276573,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 3,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 31,
+            "profit_factor": 0.24466,
+            "winrate": 16.67,
+            "net_r": -37.235109,
+            "drawdown_r": 37.235109,
+            "trades": 30,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-16T19:01:54.245613",
+            "end": "2026-07-17T23:25:44.993413",
+            "opportunities": 7,
+            "profit_factor": 0.749234,
+            "winrate": 28.57,
+            "net_r": -1.490466,
+            "drawdown_r": 3.874985,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        }
+      ],
+      "average_pf": 0.364435,
+      "worst_pf": 0.140187,
+      "best_pf": 0.749234,
+      "average_net_r": -9.382391,
+      "pf_stddev": 0.273334,
+      "net_r_stddev": 6.17779,
+      "total_test_trades": 20,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "verdict": "CONTINUE_RESEARCH",
+      "recommendation": "Continue Shadow Research"
+    },
+    {
+      "hypothesis": "Trend Alignment",
+      "group": "trend",
+      "windows": 3,
+      "window_results": [
+        {
+          "window": 1,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-01T15:24:02.821700",
+            "opportunities": 17,
+            "profit_factor": 0.390458,
+            "winrate": 17.65,
+            "net_r": -10.578402,
+            "drawdown_r": 10.578402,
+            "trades": 17,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-02T15:34:55.567557",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 7,
+            "profit_factor": 0.187674,
+            "winrate": 16.67,
+            "net_r": -11.176322,
+            "drawdown_r": 11.176322,
+            "trades": 6,
+            "average_rr": 2.0,
+            "skipped": 1
+          }
+        },
+        {
+          "window": 2,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 24,
+            "profit_factor": 0.300786,
+            "winrate": 17.39,
+            "net_r": -21.754724,
+            "drawdown_r": 21.754724,
+            "trades": 23,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-12T19:15:25.356153",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 7,
+            "profit_factor": 0.140187,
+            "winrate": 14.29,
+            "net_r": -16.574239,
+            "drawdown_r": 19.276573,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 3,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 31,
+            "profit_factor": 0.239349,
+            "winrate": 16.67,
+            "net_r": -38.328963,
+            "drawdown_r": 38.328963,
+            "trades": 30,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-16T19:01:54.245613",
+            "end": "2026-07-17T23:25:44.993413",
+            "opportunities": 7,
+            "profit_factor": 0.749234,
+            "winrate": 28.57,
+            "net_r": -1.490466,
+            "drawdown_r": 3.874985,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        }
+      ],
+      "average_pf": 0.359032,
+      "worst_pf": 0.140187,
+      "best_pf": 0.749234,
+      "average_net_r": -9.747009,
+      "pf_stddev": 0.276595,
+      "net_r_stddev": 6.240313,
+      "total_test_trades": 20,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "verdict": "CONTINUE_RESEARCH",
+      "recommendation": "Continue Shadow Research"
+    },
+    {
+      "hypothesis": "ATR Stop 1",
+      "group": "atr",
+      "windows": 3,
+      "window_results": [
+        {
+          "window": 1,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-01T15:24:02.821700",
+            "opportunities": 17,
+            "profit_factor": 0.657984,
+            "winrate": 23.53,
+            "net_r": -4.158346,
+            "drawdown_r": 5.158346,
+            "trades": 17,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-02T15:34:55.567557",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 7,
+            "profit_factor": 0.174958,
+            "winrate": 14.29,
+            "net_r": -12.176322,
+            "drawdown_r": 12.176322,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 2,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 24,
+            "profit_factor": 0.393142,
+            "winrate": 20.83,
+            "net_r": -16.334668,
+            "drawdown_r": 17.176322,
+            "trades": 24,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-12T19:15:25.356153",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 7,
+            "profit_factor": 0.140187,
+            "winrate": 14.29,
+            "net_r": -16.574239,
+            "drawdown_r": 19.276573,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 3,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 31,
+            "profit_factor": 0.287583,
+            "winrate": 19.35,
+            "net_r": -32.908907,
+            "drawdown_r": 33.750561,
+            "trades": 31,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-16T19:01:54.245613",
+            "end": "2026-07-17T23:25:44.993413",
+            "opportunities": 7,
+            "profit_factor": 0.749234,
+            "winrate": 28.57,
+            "net_r": -1.490466,
+            "drawdown_r": 3.874985,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        }
+      ],
+      "average_pf": 0.354793,
+      "worst_pf": 0.140187,
+      "best_pf": 0.749234,
+      "average_net_r": -10.080342,
+      "pf_stddev": 0.279273,
+      "net_r_stddev": 6.333767,
+      "total_test_trades": 21,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "verdict": "CONTINUE_RESEARCH",
+      "recommendation": "Continue Shadow Research"
+    },
+    {
+      "hypothesis": "Cooldown 2h",
+      "group": "cooldown",
+      "windows": 3,
+      "window_results": [
+        {
+          "window": 1,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-01T15:24:02.821700",
+            "opportunities": 17,
+            "profit_factor": 0.390458,
+            "winrate": 17.65,
+            "net_r": -10.578402,
+            "drawdown_r": 10.578402,
+            "trades": 17,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-02T15:34:55.567557",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 7,
+            "profit_factor": 0.172724,
+            "winrate": 14.29,
+            "net_r": -12.367169,
+            "drawdown_r": 12.367169,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 2,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 24,
+            "profit_factor": 0.289698,
+            "winrate": 16.67,
+            "net_r": -22.945571,
+            "drawdown_r": 22.945571,
+            "trades": 24,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-12T19:15:25.356153",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 7,
+            "profit_factor": 0.140187,
+            "winrate": 14.29,
+            "net_r": -16.574239,
+            "drawdown_r": 19.276573,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 3,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 31,
+            "profit_factor": 0.233823,
+            "winrate": 16.13,
+            "net_r": -39.51981,
+            "drawdown_r": 39.51981,
+            "trades": 31,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-16T19:01:54.245613",
+            "end": "2026-07-17T23:25:44.993413",
+            "opportunities": 7,
+            "profit_factor": 0.749234,
+            "winrate": 28.57,
+            "net_r": -1.490466,
+            "drawdown_r": 3.874985,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        }
+      ],
+      "average_pf": 0.354048,
+      "worst_pf": 0.140187,
+      "best_pf": 0.749234,
+      "average_net_r": -10.143958,
+      "pf_stddev": 0.279754,
+      "net_r_stddev": 6.35542,
+      "total_test_trades": 21,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "verdict": "CONTINUE_RESEARCH",
+      "recommendation": "Continue Shadow Research"
+    },
+    {
+      "hypothesis": "Edge >= 15",
+      "group": "edge",
+      "windows": 3,
+      "window_results": [
+        {
+          "window": 1,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-01T15:24:02.821700",
+            "opportunities": 17,
+            "profit_factor": 0.427275,
+            "winrate": 18.75,
+            "net_r": -9.083028,
+            "drawdown_r": 9.149337,
+            "trades": 16,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-02T15:34:55.567557",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 7,
+            "profit_factor": 0.172724,
+            "winrate": 14.29,
+            "net_r": -12.367169,
+            "drawdown_r": 12.367169,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 2,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 24,
+            "profit_factor": 0.303759,
+            "winrate": 17.39,
+            "net_r": -21.450196,
+            "drawdown_r": 21.516506,
+            "trades": 23,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-12T19:15:25.356153",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 7,
+            "profit_factor": 0.140187,
+            "winrate": 14.29,
+            "net_r": -16.574239,
+            "drawdown_r": 19.276573,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 3,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 31,
+            "profit_factor": 0.240804,
+            "winrate": 16.67,
+            "net_r": -38.024435,
+            "drawdown_r": 38.090745,
+            "trades": 30,
+            "average_rr": 2.0,
+            "skipped": 1
+          },
+          "test": {
+            "start": "2026-07-16T19:01:54.245613",
+            "end": "2026-07-17T23:25:44.993413",
+            "opportunities": 7,
+            "profit_factor": 0.749234,
+            "winrate": 28.57,
+            "net_r": -1.490466,
+            "drawdown_r": 3.874985,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        }
+      ],
+      "average_pf": 0.354048,
+      "worst_pf": 0.140187,
+      "best_pf": 0.749234,
+      "average_net_r": -10.143958,
+      "pf_stddev": 0.279754,
+      "net_r_stddev": 6.35542,
+      "total_test_trades": 21,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "verdict": "CONTINUE_RESEARCH",
+      "recommendation": "Continue Shadow Research"
+    },
+    {
+      "hypothesis": "Volatility 0.2-3%",
+      "group": "volatility",
+      "windows": 3,
+      "window_results": [
+        {
+          "window": 1,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-01T15:24:02.821700",
+            "opportunities": 17,
+            "profit_factor": 0.390458,
+            "winrate": 17.65,
+            "net_r": -10.578402,
+            "drawdown_r": 10.578402,
+            "trades": 17,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-02T15:34:55.567557",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 7,
+            "profit_factor": 0.172724,
+            "winrate": 14.29,
+            "net_r": -12.367169,
+            "drawdown_r": 12.367169,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 2,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-12T19:15:22.757539",
+            "opportunities": 24,
+            "profit_factor": 0.289698,
+            "winrate": 16.67,
+            "net_r": -22.945571,
+            "drawdown_r": 22.945571,
+            "trades": 24,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-12T19:15:25.356153",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 7,
+            "profit_factor": 0.140187,
+            "winrate": 14.29,
+            "net_r": -16.574239,
+            "drawdown_r": 19.276573,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        },
+        {
+          "window": 3,
+          "train": {
+            "start": "2026-06-27T14:26:20.413799",
+            "end": "2026-07-16T12:39:35.808445",
+            "opportunities": 31,
+            "profit_factor": 0.233823,
+            "winrate": 16.13,
+            "net_r": -39.51981,
+            "drawdown_r": 39.51981,
+            "trades": 31,
+            "average_rr": 2.0,
+            "skipped": 0
+          },
+          "test": {
+            "start": "2026-07-16T19:01:54.245613",
+            "end": "2026-07-17T23:25:44.993413",
+            "opportunities": 7,
+            "profit_factor": 0.749234,
+            "winrate": 28.57,
+            "net_r": -1.490466,
+            "drawdown_r": 3.874985,
+            "trades": 7,
+            "average_rr": 2.0,
+            "skipped": 0
+          }
+        }
+      ],
+      "average_pf": 0.354048,
+      "worst_pf": 0.140187,
+      "best_pf": 0.749234,
+      "average_net_r": -10.143958,
+      "pf_stddev": 0.279754,
+      "net_r_stddev": 6.35542,
+      "total_test_trades": 21,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "verdict": "CONTINUE_RESEARCH",
+      "recommendation": "Continue Shadow Research"
+    }
+  ],
+  "methodology": {
+    "window_type": "expanding train / forward test",
+    "selection": "existing Strategy Lab, Research Orchestrator, and Adaptive Research artifacts",
+    "evaluation_scope": "test windows only",
+    "metric_unit": "R",
+    "stability_score_range": "0-100",
+    "minimum_test_trades_for_ready_for_ab": 30,
+    "verdicts": [
+      "CONTINUE_RESEARCH",
+      "READY_FOR_AB",
+      "REJECT"
+    ]
+  },
+  "restrictions": {
+    "shadow_only": true,
+    "live_unchanged": true,
+    "decision_engine_unchanged": true,
+    "entry_exit_unchanged": true,
+    "sl_tp_unchanged": true,
+    "config_unchanged": true,
+    "automatic_application": false
+  }
+}

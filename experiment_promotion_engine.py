@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from report_metadata import build_report_metadata, metadata_age_hours, utc_now
+from trade_registry import TradeRegistry
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -374,8 +375,16 @@ class ExperimentPromotionEngine:
             for state in source_states.values()
             if _integer(state.get("closed_trades_total")) > 0
         ]
-        closed_trades = min(counts) if counts else 0
-        reports_consistent = len(set(counts)) <= 1
+        registry_statistics = TradeRegistry(self.base_dir / "trades.csv").get_statistics()
+        if _integer(registry_statistics.get("total_trades")) > 0:
+            closed_trades = _integer(registry_statistics.get("closed_trades"))
+            reports_consistent = all(count == closed_trades for count in counts) if counts else False
+        else:
+            # Compatibility for isolated report-only analysis and historical
+            # fixtures. Production runs use Trade Registry whenever trades.csv
+            # exists; report-only runs cannot manufacture a registry sample.
+            closed_trades = min(counts) if counts else 0
+            reports_consistent = len(set(counts)) <= 1
         lab = reports.get("strategy_lab", {})
         baseline = lab.get("baseline", {}) if isinstance(lab, Mapping) else {}
         metrics = lab.get("metrics", []) if isinstance(lab, Mapping) else []
@@ -445,7 +454,11 @@ class ExperimentPromotionEngine:
                     source_files=source_paths,
                     base_dir=self.base_dir,
                     closed_trades_total=closed_trades,
-                    complete_metrics_total=_integer(baseline.get("trades")) if isinstance(baseline, Mapping) else 0,
+                    complete_metrics_total=(
+                        _integer(registry_statistics.get("complete_trades"))
+                        if _integer(registry_statistics.get("total_trades")) > 0
+                        else _integer(baseline.get("trades")) if isinstance(baseline, Mapping) else 0
+                    ),
                     generated_at=generated_at,
                 ),
                 "promotion_threshold_closed_trades": self.minimum_closed_trades,

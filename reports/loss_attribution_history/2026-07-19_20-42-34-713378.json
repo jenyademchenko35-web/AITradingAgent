@@ -1,0 +1,4181 @@
+{
+  "generated_at": "2026-07-19T17:42:34.711941+00:00",
+  "mode": "SHADOW_READ_ONLY",
+  "status": "INVESTIGATE",
+  "dataset_fingerprint": "35e2bab0d6c58c25861420adc0c262598a03cf6e5b1692415ba84cd91dd5c1d7",
+  "sample": {
+    "complete_trades": 38,
+    "minimum_filter_sample": 5
+  },
+  "baseline": {
+    "trades": 38,
+    "wins": 7,
+    "losses": 31,
+    "winrate_pct": 18.4211,
+    "profit_factor": 0.287078,
+    "net_r": -41.010276,
+    "average_r": -1.079218,
+    "gross_loss_r": 57.524174
+  },
+  "dimensions": {
+    "symbol": [
+      {
+        "segment": "SYMBOL=ADA/USDT",
+        "fields": {
+          "symbol": "ADA/USDT"
+        },
+        "trades": 4,
+        "wins": 0,
+        "losses": 4,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -7.838745,
+        "average_r": -1.959686,
+        "gross_loss_r": 7.838745,
+        "loss_contribution_pct": 13.6269,
+        "sample_share_pct": 10.5263,
+        "trade_ids": [
+          "TR-b2981f35b49cd641",
+          "TR-c7beee6397baee2d",
+          "TR-676506c4a71538c4",
+          "TR-0042d3db1e50d660"
+        ]
+      },
+      {
+        "segment": "SYMBOL=BTC/USDT",
+        "fields": {
+          "symbol": "BTC/USDT"
+        },
+        "trades": 10,
+        "wins": 2,
+        "losses": 8,
+        "winrate_pct": 20.0,
+        "profit_factor": 0.395493,
+        "net_r": -6.441142,
+        "average_r": -0.644114,
+        "gross_loss_r": 10.655205,
+        "loss_contribution_pct": 11.1973,
+        "sample_share_pct": 26.3158,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-c7f62214deee4248",
+          "TR-608687f7176f3923",
+          "TR-00daf140cae45ec1",
+          "TR-8416edde9d850bf9",
+          "TR-5c772818388b697a",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34"
+        ]
+      },
+      {
+        "segment": "SYMBOL=AVAX/USDT",
+        "fields": {
+          "symbol": "AVAX/USDT"
+        },
+        "trades": 3,
+        "wins": 1,
+        "losses": 2,
+        "winrate_pct": 33.3333,
+        "profit_factor": 0.256591,
+        "net_r": -6.438691,
+        "average_r": -2.14623,
+        "gross_loss_r": 8.661041,
+        "loss_contribution_pct": 11.193,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-f966d76437abab3d",
+          "TR-d505ccbb50b3804d",
+          "TR-4f52864527c4b280"
+        ]
+      },
+      {
+        "segment": "SYMBOL=SOL/USDT",
+        "fields": {
+          "symbol": "SOL/USDT"
+        },
+        "trades": 6,
+        "wins": 1,
+        "losses": 5,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.258371,
+        "net_r": -6.403392,
+        "average_r": -1.067232,
+        "gross_loss_r": 8.634222,
+        "loss_contribution_pct": 11.1317,
+        "sample_share_pct": 15.7895,
+        "trade_ids": [
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-eb7f825c11e652d1",
+          "TR-4a5589cc5e15c21a"
+        ]
+      },
+      {
+        "segment": "SYMBOL=BNB/USDT",
+        "fields": {
+          "symbol": "BNB/USDT"
+        },
+        "trades": 3,
+        "wins": 0,
+        "losses": 3,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -6.313881,
+        "average_r": -2.104627,
+        "gross_loss_r": 6.313881,
+        "loss_contribution_pct": 10.976,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-31b37a3ff5415dcd",
+          "TR-31ec0dbdd2111605",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "SYMBOL=ETH/USDT",
+        "fields": {
+          "symbol": "ETH/USDT"
+        },
+        "trades": 7,
+        "wins": 1,
+        "losses": 6,
+        "winrate_pct": 14.2857,
+        "profit_factor": 0.38245,
+        "net_r": -4.13726,
+        "average_r": -0.591037,
+        "gross_loss_r": 6.699476,
+        "loss_contribution_pct": 7.1922,
+        "sample_share_pct": 18.4211,
+        "trade_ids": [
+          "TR-3aaceee6f17c6a35",
+          "TR-fc79dcb58aab548a",
+          "TR-337fbdeda5d8831e",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-c4e6b259c534ecd1",
+          "TR-449686fd43cc678e"
+        ]
+      },
+      {
+        "segment": "SYMBOL=DOGE/USDT",
+        "fields": {
+          "symbol": "DOGE/USDT"
+        },
+        "trades": 3,
+        "wins": 1,
+        "losses": 2,
+        "winrate_pct": 33.3333,
+        "profit_factor": 0.419819,
+        "net_r": -3.734569,
+        "average_r": -1.244856,
+        "gross_loss_r": 6.436903,
+        "loss_contribution_pct": 6.4922,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-caa0e9223617115d",
+          "TR-b7b978072d6cd1e1",
+          "TR-0bfc1af759e84cd4"
+        ]
+      },
+      {
+        "segment": "SYMBOL=XRP/USDT",
+        "fields": {
+          "symbol": "XRP/USDT"
+        },
+        "trades": 2,
+        "wins": 1,
+        "losses": 1,
+        "winrate_pct": 50.0,
+        "profit_factor": 1.130172,
+        "net_r": 0.297404,
+        "average_r": 0.148702,
+        "gross_loss_r": 2.284701,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 5.2632,
+        "trade_ids": [
+          "TR-3fd5eb6957c57fb4",
+          "TR-0a3784c5a89eaafb"
+        ]
+      }
+    ],
+    "direction": [
+      {
+        "segment": "DIRECTION=SHORT",
+        "fields": {
+          "direction": "SHORT"
+        },
+        "trades": 38,
+        "wins": 7,
+        "losses": 31,
+        "winrate_pct": 18.4211,
+        "profit_factor": 0.287078,
+        "net_r": -41.010276,
+        "average_r": -1.079218,
+        "gross_loss_r": 57.524174,
+        "loss_contribution_pct": 71.2922,
+        "sample_share_pct": 100.0,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      }
+    ],
+    "timeframe": [
+      {
+        "segment": "TIMEFRAME=UNKNOWN",
+        "fields": {
+          "timeframe": "UNKNOWN"
+        },
+        "trades": 38,
+        "wins": 7,
+        "losses": 31,
+        "winrate_pct": 18.4211,
+        "profit_factor": 0.287078,
+        "net_r": -41.010276,
+        "average_r": -1.079218,
+        "gross_loss_r": 57.524174,
+        "loss_contribution_pct": 71.2922,
+        "sample_share_pct": 100.0,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      }
+    ],
+    "hour_of_day": [
+      {
+        "segment": "HOUR_OF_DAY=07:00",
+        "fields": {
+          "hour_of_day": "07:00"
+        },
+        "trades": 6,
+        "wins": 0,
+        "losses": 6,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -17.407785,
+        "average_r": -2.901297,
+        "gross_loss_r": 17.407785,
+        "loss_contribution_pct": 30.2617,
+        "sample_share_pct": 15.7895,
+        "trade_ids": [
+          "TR-337fbdeda5d8831e",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=22:00",
+        "fields": {
+          "hour_of_day": "22:00"
+        },
+        "trades": 2,
+        "wins": 0,
+        "losses": 2,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -6.450164,
+        "average_r": -3.225082,
+        "gross_loss_r": 6.450164,
+        "loss_contribution_pct": 11.213,
+        "sample_share_pct": 5.2632,
+        "trade_ids": [
+          "TR-c7f62214deee4248",
+          "TR-f966d76437abab3d"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=15:00",
+        "fields": {
+          "hour_of_day": "15:00"
+        },
+        "trades": 6,
+        "wins": 1,
+        "losses": 5,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.345055,
+        "net_r": -4.86331,
+        "average_r": -0.810552,
+        "gross_loss_r": 7.425526,
+        "loss_contribution_pct": 8.4544,
+        "sample_share_pct": 15.7895,
+        "trade_ids": [
+          "TR-e967841f3a9dbfcd",
+          "TR-449686fd43cc678e",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=23:00",
+        "fields": {
+          "hour_of_day": "23:00"
+        },
+        "trades": 3,
+        "wins": 0,
+        "losses": 3,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -3.468955,
+        "average_r": -1.156318,
+        "gross_loss_r": 3.468955,
+        "loss_contribution_pct": 6.0304,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-8416edde9d850bf9",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=03:00",
+        "fields": {
+          "hour_of_day": "03:00"
+        },
+        "trades": 2,
+        "wins": 0,
+        "losses": 2,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -2.859125,
+        "average_r": -1.429562,
+        "gross_loss_r": 2.859125,
+        "loss_contribution_pct": 4.9703,
+        "sample_share_pct": 5.2632,
+        "trade_ids": [
+          "TR-c4e6b259c534ecd1",
+          "TR-5fd96d58c8a5c10b"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=14:00",
+        "fields": {
+          "hour_of_day": "14:00"
+        },
+        "trades": 2,
+        "wins": 0,
+        "losses": 2,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -2.512512,
+        "average_r": -1.256256,
+        "gross_loss_r": 2.512512,
+        "loss_contribution_pct": 4.3677,
+        "sample_share_pct": 5.2632,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-57e951836470a80f"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=09:00",
+        "fields": {
+          "hour_of_day": "09:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.638074,
+        "average_r": -1.638074,
+        "gross_loss_r": 1.638074,
+        "loss_contribution_pct": 2.8476,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-b2981f35b49cd641"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=12:00",
+        "fields": {
+          "hour_of_day": "12:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.248989,
+        "average_r": -1.248989,
+        "gross_loss_r": 1.248989,
+        "loss_contribution_pct": 2.1712,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-d175159ca0835c4c"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=05:00",
+        "fields": {
+          "hour_of_day": "05:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.20802,
+        "average_r": -1.20802,
+        "gross_loss_r": 1.20802,
+        "loss_contribution_pct": 2.1,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-5c772818388b697a"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=21:00",
+        "fields": {
+          "hour_of_day": "21:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.205175,
+        "average_r": -1.205175,
+        "gross_loss_r": 1.205175,
+        "loss_contribution_pct": 2.0951,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-ce5794abb846103c"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=13:00",
+        "fields": {
+          "hour_of_day": "13:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.133117,
+        "average_r": -1.133117,
+        "gross_loss_r": 1.133117,
+        "loss_contribution_pct": 1.9698,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-d4f481317f37bbf4"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=04:00",
+        "fields": {
+          "hour_of_day": "04:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -0.958094,
+        "average_r": -0.958094,
+        "gross_loss_r": 0.958094,
+        "loss_contribution_pct": 1.6656,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-608687f7176f3923"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=01:00",
+        "fields": {
+          "hour_of_day": "01:00"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -0.728402,
+        "average_r": -0.728402,
+        "gross_loss_r": 0.728402,
+        "loss_contribution_pct": 1.2663,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-fc79dcb58aab548a"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=19:00",
+        "fields": {
+          "hour_of_day": "19:00"
+        },
+        "trades": 6,
+        "wins": 3,
+        "losses": 3,
+        "winrate_pct": 50.0,
+        "profit_factor": 0.933094,
+        "net_r": -0.538872,
+        "average_r": -0.089812,
+        "gross_loss_r": 8.054142,
+        "loss_contribution_pct": 0.9368,
+        "sample_share_pct": 15.7895,
+        "trade_ids": [
+          "TR-3aaceee6f17c6a35",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d017e039838dceba",
+          "TR-cc065d8ee478c69c"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=08:00",
+        "fields": {
+          "hour_of_day": "08:00"
+        },
+        "trades": 2,
+        "wins": 1,
+        "losses": 1,
+        "winrate_pct": 50.0,
+        "profit_factor": 1.734126,
+        "net_r": 0.900108,
+        "average_r": 0.450054,
+        "gross_loss_r": 1.226094,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 5.2632,
+        "trade_ids": [
+          "TR-1dd5b92dfb0685da",
+          "TR-676506c4a71538c4"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=10:00",
+        "fields": {
+          "hour_of_day": "10:00"
+        },
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "winrate_pct": 100.0,
+        "profit_factor": 999.0,
+        "net_r": 2.087861,
+        "average_r": 2.087861,
+        "gross_loss_r": 0,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-00daf140cae45ec1"
+        ]
+      },
+      {
+        "segment": "HOUR_OF_DAY=17:00",
+        "fields": {
+          "hour_of_day": "17:00"
+        },
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "winrate_pct": 100.0,
+        "profit_factor": 999.0,
+        "net_r": 2.222349,
+        "average_r": 2.222349,
+        "gross_loss_r": 0,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-4f52864527c4b280"
+        ]
+      }
+    ],
+    "weekday": [
+      {
+        "segment": "WEEKDAY=Tuesday",
+        "fields": {
+          "weekday": "Tuesday"
+        },
+        "trades": 5,
+        "wins": 1,
+        "losses": 4,
+        "winrate_pct": 20.0,
+        "profit_factor": 0.154501,
+        "net_r": -11.635541,
+        "average_r": -2.327108,
+        "gross_loss_r": 13.761742,
+        "loss_contribution_pct": 20.2272,
+        "sample_share_pct": 13.1579,
+        "trade_ids": [
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d"
+        ]
+      },
+      {
+        "segment": "WEEKDAY=Monday",
+        "fields": {
+          "weekday": "Monday"
+        },
+        "trades": 5,
+        "wins": 0,
+        "losses": 5,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -9.623085,
+        "average_r": -1.924617,
+        "gross_loss_r": 9.623085,
+        "loss_contribution_pct": 16.7288,
+        "sample_share_pct": 13.1579,
+        "trade_ids": [
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba"
+        ]
+      },
+      {
+        "segment": "WEEKDAY=Wednesday",
+        "fields": {
+          "weekday": "Wednesday"
+        },
+        "trades": 3,
+        "wins": 0,
+        "losses": 3,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -8.499531,
+        "average_r": -2.833177,
+        "gross_loss_r": 8.499531,
+        "loss_contribution_pct": 14.7756,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-f966d76437abab3d"
+        ]
+      },
+      {
+        "segment": "WEEKDAY=Friday",
+        "fields": {
+          "weekday": "Friday"
+        },
+        "trades": 7,
+        "wins": 1,
+        "losses": 6,
+        "winrate_pct": 14.2857,
+        "profit_factor": 0.293119,
+        "net_r": -5.359371,
+        "average_r": -0.765624,
+        "gross_loss_r": 7.58172,
+        "loss_contribution_pct": 9.3167,
+        "sample_share_pct": 18.4211,
+        "trade_ids": [
+          "TR-b2981f35b49cd641",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "WEEKDAY=Thursday",
+        "fields": {
+          "weekday": "Thursday"
+        },
+        "trades": 5,
+        "wins": 1,
+        "losses": 4,
+        "winrate_pct": 20.0,
+        "profit_factor": 0.378161,
+        "net_r": -3.668317,
+        "average_r": -0.733663,
+        "gross_loss_r": 5.899148,
+        "loss_contribution_pct": 6.377,
+        "sample_share_pct": 13.1579,
+        "trade_ids": [
+          "TR-31b37a3ff5415dcd",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c"
+        ]
+      },
+      {
+        "segment": "WEEKDAY=Saturday",
+        "fields": {
+          "weekday": "Saturday"
+        },
+        "trades": 3,
+        "wins": 0,
+        "losses": 3,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -3.188778,
+        "average_r": -1.062926,
+        "gross_loss_r": 3.188778,
+        "loss_contribution_pct": 5.5434,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248"
+        ]
+      },
+      {
+        "segment": "WEEKDAY=Sunday",
+        "fields": {
+          "weekday": "Sunday"
+        },
+        "trades": 10,
+        "wins": 4,
+        "losses": 6,
+        "winrate_pct": 40.0,
+        "profit_factor": 1.107506,
+        "net_r": 0.964348,
+        "average_r": 0.096435,
+        "gross_loss_r": 8.970168,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 26.3158,
+        "trade_ids": [
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1"
+        ]
+      }
+    ],
+    "volatility": [
+      {
+        "segment": "VOLATILITY=UNKNOWN",
+        "fields": {
+          "volatility": "UNKNOWN"
+        },
+        "trades": 20,
+        "wins": 4,
+        "losses": 16,
+        "winrate_pct": 20.0,
+        "profit_factor": 0.249819,
+        "net_r": -29.241027,
+        "average_r": -1.462051,
+        "gross_loss_r": 38.978646,
+        "loss_contribution_pct": 50.8326,
+        "sample_share_pct": 52.6316,
+        "trade_ids": [
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "VOLATILITY=NORMAL_0.5-1%",
+        "fields": {
+          "volatility": "NORMAL_0.5-1%"
+        },
+        "trades": 12,
+        "wins": 2,
+        "losses": 10,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.400839,
+        "net_r": -7.008096,
+        "average_r": -0.584008,
+        "gross_loss_r": 11.696514,
+        "loss_contribution_pct": 12.1829,
+        "sample_share_pct": 31.5789,
+        "trade_ids": [
+          "TR-3aaceee6f17c6a35",
+          "TR-fc79dcb58aab548a",
+          "TR-337fbdeda5d8831e",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-5c772818388b697a",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd"
+        ]
+      },
+      {
+        "segment": "VOLATILITY=HIGH_1-2%",
+        "fields": {
+          "volatility": "HIGH_1-2%"
+        },
+        "trades": 2,
+        "wins": 0,
+        "losses": 2,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -3.132086,
+        "average_r": -1.566043,
+        "gross_loss_r": 3.132086,
+        "loss_contribution_pct": 5.4448,
+        "sample_share_pct": 5.2632,
+        "trade_ids": [
+          "TR-c4e6b259c534ecd1",
+          "TR-449686fd43cc678e"
+        ]
+      },
+      {
+        "segment": "VOLATILITY=LOW_<0.5%",
+        "fields": {
+          "volatility": "LOW_<0.5%"
+        },
+        "trades": 4,
+        "wins": 1,
+        "losses": 3,
+        "winrate_pct": 25.0,
+        "profit_factor": 0.561717,
+        "net_r": -1.629066,
+        "average_r": -0.407267,
+        "gross_loss_r": 3.716927,
+        "loss_contribution_pct": 2.832,
+        "sample_share_pct": 10.5263,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-c7f62214deee4248",
+          "TR-608687f7176f3923",
+          "TR-00daf140cae45ec1"
+        ]
+      }
+    ],
+    "trend_alignment": [
+      {
+        "segment": "TREND_ALIGNMENT=ALIGNED",
+        "fields": {
+          "trend_alignment": "ALIGNED"
+        },
+        "trades": 26,
+        "wins": 5,
+        "losses": 21,
+        "winrate_pct": 19.2308,
+        "profit_factor": 0.360699,
+        "net_r": -21.376354,
+        "average_r": -0.822167,
+        "gross_loss_r": 33.437072,
+        "loss_contribution_pct": 37.1606,
+        "sample_share_pct": 68.4211,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4"
+        ]
+      },
+      {
+        "segment": "TREND_ALIGNMENT=UNKNOWN",
+        "fields": {
+          "trend_alignment": "UNKNOWN"
+        },
+        "trades": 12,
+        "wins": 2,
+        "losses": 10,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.184878,
+        "net_r": -19.633922,
+        "average_r": -1.63616,
+        "gross_loss_r": 24.087102,
+        "loss_contribution_pct": 34.1316,
+        "sample_share_pct": 31.5789,
+        "trade_ids": [
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      }
+    ],
+    "confidence": [
+      {
+        "segment": "CONFIDENCE=90+",
+        "fields": {
+          "confidence": "90+"
+        },
+        "trades": 18,
+        "wins": 3,
+        "losses": 15,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.270877,
+        "net_r": -19.947288,
+        "average_r": -1.108183,
+        "gross_loss_r": 27.35793,
+        "loss_contribution_pct": 34.6764,
+        "sample_share_pct": 47.3684,
+        "trade_ids": [
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4"
+        ]
+      },
+      {
+        "segment": "CONFIDENCE=UNKNOWN",
+        "fields": {
+          "confidence": "UNKNOWN"
+        },
+        "trades": 12,
+        "wins": 2,
+        "losses": 10,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.184878,
+        "net_r": -19.633922,
+        "average_r": -1.63616,
+        "gross_loss_r": 24.087102,
+        "loss_contribution_pct": 34.1316,
+        "sample_share_pct": 31.5789,
+        "trade_ids": [
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "CONFIDENCE=70-79",
+        "fields": {
+          "confidence": "70-79"
+        },
+        "trades": 4,
+        "wins": 0,
+        "losses": 4,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -3.625674,
+        "average_r": -0.906418,
+        "gross_loss_r": 3.625674,
+        "loss_contribution_pct": 6.3029,
+        "sample_share_pct": 10.5263,
+        "trade_ids": [
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-337fbdeda5d8831e"
+        ]
+      },
+      {
+        "segment": "CONFIDENCE=60-69",
+        "fields": {
+          "confidence": "60-69"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.495374,
+        "average_r": -1.495374,
+        "gross_loss_r": 1.495374,
+        "loss_contribution_pct": 2.5996,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-69f5e07226c99942"
+        ]
+      },
+      {
+        "segment": "CONFIDENCE=80-89",
+        "fields": {
+          "confidence": "80-89"
+        },
+        "trades": 3,
+        "wins": 2,
+        "losses": 1,
+        "winrate_pct": 66.6667,
+        "profit_factor": 4.853466,
+        "net_r": 3.691983,
+        "average_r": 1.230661,
+        "gross_loss_r": 0.958094,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 7.8947,
+        "trade_ids": [
+          "TR-608687f7176f3923",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd"
+        ]
+      }
+    ],
+    "score": [
+      {
+        "segment": "SCORE=UNKNOWN",
+        "fields": {
+          "score": "UNKNOWN"
+        },
+        "trades": 12,
+        "wins": 2,
+        "losses": 10,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.184878,
+        "net_r": -19.633922,
+        "average_r": -1.63616,
+        "gross_loss_r": 24.087102,
+        "loss_contribution_pct": 34.1316,
+        "sample_share_pct": 31.5789,
+        "trade_ids": [
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "SCORE=25-26",
+        "fields": {
+          "score": "25-26"
+        },
+        "trades": 16,
+        "wins": 2,
+        "losses": 14,
+        "winrate_pct": 12.5,
+        "profit_factor": 0.215285,
+        "net_r": -15.360278,
+        "average_r": -0.960017,
+        "gross_loss_r": 19.574341,
+        "loss_contribution_pct": 26.7023,
+        "sample_share_pct": 42.1053,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-b2981f35b49cd641",
+          "TR-d505ccbb50b3804d"
+        ]
+      },
+      {
+        "segment": "SCORE=27+",
+        "fields": {
+          "score": "27+"
+        },
+        "trades": 10,
+        "wins": 3,
+        "losses": 7,
+        "winrate_pct": 30.0,
+        "profit_factor": 0.566025,
+        "net_r": -6.016076,
+        "average_r": -0.601608,
+        "gross_loss_r": 13.862731,
+        "loss_contribution_pct": 10.4583,
+        "sample_share_pct": 26.3158,
+        "trade_ids": [
+          "TR-e967841f3a9dbfcd",
+          "TR-5c772818388b697a",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-0a3784c5a89eaafb",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4"
+        ]
+      }
+    ],
+    "quality": [
+      {
+        "segment": "QUALITY=UNKNOWN",
+        "fields": {
+          "quality": "UNKNOWN"
+        },
+        "trades": 12,
+        "wins": 2,
+        "losses": 10,
+        "winrate_pct": 16.6667,
+        "profit_factor": 0.184878,
+        "net_r": -19.633922,
+        "average_r": -1.63616,
+        "gross_loss_r": 24.087102,
+        "loss_contribution_pct": 34.1316,
+        "sample_share_pct": 31.5789,
+        "trade_ids": [
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "QUALITY=B",
+        "fields": {
+          "quality": "B"
+        },
+        "trades": 16,
+        "wins": 2,
+        "losses": 14,
+        "winrate_pct": 12.5,
+        "profit_factor": 0.215285,
+        "net_r": -15.360278,
+        "average_r": -0.960017,
+        "gross_loss_r": 19.574341,
+        "loss_contribution_pct": 26.7023,
+        "sample_share_pct": 42.1053,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-b2981f35b49cd641",
+          "TR-d505ccbb50b3804d"
+        ]
+      },
+      {
+        "segment": "QUALITY=A",
+        "fields": {
+          "quality": "A"
+        },
+        "trades": 10,
+        "wins": 3,
+        "losses": 7,
+        "winrate_pct": 30.0,
+        "profit_factor": 0.566025,
+        "net_r": -6.016076,
+        "average_r": -0.601608,
+        "gross_loss_r": 13.862731,
+        "loss_contribution_pct": 10.4583,
+        "sample_share_pct": 26.3158,
+        "trade_ids": [
+          "TR-e967841f3a9dbfcd",
+          "TR-5c772818388b697a",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-0a3784c5a89eaafb",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4"
+        ]
+      }
+    ],
+    "primary_blocker": [
+      {
+        "segment": "PRIMARY_BLOCKER=NONE",
+        "fields": {
+          "primary_blocker": "NONE"
+        },
+        "trades": 32,
+        "wins": 5,
+        "losses": 27,
+        "winrate_pct": 15.625,
+        "profit_factor": 0.22214,
+        "net_r": -39.321804,
+        "average_r": -1.228806,
+        "gross_loss_r": 50.551263,
+        "loss_contribution_pct": 68.357,
+        "sample_share_pct": 84.2105,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-b2981f35b49cd641",
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "PRIMARY_BLOCKER=RISK",
+        "fields": {
+          "primary_blocker": "RISK"
+        },
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -1.133117,
+        "average_r": -1.133117,
+        "gross_loss_r": 1.133117,
+        "loss_contribution_pct": 1.9698,
+        "sample_share_pct": 2.6316,
+        "trade_ids": [
+          "TR-d4f481317f37bbf4"
+        ]
+      },
+      {
+        "segment": "PRIMARY_BLOCKER=MOMENTUM",
+        "fields": {
+          "primary_blocker": "MOMENTUM"
+        },
+        "trades": 5,
+        "wins": 2,
+        "losses": 3,
+        "winrate_pct": 40.0,
+        "profit_factor": 0.904902,
+        "net_r": -0.555354,
+        "average_r": -0.111071,
+        "gross_loss_r": 5.839794,
+        "loss_contribution_pct": 0.9654,
+        "sample_share_pct": 13.1579,
+        "trade_ids": [
+          "TR-31b37a3ff5415dcd",
+          "TR-caa0e9223617115d",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1"
+        ]
+      }
+    ],
+    "exit_type": [
+      {
+        "segment": "EXIT_TYPE=STOP_LOSS",
+        "fields": {
+          "exit_type": "STOP_LOSS"
+        },
+        "trades": 31,
+        "wins": 0,
+        "losses": 31,
+        "winrate_pct": 0.0,
+        "profit_factor": 0.0,
+        "net_r": -57.524174,
+        "average_r": -1.855619,
+        "gross_loss_r": 57.524174,
+        "loss_contribution_pct": 100.0,
+        "sample_share_pct": 81.5789,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-d505ccbb50b3804d",
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      },
+      {
+        "segment": "EXIT_TYPE=TAKE_PROFIT",
+        "fields": {
+          "exit_type": "TAKE_PROFIT"
+        },
+        "trades": 7,
+        "wins": 7,
+        "losses": 0,
+        "winrate_pct": 100.0,
+        "profit_factor": 999.0,
+        "net_r": 16.513898,
+        "average_r": 2.359128,
+        "gross_loss_r": 0,
+        "loss_contribution_pct": 0.0,
+        "sample_share_pct": 18.4211,
+        "trade_ids": [
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-1dd5b92dfb0685da",
+          "TR-0a3784c5a89eaafb",
+          "TR-b7b978072d6cd1e1",
+          "TR-cc065d8ee478c69c",
+          "TR-4f52864527c4b280"
+        ]
+      }
+    ],
+    "consecutive_losses": [
+      {
+        "segment": "CONSECUTIVE_LOSSES=2-3",
+        "fields": {
+          "consecutive_losses": "2-3"
+        },
+        "trades": 10,
+        "wins": 1,
+        "losses": 9,
+        "winrate_pct": 10.0,
+        "profit_factor": 0.124584,
+        "net_r": -15.61586,
+        "average_r": -1.561586,
+        "gross_loss_r": 17.838209,
+        "loss_contribution_pct": 27.1466,
+        "sample_share_pct": 26.3158,
+        "trade_ids": [
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280"
+        ]
+      },
+      {
+        "segment": "CONSECUTIVE_LOSSES=4+",
+        "fields": {
+          "consecutive_losses": "4+"
+        },
+        "trades": 13,
+        "wins": 4,
+        "losses": 9,
+        "winrate_pct": 30.7692,
+        "profit_factor": 0.470405,
+        "net_r": -10.162832,
+        "average_r": -0.781756,
+        "gross_loss_r": 19.18983,
+        "loss_contribution_pct": 17.6671,
+        "sample_share_pct": 34.2105,
+        "trade_ids": [
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c"
+        ]
+      },
+      {
+        "segment": "CONSECUTIVE_LOSSES=0",
+        "fields": {
+          "consecutive_losses": "0"
+        },
+        "trades": 8,
+        "wins": 1,
+        "losses": 7,
+        "winrate_pct": 12.5,
+        "profit_factor": 0.241359,
+        "net_r": -8.053572,
+        "average_r": -1.006696,
+        "gross_loss_r": 10.615788,
+        "loss_contribution_pct": 14.0003,
+        "sample_share_pct": 21.0526,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-57e951836470a80f",
+          "TR-d505ccbb50b3804d",
+          "TR-d4f481317f37bbf4",
+          "TR-676506c4a71538c4",
+          "TR-4a5589cc5e15c21a"
+        ]
+      },
+      {
+        "segment": "CONSECUTIVE_LOSSES=1",
+        "fields": {
+          "consecutive_losses": "1"
+        },
+        "trades": 7,
+        "wins": 1,
+        "losses": 6,
+        "winrate_pct": 14.2857,
+        "profit_factor": 0.273506,
+        "net_r": -7.178013,
+        "average_r": -1.02543,
+        "gross_loss_r": 9.880347,
+        "loss_contribution_pct": 12.4783,
+        "sample_share_pct": 18.4211,
+        "trade_ids": [
+          "TR-3aaceee6f17c6a35",
+          "TR-8416edde9d850bf9",
+          "TR-5fd96d58c8a5c10b",
+          "TR-b7b978072d6cd1e1",
+          "TR-d017e039838dceba",
+          "TR-eb7f825c11e652d1",
+          "TR-1f9b98356368b953"
+        ]
+      }
+    ],
+    "market_regime": [
+      {
+        "segment": "MARKET_REGIME=UNKNOWN",
+        "fields": {
+          "market_regime": "UNKNOWN"
+        },
+        "trades": 38,
+        "wins": 7,
+        "losses": 31,
+        "winrate_pct": 18.4211,
+        "profit_factor": 0.287078,
+        "net_r": -41.010276,
+        "average_r": -1.079218,
+        "gross_loss_r": 57.524174,
+        "loss_contribution_pct": 71.2922,
+        "sample_share_pct": 100.0,
+        "trade_ids": [
+          "TR-69f5e07226c99942",
+          "TR-3aaceee6f17c6a35",
+          "TR-c7f62214deee4248",
+          "TR-fc79dcb58aab548a",
+          "TR-608687f7176f3923",
+          "TR-337fbdeda5d8831e",
+          "TR-00daf140cae45ec1",
+          "TR-e967841f3a9dbfcd",
+          "TR-ce5794abb846103c",
+          "TR-8416edde9d850bf9",
+          "TR-c4e6b259c534ecd1",
+          "TR-5c772818388b697a",
+          "TR-449686fd43cc678e",
+          "TR-1dd5b92dfb0685da",
+          "TR-57e951836470a80f",
+          "TR-5fd96d58c8a5c10b",
+          "TR-30cb6d2d9d8dbe34",
+          "TR-31b37a3ff5415dcd",
+          "TR-f966d76437abab3d",
+          "TR-3fd5eb6957c57fb4",
+          "TR-caa0e9223617115d",
+          "TR-b2981f35b49cd641",
+          "TR-0a3784c5a89eaafb",
+          "TR-d505ccbb50b3804d",
+          "TR-b7b978072d6cd1e1",
+          "TR-d4f481317f37bbf4",
+          "TR-d017e039838dceba",
+          "TR-0bfc1af759e84cd4",
+          "TR-31ec0dbdd2111605",
+          "TR-c7beee6397baee2d",
+          "TR-d175159ca0835c4c",
+          "TR-cc065d8ee478c69c",
+          "TR-676506c4a71538c4",
+          "TR-eb7f825c11e652d1",
+          "TR-0042d3db1e50d660",
+          "TR-4f52864527c4b280",
+          "TR-4a5589cc5e15c21a",
+          "TR-1f9b98356368b953"
+        ]
+      }
+    ]
+  },
+  "combinations": [
+    {
+      "segment": "DIRECTION=SHORT + PRIMARY_BLOCKER=NONE",
+      "fields": {
+        "direction": "SHORT",
+        "primary_blocker": "NONE"
+      },
+      "trades": 32,
+      "wins": 5,
+      "losses": 27,
+      "winrate_pct": 15.625,
+      "profit_factor": 0.22214,
+      "net_r": -39.321804,
+      "average_r": -1.228806,
+      "gross_loss_r": 50.551263,
+      "loss_contribution_pct": 68.357,
+      "sample_share_pct": 84.2105,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-3aaceee6f17c6a35",
+        "TR-c7f62214deee4248",
+        "TR-fc79dcb58aab548a",
+        "TR-608687f7176f3923",
+        "TR-337fbdeda5d8831e",
+        "TR-00daf140cae45ec1",
+        "TR-e967841f3a9dbfcd",
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-c4e6b259c534ecd1",
+        "TR-5c772818388b697a",
+        "TR-449686fd43cc678e",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-b2981f35b49cd641",
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + VOLATILITY=UNKNOWN",
+      "fields": {
+        "direction": "SHORT",
+        "volatility": "UNKNOWN"
+      },
+      "trades": 20,
+      "wins": 4,
+      "losses": 16,
+      "winrate_pct": 20.0,
+      "profit_factor": 0.249819,
+      "net_r": -29.241027,
+      "average_r": -1.462051,
+      "gross_loss_r": 38.978646,
+      "loss_contribution_pct": 50.8326,
+      "sample_share_pct": 52.6316,
+      "trade_ids": [
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-caa0e9223617115d",
+        "TR-b2981f35b49cd641",
+        "TR-0a3784c5a89eaafb",
+        "TR-d505ccbb50b3804d",
+        "TR-b7b978072d6cd1e1",
+        "TR-d4f481317f37bbf4",
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+      "fields": {
+        "trend_alignment": "ALIGNED",
+        "confidence": "90+"
+      },
+      "trades": 18,
+      "wins": 3,
+      "losses": 15,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.270877,
+      "net_r": -19.947288,
+      "average_r": -1.108183,
+      "gross_loss_r": 27.35793,
+      "loss_contribution_pct": 34.6764,
+      "sample_share_pct": 47.3684,
+      "trade_ids": [
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-c4e6b259c534ecd1",
+        "TR-5c772818388b697a",
+        "TR-449686fd43cc678e",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-31b37a3ff5415dcd",
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-caa0e9223617115d",
+        "TR-b2981f35b49cd641",
+        "TR-0a3784c5a89eaafb",
+        "TR-d505ccbb50b3804d",
+        "TR-b7b978072d6cd1e1",
+        "TR-d4f481317f37bbf4"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "trend_alignment": "UNKNOWN",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 12,
+      "wins": 2,
+      "losses": 10,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.184878,
+      "net_r": -19.633922,
+      "average_r": -1.63616,
+      "gross_loss_r": 24.087102,
+      "loss_contribution_pct": 34.1316,
+      "sample_share_pct": 31.5789,
+      "trade_ids": [
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "QUALITY=UNKNOWN + SCORE=UNKNOWN",
+      "fields": {
+        "quality": "UNKNOWN",
+        "score": "UNKNOWN"
+      },
+      "trades": 12,
+      "wins": 2,
+      "losses": 10,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.184878,
+      "net_r": -19.633922,
+      "average_r": -1.63616,
+      "gross_loss_r": 24.087102,
+      "loss_contribution_pct": 34.1316,
+      "sample_share_pct": 31.5789,
+      "trade_ids": [
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "QUALITY=B + SCORE=25-26",
+      "fields": {
+        "quality": "B",
+        "score": "25-26"
+      },
+      "trades": 16,
+      "wins": 2,
+      "losses": 14,
+      "winrate_pct": 12.5,
+      "profit_factor": 0.215285,
+      "net_r": -15.360278,
+      "average_r": -0.960017,
+      "gross_loss_r": 19.574341,
+      "loss_contribution_pct": 26.7023,
+      "sample_share_pct": 42.1053,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-3aaceee6f17c6a35",
+        "TR-c7f62214deee4248",
+        "TR-fc79dcb58aab548a",
+        "TR-608687f7176f3923",
+        "TR-337fbdeda5d8831e",
+        "TR-00daf140cae45ec1",
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-c4e6b259c534ecd1",
+        "TR-449686fd43cc678e",
+        "TR-1dd5b92dfb0685da",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-31b37a3ff5415dcd",
+        "TR-b2981f35b49cd641",
+        "TR-d505ccbb50b3804d"
+      ]
+    },
+    {
+      "segment": "SYMBOL=AVAX/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "AVAX/USDT",
+        "confidence": "90+"
+      },
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -8.661041,
+      "average_r": -4.33052,
+      "gross_loss_r": 8.661041,
+      "loss_contribution_pct": 15.0564,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-f966d76437abab3d",
+        "TR-d505ccbb50b3804d"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ADA/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "ADA/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -7.838745,
+      "average_r": -1.959686,
+      "gross_loss_r": 7.838745,
+      "loss_contribution_pct": 13.6269,
+      "sample_share_pct": 10.5263,
+      "trade_ids": [
+        "TR-b2981f35b49cd641",
+        "TR-c7beee6397baee2d",
+        "TR-676506c4a71538c4",
+        "TR-0042d3db1e50d660"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ADA/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "ADA/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -7.838745,
+      "average_r": -1.959686,
+      "gross_loss_r": 7.838745,
+      "loss_contribution_pct": 13.6269,
+      "sample_share_pct": 10.5263,
+      "trade_ids": [
+        "TR-b2981f35b49cd641",
+        "TR-c7beee6397baee2d",
+        "TR-676506c4a71538c4",
+        "TR-0042d3db1e50d660"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + VOLATILITY=NORMAL_0.5-1%",
+      "fields": {
+        "direction": "SHORT",
+        "volatility": "NORMAL_0.5-1%"
+      },
+      "trades": 12,
+      "wins": 2,
+      "losses": 10,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.400839,
+      "net_r": -7.008096,
+      "average_r": -0.584008,
+      "gross_loss_r": 11.696514,
+      "loss_contribution_pct": 12.1829,
+      "sample_share_pct": 31.5789,
+      "trade_ids": [
+        "TR-3aaceee6f17c6a35",
+        "TR-fc79dcb58aab548a",
+        "TR-337fbdeda5d8831e",
+        "TR-e967841f3a9dbfcd",
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-5c772818388b697a",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-31b37a3ff5415dcd"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BTC/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "BTC/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate_pct": 20.0,
+      "profit_factor": 0.395493,
+      "net_r": -6.441142,
+      "average_r": -0.644114,
+      "gross_loss_r": 10.655205,
+      "loss_contribution_pct": 11.1973,
+      "sample_share_pct": 26.3158,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-c7f62214deee4248",
+        "TR-608687f7176f3923",
+        "TR-00daf140cae45ec1",
+        "TR-8416edde9d850bf9",
+        "TR-5c772818388b697a",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BTC/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "BTC/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 10,
+      "wins": 2,
+      "losses": 8,
+      "winrate_pct": 20.0,
+      "profit_factor": 0.395493,
+      "net_r": -6.441142,
+      "average_r": -0.644114,
+      "gross_loss_r": 10.655205,
+      "loss_contribution_pct": 11.1973,
+      "sample_share_pct": 26.3158,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-c7f62214deee4248",
+        "TR-608687f7176f3923",
+        "TR-00daf140cae45ec1",
+        "TR-8416edde9d850bf9",
+        "TR-5c772818388b697a",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34"
+      ]
+    },
+    {
+      "segment": "SYMBOL=AVAX/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "AVAX/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "winrate_pct": 33.3333,
+      "profit_factor": 0.256591,
+      "net_r": -6.438691,
+      "average_r": -2.14623,
+      "gross_loss_r": 8.661041,
+      "loss_contribution_pct": 11.193,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-f966d76437abab3d",
+        "TR-d505ccbb50b3804d",
+        "TR-4f52864527c4b280"
+      ]
+    },
+    {
+      "segment": "SYMBOL=AVAX/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "AVAX/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "winrate_pct": 33.3333,
+      "profit_factor": 0.256591,
+      "net_r": -6.438691,
+      "average_r": -2.14623,
+      "gross_loss_r": 8.661041,
+      "loss_contribution_pct": 11.193,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-f966d76437abab3d",
+        "TR-d505ccbb50b3804d",
+        "TR-4f52864527c4b280"
+      ]
+    },
+    {
+      "segment": "SYMBOL=SOL/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "SOL/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.258371,
+      "net_r": -6.403392,
+      "average_r": -1.067232,
+      "gross_loss_r": 8.634222,
+      "loss_contribution_pct": 11.1317,
+      "sample_share_pct": 15.7895,
+      "trade_ids": [
+        "TR-d4f481317f37bbf4",
+        "TR-d017e039838dceba",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-eb7f825c11e652d1",
+        "TR-4a5589cc5e15c21a"
+      ]
+    },
+    {
+      "segment": "SYMBOL=SOL/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "SOL/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.258371,
+      "net_r": -6.403392,
+      "average_r": -1.067232,
+      "gross_loss_r": 8.634222,
+      "loss_contribution_pct": 11.1317,
+      "sample_share_pct": 15.7895,
+      "trade_ids": [
+        "TR-d4f481317f37bbf4",
+        "TR-d017e039838dceba",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-eb7f825c11e652d1",
+        "TR-4a5589cc5e15c21a"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BNB/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "BNB/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -6.313881,
+      "average_r": -2.104627,
+      "gross_loss_r": 6.313881,
+      "loss_contribution_pct": 10.976,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-31b37a3ff5415dcd",
+        "TR-31ec0dbdd2111605",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BNB/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "BNB/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -6.313881,
+      "average_r": -2.104627,
+      "gross_loss_r": 6.313881,
+      "loss_contribution_pct": 10.976,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-31b37a3ff5415dcd",
+        "TR-31ec0dbdd2111605",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ADA/USDT + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "symbol": "ADA/USDT",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -6.200671,
+      "average_r": -2.06689,
+      "gross_loss_r": 6.200671,
+      "loss_contribution_pct": 10.7792,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-c7beee6397baee2d",
+        "TR-676506c4a71538c4",
+        "TR-0042d3db1e50d660"
+      ]
+    },
+    {
+      "segment": "QUALITY=A + SCORE=27+",
+      "fields": {
+        "quality": "A",
+        "score": "27+"
+      },
+      "trades": 10,
+      "wins": 3,
+      "losses": 7,
+      "winrate_pct": 30.0,
+      "profit_factor": 0.566025,
+      "net_r": -6.016076,
+      "average_r": -0.601608,
+      "gross_loss_r": 13.862731,
+      "loss_contribution_pct": 10.4583,
+      "sample_share_pct": 26.3158,
+      "trade_ids": [
+        "TR-e967841f3a9dbfcd",
+        "TR-5c772818388b697a",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-caa0e9223617115d",
+        "TR-0a3784c5a89eaafb",
+        "TR-b7b978072d6cd1e1",
+        "TR-d4f481317f37bbf4"
+      ]
+    },
+    {
+      "segment": "SYMBOL=SOL/USDT + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "symbol": "SOL/USDT",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 5,
+      "wins": 1,
+      "losses": 4,
+      "winrate_pct": 20.0,
+      "profit_factor": 0.2974,
+      "net_r": -5.270274,
+      "average_r": -1.054055,
+      "gross_loss_r": 7.501105,
+      "loss_contribution_pct": 9.1618,
+      "sample_share_pct": 13.1579,
+      "trade_ids": [
+        "TR-d017e039838dceba",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-eb7f825c11e652d1",
+        "TR-4a5589cc5e15c21a"
+      ]
+    },
+    {
+      "segment": "SYMBOL=DOGE/USDT + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "symbol": "DOGE/USDT",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -5.262293,
+      "average_r": -5.262293,
+      "gross_loss_r": 5.262293,
+      "loss_contribution_pct": 9.148,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-0bfc1af759e84cd4"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BNB/USDT + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "symbol": "BNB/USDT",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -5.123034,
+      "average_r": -2.561517,
+      "gross_loss_r": 5.123034,
+      "loss_contribution_pct": 8.9059,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-31ec0dbdd2111605",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BTC/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "BTC/USDT",
+        "confidence": "90+"
+      },
+      "trades": 6,
+      "wins": 1,
+      "losses": 5,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.306445,
+      "net_r": -4.812075,
+      "average_r": -0.802013,
+      "gross_loss_r": 6.938277,
+      "loss_contribution_pct": 8.3653,
+      "sample_share_pct": 15.7895,
+      "trade_ids": [
+        "TR-8416edde9d850bf9",
+        "TR-5c772818388b697a",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ETH/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "ETH/USDT",
+        "confidence": "90+"
+      },
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -4.337262,
+      "average_r": -1.445754,
+      "gross_loss_r": 4.337262,
+      "loss_contribution_pct": 7.5399,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-ce5794abb846103c",
+        "TR-c4e6b259c534ecd1",
+        "TR-449686fd43cc678e"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ETH/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "ETH/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 7,
+      "wins": 1,
+      "losses": 6,
+      "winrate_pct": 14.2857,
+      "profit_factor": 0.38245,
+      "net_r": -4.13726,
+      "average_r": -0.591037,
+      "gross_loss_r": 6.699476,
+      "loss_contribution_pct": 7.1922,
+      "sample_share_pct": 18.4211,
+      "trade_ids": [
+        "TR-3aaceee6f17c6a35",
+        "TR-fc79dcb58aab548a",
+        "TR-337fbdeda5d8831e",
+        "TR-e967841f3a9dbfcd",
+        "TR-ce5794abb846103c",
+        "TR-c4e6b259c534ecd1",
+        "TR-449686fd43cc678e"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ETH/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "ETH/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 7,
+      "wins": 1,
+      "losses": 6,
+      "winrate_pct": 14.2857,
+      "profit_factor": 0.38245,
+      "net_r": -4.13726,
+      "average_r": -0.591037,
+      "gross_loss_r": 6.699476,
+      "loss_contribution_pct": 7.1922,
+      "sample_share_pct": 18.4211,
+      "trade_ids": [
+        "TR-3aaceee6f17c6a35",
+        "TR-fc79dcb58aab548a",
+        "TR-337fbdeda5d8831e",
+        "TR-e967841f3a9dbfcd",
+        "TR-ce5794abb846103c",
+        "TR-c4e6b259c534ecd1",
+        "TR-449686fd43cc678e"
+      ]
+    },
+    {
+      "segment": "SYMBOL=DOGE/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "DOGE/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "winrate_pct": 33.3333,
+      "profit_factor": 0.419819,
+      "net_r": -3.734569,
+      "average_r": -1.244856,
+      "gross_loss_r": 6.436903,
+      "loss_contribution_pct": 6.4922,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-caa0e9223617115d",
+        "TR-b7b978072d6cd1e1",
+        "TR-0bfc1af759e84cd4"
+      ]
+    },
+    {
+      "segment": "SYMBOL=DOGE/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "DOGE/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 3,
+      "wins": 1,
+      "losses": 2,
+      "winrate_pct": 33.3333,
+      "profit_factor": 0.419819,
+      "net_r": -3.734569,
+      "average_r": -1.244856,
+      "gross_loss_r": 6.436903,
+      "loss_contribution_pct": 6.4922,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-caa0e9223617115d",
+        "TR-b7b978072d6cd1e1",
+        "TR-0bfc1af759e84cd4"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=70-79",
+      "fields": {
+        "trend_alignment": "ALIGNED",
+        "confidence": "70-79"
+      },
+      "trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -3.625674,
+      "average_r": -0.906418,
+      "gross_loss_r": 3.625674,
+      "loss_contribution_pct": 6.3029,
+      "sample_share_pct": 10.5263,
+      "trade_ids": [
+        "TR-3aaceee6f17c6a35",
+        "TR-c7f62214deee4248",
+        "TR-fc79dcb58aab548a",
+        "TR-337fbdeda5d8831e"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + VOLATILITY=HIGH_1-2%",
+      "fields": {
+        "direction": "SHORT",
+        "volatility": "HIGH_1-2%"
+      },
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -3.132086,
+      "average_r": -1.566043,
+      "gross_loss_r": 3.132086,
+      "loss_contribution_pct": 5.4448,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-c4e6b259c534ecd1",
+        "TR-449686fd43cc678e"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ETH/USDT + CONFIDENCE=70-79",
+      "fields": {
+        "symbol": "ETH/USDT",
+        "confidence": "70-79"
+      },
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -2.362215,
+      "average_r": -0.787405,
+      "gross_loss_r": 2.362215,
+      "loss_contribution_pct": 4.1065,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-3aaceee6f17c6a35",
+        "TR-fc79dcb58aab548a",
+        "TR-337fbdeda5d8831e"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ADA/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "ADA/USDT",
+        "confidence": "90+"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.638074,
+      "average_r": -1.638074,
+      "gross_loss_r": 1.638074,
+      "loss_contribution_pct": 2.8476,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-b2981f35b49cd641"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + VOLATILITY=LOW_<0.5%",
+      "fields": {
+        "direction": "SHORT",
+        "volatility": "LOW_<0.5%"
+      },
+      "trades": 4,
+      "wins": 1,
+      "losses": 3,
+      "winrate_pct": 25.0,
+      "profit_factor": 0.561717,
+      "net_r": -1.629066,
+      "average_r": -0.407267,
+      "gross_loss_r": 3.716927,
+      "loss_contribution_pct": 2.832,
+      "sample_share_pct": 10.5263,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-c7f62214deee4248",
+        "TR-608687f7176f3923",
+        "TR-00daf140cae45ec1"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BTC/USDT + CONFIDENCE=60-69",
+      "fields": {
+        "symbol": "BTC/USDT",
+        "confidence": "60-69"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.495374,
+      "average_r": -1.495374,
+      "gross_loss_r": 1.495374,
+      "loss_contribution_pct": 2.5996,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-69f5e07226c99942"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=60-69",
+      "fields": {
+        "trend_alignment": "ALIGNED",
+        "confidence": "60-69"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.495374,
+      "average_r": -1.495374,
+      "gross_loss_r": 1.495374,
+      "loss_contribution_pct": 2.5996,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-69f5e07226c99942"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BTC/USDT + CONFIDENCE=70-79",
+      "fields": {
+        "symbol": "BTC/USDT",
+        "confidence": "70-79"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.263459,
+      "average_r": -1.263459,
+      "gross_loss_r": 1.263459,
+      "loss_contribution_pct": 2.1964,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-c7f62214deee4248"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BNB/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "BNB/USDT",
+        "confidence": "90+"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.190847,
+      "average_r": -1.190847,
+      "gross_loss_r": 1.190847,
+      "loss_contribution_pct": 2.0702,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-31b37a3ff5415dcd"
+      ]
+    },
+    {
+      "segment": "SYMBOL=SOL/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "SOL/USDT",
+        "confidence": "90+"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.133117,
+      "average_r": -1.133117,
+      "gross_loss_r": 1.133117,
+      "loss_contribution_pct": 1.9698,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-d4f481317f37bbf4"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + PRIMARY_BLOCKER=RISK",
+      "fields": {
+        "direction": "SHORT",
+        "primary_blocker": "RISK"
+      },
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -1.133117,
+      "average_r": -1.133117,
+      "gross_loss_r": 1.133117,
+      "loss_contribution_pct": 1.9698,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-d4f481317f37bbf4"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + PRIMARY_BLOCKER=MOMENTUM",
+      "fields": {
+        "direction": "SHORT",
+        "primary_blocker": "MOMENTUM"
+      },
+      "trades": 5,
+      "wins": 2,
+      "losses": 3,
+      "winrate_pct": 40.0,
+      "profit_factor": 0.904902,
+      "net_r": -0.555354,
+      "average_r": -0.111071,
+      "gross_loss_r": 5.839794,
+      "loss_contribution_pct": 0.9654,
+      "sample_share_pct": 13.1579,
+      "trade_ids": [
+        "TR-31b37a3ff5415dcd",
+        "TR-caa0e9223617115d",
+        "TR-0a3784c5a89eaafb",
+        "TR-d505ccbb50b3804d",
+        "TR-b7b978072d6cd1e1"
+      ]
+    },
+    {
+      "segment": "SYMBOL=XRP/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "XRP/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 2,
+      "wins": 1,
+      "losses": 1,
+      "winrate_pct": 50.0,
+      "profit_factor": 1.130172,
+      "net_r": 0.297404,
+      "average_r": 0.148702,
+      "gross_loss_r": 2.284701,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-3fd5eb6957c57fb4",
+        "TR-0a3784c5a89eaafb"
+      ]
+    },
+    {
+      "segment": "SYMBOL=XRP/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "XRP/USDT",
+        "confidence": "90+"
+      },
+      "trades": 2,
+      "wins": 1,
+      "losses": 1,
+      "winrate_pct": 50.0,
+      "profit_factor": 1.130172,
+      "net_r": 0.297404,
+      "average_r": 0.148702,
+      "gross_loss_r": 2.284701,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-3fd5eb6957c57fb4",
+        "TR-0a3784c5a89eaafb"
+      ]
+    },
+    {
+      "segment": "SYMBOL=XRP/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "XRP/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 2,
+      "wins": 1,
+      "losses": 1,
+      "winrate_pct": 50.0,
+      "profit_factor": 1.130172,
+      "net_r": 0.297404,
+      "average_r": 0.148702,
+      "gross_loss_r": 2.284701,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-3fd5eb6957c57fb4",
+        "TR-0a3784c5a89eaafb"
+      ]
+    },
+    {
+      "segment": "SYMBOL=BTC/USDT + CONFIDENCE=80-89",
+      "fields": {
+        "symbol": "BTC/USDT",
+        "confidence": "80-89"
+      },
+      "trades": 2,
+      "wins": 1,
+      "losses": 1,
+      "winrate_pct": 50.0,
+      "profit_factor": 2.179182,
+      "net_r": 1.129767,
+      "average_r": 0.564884,
+      "gross_loss_r": 0.958094,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-608687f7176f3923",
+        "TR-00daf140cae45ec1"
+      ]
+    },
+    {
+      "segment": "SYMBOL=DOGE/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "DOGE/USDT",
+        "confidence": "90+"
+      },
+      "trades": 2,
+      "wins": 1,
+      "losses": 1,
+      "winrate_pct": 50.0,
+      "profit_factor": 2.300621,
+      "net_r": 1.527724,
+      "average_r": 0.763862,
+      "gross_loss_r": 1.174611,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-caa0e9223617115d",
+        "TR-b7b978072d6cd1e1"
+      ]
+    },
+    {
+      "segment": "SYMBOL=AVAX/USDT + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "symbol": "AVAX/USDT",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 1,
+      "wins": 1,
+      "losses": 0,
+      "winrate_pct": 100.0,
+      "profit_factor": 999.0,
+      "net_r": 2.222349,
+      "average_r": 2.222349,
+      "gross_loss_r": 0,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-4f52864527c4b280"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ETH/USDT + CONFIDENCE=80-89",
+      "fields": {
+        "symbol": "ETH/USDT",
+        "confidence": "80-89"
+      },
+      "trades": 1,
+      "wins": 1,
+      "losses": 0,
+      "winrate_pct": 100.0,
+      "profit_factor": 999.0,
+      "net_r": 2.562216,
+      "average_r": 2.562216,
+      "gross_loss_r": 0,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 2.6316,
+      "trade_ids": [
+        "TR-e967841f3a9dbfcd"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=80-89",
+      "fields": {
+        "trend_alignment": "ALIGNED",
+        "confidence": "80-89"
+      },
+      "trades": 3,
+      "wins": 2,
+      "losses": 1,
+      "winrate_pct": 66.6667,
+      "profit_factor": 4.853466,
+      "net_r": 3.691983,
+      "average_r": 1.230661,
+      "gross_loss_r": 0.958094,
+      "loss_contribution_pct": 0.0,
+      "sample_share_pct": 7.8947,
+      "trade_ids": [
+        "TR-608687f7176f3923",
+        "TR-00daf140cae45ec1",
+        "TR-e967841f3a9dbfcd"
+      ]
+    }
+  ],
+  "pareto": {
+    "negative_scenarios": 14,
+    "target_loss_r": 46.019339,
+    "scenarios_to_reach_80pct": [
+      {
+        "segment": "SYMBOL=AVAX/USDT + DIRECTION=SHORT + VOLATILITY=UNKNOWN + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+        "trades": 2,
+        "net_r": -8.661041,
+        "loss_contribution_pct": 15.0564
+      },
+      {
+        "segment": "SYMBOL=ADA/USDT + DIRECTION=SHORT + VOLATILITY=UNKNOWN + TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+        "trades": 3,
+        "net_r": -6.200671,
+        "loss_contribution_pct": 10.7792
+      },
+      {
+        "segment": "SYMBOL=SOL/USDT + DIRECTION=SHORT + VOLATILITY=UNKNOWN + TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+        "trades": 5,
+        "net_r": -5.270274,
+        "loss_contribution_pct": 9.1618
+      },
+      {
+        "segment": "SYMBOL=DOGE/USDT + DIRECTION=SHORT + VOLATILITY=UNKNOWN + TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+        "trades": 1,
+        "net_r": -5.262293,
+        "loss_contribution_pct": 9.148
+      },
+      {
+        "segment": "SYMBOL=BNB/USDT + DIRECTION=SHORT + VOLATILITY=UNKNOWN + TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+        "trades": 2,
+        "net_r": -5.123034,
+        "loss_contribution_pct": 8.9059
+      },
+      {
+        "segment": "SYMBOL=BTC/USDT + DIRECTION=SHORT + VOLATILITY=NORMAL_0.5-1% + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+        "trades": 6,
+        "net_r": -4.812075,
+        "loss_contribution_pct": 8.3653
+      },
+      {
+        "segment": "SYMBOL=ETH/USDT + DIRECTION=SHORT + VOLATILITY=HIGH_1-2% + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+        "trades": 2,
+        "net_r": -3.132086,
+        "loss_contribution_pct": 5.4448
+      },
+      {
+        "segment": "SYMBOL=ETH/USDT + DIRECTION=SHORT + VOLATILITY=NORMAL_0.5-1% + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=70-79",
+        "trades": 3,
+        "net_r": -2.362215,
+        "loss_contribution_pct": 4.1065
+      },
+      {
+        "segment": "SYMBOL=ADA/USDT + DIRECTION=SHORT + VOLATILITY=UNKNOWN + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+        "trades": 1,
+        "net_r": -1.638074,
+        "loss_contribution_pct": 2.8476
+      },
+      {
+        "segment": "SYMBOL=BTC/USDT + DIRECTION=SHORT + VOLATILITY=LOW_<0.5% + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=60-69",
+        "trades": 1,
+        "net_r": -1.495374,
+        "loss_contribution_pct": 2.5996
+      },
+      {
+        "segment": "SYMBOL=BTC/USDT + DIRECTION=SHORT + VOLATILITY=LOW_<0.5% + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=70-79",
+        "trades": 1,
+        "net_r": -1.263459,
+        "loss_contribution_pct": 2.1964
+      },
+      {
+        "segment": "SYMBOL=ETH/USDT + DIRECTION=SHORT + VOLATILITY=NORMAL_0.5-1% + TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+        "trades": 1,
+        "net_r": -1.205175,
+        "loss_contribution_pct": 2.0951
+      }
+    ],
+    "scenario_share_to_reach_80pct": 85.7143,
+    "top_20pct_scenario_count": 3,
+    "loss_share_from_top_20pct_pct": 34.9974,
+    "pareto_20_80_confirmed": false
+  },
+  "counterfactual_filters": [
+    {
+      "filter": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+      "sample": 18,
+      "removed_losing_trades": 15,
+      "lost_winning_trades": 3,
+      "removed_net_r": -19.947288,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.30177,
+      "pf_change": 0.014692,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -21.062987,
+      "net_r_change": 19.947289,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 20,
+      "recommendation": "INVESTIGATE"
+    },
+    {
+      "filter": "HOUR_OF_DAY=07:00",
+      "sample": 6,
+      "removed_losing_trades": 6,
+      "lost_winning_trades": 0,
+      "removed_net_r": -17.407785,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.41165,
+      "pf_change": 0.124572,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -23.602491,
+      "net_r_change": 17.407785,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 32,
+      "recommendation": "INVESTIGATE"
+    },
+    {
+      "filter": "QUALITY=B + SCORE=25-26",
+      "sample": 16,
+      "removed_losing_trades": 14,
+      "lost_winning_trades": 2,
+      "removed_net_r": -15.360278,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.324108,
+      "pf_change": 0.03703,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -25.649998,
+      "net_r_change": 15.360278,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 22,
+      "recommendation": "INVESTIGATE"
+    },
+    {
+      "filter": "WEEKDAY=Tuesday",
+      "sample": 5,
+      "removed_losing_trades": 4,
+      "lost_winning_trades": 1,
+      "removed_net_r": -11.635541,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.328768,
+      "pf_change": 0.04169,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -29.374735,
+      "net_r_change": 11.635541,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 33,
+      "recommendation": "INVESTIGATE"
+    },
+    {
+      "filter": "WEEKDAY=Monday",
+      "sample": 5,
+      "removed_losing_trades": 5,
+      "lost_winning_trades": 0,
+      "removed_net_r": -9.623085,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.34475,
+      "pf_change": 0.057672,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -31.38719,
+      "net_r_change": 9.623086,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 33,
+      "recommendation": "INVESTIGATE"
+    },
+    {
+      "filter": "SYMBOL=SOL/USDT + DIRECTION=SHORT",
+      "sample": 6,
+      "removed_losing_trades": 5,
+      "lost_winning_trades": 1,
+      "removed_net_r": -6.403392,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.292147,
+      "pf_change": 0.005069,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.606884,
+      "net_r_change": 6.403392,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 32,
+      "recommendation": "INVESTIGATE"
+    },
+    {
+      "filter": "DIRECTION=SHORT",
+      "sample": 38,
+      "removed_losing_trades": 31,
+      "lost_winning_trades": 7,
+      "removed_net_r": -41.010276,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.0,
+      "pf_change": -0.287078,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": 0,
+      "net_r_change": 41.010276,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 0,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "DIRECTION=SHORT + PRIMARY_BLOCKER=NONE",
+      "sample": 32,
+      "removed_losing_trades": 27,
+      "lost_winning_trades": 5,
+      "removed_net_r": -39.321804,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.757853,
+      "pf_change": 0.470775,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -1.688471,
+      "net_r_change": 39.321805,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 6,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "DIRECTION=SHORT + VOLATILITY=UNKNOWN",
+      "sample": 20,
+      "removed_losing_trades": 16,
+      "lost_winning_trades": 4,
+      "removed_net_r": -29.241027,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.365386,
+      "pf_change": 0.078308,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -11.769249,
+      "net_r_change": 29.241027,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 18,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "TREND_ALIGNMENT=ALIGNED",
+      "sample": 26,
+      "removed_losing_trades": 21,
+      "lost_winning_trades": 5,
+      "removed_net_r": -21.376354,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.184878,
+      "pf_change": -0.1022,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -19.633922,
+      "net_r_change": 21.376354,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 12,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+      "sample": 12,
+      "removed_losing_trades": 10,
+      "lost_winning_trades": 2,
+      "removed_net_r": -19.633922,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.360699,
+      "pf_change": 0.073621,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -21.376354,
+      "net_r_change": 19.633922,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 26,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=AVAX/USDT + CONFIDENCE=90+",
+      "sample": 2,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 0,
+      "removed_net_r": -8.661041,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.337962,
+      "pf_change": 0.050884,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -32.349235,
+      "net_r_change": 8.661041,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 36,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "WEEKDAY=Wednesday",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -8.499531,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.336849,
+      "pf_change": 0.049771,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -32.510745,
+      "net_r_change": 8.499531,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=ADA/USDT + DIRECTION=SHORT",
+      "sample": 4,
+      "removed_losing_trades": 4,
+      "lost_winning_trades": 0,
+      "removed_net_r": -7.838745,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.332369,
+      "pf_change": 0.045291,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -33.171531,
+      "net_r_change": 7.838745,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 34,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "DIRECTION=SHORT + VOLATILITY=NORMAL_0.5-1%",
+      "sample": 12,
+      "removed_losing_trades": 10,
+      "lost_winning_trades": 2,
+      "removed_net_r": -7.008096,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.258042,
+      "pf_change": -0.029036,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.002179,
+      "net_r_change": 7.008097,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 26,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "HOUR_OF_DAY=22:00",
+      "sample": 2,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 0,
+      "removed_net_r": -6.450164,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.323333,
+      "pf_change": 0.036255,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.560112,
+      "net_r_change": 6.450164,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 36,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=BTC/USDT + DIRECTION=SHORT",
+      "sample": 10,
+      "removed_losing_trades": 8,
+      "lost_winning_trades": 2,
+      "removed_net_r": -6.441142,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.26243,
+      "pf_change": -0.024648,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.569134,
+      "net_r_change": 6.441142,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 28,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "SYMBOL=AVAX/USDT + DIRECTION=SHORT",
+      "sample": 3,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 1,
+      "removed_net_r": -6.438691,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.292481,
+      "pf_change": 0.005403,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.571584,
+      "net_r_change": 6.438692,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=BNB/USDT + DIRECTION=SHORT",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -6.313881,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.322472,
+      "pf_change": 0.035394,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.696395,
+      "net_r_change": 6.313881,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=ADA/USDT + CONFIDENCE=UNKNOWN",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -6.200671,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.321761,
+      "pf_change": 0.034683,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.809605,
+      "net_r_change": 6.200671,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "QUALITY=A + SCORE=27+",
+      "sample": 10,
+      "removed_losing_trades": 7,
+      "lost_winning_trades": 3,
+      "removed_net_r": -6.016076,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.19851,
+      "pf_change": -0.088568,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -34.9942,
+      "net_r_change": 6.016076,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 28,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "WEEKDAY=Friday",
+      "sample": 7,
+      "removed_losing_trades": 6,
+      "lost_winning_trades": 1,
+      "removed_net_r": -5.359371,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.28616,
+      "pf_change": -0.000918,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -35.650905,
+      "net_r_change": 5.359371,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 31,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "SYMBOL=SOL/USDT + CONFIDENCE=UNKNOWN",
+      "sample": 5,
+      "removed_losing_trades": 4,
+      "lost_winning_trades": 1,
+      "removed_net_r": -5.270274,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.28553,
+      "pf_change": -0.001548,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -35.740001,
+      "net_r_change": 5.270275,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 33,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=DOGE/USDT + CONFIDENCE=UNKNOWN",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -5.262293,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.315984,
+      "pf_change": 0.028906,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -35.747983,
+      "net_r_change": 5.262293,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=BNB/USDT + CONFIDENCE=UNKNOWN",
+      "sample": 2,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 0,
+      "removed_net_r": -5.123034,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.315144,
+      "pf_change": 0.028066,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -35.887242,
+      "net_r_change": 5.123034,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 36,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=15:00",
+      "sample": 6,
+      "removed_losing_trades": 5,
+      "lost_winning_trades": 1,
+      "removed_net_r": -4.86331,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.278484,
+      "pf_change": -0.008594,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -36.146966,
+      "net_r_change": 4.86331,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 32,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "SYMBOL=BTC/USDT + CONFIDENCE=90+",
+      "sample": 6,
+      "removed_losing_trades": 5,
+      "lost_winning_trades": 1,
+      "removed_net_r": -4.812075,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.284421,
+      "pf_change": -0.002657,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -36.1982,
+      "net_r_change": 4.812076,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 32,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "SYMBOL=ETH/USDT + CONFIDENCE=90+",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -4.337262,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.310488,
+      "pf_change": 0.02341,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -36.673014,
+      "net_r_change": 4.337262,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=ETH/USDT + DIRECTION=SHORT",
+      "sample": 7,
+      "removed_losing_trades": 6,
+      "lost_winning_trades": 1,
+      "removed_net_r": -4.13726,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.274506,
+      "pf_change": -0.012572,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -36.873015,
+      "net_r_change": 4.137261,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 31,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "SYMBOL=DOGE/USDT + DIRECTION=SHORT",
+      "sample": 3,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 1,
+      "removed_net_r": -3.734569,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.270352,
+      "pf_change": -0.016726,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -37.275707,
+      "net_r_change": 3.734569,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "WEEKDAY=Thursday",
+      "sample": 5,
+      "removed_losing_trades": 4,
+      "lost_winning_trades": 1,
+      "removed_net_r": -3.668317,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.276669,
+      "pf_change": -0.010409,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -37.341958,
+      "net_r_change": 3.668318,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 33,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=70-79",
+      "sample": 4,
+      "removed_losing_trades": 4,
+      "lost_winning_trades": 0,
+      "removed_net_r": -3.625674,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.306389,
+      "pf_change": 0.019311,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -37.384602,
+      "net_r_change": 3.625674,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 34,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=23:00",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -3.468955,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.305501,
+      "pf_change": 0.018423,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -37.541321,
+      "net_r_change": 3.468955,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "WEEKDAY=Saturday",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -3.188778,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.303925,
+      "pf_change": 0.016847,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -37.821498,
+      "net_r_change": 3.188778,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "DIRECTION=SHORT + VOLATILITY=HIGH_1-2%",
+      "sample": 2,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 0,
+      "removed_net_r": -3.132086,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.303608,
+      "pf_change": 0.01653,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -37.878189,
+      "net_r_change": 3.132087,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 36,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=03:00",
+      "sample": 2,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 0,
+      "removed_net_r": -2.859125,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.302092,
+      "pf_change": 0.015014,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -38.151151,
+      "net_r_change": 2.859125,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 36,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=14:00",
+      "sample": 2,
+      "removed_losing_trades": 2,
+      "lost_winning_trades": 0,
+      "removed_net_r": -2.512512,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.300189,
+      "pf_change": 0.013111,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -38.497764,
+      "net_r_change": 2.512512,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 36,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=ETH/USDT + CONFIDENCE=70-79",
+      "sample": 3,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 0,
+      "removed_net_r": -2.362215,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.299371,
+      "pf_change": 0.012293,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -38.648061,
+      "net_r_change": 2.362215,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 35,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=ADA/USDT + CONFIDENCE=90+",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.638074,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.295492,
+      "pf_change": 0.008414,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.372201,
+      "net_r_change": 1.638075,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "DIRECTION=SHORT + VOLATILITY=LOW_<0.5%",
+      "sample": 4,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 1,
+      "removed_net_r": -1.629066,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.268106,
+      "pf_change": -0.018972,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.38121,
+      "net_r_change": 1.629066,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 34,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=BTC/USDT + CONFIDENCE=60-69",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.495374,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.294739,
+      "pf_change": 0.007661,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.514901,
+      "net_r_change": 1.495375,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=BTC/USDT + CONFIDENCE=70-79",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.263459,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.293524,
+      "pf_change": 0.006446,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.746817,
+      "net_r_change": 1.263459,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=12:00",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.248989,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.293449,
+      "pf_change": 0.006371,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.761286,
+      "net_r_change": 1.24899,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=05:00",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.20802,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.293236,
+      "pf_change": 0.006158,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.802256,
+      "net_r_change": 1.20802,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=21:00",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.205175,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.293221,
+      "pf_change": 0.006143,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.805101,
+      "net_r_change": 1.205175,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=BNB/USDT + CONFIDENCE=90+",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.190847,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.293146,
+      "pf_change": 0.006068,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.819429,
+      "net_r_change": 1.190847,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "SYMBOL=SOL/USDT + CONFIDENCE=90+",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -1.133117,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.292846,
+      "pf_change": 0.005768,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -39.877158,
+      "net_r_change": 1.133118,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=04:00",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -0.958094,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.29194,
+      "pf_change": 0.004862,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -40.052182,
+      "net_r_change": 0.958094,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "HOUR_OF_DAY=01:00",
+      "sample": 1,
+      "removed_losing_trades": 1,
+      "lost_winning_trades": 0,
+      "removed_net_r": -0.728402,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.290759,
+      "pf_change": 0.003681,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -40.281874,
+      "net_r_change": 0.728402,
+      "minimum_sample": 5,
+      "minimum_sample_passed": false,
+      "remaining_trades": 37,
+      "recommendation": "INSUFFICIENT_DATA"
+    },
+    {
+      "filter": "DIRECTION=SHORT + PRIMARY_BLOCKER=MOMENTUM",
+      "sample": 5,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 2,
+      "removed_net_r": -0.555354,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.21727,
+      "pf_change": -0.069808,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -40.454922,
+      "net_r_change": 0.555354,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 33,
+      "recommendation": "KEEP_IN_SHADOW"
+    },
+    {
+      "filter": "HOUR_OF_DAY=19:00",
+      "sample": 6,
+      "removed_losing_trades": 3,
+      "lost_winning_trades": 3,
+      "removed_net_r": -0.538872,
+      "baseline_pf": 0.287078,
+      "counterfactual_pf": 0.181901,
+      "pf_change": -0.105177,
+      "baseline_net_r": -41.010276,
+      "counterfactual_net_r": -40.471404,
+      "net_r_change": 0.538872,
+      "minimum_sample": 5,
+      "minimum_sample_passed": true,
+      "remaining_trades": 32,
+      "recommendation": "KEEP_IN_SHADOW"
+    }
+  ],
+  "top_loss_scenarios": [
+    {
+      "segment": "DIRECTION=SHORT + PRIMARY_BLOCKER=NONE",
+      "fields": {
+        "direction": "SHORT",
+        "primary_blocker": "NONE"
+      },
+      "trades": 32,
+      "wins": 5,
+      "losses": 27,
+      "winrate_pct": 15.625,
+      "profit_factor": 0.22214,
+      "net_r": -39.321804,
+      "average_r": -1.228806,
+      "gross_loss_r": 50.551263,
+      "loss_contribution_pct": 68.357,
+      "sample_share_pct": 84.2105,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-3aaceee6f17c6a35",
+        "TR-c7f62214deee4248",
+        "TR-fc79dcb58aab548a",
+        "TR-608687f7176f3923",
+        "TR-337fbdeda5d8831e",
+        "TR-00daf140cae45ec1",
+        "TR-e967841f3a9dbfcd",
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-c4e6b259c534ecd1",
+        "TR-5c772818388b697a",
+        "TR-449686fd43cc678e",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-b2981f35b49cd641",
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + VOLATILITY=UNKNOWN",
+      "fields": {
+        "direction": "SHORT",
+        "volatility": "UNKNOWN"
+      },
+      "trades": 20,
+      "wins": 4,
+      "losses": 16,
+      "winrate_pct": 20.0,
+      "profit_factor": 0.249819,
+      "net_r": -29.241027,
+      "average_r": -1.462051,
+      "gross_loss_r": 38.978646,
+      "loss_contribution_pct": 50.8326,
+      "sample_share_pct": 52.6316,
+      "trade_ids": [
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-caa0e9223617115d",
+        "TR-b2981f35b49cd641",
+        "TR-0a3784c5a89eaafb",
+        "TR-d505ccbb50b3804d",
+        "TR-b7b978072d6cd1e1",
+        "TR-d4f481317f37bbf4",
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+      "fields": {
+        "trend_alignment": "ALIGNED",
+        "confidence": "90+"
+      },
+      "trades": 18,
+      "wins": 3,
+      "losses": 15,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.270877,
+      "net_r": -19.947288,
+      "average_r": -1.108183,
+      "gross_loss_r": 27.35793,
+      "loss_contribution_pct": 34.6764,
+      "sample_share_pct": 47.3684,
+      "trade_ids": [
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-c4e6b259c534ecd1",
+        "TR-5c772818388b697a",
+        "TR-449686fd43cc678e",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-31b37a3ff5415dcd",
+        "TR-f966d76437abab3d",
+        "TR-3fd5eb6957c57fb4",
+        "TR-caa0e9223617115d",
+        "TR-b2981f35b49cd641",
+        "TR-0a3784c5a89eaafb",
+        "TR-d505ccbb50b3804d",
+        "TR-b7b978072d6cd1e1",
+        "TR-d4f481317f37bbf4"
+      ]
+    },
+    {
+      "segment": "TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+      "fields": {
+        "trend_alignment": "UNKNOWN",
+        "confidence": "UNKNOWN"
+      },
+      "trades": 12,
+      "wins": 2,
+      "losses": 10,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.184878,
+      "net_r": -19.633922,
+      "average_r": -1.63616,
+      "gross_loss_r": 24.087102,
+      "loss_contribution_pct": 34.1316,
+      "sample_share_pct": 31.5789,
+      "trade_ids": [
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "QUALITY=UNKNOWN + SCORE=UNKNOWN",
+      "fields": {
+        "quality": "UNKNOWN",
+        "score": "UNKNOWN"
+      },
+      "trades": 12,
+      "wins": 2,
+      "losses": 10,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.184878,
+      "net_r": -19.633922,
+      "average_r": -1.63616,
+      "gross_loss_r": 24.087102,
+      "loss_contribution_pct": 34.1316,
+      "sample_share_pct": 31.5789,
+      "trade_ids": [
+        "TR-d017e039838dceba",
+        "TR-0bfc1af759e84cd4",
+        "TR-31ec0dbdd2111605",
+        "TR-c7beee6397baee2d",
+        "TR-d175159ca0835c4c",
+        "TR-cc065d8ee478c69c",
+        "TR-676506c4a71538c4",
+        "TR-eb7f825c11e652d1",
+        "TR-0042d3db1e50d660",
+        "TR-4f52864527c4b280",
+        "TR-4a5589cc5e15c21a",
+        "TR-1f9b98356368b953"
+      ]
+    },
+    {
+      "segment": "QUALITY=B + SCORE=25-26",
+      "fields": {
+        "quality": "B",
+        "score": "25-26"
+      },
+      "trades": 16,
+      "wins": 2,
+      "losses": 14,
+      "winrate_pct": 12.5,
+      "profit_factor": 0.215285,
+      "net_r": -15.360278,
+      "average_r": -0.960017,
+      "gross_loss_r": 19.574341,
+      "loss_contribution_pct": 26.7023,
+      "sample_share_pct": 42.1053,
+      "trade_ids": [
+        "TR-69f5e07226c99942",
+        "TR-3aaceee6f17c6a35",
+        "TR-c7f62214deee4248",
+        "TR-fc79dcb58aab548a",
+        "TR-608687f7176f3923",
+        "TR-337fbdeda5d8831e",
+        "TR-00daf140cae45ec1",
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-c4e6b259c534ecd1",
+        "TR-449686fd43cc678e",
+        "TR-1dd5b92dfb0685da",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-31b37a3ff5415dcd",
+        "TR-b2981f35b49cd641",
+        "TR-d505ccbb50b3804d"
+      ]
+    },
+    {
+      "segment": "SYMBOL=AVAX/USDT + CONFIDENCE=90+",
+      "fields": {
+        "symbol": "AVAX/USDT",
+        "confidence": "90+"
+      },
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -8.661041,
+      "average_r": -4.33052,
+      "gross_loss_r": 8.661041,
+      "loss_contribution_pct": 15.0564,
+      "sample_share_pct": 5.2632,
+      "trade_ids": [
+        "TR-f966d76437abab3d",
+        "TR-d505ccbb50b3804d"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ADA/USDT + DIRECTION=SHORT",
+      "fields": {
+        "symbol": "ADA/USDT",
+        "direction": "SHORT"
+      },
+      "trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -7.838745,
+      "average_r": -1.959686,
+      "gross_loss_r": 7.838745,
+      "loss_contribution_pct": 13.6269,
+      "sample_share_pct": 10.5263,
+      "trade_ids": [
+        "TR-b2981f35b49cd641",
+        "TR-c7beee6397baee2d",
+        "TR-676506c4a71538c4",
+        "TR-0042d3db1e50d660"
+      ]
+    },
+    {
+      "segment": "SYMBOL=ADA/USDT + MARKET_REGIME=UNKNOWN",
+      "fields": {
+        "symbol": "ADA/USDT",
+        "market_regime": "UNKNOWN"
+      },
+      "trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "winrate_pct": 0.0,
+      "profit_factor": 0.0,
+      "net_r": -7.838745,
+      "average_r": -1.959686,
+      "gross_loss_r": 7.838745,
+      "loss_contribution_pct": 13.6269,
+      "sample_share_pct": 10.5263,
+      "trade_ids": [
+        "TR-b2981f35b49cd641",
+        "TR-c7beee6397baee2d",
+        "TR-676506c4a71538c4",
+        "TR-0042d3db1e50d660"
+      ]
+    },
+    {
+      "segment": "DIRECTION=SHORT + VOLATILITY=NORMAL_0.5-1%",
+      "fields": {
+        "direction": "SHORT",
+        "volatility": "NORMAL_0.5-1%"
+      },
+      "trades": 12,
+      "wins": 2,
+      "losses": 10,
+      "winrate_pct": 16.6667,
+      "profit_factor": 0.400839,
+      "net_r": -7.008096,
+      "average_r": -0.584008,
+      "gross_loss_r": 11.696514,
+      "loss_contribution_pct": 12.1829,
+      "sample_share_pct": 31.5789,
+      "trade_ids": [
+        "TR-3aaceee6f17c6a35",
+        "TR-fc79dcb58aab548a",
+        "TR-337fbdeda5d8831e",
+        "TR-e967841f3a9dbfcd",
+        "TR-ce5794abb846103c",
+        "TR-8416edde9d850bf9",
+        "TR-5c772818388b697a",
+        "TR-1dd5b92dfb0685da",
+        "TR-57e951836470a80f",
+        "TR-5fd96d58c8a5c10b",
+        "TR-30cb6d2d9d8dbe34",
+        "TR-31b37a3ff5415dcd"
+      ]
+    }
+  ],
+  "data_coverage": {
+    "symbol": 100.0,
+    "direction": 100.0,
+    "timeframe": 0.0,
+    "hour_of_day": 100.0,
+    "weekday": 100.0,
+    "volatility": 47.37,
+    "trend_alignment": 68.42,
+    "confidence": 68.42,
+    "score": 68.42,
+    "quality": 68.42,
+    "primary_blocker": 100.0,
+    "exit_type": 100.0,
+    "consecutive_losses": 100.0,
+    "market_regime": 0.0
+  },
+  "allowed_recommendations": [
+    "INSUFFICIENT_DATA",
+    "INVESTIGATE",
+    "KEEP_IN_SHADOW"
+  ],
+  "restrictions": [
+    "READ_ONLY",
+    "SHADOW_ONLY",
+    "NO_AUTOMATIC_FILTER_APPLICATION",
+    "LIVE_AND_TRADING_LOGIC_UNCHANGED"
+  ]
+}

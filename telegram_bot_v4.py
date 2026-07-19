@@ -37,6 +37,31 @@ from live_monitor.formatters import (
     state_age_text as live_state_age_text,
 )
 from notification_manager import save_chat_id
+from execution_simulator import (
+    ExecutionSimulator,
+    format_execution,
+    load_execution_report,
+)
+from loss_attribution import (
+    LossAttribution,
+    format_loss_analysis,
+    load_loss_report,
+)
+from signal_quality_analyzer import (
+    SignalQualityAnalyzer,
+    format_signal_quality,
+    load_signal_quality,
+)
+from decision_engine_v2 import (
+    DecisionEngineV2,
+    format_decision_v2,
+    load_decision_v2,
+)
+from portfolio_manager import (
+    PortfolioManager,
+    format_portfolio,
+    load_portfolio_report,
+)
 from news_observer.formatter import format_telegram as format_news_v2
 from research_consensus.consensus_formatter import (
     format_group as format_consensus_group,
@@ -45,6 +70,10 @@ from research_consensus.consensus_formatter import (
 )
 from research_orchestrator.formatter import (
     format_telegram as format_research_orchestrator,
+)
+from research_dashboard import (
+    format_telegram as format_research_dashboard,
+    read_dashboard as read_research_dashboard,
 )
 from telegram_formatters import (
     format_ai_coach as v5_format_ai_coach,
@@ -72,6 +101,10 @@ from trade_metrics_normalizer import (
     aggregate_trade_metrics,
     is_closed_trade,
     normalize_closed_trades,
+)
+from trade_registry import (
+    format_summary as format_data_quality_summary,
+    read_quality_report,
 )
 
 
@@ -136,6 +169,7 @@ RESEARCH_ORCHESTRATOR_REPORT_FILE = BASE_DIR / "research_orchestrator_report.jso
 ADAPTIVE_RESEARCH_REPORT_FILE = BASE_DIR / "adaptive_research_report.json"
 ADAPTIVE_RESEARCH_STATE_FILE = BASE_DIR / "adaptive_research_state.json"
 EXPERIMENT_PROMOTION_REPORT_FILE = BASE_DIR / "experiment_promotion_report.json"
+WALK_FORWARD_REPORT_FILE = BASE_DIR / "reports" / "walk_forward.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
@@ -2715,9 +2749,19 @@ def format_promotion(args: List[str] | None = None) -> str:
 
 
 def format_dashboard(args: Optional[List[str]] = None) -> str:
-    """Format the Live Dashboard Core screen."""
-    section = args[0] if args else "overview"
-    return format_live_dashboard(section)
+    """Format Research Dashboard v1 with legacy operational drill-downs."""
+    section = args[0].strip().lower() if args else ""
+    if section in {"trading", "live", "news", "lab", "memory"}:
+        return format_live_dashboard(section)
+    report = read_research_dashboard()
+    if not report:
+        return (
+            "📊 Research Dashboard\n\n"
+            "Status: NOT_AVAILABLE\n"
+            "Запусти read-only отчёт:\n"
+            "venv/bin/python research_dashboard.py"
+        )
+    return format_research_dashboard(report, section)
 
 
 def format_market() -> str:
@@ -2758,6 +2802,90 @@ def format_settings() -> str:
 def format_developer() -> str:
     """Format the developer section intro."""
     return v5_format_developer()
+
+
+def format_dataquality() -> str:
+    """Format the latest persisted Trade Registry quality report."""
+    report = read_quality_report()
+    if not report:
+        return (
+            "📋 Data Quality\n\n"
+            "Status: NOT_AVAILABLE\n"
+            "Запусти read-only реестр:\n"
+            "venv/bin/python trade_registry.py"
+        )
+    return format_data_quality_summary(report)
+
+
+def format_portfolio_status(view: str = "") -> str:
+    report = load_portfolio_report()
+    if not report:
+        report = PortfolioManager().portfolio_summary()
+    return format_portfolio(report, view)
+
+
+def format_execution_status(view: str = "") -> str:
+    report = load_execution_report()
+    requested_mode = "STRESS" if view == "stress" else None
+    if not report or (requested_mode and report.get("mode") != requested_mode):
+        report = ExecutionSimulator().run(requested_mode or "NORMAL")
+    return format_execution(report, "summary" if view == "summary" else "")
+
+
+def format_lossanalysis_status(view: str = "") -> str:
+    report = load_loss_report()
+    if not report:
+        report = LossAttribution().build_report()
+    return format_loss_analysis(report, view)
+
+
+def format_signalquality_status(view: str = "") -> str:
+    report = load_signal_quality()
+    if not report:
+        report = SignalQualityAnalyzer().build_report()
+    return format_signal_quality(report, view)
+
+
+def format_decisionv2_status(view: str = "") -> str:
+    report = load_decision_v2()
+    if not report:
+        report = DecisionEngineV2().build_report()
+    return format_decision_v2(report, view)
+
+
+def format_walkforward() -> str:
+    """Format the latest persisted Shadow Walk-Forward report."""
+    report = read_json(WALK_FORWARD_REPORT_FILE)
+    if not report:
+        return (
+            "📈 Walk Forward\n\n"
+            "Status: NO_DATA\n"
+            "Запусти read-only отчёт:\n"
+            "venv/bin/python walk_forward_validator.py"
+        )
+    counts = report.get("verdict_counts", {})
+    best = report.get("best", {})
+    return "\n".join(
+        [
+            "📈 Walk Forward",
+            f"Status: {report.get('status', 'INSUFFICIENT_DATA')}",
+            f"Hypotheses: {report.get('hypotheses_count', 0)}",
+            "READY_FOR_AB:",
+            str(counts.get("READY_FOR_AB", 0)),
+            "CONTINUE_RESEARCH:",
+            str(counts.get("CONTINUE_RESEARCH", 0)),
+            "REJECT:",
+            str(counts.get("REJECT", 0)),
+            "Best Stability:",
+            str(best.get("hypothesis", "N/A")),
+            "Stability:",
+            str(best.get("stability_score", 0)),
+            "Average PF:",
+            str(best.get("average_pf", 0)),
+            "Recommendation:",
+            str(best.get("recommendation", "Continue Shadow Research")),
+        ]
+    )
 
 
 def with_v5_footer(text: str) -> str:
@@ -2827,6 +2955,7 @@ def help_text() -> str:
             "",
             "Прямые команды для глубокой аналитики всё ещё доступны:",
             "/diagnostics BTC",
+            "/dashboard hypotheses|conflicts|status|history",
             "/dashboard trading|live|news|lab|memory",
             "/blocked Momentum|Structure|Risk|Trend|ALL",
             "/research /experiments /calibration /quality",
@@ -2839,6 +2968,8 @@ def help_text() -> str:
             "/consensus momentum|edge|news|summary",
             "/adaptive status|recommendations|stages",
             "/promotion details",
+            "/walkforward",
+            "/dataquality | /trades health",
         ]
     )
 
@@ -2917,7 +3048,49 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def trades_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.args and context.args[0].strip().lower() == "health":
+        await reply(update, format_dataquality())
+        return
     await reply(update, format_trades())
+
+
+async def dataquality_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    await reply(update, format_dataquality())
+
+
+async def portfolio_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    view = context.args[0].strip().lower() if context.args else ""
+    await reply(update, format_portfolio_status(view))
+
+
+async def execution_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    view = context.args[0].strip().lower() if context.args else ""
+    await reply(update, format_execution_status(view))
+
+
+async def lossanalysis_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    view = context.args[0].strip().lower() if context.args else ""
+    await reply(update, format_lossanalysis_status(view))
+
+
+async def decisionv2_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    view = context.args[0].strip().lower() if context.args else ""
+    await reply(update, format_decisionv2_status(view))
 
 
 async def settings_command(
@@ -2982,7 +3155,8 @@ async def quality_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    await reply(update, format_quality())
+    view = context.args[0].strip().lower() if context.args else ""
+    await reply(update, format_signalquality_status(view))
 
 
 async def filters_command(
@@ -3112,6 +3286,14 @@ async def adaptive_command(
     await reply(update, format_adaptive(context.args))
 
 
+async def walkforward_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Return the latest report without running or applying research."""
+    await reply(update, format_walkforward())
+
+
 async def promotion_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3221,6 +3403,11 @@ def build_app():
     app.add_handler(CommandHandler("diagnostics", diagnostics_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("trades", trades_command))
+    app.add_handler(CommandHandler("dataquality", dataquality_command))
+    app.add_handler(CommandHandler("portfolio", portfolio_command))
+    app.add_handler(CommandHandler("execution", execution_command))
+    app.add_handler(CommandHandler("lossanalysis", lossanalysis_command))
+    app.add_handler(CommandHandler("decisionv2", decisionv2_command))
     app.add_handler(CommandHandler("posttrade", posttrade_command))
     app.add_handler(CommandHandler("calibration", calibration_command))
     app.add_handler(CommandHandler("research", research_command))
@@ -3244,6 +3431,7 @@ def build_app():
     app.add_handler(CommandHandler("replay", replay_command))
     app.add_handler(CommandHandler("consensus", consensus_command))
     app.add_handler(CommandHandler("adaptive", adaptive_command))
+    app.add_handler(CommandHandler("walkforward", walkforward_command))
     app.add_handler(CommandHandler("promotion", promotion_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)

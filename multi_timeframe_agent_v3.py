@@ -1128,23 +1128,6 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
         decision=decision,
         market=market,
     )
-    portfolio_evaluation = PORTFOLIO_MANAGER.evaluate_and_log(
-        candidate={
-            "symbol": symbol,
-            "direction": decision.direction,
-            "decision": decision.signal,
-            "score": decision.score,
-            "confidence": decision.confidence,
-        },
-    )
-    if not portfolio_evaluation.get("allowed", True):
-        LOGGER.timestamped(
-            (
-                f"[Portfolio dry-run] {symbol} would not be recommended: "
-                f"{' | '.join(portfolio_evaluation.get('reasons', []))}"
-            ),
-            minimum="VERBOSE",
-        )
     ADA_OPPORTUNITY_DRY_RUN.evaluate(
         symbol=symbol,
         decision=decision,
@@ -1224,6 +1207,29 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                     "SHORT rejected by higher timeframe trend filter",
                 )
                 LOGGER.higher_tf_rejected(symbol, "SHORT")
+                log_final_status()
+                return decision, market
+
+            portfolio_evaluation = PORTFOLIO_MANAGER.can_open_trade({
+                "symbol": symbol,
+                "direction": decision.direction,
+                "decision": decision.signal,
+                "score": decision.score,
+                "confidence": decision.confidence,
+                "entry": entry,
+                "stop_loss": stop_loss,
+            })
+            if portfolio_evaluation["status"] == "BLOCK":
+                reasons = portfolio_evaluation["reasons"]
+                diagnostics.set_execution_status(
+                    decision,
+                    "BLOCKED_PORTFOLIO",
+                    " | ".join(reasons),
+                )
+                LOGGER.timestamped(
+                    f"[Portfolio] {symbol} BLOCK: {' | '.join(reasons)}",
+                    minimum="NORMAL",
+                )
                 log_final_status()
                 return decision, market
 

@@ -1,0 +1,5 @@
+{
+  "BTC": ["BTC", "ETH"],
+  "L1": ["SOL", "AVAX", "SUI"],
+  "MEME": ["DOGE", "SHIB", "PEPE"]
+}

@@ -8,7 +8,7 @@ from statistics import mean
 from typing import Any, Mapping
 
 from report_metadata import build_report_metadata, timestamp_bounds
-from trade_metrics_normalizer import normalize_closed_trades, read_trade_rows
+from trade_registry import TradeRegistry
 
 from .execution_model import ExecutionAssumptions, ExecutionModel
 from .latency_model import LatencyModel
@@ -41,18 +41,18 @@ class ShadowReplayEngine:
 
     def build_report(self) -> dict[str, Any]:
         """Run all deterministic scenarios without mutating source data."""
-        source_rows = read_trade_rows(self.trades_path)
-        normalized = normalize_closed_trades(source_rows)
-        complete = [
-            row for row in normalized if row.get("metrics_status") == "COMPLETE"
-        ]
-        incomplete = len(normalized) - len(complete)
+        registry = TradeRegistry(self.trades_path)
+        normalized = registry.get_closed_trades()
+        complete = registry.get_complete_trades()
+        registry_statistics = registry.get_statistics()
+        incomplete = int(registry_statistics.get("incomplete_trades", 0))
+        invalid = int(registry_statistics.get("invalid_trades", 0))
         warnings: list[str] = []
         if not self.trades_path.exists():
             warnings.append("trades.csv отсутствует")
-        if incomplete:
+        if incomplete or invalid:
             warnings.append(
-                f"{incomplete} закрытых сделок исключены: "
+                f"{incomplete + invalid} закрытых сделок исключены: "
                 "R-метрики неполные"
             )
 
@@ -159,6 +159,7 @@ class ShadowReplayEngine:
                 "closed_trades_total": len(normalized),
                 "complete_metrics_total": len(complete),
                 "incomplete_metrics_total": incomplete,
+                "invalid_trades_total": invalid,
                 "minimum_for_conclusion": 50,
             },
             "assumptions": {

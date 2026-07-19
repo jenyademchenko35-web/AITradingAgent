@@ -1,300 +1,245 @@
-"""Read-only Portfolio Manager v1 for AITradingAgent.
+"""Portfolio-level ALLOW/BLOCK gate between signals and trade execution.
 
-The manager evaluates whether a new trade would fit current portfolio limits,
-but v1 is advisory/dry-run only. It never opens, closes, blocks, or modifies
-trades and does not change DecisionEngine, config, strategy weights, or live
-trading logic.
+The module is deliberately narrow: it does not alter signals, prices, stops,
+targets, sizing, confidence, or strategy decisions.  It only evaluates whether
+the candidate's existing risk estimate fits the current open portfolio.
 """
 
 from __future__ import annotations
 
-import csv
+import json
+import math
+import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
+from trade_registry import TradeRegistry
 
 BASE_DIR = Path(__file__).resolve().parent
-CSV_OUTPUT = BASE_DIR / "portfolio_manager_dry_run.csv"
+DEFAULT_CONFIG_PATH = BASE_DIR / "portfolio_config.json"
+DEFAULT_GROUPS_PATH = BASE_DIR / "correlation_groups.json"
+REPORT_PATH = BASE_DIR / "reports" / "portfolio_manager.json"
+SUMMARY_PATH = BASE_DIR / "reports" / "portfolio_manager_summary.txt"
 
-MODE = "DRY_RUN"
-MAX_OPEN_TRADES = 2
-MAX_TOTAL_RISK_PCT = 2.0
-MAX_RISK_PER_TRADE_PCT = 1.0
-FALLBACK_RISK_PCT = 1.0
-
-CORRELATION_GROUPS = {
-    "crypto_major": {"BTC", "ETH"},
-    "crypto_l1": {"SOL", "BNB", "AVAX"},
-    "crypto_meme": {"DOGE"},
-    "crypto_large": {"XRP", "ADA", "LINK"},
+ALLOWED_REASONS = {
+    "MAX_OPEN_TRADES", "MAX_PORTFOLIO_RISK", "MAX_SYMBOL_RISK",
+    "GROUP_RISK_LIMIT", "DUPLICATE_POSITION", "HEDGE_NOT_ALLOWED",
 }
 
 
+def _number(value: Any, default: float = 0.0) -> float:
+    try:
+        result = float(value)
+        return result if math.isfinite(result) else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _base_symbol(value: Any) -> str:
+    symbol = str(value or "").upper().strip()
+    if "/" in symbol:
+        return symbol.split("/", 1)[0]
+    for quote in ("USDT", "USDC", "USD"):
+        if symbol.endswith(quote) and len(symbol) > len(quote):
+            return symbol[:-len(quote)]
+    return symbol
+
+
 class PortfolioManager:
-    """Advisory-only portfolio risk and exposure checker."""
+    """Deterministic portfolio gate using Trade Registry open positions."""
 
-    CSV_FIELDS: Sequence[str] = (
-        "timestamp",
-        "symbol",
-        "direction",
-        "decision",
-        "score",
-        "confidence",
-        "allowed",
-        "reasons",
-        "warnings",
-        "current_open_trades",
-        "estimated_total_risk_pct",
-    )
+    def __init__(
+        self,
+        *,
+        registry: TradeRegistry | None = None,
+        config_path: str | Path = DEFAULT_CONFIG_PATH,
+        groups_path: str | Path = DEFAULT_GROUPS_PATH,
+        report_path: str | Path = REPORT_PATH,
+        summary_path: str | Path = SUMMARY_PATH,
+    ) -> None:
+        self.registry = registry or TradeRegistry(BASE_DIR / "trades.csv")
+        self.config_path = Path(config_path)
+        self.groups_path = Path(groups_path)
+        self.report_path = Path(report_path)
+        self.summary_path = Path(summary_path)
+        self.config = self._load_json(self.config_path)
+        self.groups = self._load_json(self.groups_path)
 
-    def __init__(self, csv_file: Optional[Path | str] = None) -> None:
-        """Initialize the dry-run CSV output."""
-        self.csv_file = Path(csv_file) if csv_file else CSV_OUTPUT
-        self._ensure_file()
-
-    def load_active_trades(self) -> list[dict[str, Any]]:
-        """Read active trades from the existing trade_tracker adapter.
-
-        The current project source of truth is trade_tracker.get_open_trades(),
-        which reads trades.csv and returns rows with status=OPEN. If the file or
-        adapter is unavailable, Portfolio Manager v1 treats the portfolio as
-        empty and records a warning in the evaluation.
-        """
+    @staticmethod
+    def _load_json(path: Path) -> dict[str, Any]:
         try:
-            from trade_tracker import get_open_trades
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            return payload if isinstance(payload, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
 
-            trades = get_open_trades()
-            return [dict(trade) for trade in trades]
-        except Exception:
-            return []
+    @property
+    def max_open_trades(self) -> int:
+        return int(self.config.get("MAX_OPEN_TRADES", 3))
 
-    def evaluate_new_trade(
-        self,
-        candidate: Mapping[str, Any],
-        active_trades: Optional[list[Mapping[str, Any]]] = None,
-    ) -> dict[str, Any]:
-        """Evaluate a candidate trade without changing live behavior."""
-        active = list(active_trades or [])
-        symbol = self._candidate_value(candidate, "symbol")
-        direction = self._candidate_value(candidate, "direction").upper()
-        decision = self._candidate_value(candidate, "decision", "signal")
-        score = self._candidate_value(candidate, "score")
-        confidence = self._candidate_value(candidate, "confidence")
-        candidate_risk = self._risk_pct(candidate)
+    @property
+    def max_portfolio_risk(self) -> float:
+        return _number(self.config.get("MAX_PORTFOLIO_RISK", 3.0), 3.0)
 
-        reasons: list[str] = []
-        warnings: list[str] = []
-        allowed = True
+    @property
+    def max_symbol_risk(self) -> float:
+        return _number(self.config.get("MAX_SYMBOL_RISK", 1.0), 1.0)
 
-        if not symbol:
-            warnings.append("Candidate symbol is missing.")
-        if direction not in {"LONG", "SHORT"}:
-            warnings.append("Candidate direction is missing or not LONG/SHORT.")
+    @property
+    def max_group_risk(self) -> float:
+        return _number(self.config.get("MAX_CORRELATED_GROUP_RISK", 2.0), 2.0)
 
-        current_open = len(active)
-        if current_open >= MAX_OPEN_TRADES:
-            allowed = False
-            reasons.append(
-                f"Max open trades reached: {current_open}/{MAX_OPEN_TRADES}."
-            )
+    def _positions(self, positions: Iterable[Mapping[str, Any]] | None = None) -> list[dict[str, Any]]:
+        source = self.registry.get_open_trades() if positions is None else positions
+        return [dict(item) for item in source]
 
-        if self._has_symbol_trade(symbol, active):
-            allowed = False
-            reasons.append(f"Open trade already exists for {symbol}.")
+    def _risk_pct(self, payload: Mapping[str, Any]) -> float:
+        # Risk Engine adapters may expose any of these existing calculated fields.
+        for key in ("risk_pct", "risk_percent", "position_risk_pct"):
+            if payload.get(key) not in (None, ""):
+                return max(0.0, _number(payload.get(key)))
+        # Legacy open rows do not persist sizing; use the configured per-symbol
+        # risk cap as a conservative estimate instead of reimplementing sizing.
+        return self.max_symbol_risk
 
-        if candidate_risk > MAX_RISK_PER_TRADE_PCT:
-            allowed = False
-            reasons.append(
-                f"Candidate risk {candidate_risk:.2f}% exceeds "
-                f"per-trade limit {MAX_RISK_PER_TRADE_PCT:.2f}%."
-            )
+    def calculate_portfolio_risk(self, positions: Iterable[Mapping[str, Any]] | None = None) -> float:
+        return round(sum(self._risk_pct(row) for row in self._positions(positions)), 6)
 
-        active_risk = sum(self._risk_pct(trade) for trade in active)
-        estimated_total_risk = round(active_risk + candidate_risk, 4)
-        if estimated_total_risk > MAX_TOTAL_RISK_PCT:
-            allowed = False
-            reasons.append(
-                f"Estimated total risk {estimated_total_risk:.2f}% exceeds "
-                f"portfolio limit {MAX_TOTAL_RISK_PCT:.2f}%."
-            )
-
-        group_name = self._correlation_group(symbol)
-        if group_name:
-            same_group_same_direction = self._same_group_direction_count(
-                group_name,
-                direction,
-                active,
-            )
-            if same_group_same_direction >= 2:
-                warnings.append(
-                    f"Correlation warning: {same_group_same_direction} existing "
-                    f"{direction} trades in {group_name}; v1 warns only."
-                )
-
-        if not reasons:
-            reasons.append("Portfolio dry-run checks passed.")
-        if not warnings:
-            warnings.append("none")
-
-        return {
-            "allowed": allowed,
-            "mode": MODE,
-            "reasons": reasons,
-            "warnings": warnings,
-            "current_open_trades": current_open,
-            "max_open_trades": MAX_OPEN_TRADES,
-            "estimated_total_risk_pct": estimated_total_risk,
-            "candidate_symbol": symbol,
-            "candidate_direction": direction,
-            "candidate_decision": decision,
-            "candidate_score": score,
-            "candidate_confidence": confidence,
-            "risk_source": (
-                "fallback"
-                if candidate_risk == FALLBACK_RISK_PCT and not candidate.get("risk_pct")
-                else "candidate"
-            ),
-        }
-
-    def evaluate_and_log(
-        self,
-        candidate: Mapping[str, Any],
-        active_trades: Optional[list[Mapping[str, Any]]] = None,
-    ) -> dict[str, Any]:
-        """Evaluate a candidate and append one dry-run CSV row."""
-        active = active_trades if active_trades is not None else self.load_active_trades()
-        result = self.evaluate_new_trade(candidate, active)
-        self.log_evaluation(candidate, result)
+    def calculate_symbol_exposure(self, positions: Iterable[Mapping[str, Any]] | None = None) -> dict[str, float]:
+        result: dict[str, float] = {}
+        for row in self._positions(positions):
+            symbol = _base_symbol(row.get("symbol"))
+            result[symbol] = round(result.get(symbol, 0.0) + self._risk_pct(row), 6)
         return result
 
-    def log_evaluation(
-        self,
-        candidate: Mapping[str, Any],
-        evaluation: Mapping[str, Any],
-    ) -> None:
-        """Append a dry-run portfolio evaluation row."""
-        row = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "symbol": evaluation.get("candidate_symbol", ""),
-            "direction": evaluation.get("candidate_direction", ""),
-            "decision": evaluation.get("candidate_decision", ""),
-            "score": evaluation.get("candidate_score", ""),
-            "confidence": evaluation.get("candidate_confidence", ""),
-            "allowed": evaluation.get("allowed", ""),
-            "reasons": " | ".join(evaluation.get("reasons", [])),
-            "warnings": " | ".join(evaluation.get("warnings", [])),
-            "current_open_trades": evaluation.get("current_open_trades", ""),
-            "estimated_total_risk_pct": evaluation.get("estimated_total_risk_pct", ""),
+    def calculate_correlation_exposure(self, positions: Iterable[Mapping[str, Any]] | None = None) -> dict[str, float]:
+        symbols = self.calculate_symbol_exposure(positions)
+        return {
+            name: round(sum(symbols.get(_base_symbol(symbol), 0.0) for symbol in members), 6)
+            for name, members in self.groups.items() if isinstance(members, list)
         }
-        self._append(row)
 
-    def format_portfolio_status(
+    def _group_for(self, symbol: str) -> str | None:
+        base = _base_symbol(symbol)
+        return next((name for name, members in self.groups.items() if base in {_base_symbol(x) for x in members}), None)
+
+    def can_open_trade(
         self,
-        active_trades: Optional[list[Mapping[str, Any]]] = None,
-    ) -> str:
-        """Format current portfolio status for console/Telegram use."""
-        active = active_trades if active_trades is not None else self.load_active_trades()
-        total_risk = round(sum(self._risk_pct(trade) for trade in active), 4)
-        symbols = [
-            f"{trade.get('symbol', 'UNKNOWN')} {str(trade.get('direction', '')).upper()}"
-            for trade in active
-        ]
-        warnings = []
-        if len(active) > MAX_OPEN_TRADES:
-            warnings.append("open trade limit exceeded")
-        if total_risk > MAX_TOTAL_RISK_PCT:
-            warnings.append("total risk limit exceeded")
+        signal: Mapping[str, Any],
+        positions: Iterable[Mapping[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        active = self._positions(positions)
+        symbol = _base_symbol(signal.get("symbol"))
+        direction = str(signal.get("direction", "")).upper()
+        new_risk = self._risk_pct(signal)
+        current_risk = self.calculate_portfolio_risk(active)
+        symbol_risk = self.calculate_symbol_exposure(active).get(symbol, 0.0) + new_risk
+        group = self._group_for(symbol)
+        group_risk = self.calculate_correlation_exposure(active).get(group or "", 0.0) + new_risk
+        reasons: list[str] = []
 
-        return "\n".join([
-            "Portfolio Status",
-            f"Open trades: {len(active)}/{MAX_OPEN_TRADES}",
-            f"Total estimated risk: {total_risk:.1f}%",
-            f"Symbols: {', '.join(symbols) if symbols else 'none'}",
-            f"Warnings: {', '.join(warnings) if warnings else 'none'}",
-        ])
+        same_symbol = [row for row in active if _base_symbol(row.get("symbol")) == symbol]
+        if any(str(row.get("direction", "")).upper() == direction for row in same_symbol):
+            reasons.append("DUPLICATE_POSITION")
+        if (not bool(self.config.get("ALLOW_HEDGE", False)) and
+                any(str(row.get("direction", "")).upper() != direction for row in same_symbol)):
+            reasons.append("HEDGE_NOT_ALLOWED")
+        if len(active) >= self.max_open_trades:
+            reasons.append("MAX_OPEN_TRADES")
+        if symbol_risk > self.max_symbol_risk + 1e-9:
+            reasons.append("MAX_SYMBOL_RISK")
+        if current_risk + new_risk > self.max_portfolio_risk + 1e-9:
+            reasons.append("MAX_PORTFOLIO_RISK")
+        if group and group_risk > self.max_group_risk + 1e-9:
+            reasons.append("GROUP_RISK_LIMIT")
 
-    def _append(self, row: Mapping[str, Any]) -> None:
-        self._ensure_file()
-        with self.csv_file.open("a", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=self.CSV_FIELDS)
-            writer.writerow({field: row.get(field, "") for field in self.CSV_FIELDS})
-
-    def _ensure_file(self) -> None:
-        self.csv_file.parent.mkdir(parents=True, exist_ok=True)
-        if self.csv_file.exists() and self.csv_file.stat().st_size > 0:
-            return
-        with self.csv_file.open("w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=self.CSV_FIELDS)
-            writer.writeheader()
-
-    @staticmethod
-    def _candidate_value(
-        candidate: Mapping[str, Any],
-        *keys: str,
-    ) -> str:
-        for key in keys:
-            value = candidate.get(key)
-            if value not in (None, ""):
-                return str(value)
-        return ""
+        unique_reasons = list(dict.fromkeys(reasons))
+        return {
+            "status": "BLOCK" if unique_reasons else "ALLOW",
+            "allowed": not unique_reasons,
+            "reasons": unique_reasons,
+            "symbol": symbol,
+            "direction": direction,
+            "open_trades": len(active),
+            "current_portfolio_risk_pct": current_risk,
+            "new_trade_risk_pct": new_risk,
+            "total_portfolio_risk_pct": round(current_risk + new_risk, 6),
+            "symbol_risk_pct": round(symbol_risk, 6),
+            "correlation_group": group,
+            "correlation_group_risk_pct": round(group_risk, 6) if group else 0.0,
+        }
 
     @staticmethod
-    def _base_symbol(symbol: str) -> str:
-        text = str(symbol or "").upper().strip()
-        if "/" in text:
-            return text.split("/", 1)[0]
-        if text.endswith("USDT"):
-            return text[:-4]
-        return text
+    def select_best_signal(signals: Sequence[Mapping[str, Any]]) -> Mapping[str, Any] | None:
+        """Rank confidence, score, expected R, then prefer the younger signal."""
+        if not signals:
+            return None
+        def key(item: Mapping[str, Any]) -> tuple[float, float, float, float]:
+            age = _number(item.get("age_seconds"), 0.0)
+            return (_number(item.get("confidence")), _number(item.get("score")),
+                    _number(item.get("expected_r", item.get("expected_R"))), -age)
+        return max(signals, key=key)
 
-    def _correlation_group(self, symbol: str) -> str:
-        base = self._base_symbol(symbol)
-        for group_name, symbols in CORRELATION_GROUPS.items():
-            if base in symbols:
-                return group_name
-        return ""
+    def portfolio_summary(self, positions: Iterable[Mapping[str, Any]] | None = None) -> dict[str, Any]:
+        active = self._positions(positions)
+        risk = self.calculate_portfolio_risk(active)
+        status = "LIMIT_REACHED" if len(active) >= self.max_open_trades or risk >= self.max_portfolio_risk else "READY"
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "mode": "PRE_EXECUTION_GATE",
+            "status": status,
+            "open_trades": len(active),
+            "portfolio_risk_pct": risk,
+            "available_risk_pct": round(max(0.0, self.max_portfolio_risk - risk), 6),
+            "positions": [{"symbol": _base_symbol(row.get("symbol")), "direction": str(row.get("direction", "")).upper(), "risk_pct": self._risk_pct(row)} for row in active],
+            "symbol_exposure": self.calculate_symbol_exposure(active),
+            "correlation_groups": self.calculate_correlation_exposure(active),
+            "limits": dict(self.config),
+            "restrictions": ["ALLOW_OR_BLOCK_ONLY", "SIGNALS_AND_TRADING_PARAMETERS_UNCHANGED"],
+        }
 
-    def _same_group_direction_count(
-        self,
-        group_name: str,
-        direction: str,
-        active_trades: list[Mapping[str, Any]],
-    ) -> int:
-        count = 0
-        for trade in active_trades:
-            if self._correlation_group(str(trade.get("symbol", ""))) != group_name:
-                continue
-            if str(trade.get("direction", "")).upper() == direction:
-                count += 1
-        return count
+    def write_reports(self) -> dict[str, Any]:
+        report = self.portfolio_summary()
+        self.report_path.parent.mkdir(parents=True, exist_ok=True)
+        self._atomic_write(self.report_path, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        self._atomic_write(self.summary_path, format_portfolio(report) + "\n")
+        return report
 
     @staticmethod
-    def _has_symbol_trade(
-        symbol: str,
-        active_trades: list[Mapping[str, Any]],
-    ) -> bool:
-        return any(str(trade.get("symbol", "")).upper() == symbol.upper() for trade in active_trades)
+    def _atomic_write(path: Path, content: str) -> None:
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text(content, encoding="utf-8")
+        os.replace(temporary, path)
 
-    @staticmethod
-    def _risk_pct(payload: Mapping[str, Any]) -> float:
-        """Estimate risk percent with conservative fallback when unknown."""
-        value = payload.get("risk_pct")
-        try:
-            if value not in (None, ""):
-                risk = float(value)
-                return max(risk, 0.0)
-        except (TypeError, ValueError):
-            pass
-        return FALLBACK_RISK_PCT
+
+def format_portfolio(report: Mapping[str, Any], view: str = "") -> str:
+    positions = list(report.get("positions", []))
+    groups = dict(report.get("correlation_groups", {}))
+    if view == "risk":
+        return "\n".join(["📊 Portfolio Risk", f"Portfolio Risk: {float(report.get('portfolio_risk_pct', 0)):.1f}%", f"Available Risk: {float(report.get('available_risk_pct', 0)):.1f}%", f"Status: {report.get('status', 'UNKNOWN')}"])
+    if view == "positions":
+        lines = ["📊 Portfolio Positions", f"Open Trades: {report.get('open_trades', 0)}"]
+        lines.extend(f"{row.get('symbol')}: OPEN {row.get('direction')} ({float(row.get('risk_pct', 0)):.1f}%)" for row in positions)
+        return "\n".join(lines + ([] if positions else ["No open positions"]))
+    lines = ["📊 Portfolio", f"Open Trades: {report.get('open_trades', 0)}", f"Portfolio Risk: {float(report.get('portfolio_risk_pct', 0)):.1f}%", f"Available Risk: {float(report.get('available_risk_pct', 0)):.1f}%"]
+    lines.extend(f"{row.get('symbol')}: OPEN {row.get('direction')}" for row in positions)
+    lines.append("Correlation Groups")
+    lines.extend(f"{name}: {risk:.1f}%" for name, risk in groups.items())
+    lines.extend(["Status:", str(report.get("status", "UNKNOWN"))])
+    return "\n".join(lines)
+
+
+def load_portfolio_report(path: str | Path = REPORT_PATH) -> dict[str, Any]:
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def main() -> None:
-    """CLI helper showing current advisory status."""
-    manager = PortfolioManager()
-    print("PortfolioManager OK")
-    print(manager.format_portfolio_status())
-    print(f"CSV: {manager.csv_file}")
+    print(format_portfolio(PortfolioManager().write_reports()))
 
 
 if __name__ == "__main__":

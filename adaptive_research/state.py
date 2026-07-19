@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
 import os
@@ -12,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-from trade_metrics_normalizer import is_closed_trade
+from trade_registry import TradeRegistry
 
 
 STATE_SCHEMA_VERSION = "1.0"
@@ -49,20 +48,6 @@ def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
     except OSError:
         return ""
     return digest.hexdigest()
-
-
-def _read_rows(path: Path) -> list[dict[str, str]]:
-    if not path.exists() or path.stat().st_size == 0:
-        return []
-    try:
-        with path.open("r", newline="", encoding="utf-8") as file:
-            return [
-                dict(row)
-                for row in csv.DictReader(file)
-                if row and any(str(value or "").strip() for value in row.values())
-            ]
-    except (OSError, csv.Error, UnicodeDecodeError):
-        return []
 
 
 def _closed_trade_hash(rows: list[Mapping[str, Any]]) -> str:
@@ -123,9 +108,9 @@ class TradeFingerprint:
 
 
 def build_trade_fingerprint(path: Path) -> TradeFingerprint:
-    """Build full-file and closed-trade fingerprints for ``trades.csv``."""
-    rows = _read_rows(path)
-    closed = [row for row in rows if is_closed_trade(row)]
+    """Build fingerprints from the shared read-only Trade Registry sample."""
+    registry = TradeRegistry(path)
+    closed = registry.get_closed_trades()
     return TradeFingerprint(
         trade_count=len(closed),
         last_trade_time=_last_trade_time(closed),

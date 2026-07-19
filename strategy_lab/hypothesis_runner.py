@@ -13,10 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from market_intelligence_utils import safe_float, utc_now  # noqa: E402
 from report_metadata import build_report_metadata, timestamp_bounds  # noqa: E402
-from trade_metrics_normalizer import (  # noqa: E402
-    aggregate_trade_metrics,
-    read_trade_rows,
-)
+from trade_registry import TradeRegistry  # noqa: E402
 from strategy_lab.engine import StrategyLabEngine  # noqa: E402
 from strategy_lab.hypotheses.base import ResearchHypothesis  # noqa: E402
 from strategy_lab.hypothesis_metrics import (  # noqa: E402
@@ -120,9 +117,9 @@ def build_report(key: str = "") -> dict[str, Any]:
         opportunities,
         fields=("timestamp", "opened_at", "closed_at"),
     )
-    canonical_metrics = aggregate_trade_metrics(
-        read_trade_rows(PROJECT_ROOT / "trades.csv")
-    )
+    registry = TradeRegistry(PROJECT_ROOT / "trades.csv")
+    registry_statistics = registry.get_statistics()
+    canonical_metrics = registry.get_metrics()
     report = {
         "generated_at": generated_at,
         "metadata": {
@@ -134,8 +131,8 @@ def build_report(key: str = "") -> dict[str, Any]:
                 base_dir=PROJECT_ROOT,
                 data_period_start=period_start,
                 data_period_end=period_end,
-                closed_trades_total=canonical_metrics.get("closed_trades", 0),
-                complete_metrics_total=canonical_metrics.get("metrics_trades", 0),
+                closed_trades_total=registry_statistics.get("closed_trades", 0),
+                complete_metrics_total=registry_statistics.get("complete_trades", 0),
                 generated_at=generated_at,
             ),
             "freshness_ttl_hours": 24,

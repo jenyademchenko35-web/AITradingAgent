@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-07-19T17:10:09.043845+00:00",
+  "mode": "READ_ONLY_DATA_QUALITY",
+  "status": "POOR",
+  "dataset_fingerprint": "81df77830a1c44af754dfc1f97b78b2c076c5efa446bc49ef915e7d080c41157",
+  "statistics": {
+    "total_trades": 46,
+    "open_trades": 4,
+    "closed_trades": 42,
+    "complete_trades": 38,
+    "incomplete_trades": 3,
+    "invalid_trades": 1,
+    "archived_trades": 0,
+    "completion_percent": 90.48
+  },
+  "issue_counts": {
+    "missing_fields": 4,
+    "negative_duration": 1,
+    "time_order_error": 1
+  },
+  "severity_counts": {
+    "CRITICAL": 0,
+    "HIGH": 6,
+    "MEDIUM": 0,
+    "LOW": 0
+  },
+  "issues": [
+    {
+      "trade_id": "TR-bd82ac09fc2bc5fe",
+      "severity": "HIGH",
+      "error_type": "missing_fields",
+      "description": "Missing required fields: exit, R."
+    },
+    {
+      "trade_id": "TR-bd82ac09fc2bc5fe",
+      "severity": "HIGH",
+      "error_type": "negative_duration",
+      "description": "closed_at is earlier than opened_at."
+    },
+    {
+      "trade_id": "TR-bd82ac09fc2bc5fe",
+      "severity": "HIGH",
+      "error_type": "time_order_error",
+      "description": "Trade timestamps are out of chronological order."
+    },
+    {
+      "trade_id": "TR-2401c394c051827c",
+      "severity": "HIGH",
+      "error_type": "missing_fields",
+      "description": "Missing required fields: exit, R."
+    },
+    {
+      "trade_id": "TR-52036cb2a5b63c00",
+      "severity": "HIGH",
+      "error_type": "missing_fields",
+      "description": "Missing required fields: exit, R."
+    },
+    {
+      "trade_id": "TR-87f3ff70a3d96232",
+      "severity": "HIGH",
+      "error_type": "missing_fields",
+      "description": "Missing required fields: exit, R."
+    }
+  ],
+  "recommendation": "Fix incomplete or invalid trades before promoting hypotheses.",
+  "restrictions": {
+    "read_only": true,
+    "automatic_application": false,
+    "live_unchanged": true,
+    "trading_logic_unchanged": true
+  }
+}

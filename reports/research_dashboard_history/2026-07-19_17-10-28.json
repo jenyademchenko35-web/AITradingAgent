@@ -1,0 +1,1837 @@
+{
+  "generated_at": "2026-07-19T17:10:28.138206+00:00",
+  "input_fingerprint": "d96c33994e0ff94353273bb299469c1ec6536e497d636218ce20f79585ef8ccd",
+  "mode": "READ_ONLY_RESEARCH_DASHBOARD",
+  "system_research_status": {
+    "status": "DEGRADED",
+    "closed_trades": 42,
+    "complete_metrics": 38,
+    "incomplete_metrics": 3,
+    "global_confidence_percent": 38.59,
+    "research_status": "DEGRADED",
+    "last_refresh": "2026-07-19T17:10:28.138206+00:00",
+    "stale_reports": [
+      "adaptive_research",
+      "research_orchestrator",
+      "replay",
+      "promotion",
+      "strategy_lab",
+      "baseline"
+    ],
+    "missing_reports": [
+      "risk_filter_audit"
+    ]
+  },
+  "source_health": {
+    "walk_forward": {
+      "status": "OK",
+      "required": true,
+      "path": "reports/walk_forward.json",
+      "generated_at": "2026-07-19T16:25:08.504682+00:00",
+      "age_hours": 0.755,
+      "stale": false,
+      "sha256": "972294a498e3f225a0ae239c84dc85ba8272833fe11c970897191946d9662960",
+      "error": ""
+    },
+    "risk_filter_audit": {
+      "status": "MISSING",
+      "required": false,
+      "path": "reports/risk_filter_audit.json",
+      "error": "Report not found",
+      "stale": false
+    },
+    "adaptive_research": {
+      "status": "STALE",
+      "required": true,
+      "path": "adaptive_research_report.json",
+      "generated_at": "2026-07-14T12:38:15.466032+00:00",
+      "age_hours": 124.537,
+      "stale": true,
+      "sha256": "ab82cdf38ce7e71711c0553ce88b813d61c342d379b8260617637f853db8085b",
+      "error": ""
+    },
+    "research_orchestrator": {
+      "status": "STALE",
+      "required": true,
+      "path": "research_orchestrator_report.json",
+      "generated_at": "2026-07-14T12:38:15.448518+00:00",
+      "age_hours": 124.537,
+      "stale": true,
+      "sha256": "1f47f3758f57e327f2b471c82084e65b0a25b4435be90f05bc73c6004c4376bf",
+      "error": ""
+    },
+    "replay": {
+      "status": "STALE",
+      "required": true,
+      "path": "shadow_replay_report.json",
+      "generated_at": "2026-07-14T12:38:15.123382+00:00",
+      "age_hours": 124.537,
+      "stale": true,
+      "sha256": "48d9dabf8f2b09d7733f875deeaca928de33c85316d5e22af8457e75c5255058",
+      "error": ""
+    },
+    "promotion": {
+      "status": "STALE",
+      "required": true,
+      "path": "experiment_promotion_report.json",
+      "generated_at": "2026-07-15T18:23:07.483378+00:00",
+      "age_hours": 94.789,
+      "stale": true,
+      "sha256": "1821c9681e53320ce9f7d996eec4c1681e00157bfda695684da2704bcc77258f",
+      "error": ""
+    },
+    "strategy_lab": {
+      "status": "STALE",
+      "required": true,
+      "path": "hypothesis_report.json",
+      "generated_at": "2026-07-14T12:38:15.395563+00:00",
+      "age_hours": 124.537,
+      "stale": true,
+      "sha256": "bce413e9fc9923feee70654b769fbd7f9ae6958ae92bba28686b6d69411c3329",
+      "error": ""
+    },
+    "trade_registry": {
+      "status": "OK",
+      "required": true,
+      "path": "reports/trade_registry.json",
+      "generated_at": "2026-07-19T17:10:09.043845+00:00",
+      "age_hours": 0.005,
+      "stale": false,
+      "sha256": "04b5e68c02a05aee575019e2d9d9b1a96f2d5d4cf49eb1ee1f7875dab5fba74d",
+      "error": ""
+    },
+    "baseline": {
+      "status": "STALE",
+      "required": false,
+      "path": "trade_metrics_audit.json",
+      "generated_at": "2026-07-14T12:38:14.237304+00:00",
+      "age_hours": 124.537,
+      "stale": true,
+      "sha256": "516a279af301f91e248570efad9beae166f9afb14f1acdf7c1848adffa7d06a3",
+      "error": ""
+    }
+  },
+  "baseline_metrics": {
+    "winrate": 18.42,
+    "profit_factor": 0.287078,
+    "net_r": -41.010276,
+    "max_drawdown_r": 43.232625,
+    "average_r": -1.079218,
+    "closed_trades": 42,
+    "complete_trades": 38,
+    "incomplete_metrics": 3,
+    "metric_unit": "R"
+  },
+  "hypothesis_ranking": [
+    {
+      "name": "Edge >= 20",
+      "trades": 8,
+      "profit_factor": 1.593512,
+      "net_r": 3.700165,
+      "winrate": 50.0,
+      "drawdown_r": 4.14314,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "CONFLICTED",
+      "source_conflict_count": 1,
+      "conflict_count": 2,
+      "high_conflict_count": 0,
+      "final_research_score": 23,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 20.0,
+          "positive_net_r": 7.4,
+          "sample_size": 3.2,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 8.619,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 0.0,
+          "small_sample": 15.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 4.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 41.719,
+        "total_penalty": 19.0,
+        "final_score": 23,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 1
+    },
+    {
+      "name": "Edge >= 22",
+      "trades": 3,
+      "profit_factor": 0.697918,
+      "net_r": -0.903696,
+      "winrate": 33.33,
+      "drawdown_r": 2.991557,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "INSUFFICIENT_DATA",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 6,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 9.306,
+          "positive_net_r": 0.0,
+          "sample_size": 1.2,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 9.003,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 1.356,
+          "small_sample": 15.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 22.008,
+        "total_penalty": 16.356,
+        "final_score": 6,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 2
+    },
+    {
+      "name": "ATR Stop 1",
+      "trades": 26,
+      "profit_factor": 0.4736,
+      "net_r": -14.765451,
+      "winrate": 23.08,
+      "drawdown_r": 17.176322,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "CONTINUE_RESEARCH",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 6.315,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 3.15,
+          "confidence": 3.0,
+          "drawdown": 4.275,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 22.148,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 16.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 28.139,
+        "total_penalty": 46.148,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 3
+    },
+    {
+      "name": "ATR Stop 1.25",
+      "trades": 26,
+      "profit_factor": 0.381234,
+      "net_r": -18.315371,
+      "winrate": 19.23,
+      "drawdown_r": 19.884588,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.083,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 3.372,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 22.855,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 4
+    },
+    {
+      "name": "ATR Stop 1.5",
+      "trades": 26,
+      "profit_factor": 0.397977,
+      "net_r": -18.111418,
+      "winrate": 19.23,
+      "drawdown_r": 19.680635,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.306,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 3.44,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 23.146,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 5
+    },
+    {
+      "name": "ATR Stop 1.75",
+      "trades": 26,
+      "profit_factor": 0.386076,
+      "net_r": -19.178493,
+      "winrate": 19.23,
+      "drawdown_r": 20.74771,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.148,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 3.084,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 22.632,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 6
+    },
+    {
+      "name": "ATR Stop 2",
+      "trades": 26,
+      "profit_factor": 0.383522,
+      "net_r": -19.386513,
+      "winrate": 19.23,
+      "drawdown_r": 20.95573,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.114,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 3.015,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 22.528,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 7
+    },
+    {
+      "name": "ATR Stop 2.5",
+      "trades": 26,
+      "profit_factor": 0.383522,
+      "net_r": -19.386513,
+      "winrate": 19.23,
+      "drawdown_r": 20.95573,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.114,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 3.015,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 22.528,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 8
+    },
+    {
+      "name": "Cooldown 2h",
+      "trades": 26,
+      "profit_factor": 0.360699,
+      "net_r": -21.376354,
+      "winrate": 19.23,
+      "drawdown_r": 22.945571,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "CONTINUE_RESEARCH",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "REJECTED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.809,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 3.15,
+          "confidence": 3.0,
+          "drawdown": 2.351,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 16.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 24.711,
+        "total_penalty": 49.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 9
+    },
+    {
+      "name": "Cooldown 4h",
+      "trades": 26,
+      "profit_factor": 0.360699,
+      "net_r": -21.376354,
+      "winrate": 19.23,
+      "drawdown_r": 22.945571,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "REJECTED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.809,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 2.351,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 21.561,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 10
+    },
+    {
+      "name": "Cooldown 6h",
+      "trades": 26,
+      "profit_factor": 0.360699,
+      "net_r": -21.376354,
+      "winrate": 19.23,
+      "drawdown_r": 22.945571,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "REJECTED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.809,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 2.351,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 21.561,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 11
+    },
+    {
+      "name": "Volatility 0.2-3%",
+      "trades": 26,
+      "profit_factor": 0.360699,
+      "net_r": -21.376354,
+      "winrate": 19.23,
+      "drawdown_r": 22.945571,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "CONTINUE_RESEARCH",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "REJECTED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.809,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 3.15,
+          "confidence": 3.0,
+          "drawdown": 2.351,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 16.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 24.711,
+        "total_penalty": 49.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 12
+    },
+    {
+      "name": "Volatility 0.3-2.5%",
+      "trades": 26,
+      "profit_factor": 0.360699,
+      "net_r": -21.376354,
+      "winrate": 19.23,
+      "drawdown_r": 22.945571,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "REJECTED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.809,
+          "positive_net_r": 0.0,
+          "sample_size": 10.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 2.351,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 21.561,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 13
+    },
+    {
+      "name": "Edge >= 15",
+      "trades": 25,
+      "profit_factor": 0.377585,
+      "net_r": -19.880979,
+      "winrate": 20.0,
+      "drawdown_r": 21.516506,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "CONTINUE_RESEARCH",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "CONFLICTED",
+      "source_conflict_count": 1,
+      "conflict_count": 1,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.034,
+          "positive_net_r": 0.0,
+          "sample_size": 10.0,
+          "walk_forward_stability": 3.15,
+          "confidence": 1.5,
+          "drawdown": 2.828,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 16.0,
+          "conflicts": 2.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 23.512,
+        "total_penalty": 51.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 14
+    },
+    {
+      "name": "News Filter",
+      "trades": 25,
+      "profit_factor": 0.387152,
+      "net_r": -19.091653,
+      "winrate": 20.0,
+      "drawdown_r": 20.66087,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "NOT_AVAILABLE",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "NOT_AVAILABLE",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.162,
+          "positive_net_r": 0.0,
+          "sample_size": 10.0,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 3.113,
+          "promotion_status": 0.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 21.275,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 15
+    },
+    {
+      "name": "News Veto",
+      "trades": 25,
+      "profit_factor": 0.387152,
+      "net_r": -19.091653,
+      "winrate": 20.0,
+      "drawdown_r": 20.66087,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": 51.6,
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "CONTINUE_RESEARCH",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "NOT_AVAILABLE",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.162,
+          "positive_net_r": 0.0,
+          "sample_size": 10.0,
+          "walk_forward_stability": 3.15,
+          "confidence": 5.16,
+          "drawdown": 3.113,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 16.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 27.585,
+        "total_penalty": 49.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 16
+    },
+    {
+      "name": "Trend Alignment",
+      "trades": 25,
+      "profit_factor": 0.37402,
+      "net_r": -20.185507,
+      "winrate": 20.0,
+      "drawdown_r": 21.754724,
+      "stability_score": 21,
+      "stability": "Unstable",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "CONTINUE_RESEARCH",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.987,
+          "positive_net_r": 0.0,
+          "sample_size": 10.0,
+          "walk_forward_stability": 3.15,
+          "confidence": 3.0,
+          "drawdown": 2.748,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 16.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 24.885,
+        "total_penalty": 49.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 17
+    },
+    {
+      "name": "Volatility 0.5-2%",
+      "trades": 22,
+      "profit_factor": 0.335559,
+      "net_r": -19.747287,
+      "winrate": 18.18,
+      "drawdown_r": 21.516506,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.474,
+          "positive_net_r": 0.0,
+          "sample_size": 8.8,
+          "walk_forward_stability": 0.0,
+          "confidence": 3.0,
+          "drawdown": 2.828,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 20.102,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 18
+    },
+    {
+      "name": "Edge >= 16",
+      "trades": 21,
+      "profit_factor": 0.344309,
+      "net_r": -18.918981,
+      "winrate": 19.05,
+      "drawdown_r": 22.188321,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OBSERVATION_ONLY",
+      "source_conflict_count": 1,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 4.591,
+          "positive_net_r": 0.0,
+          "sample_size": 8.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 2.604,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 18.095,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 19
+    },
+    {
+      "name": "Edge >= 17",
+      "trades": 19,
+      "profit_factor": 0.37828,
+      "net_r": -16.327841,
+      "winrate": 21.05,
+      "drawdown_r": 19.59718,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "CONFLICTED",
+      "source_conflict_count": 1,
+      "conflict_count": 1,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 5.044,
+          "positive_net_r": 0.0,
+          "sample_size": 7.6,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 3.468,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 24.492,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 2.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 18.611,
+        "total_penalty": 34.492,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 20
+    },
+    {
+      "name": "Edge >= 18",
+      "trades": 15,
+      "profit_factor": 0.454086,
+      "net_r": -11.943542,
+      "winrate": 26.67,
+      "drawdown_r": 15.941283,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "CONFLICTED",
+      "source_conflict_count": 1,
+      "conflict_count": 1,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 6.054,
+          "positive_net_r": 0.0,
+          "sample_size": 6.0,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 4.686,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 17.915,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 2.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 19.241,
+        "total_penalty": 27.915,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 21
+    },
+    {
+      "name": "Duplicate Symbol Filter",
+      "trades": 11,
+      "profit_factor": 0.0,
+      "net_r": -18.155981,
+      "winrate": 0.0,
+      "drawdown_r": 18.155981,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OVERFILTERED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 0.0,
+          "positive_net_r": 0.0,
+          "sample_size": 4.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 3.948,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 25.0,
+          "small_sample": 8.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 10.848,
+        "total_penalty": 33.0,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 22
+    },
+    {
+      "name": "Momentum Confirmation",
+      "trades": 2,
+      "profit_factor": 0.0,
+      "net_r": -2.991557,
+      "winrate": 0.0,
+      "drawdown_r": 2.991557,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": 22.1,
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "NOT_AVAILABLE",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 0.0,
+          "positive_net_r": 0.0,
+          "sample_size": 0.8,
+          "walk_forward_stability": 0.0,
+          "confidence": 2.21,
+          "drawdown": 9.003,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 4.487,
+          "small_sample": 15.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 13.013,
+        "total_penalty": 19.487,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 23
+    },
+    {
+      "name": "Momentum Filter",
+      "trades": 2,
+      "profit_factor": 0.0,
+      "net_r": -2.991557,
+      "winrate": 0.0,
+      "drawdown_r": 2.991557,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "NOT_AVAILABLE",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "NOT_AVAILABLE",
+      "orchestrator_status": "OVERFILTERED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 0.0,
+          "positive_net_r": 0.0,
+          "sample_size": 0.8,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 9.003,
+          "promotion_status": 0.0
+        },
+        "penalties": {
+          "negative_net_r": 4.487,
+          "small_sample": 15.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 11.303,
+        "total_penalty": 19.487,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 24
+    },
+    {
+      "name": "Edge >= 24",
+      "trades": 1,
+      "profit_factor": 0.0,
+      "net_r": -1.85844,
+      "winrate": 0.0,
+      "drawdown_r": 1.85844,
+      "stability_score": 0,
+      "stability": "NOT_AVAILABLE",
+      "confidence": "VERY_LOW",
+      "lab_verdict": "INSUFFICIENT_DATA",
+      "walk_forward_verdict": "NOT_AVAILABLE",
+      "promotion_status": "INSUFFICIENT_DATA",
+      "orchestrator_status": "OVERFILTERED",
+      "source_conflict_count": 0,
+      "conflict_count": 0,
+      "high_conflict_count": 0,
+      "final_research_score": 0,
+      "score_breakdown": {
+        "components": {
+          "profit_factor": 0.0,
+          "positive_net_r": 0.0,
+          "sample_size": 0.4,
+          "walk_forward_stability": 0.0,
+          "confidence": 1.5,
+          "drawdown": 9.381,
+          "promotion_status": 1.0
+        },
+        "penalties": {
+          "negative_net_r": 2.788,
+          "small_sample": 15.0,
+          "unstable_walk_forward": 0.0,
+          "conflicts": 0.0,
+          "premature_ready_for_ab": 0.0
+        },
+        "raw_score": 12.281,
+        "total_penalty": 17.788,
+        "final_score": 0,
+        "formula": "clamp(sum(positive components) - sum(penalties), 0, 100)",
+        "gates": {
+          "minimum_sample_for_full_credit": 50,
+          "minimum_sample_for_ready_for_ab": 30,
+          "ready_requires_positive_net_r": true,
+          "ready_requires_pf_above_one": true,
+          "ready_requires_non_unstable_walk_forward": true
+        }
+      },
+      "rank": 25
+    }
+  ],
+  "research_conflicts": [
+    {
+      "hypothesis": "Edge >= 20",
+      "sources": [
+        "Strategy Lab",
+        "sample gate"
+      ],
+      "severity": "MEDIUM",
+      "description": "PF > 1 and Net R > 0, but the sample is too small.",
+      "recommended_action": "Collect at least 30 complete observations before readiness review."
+    },
+    {
+      "hypothesis": "Edge >= 15",
+      "sources": [
+        "hypothesis_report",
+        "trade_memory_report"
+      ],
+      "severity": "LOW",
+      "description": "Research Orchestrator conflict: WAIT_FOR_MORE_DATA",
+      "recommended_action": "Продолжить сбор независимых наблюдений."
+    },
+    {
+      "hypothesis": "Edge >= 17",
+      "sources": [
+        "hypothesis_report",
+        "trade_memory_report"
+      ],
+      "severity": "LOW",
+      "description": "Research Orchestrator conflict: WAIT_FOR_MORE_DATA",
+      "recommended_action": "Продолжить сбор независимых наблюдений."
+    },
+    {
+      "hypothesis": "Edge >= 18",
+      "sources": [
+        "hypothesis_report",
+        "trade_memory_report"
+      ],
+      "severity": "LOW",
+      "description": "Research Orchestrator conflict: WAIT_FOR_MORE_DATA",
+      "recommended_action": "Продолжить сбор независимых наблюдений."
+    },
+    {
+      "hypothesis": "Edge >= 20",
+      "sources": [
+        "hypothesis_report",
+        "trade_memory_report"
+      ],
+      "severity": "LOW",
+      "description": "Research Orchestrator conflict: WAIT_FOR_MORE_DATA",
+      "recommended_action": "Продолжить сбор независимых наблюдений."
+    }
+  ],
+  "conflict_counts": {
+    "HIGH": 0,
+    "MEDIUM": 1,
+    "LOW": 4
+  },
+  "walk_forward_trend": [
+    {
+      "hypothesis": "Edge >= 20",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 1.593512,
+      "current_average_pf": 1.593512,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "Edge >= 22",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.697918,
+      "current_average_pf": 0.697918,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "ATR Stop 1",
+      "previous_stability_score": 21,
+      "current_stability_score": 21,
+      "change": 0,
+      "previous_average_pf": 0.4736,
+      "current_average_pf": 0.4736,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "ATR Stop 1.25",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.381234,
+      "current_average_pf": 0.381234,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "ATR Stop 1.5",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.397977,
+      "current_average_pf": 0.397977,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "ATR Stop 1.75",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.386076,
+      "current_average_pf": 0.386076,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "ATR Stop 2",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.383522,
+      "current_average_pf": 0.383522,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "ATR Stop 2.5",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.383522,
+      "current_average_pf": 0.383522,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "Cooldown 2h",
+      "previous_stability_score": 21,
+      "current_stability_score": 21,
+      "change": 0,
+      "previous_average_pf": 0.360699,
+      "current_average_pf": 0.360699,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    },
+    {
+      "hypothesis": "Cooldown 4h",
+      "previous_stability_score": 0,
+      "current_stability_score": 0,
+      "change": 0,
+      "previous_average_pf": 0.360699,
+      "current_average_pf": 0.360699,
+      "confidence_trend": "STABLE",
+      "trend": "STABLE"
+    }
+  ],
+  "risk_filter_status": {
+    "status": "NOT_AVAILABLE",
+    "risk_verdict": "NOT_AVAILABLE",
+    "blocked_trades": 0,
+    "prevented_losses": 0,
+    "prevented_winners": 0,
+    "pf_without_risk": 0.0,
+    "net_r_without_risk": 0.0,
+    "recommendation": "Risk Filter Audit has not been generated yet."
+  },
+  "promotion_readiness": {
+    "candidates_total": 25,
+    "READY_FOR_AB": 0,
+    "CONTINUE_RESEARCH": 23,
+    "REJECT": 0,
+    "OBSERVE_ONLY": 2,
+    "candidates": [
+      {
+        "hypothesis": "Edge >= 20",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": true,
+          "pf_above_one": true,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Edge >= 22",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "ATR Stop 1",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "ATR Stop 1.25",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "ATR Stop 1.5",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "ATR Stop 1.75",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "ATR Stop 2",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "ATR Stop 2.5",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Cooldown 2h",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Cooldown 4h",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Cooldown 6h",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Volatility 0.2-3%",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Volatility 0.3-2.5%",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Edge >= 15",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "News Filter",
+        "status": "OBSERVE_ONLY",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "News Veto",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Trend Alignment",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Volatility 0.5-2%",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Edge >= 16",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Edge >= 17",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Edge >= 18",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Duplicate Symbol Filter",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Momentum Confirmation",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Momentum Filter",
+        "status": "OBSERVE_ONLY",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      },
+      {
+        "hypothesis": "Edge >= 24",
+        "status": "CONTINUE_RESEARCH",
+        "gates": {
+          "minimum_sample_passed": false,
+          "positive_net_r": false,
+          "pf_above_one": false,
+          "walk_forward_not_unstable": false,
+          "no_high_conflicts": true
+        }
+      }
+    ]
+  },
+  "main_recommendation": "CONTINUE_SHADOW_RESEARCH",
+  "scoring_methodology": {
+    "range": "0-100",
+    "positive_components": [
+      "profit_factor",
+      "positive_net_r",
+      "sample_size",
+      "walk_forward_stability",
+      "confidence",
+      "drawdown",
+      "promotion_status"
+    ],
+    "penalties": [
+      "negative_net_r",
+      "small_sample",
+      "unstable_walk_forward",
+      "conflicts",
+      "premature_ready_for_ab"
+    ],
+    "score_breakdown_location": "hypothesis_ranking[].score_breakdown"
+  },
+  "restrictions": {
+    "read_only": true,
+    "automatic_application": false,
+    "live_unchanged": true,
+    "decision_engine_unchanged": true,
+    "entry_exit_unchanged": true,
+    "sl_tp_rr_unchanged": true,
+    "position_sizing_unchanged": true,
+    "risk_logic_unchanged": true,
+    "portfolio_manager_unchanged": true
+  }
+}

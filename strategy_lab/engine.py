@@ -26,6 +26,7 @@ from market_intelligence_utils import (
 )
 from news_impact_advisor import NewsImpactAdvisor, TRADE_MEMORY_CSV
 from trade_metrics_normalizer import normalize_trade
+from trade_registry import TradeRegistry
 from strategy_lab.metrics import calculate_metrics
 from strategy_lab.strategy_base import ResearchStrategy
 from strategy_lab.strategy_registry import registered_strategies
@@ -122,7 +123,8 @@ class StrategyLabEngine:
         """Build common opportunity stream from closed live trades."""
         opportunities = []
         self.metrics_incomplete = 0
-        for index, trade in enumerate(read_csv_rows(TRADES_FILE)):
+        registry = TradeRegistry(self.base_dir / TRADES_FILE.name)
+        for index, trade in enumerate(registry.get_closed_trades()):
             result = trade_result(trade)
             if result not in {"WIN", "LOSS"}:
                 continue

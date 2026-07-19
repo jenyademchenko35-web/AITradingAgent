@@ -16,8 +16,8 @@ from market_intelligence_utils import (
     safe_float,
     symbol_full,
     symbol_short,
-    trade_result,
 )
+from trade_registry import TradeRegistry
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -153,9 +153,11 @@ class ReplayLoader:
         }
         self.warnings: list[str] = []
         self.source_status = self._source_status()
-        self.trades = read_csv_rows(self.paths["trades"])
+        registry = TradeRegistry(self.paths["trades"])
+        self.trades = registry.get_all_trades()
+        self.registry_statistics = registry.get_statistics()
         self.closed_trades = sorted(
-            [row for row in self.trades if trade_result(row) in {"WIN", "LOSS"}],
+            registry.get_complete_trades(),
             key=lambda row: str(row.get("opened_at", "")),
         )
         debug = [normalize_decision(row) for row in read_csv_rows(self.paths["decision_debug"])]

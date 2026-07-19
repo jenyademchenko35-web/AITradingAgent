@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-07-19T17:21:20.261073+00:00",
+  "mode": "PRE_EXECUTION_GATE",
+  "status": "LIMIT_REACHED",
+  "open_trades": 4,
+  "portfolio_risk_pct": 4.0,
+  "available_risk_pct": 0.0,
+  "positions": [
+    {
+      "symbol": "XRP",
+      "direction": "SHORT",
+      "risk_pct": 1.0
+    },
+    {
+      "symbol": "DOGE",
+      "direction": "SHORT",
+      "risk_pct": 1.0
+    },
+    {
+      "symbol": "BNB",
+      "direction": "SHORT",
+      "risk_pct": 1.0
+    },
+    {
+      "symbol": "SOL",
+      "direction": "SHORT",
+      "risk_pct": 1.0
+    }
+  ],
+  "symbol_exposure": {
+    "XRP": 1.0,
+    "DOGE": 1.0,
+    "BNB": 1.0,
+    "SOL": 1.0
+  },
+  "correlation_groups": {
+    "BTC": 0.0,
+    "L1": 1.0,
+    "MEME": 1.0
+  },
+  "limits": {
+    "MAX_OPEN_TRADES": 3,
+    "MAX_PORTFOLIO_RISK": 3.0,
+    "MAX_SYMBOL_RISK": 1.0,
+    "MAX_CORRELATED_GROUP_RISK": 2.0,
+    "ALLOW_HEDGE": false
+  },
+  "restrictions": [
+    "ALLOW_OR_BLOCK_ONLY",
+    "SIGNALS_AND_TRADING_PARAMETERS_UNCHANGED"
+  ]
+}
