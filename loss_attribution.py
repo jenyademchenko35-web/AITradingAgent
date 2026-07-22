@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from trade_registry import TradeRegistry
+from research_data_quality import ResearchDataQuality, coverage_report
 
 BASE_DIR = Path(__file__).resolve().parent
 REPORT_PATH = BASE_DIR / "reports/loss_attribution.json"
@@ -169,6 +170,8 @@ class LossAttribution:
     def _segment(rows: Sequence[Mapping[str, Any]], fields: Sequence[str], total_loss: float) -> list[dict[str, Any]]:
         groups: dict[tuple[str, ...], list[Mapping[str, Any]]] = defaultdict(list)
         for row in rows:
+            if any(field in {"quality", "score"} and str(row.get(field, "UNKNOWN")).upper() in {"", "UNKNOWN", "NONE", "N/A"} for field in fields):
+                continue
             groups[tuple(str(row.get(field, "UNKNOWN")) for field in fields)].append(row)
         result = []
         for values, members in groups.items():
@@ -238,7 +241,8 @@ class LossAttribution:
         }
 
     def build_report(self) -> dict[str, Any]:
-        source = self.registry.get_complete_trades()
+        recovery = ResearchDataQuality(base_dir=self.base_dir, registry=self.registry)
+        source = [recovery.recover_trade(row)[0] for row in self.registry.get_complete_trades()]
         rows = self._enrich(source)
         baseline = _metrics(rows)
         total_loss = baseline["gross_loss_r"]
@@ -259,6 +263,7 @@ class LossAttribution:
         overall = "INSUFFICIENT_DATA" if len(rows) < self.minimum_filter_sample else ("INVESTIGATE" if baseline["net_r"] < 0 else "KEEP_IN_SHADOW")
         fingerprint_data = [{"trade_id": row.get("trade_id"), "R": row.get("R"), **{field: row.get(field) for field in DIMENSIONS}} for row in rows]
         fingerprint = hashlib.sha256(json.dumps(fingerprint_data, sort_keys=True, default=str).encode()).hexdigest()
+        coverage = coverage_report(rows, ("confidence", "score", "quality", "market_regime", "volatility", "trend_alignment"))
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(), "mode": "SHADOW_READ_ONLY",
             "status": overall, "dataset_fingerprint": fingerprint,
@@ -269,6 +274,8 @@ class LossAttribution:
             "counterfactual_filters": counterfactuals,
             "top_loss_scenarios": combinations[:10],
             "data_coverage": {field: round(sum(row.get(field) not in (None, "", "UNKNOWN") for row in rows) / len(rows) * 100, 2) if rows else 0 for field in DIMENSIONS},
+            "research_coverage": coverage,
+            "unknown_quality_score_segments_ignored": True,
             "allowed_recommendations": sorted(RECOMMENDATIONS),
             "restrictions": ["READ_ONLY", "SHADOW_ONLY", "NO_AUTOMATIC_FILTER_APPLICATION", "LIVE_AND_TRADING_LOGIC_UNCHANGED"],
         }

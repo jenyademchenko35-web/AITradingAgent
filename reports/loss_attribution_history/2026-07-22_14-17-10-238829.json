@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-22T11:19:25.615276+00:00",
+  "generated_at": "2026-07-22T11:17:10.226943+00:00",
   "mode": "SHADOW_READ_ONLY",
   "status": "INVESTIGATE",
-  "dataset_fingerprint": "19ccad52aeb2407f216efe8187443df14dd9d8e1cf3c4b83336f713ab8c00e7c",
+  "dataset_fingerprint": "ad63d1f1de23ba3fc9552fa16d3789f03f3a900e149ea984b0bd3ad35c421828",
   "sample": {
     "complete_trades": 42,
     "minimum_filter_sample": 5
@@ -270,9 +270,9 @@
     ],
     "timeframe": [
       {
-        "segment": "TIMEFRAME=1h",
+        "segment": "TIMEFRAME=UNKNOWN",
         "fields": {
-          "timeframe": "1h"
+          "timeframe": "UNKNOWN"
         },
         "trades": 42,
         "wins": 7,
@@ -4091,7 +4091,7 @@
   "data_coverage": {
     "symbol": 100.0,
     "direction": 100.0,
-    "timeframe": 100.0,
+    "timeframe": 0.0,
     "hour_of_day": 100.0,
     "weekday": 100.0,
     "volatility": 50.0,

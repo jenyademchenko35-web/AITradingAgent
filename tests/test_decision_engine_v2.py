@@ -30,7 +30,9 @@ def feature_rows():
     for i in range(12):
         rows.append({"trade_id":f"T{i}","R":2 if i in {3,7,11} else -1,"opened_at":f"2026-06-{i+1:02d}T07:00:00+00:00",
                      "symbol":"SOL/USDT" if i<6 else "BTC/USDT","direction":"SHORT","confidence":92,
-                     "score":26,"quality":"B" if i<8 else "A","hour":7 if i<6 else 19,"weekday":"Monday" if i<4 else "Wednesday"})
+                     "score":26,"quality":"B" if i<8 else "A","hour":7 if i<6 else 19,"weekday":"Monday" if i<4 else "Wednesday",
+                     "trend_long":10,"trend_short":50,"structure_long":10,"structure_short":0,
+                     "momentum_long":14,"momentum_short":7,"risk_long":0,"risk_short":0})
     return rows
 
 
@@ -70,15 +72,32 @@ class DecisionEngineV2Test(TestCase):
         self.assertIn(report["status"],{"EXPERIMENTAL","PROMISING","READY_FOR_AB","REJECT"})
         self.assertIn("v1",report["shadow_replay"]); self.assertIn("v2",report["shadow_replay"])
         self.assertIn("windows",report["walk_forward"]); self.assertEqual(report["signals"]["compared"],12)
+        calibration=report["calibration_pass"]
+        self.assertEqual(calibration["version"],"2.1"); self.assertEqual(len(calibration["replay_matrix"]),17)
+        self.assertIn("class_overlap",calibration["confidence_distribution"])
+        self.assertFalse(calibration["optimizer"]["automatic_apply"])
+
+    def test_feature_contributions_are_directional_and_transparent(self):
+        contribution=self.engine.feature_contributions(feature_rows()[0])
+        self.assertEqual(contribution["direction"],"SHORT")
+        self.assertEqual({row["feature"] for row in contribution["modules"]},{"trend","structure","momentum","risk"})
+        self.assertEqual(contribution["raw_score"],26); self.assertLess(contribution["calibrated_score"],26)
+
+    def test_diff_report_classifies_outcomes_and_preserves_weights(self):
+        original=deepcopy(self.engine.strategy_weights); report=self.engine.build_report()["calibration_pass"]
+        self.assertTrue(all(row["outcome"] in {"WIN","LOSS","BREAK_EVEN"} for row in report["differences"]))
+        self.assertEqual(self.engine.strategy_weights,original)
+        for variant in report["replay_matrix"]:
+            self.assertAlmostEqual(sum(variant["weights"].values()),1.0,places=6)
 
     def test_reports_and_history_deduplicate(self):
         _,first=self.engine.write_reports(); _,second=self.engine.write_reports()
-        self.assertTrue(first); self.assertFalse(second); self.assertTrue(self.engine.report_path.exists()); self.assertTrue(self.engine.summary_path.exists())
+        self.assertTrue(first); self.assertFalse(second); self.assertTrue(self.engine.report_path.exists()); self.assertTrue(self.engine.summary_path.exists()); self.assertTrue(self.engine.diff_report_path.exists())
         self.assertEqual(len(list(self.engine.history_dir.glob("*.json"))),1)
 
     def test_telegram_formatter_and_registration(self):
         report=self.engine.build_report()
-        for view in ("","compare","report"): self.assertIn("DecisionEngine v2",format_decision_v2(report,view))
+        for view in ("","compare","report","diff","weights","optimizer"): self.assertIn("DecisionEngine v2",format_decision_v2(report,view))
         from telegram_handlers import BOT_COMMANDS_V5
         import telegram_bot_v4
         self.assertIn("decisionv2",{x.command for x in BOT_COMMANDS_V5}); self.assertTrue(callable(telegram_bot_v4.decisionv2_command))
@@ -90,4 +109,3 @@ class DecisionEngineV2Test(TestCase):
     def test_no_live_or_automatic_promotion(self):
         report=self.engine.build_report()
         self.assertIn("NO_LIVE_IMPORT",report["restrictions"]); self.assertIn("NO_AUTOMATIC_PROMOTION",report["restrictions"])
-

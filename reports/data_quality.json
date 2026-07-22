@@ -1,72 +1,498 @@
 {
-  "generated_at": "2026-07-19T17:13:42.379474+00:00",
-  "mode": "READ_ONLY_DATA_QUALITY",
-  "status": "POOR",
-  "dataset_fingerprint": "81df77830a1c44af754dfc1f97b78b2c076c5efa446bc49ef915e7d080c41157",
-  "statistics": {
-    "total_trades": 46,
-    "open_trades": 4,
-    "closed_trades": 42,
-    "complete_trades": 38,
-    "incomplete_trades": 3,
-    "invalid_trades": 1,
-    "archived_trades": 0,
-    "completion_percent": 90.48
+  "schema_version": 2,
+  "generated_at": "2026-07-22T11:19:25.887398+00:00",
+  "mode": "RESEARCH_DATA_QUALITY",
+  "status": "WARNING",
+  "complete_trades": 42,
+  "coverage": {
+    "coverage_pct": 90.62,
+    "features": [
+      {
+        "feature": "symbol",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "direction",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "timeframe",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "market_regime",
+        "coverage_pct": 0.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 100.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 0,
+        "missing": 0,
+        "unknown": 42,
+        "null": 0
+      },
+      {
+        "feature": "trend_alignment",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "volatility",
+        "coverage_pct": 50.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 50.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 21,
+        "missing": 0,
+        "unknown": 21,
+        "null": 0
+      },
+      {
+        "feature": "confidence",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "score",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "quality",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "primary_blocker",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "entry_price",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "exit_price",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "risk_reward",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "result",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "trade_id",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      },
+      {
+        "feature": "timestamp",
+        "coverage_pct": 100.0,
+        "missing_pct": 0.0,
+        "unknown_pct": 0.0,
+        "null_pct": 0.0,
+        "total_trades": 42,
+        "covered": 42,
+        "missing": 0,
+        "unknown": 0,
+        "null": 0
+      }
+    ],
+    "missing": 0,
+    "unknown": 63,
+    "warnings": [
+      "COVERAGE_BELOW_90",
+      "UNKNOWN_ABOVE_5"
+    ],
+    "status": "WARNING"
   },
-  "issue_counts": {
-    "missing_fields": 4,
-    "negative_duration": 1,
-    "time_order_error": 1
-  },
-  "severity_counts": {
-    "CRITICAL": 0,
-    "HIGH": 6,
-    "MEDIUM": 0,
-    "LOW": 0
-  },
-  "issues": [
+  "recovered": 273,
+  "unknown": 63,
+  "missing": 0,
+  "validation_warnings": [
     {
-      "trade_id": "TR-bd82ac09fc2bc5fe",
-      "severity": "HIGH",
-      "error_type": "missing_fields",
-      "description": "Missing required fields: exit, R."
+      "trade_id": "TR-69f5e07226c99942",
+      "missing_fields": [
+        "market_regime"
+      ]
     },
     {
-      "trade_id": "TR-bd82ac09fc2bc5fe",
-      "severity": "HIGH",
-      "error_type": "negative_duration",
-      "description": "closed_at is earlier than opened_at."
+      "trade_id": "TR-3aaceee6f17c6a35",
+      "missing_fields": [
+        "market_regime"
+      ]
     },
     {
-      "trade_id": "TR-bd82ac09fc2bc5fe",
-      "severity": "HIGH",
-      "error_type": "time_order_error",
-      "description": "Trade timestamps are out of chronological order."
+      "trade_id": "TR-c7f62214deee4248",
+      "missing_fields": [
+        "market_regime"
+      ]
     },
     {
-      "trade_id": "TR-2401c394c051827c",
-      "severity": "HIGH",
-      "error_type": "missing_fields",
-      "description": "Missing required fields: exit, R."
+      "trade_id": "TR-fc79dcb58aab548a",
+      "missing_fields": [
+        "market_regime"
+      ]
     },
     {
-      "trade_id": "TR-52036cb2a5b63c00",
-      "severity": "HIGH",
-      "error_type": "missing_fields",
-      "description": "Missing required fields: exit, R."
+      "trade_id": "TR-608687f7176f3923",
+      "missing_fields": [
+        "market_regime"
+      ]
     },
     {
-      "trade_id": "TR-87f3ff70a3d96232",
-      "severity": "HIGH",
-      "error_type": "missing_fields",
-      "description": "Missing required fields: exit, R."
+      "trade_id": "TR-337fbdeda5d8831e",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-00daf140cae45ec1",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-e967841f3a9dbfcd",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-ce5794abb846103c",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-8416edde9d850bf9",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-c4e6b259c534ecd1",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-5c772818388b697a",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-449686fd43cc678e",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-1dd5b92dfb0685da",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-57e951836470a80f",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-5fd96d58c8a5c10b",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-30cb6d2d9d8dbe34",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-31b37a3ff5415dcd",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-f966d76437abab3d",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-3fd5eb6957c57fb4",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-caa0e9223617115d",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-b2981f35b49cd641",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-0a3784c5a89eaafb",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-d505ccbb50b3804d",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-b7b978072d6cd1e1",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-d4f481317f37bbf4",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-d017e039838dceba",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-0bfc1af759e84cd4",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-31ec0dbdd2111605",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-c7beee6397baee2d",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-d175159ca0835c4c",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-cc065d8ee478c69c",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-676506c4a71538c4",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-eb7f825c11e652d1",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-0042d3db1e50d660",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-eaf0e892870be73c",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-4f52864527c4b280",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-3023a41643b3b006",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-4a5589cc5e15c21a",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
+    },
+    {
+      "trade_id": "TR-1f9b98356368b953",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-c505ca631719ad0a",
+      "missing_fields": [
+        "market_regime"
+      ]
+    },
+    {
+      "trade_id": "TR-1c78eec444937787",
+      "missing_fields": [
+        "market_regime",
+        "volatility"
+      ]
     }
   ],
-  "recommendation": "Fix incomplete or invalid trades before promoting hypotheses.",
-  "restrictions": {
-    "read_only": true,
-    "automatic_application": false,
-    "live_unchanged": true,
-    "trading_logic_unchanged": true
-  }
+  "threshold_checks": [
+    "COVERAGE_BELOW_90",
+    "UNKNOWN_ABOVE_5"
+  ],
+  "restrictions": [
+    "LIVE_UNCHANGED",
+    "TRADING_LOGIC_UNCHANGED",
+    "DECISION_ENGINES_UNCHANGED"
+  ]
 }

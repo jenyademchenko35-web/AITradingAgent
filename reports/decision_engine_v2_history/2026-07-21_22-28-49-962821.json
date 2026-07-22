@@ -1,0 +1,3543 @@
+{
+  "generated_at": "2026-07-21T19:28:49.960094+00:00",
+  "mode": "SHADOW_RESEARCH_ONLY",
+  "status": "EXPERIMENTAL",
+  "dataset_fingerprint": "660a7ded0d41682dc2c3228ce5c9f5dc8fa22ca8b401a6c571dcb4d9a6800f60",
+  "signals": {
+    "compared": 42,
+    "accepted_by_v1": 42,
+    "accepted_by_v2": 31,
+    "rejected_by_v2": 11,
+    "agreement_pct": 73.8095,
+    "disagreement_pct": 26.1905,
+    "average_confidence_change": -1.6548,
+    "average_score_change": -0.2827
+  },
+  "top_recalibration_reasons": [
+    {
+      "reason": "WEAK_WIN_LOSS_SEPARATION_0.94",
+      "signals": 26
+    },
+    {
+      "reason": "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+      "signals": 18
+    },
+    {
+      "reason": "CONFIDENCE_90_PLUS",
+      "signals": 18
+    },
+    {
+      "reason": "QUALITY_B",
+      "signals": 16
+    },
+    {
+      "reason": "SCORE_25_26",
+      "signals": 16
+    },
+    {
+      "reason": "UNKNOWN_CONFIDENCE_PRESERVED",
+      "signals": 16
+    },
+    {
+      "reason": "UNKNOWN_SCORE_PRESERVED",
+      "signals": 16
+    },
+    {
+      "reason": "WEEKDAY_MONDAY",
+      "signals": 4
+    },
+    {
+      "reason": "HOUR_07",
+      "signals": 3
+    },
+    {
+      "reason": "WEEKDAY_TUESDAY",
+      "signals": 2
+    }
+  ],
+  "shadow_replay": {
+    "v1": {
+      "trades": 42,
+      "wins": 7,
+      "losses": 35,
+      "break_even": 0,
+      "winrate": 16.6667,
+      "profit_factor": 0.26343,
+      "net_r": -46.17401793,
+      "expectancy_r": -1.09938138,
+      "max_drawdown_r": 46.174018
+    },
+    "v2": {
+      "trades": 31,
+      "wins": 5,
+      "losses": 26,
+      "break_even": 0,
+      "winrate": 16.129,
+      "profit_factor": 0.235903,
+      "net_r": -38.42736769,
+      "expectancy_r": -1.23959251,
+      "max_drawdown_r": 38.427368
+    },
+    "method": "Existing shadow_replay.metrics.metric_bundle over COMPLETE historical R"
+  },
+  "walk_forward": {
+    "status": "EXPERIMENTAL",
+    "windows": [
+      {
+        "window": 1,
+        "train_range": [
+          0,
+          18
+        ],
+        "test_range": [
+          18,
+          26
+        ],
+        "v1": {
+          "trades": 8,
+          "wins": 2,
+          "losses": 6,
+          "break_even": 0,
+          "winrate": 25.0,
+          "profit_factor": 0.354862,
+          "net_r": -9.60710452,
+          "expectancy_r": -1.20088807,
+          "max_drawdown_r": 11.176322
+        },
+        "v2": {
+          "trades": 6,
+          "wins": 2,
+          "losses": 4,
+          "break_even": 0,
+          "winrate": 33.3333,
+          "profit_factor": 0.540379,
+          "net_r": -4.49469452,
+          "expectancy_r": -0.74911575,
+          "max_drawdown_r": 8.646017
+        },
+        "pf_improved": true,
+        "net_r_improved": true
+      },
+      {
+        "window": 2,
+        "train_range": [
+          0,
+          26
+        ],
+        "test_range": [
+          26,
+          34
+        ],
+        "v1": {
+          "trades": 8,
+          "wins": 1,
+          "losses": 7,
+          "break_even": 0,
+          "winrate": 12.5,
+          "profit_factor": 0.109316,
+          "net_r": -18.17641962,
+          "expectancy_r": -2.27205245,
+          "max_drawdown_r": 18.17642
+        },
+        "v2": {
+          "trades": 8,
+          "wins": 1,
+          "losses": 7,
+          "break_even": 0,
+          "winrate": 12.5,
+          "profit_factor": 0.109316,
+          "net_r": -18.17641962,
+          "expectancy_r": -2.27205245,
+          "max_drawdown_r": 18.17642
+        },
+        "pf_improved": false,
+        "net_r_improved": false
+      },
+      {
+        "window": 3,
+        "train_range": [
+          0,
+          34
+        ],
+        "test_range": [
+          34,
+          42
+        ],
+        "v1": {
+          "trades": 8,
+          "wins": 1,
+          "losses": 7,
+          "break_even": 0,
+          "winrate": 12.5,
+          "profit_factor": 0.251295,
+          "net_r": -6.6212447,
+          "expectancy_r": -0.82765559,
+          "max_drawdown_r": 6.621245
+        },
+        "v2": {
+          "trades": 8,
+          "wins": 1,
+          "losses": 7,
+          "break_even": 0,
+          "winrate": 12.5,
+          "profit_factor": 0.251295,
+          "net_r": -6.6212447,
+          "expectancy_r": -0.82765559,
+          "max_drawdown_r": 6.621245
+        },
+        "pf_improved": false,
+        "net_r_improved": false
+      }
+    ],
+    "improved_windows": 1,
+    "total_windows": 3,
+    "method": "Existing chronological build_windows; v2 weights frozen for this research run"
+  },
+  "comparisons": [
+    {
+      "trade_id": "TR-69f5e07226c99942",
+      "R": -1.49537446,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "66.7",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.4003",
+      "atr": "242.6357",
+      "risk_reward": 2.0,
+      "hour": 14,
+      "weekday": "Saturday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-27T14:26:20.413799",
+      "raw_confidence": 66.7,
+      "calibrated_confidence": 64.2,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.6875,
+      "score_change": -0.3125,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 66.7,
+          "calibrated": 64.2,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-3aaceee6f17c6a35",
+      "R": -0.42994472,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "70.3",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.5771",
+      "atr": "9.1086",
+      "risk_reward": 2.0,
+      "hour": 19,
+      "weekday": "Saturday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-27T19:27:10.038503",
+      "raw_confidence": 70.3,
+      "calibrated_confidence": 67.8,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.6875,
+      "score_change": -0.3125,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 70.3,
+          "calibrated": 67.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-c7f62214deee4248",
+      "R": -1.26345894,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "76.5",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.4473",
+      "atr": "269.3714",
+      "risk_reward": 2.0,
+      "hour": 22,
+      "weekday": "Saturday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-27T22:05:01.578303",
+      "raw_confidence": 76.5,
+      "calibrated_confidence": 74.0,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.6875,
+      "score_change": -0.3125,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 76.5,
+          "calibrated": 74.0,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-fc79dcb58aab548a",
+      "R": -0.72840165,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "74.3",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.6751",
+      "atr": "10.6343",
+      "risk_reward": 2.0,
+      "hour": 1,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T01:30:16.583295",
+      "raw_confidence": 74.3,
+      "calibrated_confidence": 71.8,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.6875,
+      "score_change": -0.3125,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 74.3,
+          "calibrated": 71.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-608687f7176f3923",
+      "R": -0.95809408,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "81.2",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.466",
+      "atr": "280.1857",
+      "risk_reward": 2.0,
+      "hour": 4,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T04:08:12.162651",
+      "raw_confidence": 81.2,
+      "calibrated_confidence": 78.7,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.6875,
+      "score_change": -0.3125,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 81.2,
+          "calibrated": 78.7,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-337fbdeda5d8831e",
+      "R": -1.2038683,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "70.3",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.6072",
+      "atr": "9.5679",
+      "risk_reward": 2.0,
+      "hour": 7,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T07:31:57.404947",
+      "raw_confidence": 70.3,
+      "calibrated_confidence": 67.8,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.1875,
+      "score_change": -0.8125,
+      "score_adjustments": [
+        {
+          "reason": "HOUR_07",
+          "feature": "hour",
+          "predictive_power": "LOW",
+          "amount": -0.5
+        },
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HOUR_07",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 70.3,
+          "calibrated": 67.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.1875,
+          "adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-00daf140cae45ec1",
+      "R": 2.08786125,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "89.3",
+      "score": "25.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.4665",
+      "atr": "280.6786",
+      "risk_reward": 2.0,
+      "hour": 10,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T10:09:24.348272",
+      "raw_confidence": 89.3,
+      "calibrated_confidence": 86.8,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 25.0,
+      "calibrated_score": 24.6875,
+      "score_change": -0.3125,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 89.3,
+          "calibrated": 86.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-e967841f3a9dbfcd",
+      "R": 2.56221577,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "80.0",
+      "score": "28.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.555",
+      "atr": "8.7736",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T15:35:30.025277",
+      "raw_confidence": 80.0,
+      "calibrated_confidence": 77.5,
+      "confidence_change": -2.5,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94"
+      ],
+      "raw_score": 28.0,
+      "calibrated_score": 28.0,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "NO_SCORE_ADJUSTMENT",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "NO_SCORE_ADJUSTMENT"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 80.0,
+          "calibrated": 77.5,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94"
+          ]
+        },
+        "score": {
+          "raw": 28.0,
+          "calibrated": 28.0,
+          "adjustments": [
+            {
+              "reason": "NO_SCORE_ADJUSTMENT",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-ce5794abb846103c",
+      "R": -1.20517511,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "25.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.7025",
+      "atr": "10.9843",
+      "risk_reward": 2.0,
+      "hour": 21,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T21:36:55.672192",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 25.0,
+      "calibrated_score": 24.4375,
+      "score_change": -0.5625,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.4375,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-8416edde9d850bf9",
+      "R": -1.40029368,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "98.0",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.6866",
+      "atr": "409.0143",
+      "risk_reward": 2.0,
+      "hour": 23,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-28T23:10:42.619477",
+      "raw_confidence": 98.0,
+      "calibrated_confidence": 95.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.4375,
+      "score_change": -0.5625,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 98.0,
+          "calibrated": 95.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.4375,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-c4e6b259c534ecd1",
+      "R": -1.00068509,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "1.0633",
+      "atr": "16.8514",
+      "risk_reward": 2.0,
+      "hour": 3,
+      "weekday": "Monday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-29T03:40:36.306185",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.3125,
+      "score_change": -0.6875,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        },
+        {
+          "reason": "WEEKDAY_MONDAY",
+          "feature": "weekday",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_MONDAY"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-5c772818388b697a",
+      "R": -1.20801999,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "27.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.9158",
+      "atr": "550.4357",
+      "risk_reward": 2.0,
+      "hour": 5,
+      "weekday": "Monday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-29T05:47:02.594428",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 27.0,
+      "calibrated_score": 26.625,
+      "score_change": -0.375,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        },
+        {
+          "reason": "WEEKDAY_MONDAY",
+          "feature": "weekday",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_MONDAY"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 27.0,
+          "calibrated": 26.625,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-449686fd43cc678e",
+      "R": -2.1314013,
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "1.066",
+      "atr": "16.845",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Monday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-29T15:56:52.344739",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.3125,
+      "score_change": -0.6875,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        },
+        {
+          "reason": "WEEKDAY_MONDAY",
+          "feature": "weekday",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_MONDAY"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-1dd5b92dfb0685da",
+      "R": 2.12620169,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "95.0",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.5183",
+      "atr": "307.3714",
+      "risk_reward": 2.0,
+      "hour": 8,
+      "weekday": "Tuesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-30T08:58:08.989095",
+      "raw_confidence": 95.0,
+      "calibrated_confidence": 92.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.3125,
+      "score_change": -0.6875,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        },
+        {
+          "reason": "WEEKDAY_TUESDAY",
+          "feature": "weekday",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_TUESDAY"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 95.0,
+          "calibrated": 92.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-57e951836470a80f",
+      "R": -1.01713744,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "29.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.6357",
+      "atr": "371.8357",
+      "risk_reward": 2.0,
+      "hour": 14,
+      "weekday": "Tuesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-06-30T14:59:39.773334",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 29.0,
+      "calibrated_score": 28.625,
+      "score_change": -0.375,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        },
+        {
+          "reason": "WEEKDAY_TUESDAY",
+          "feature": "weekday",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_TUESDAY"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 29.0,
+          "calibrated": 28.625,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-5fd96d58c8a5c10b",
+      "R": -1.85843958,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "30.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.7621",
+      "atr": "451.2071",
+      "risk_reward": 2.0,
+      "hour": 3,
+      "weekday": "Wednesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-01T03:01:58.877010",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 30.0,
+      "calibrated_score": 29.75,
+      "score_change": -0.25,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 30.0,
+          "calibrated": 29.75,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-30cb6d2d9d8dbe34",
+      "R": -1.45438647,
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "confidence": "95.0",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.8312",
+      "atr": "499.9643",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Wednesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-01T15:24:02.821700",
+      "raw_confidence": 95.0,
+      "calibrated_confidence": 92.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.4375,
+      "score_change": -0.5625,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 95.0,
+          "calibrated": 92.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.4375,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-31b37a3ff5415dcd",
+      "R": -1.19084699,
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "confidence": "98.0",
+      "score": "26.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "0.7235",
+      "atr": "4.0714",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Thursday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "Momentum",
+      "decision_reason": "Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-02T15:34:55.567557",
+      "raw_confidence": 98.0,
+      "calibrated_confidence": 95.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 26.0,
+      "calibrated_score": 25.4375,
+      "score_change": -0.5625,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 98.0,
+          "calibrated": 95.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.4375,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-f966d76437abab3d",
+      "R": -5.1867049,
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "27.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 22,
+      "weekday": "Wednesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-08T22:19:51.014350",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 27.0,
+      "calibrated_score": 26.75,
+      "score_change": -0.25,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 27.0,
+          "calibrated": 26.75,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-3fd5eb6957c57fb4",
+      "R": -2.2847008,
+      "symbol": "XRP/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "27.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 7,
+      "weekday": "Thursday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "OHLCV недоступен.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-09T07:06:34.103329",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 27.0,
+      "calibrated_score": 26.25,
+      "score_change": -0.75,
+      "score_adjustments": [
+        {
+          "reason": "HOUR_07",
+          "feature": "hour",
+          "predictive_power": "LOW",
+          "amount": -0.5
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "HOUR_07",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 27.0,
+          "calibrated": 26.25,
+          "adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-caa0e9223617115d",
+      "R": -1.17461087,
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "27.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 7,
+      "weekday": "Thursday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "Momentum",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-09T07:06:42.601509",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 27.0,
+      "calibrated_score": 26.25,
+      "score_change": -0.75,
+      "score_adjustments": [
+        {
+          "reason": "HOUR_07",
+          "feature": "hour",
+          "predictive_power": "LOW",
+          "amount": -0.5
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "HOUR_07",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 27.0,
+          "calibrated": 26.25,
+          "adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-b2981f35b49cd641",
+      "R": -1.63807433,
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "25.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 9,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-10T09:43:39.768892",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 25.0,
+      "calibrated_score": 24.4375,
+      "score_change": -0.5625,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.4375,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-0a3784c5a89eaafb",
+      "R": 2.58210495,
+      "symbol": "XRP/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "27.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 19,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "Momentum",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-12T19:15:18.235804",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 27.0,
+      "calibrated_score": 26.75,
+      "score_change": -0.25,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 27.0,
+          "calibrated": 26.75,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-d505ccbb50b3804d",
+      "R": -3.47433567,
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "25.0",
+      "quality": "B",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 19,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "Momentum",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-12T19:15:22.757539",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 25.0,
+      "calibrated_score": 24.4375,
+      "score_change": -0.5625,
+      "score_adjustments": [
+        {
+          "reason": "QUALITY_B",
+          "feature": "quality",
+          "predictive_power": "NONE",
+          "amount": -0.1875
+        },
+        {
+          "reason": "SCORE_25_26",
+          "feature": "score",
+          "predictive_power": "NONE",
+          "amount": -0.125
+        },
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "agreement": false,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.4375,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-b7b978072d6cd1e1",
+      "R": 2.70233453,
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "27.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 19,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "Momentum",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-12T19:15:25.356153",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 27.0,
+      "calibrated_score": 26.75,
+      "score_change": -0.25,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 27.0,
+          "calibrated": 26.75,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-d4f481317f37bbf4",
+      "R": -1.13311743,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "100.0",
+      "score": "29.0",
+      "quality": "A",
+      "trend_alignment": "ALIGNED",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 13,
+      "weekday": "Monday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "Risk",
+      "decision_reason": "OHLCV недоступен. | Новостей рядом со сделкой нет.",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-13T13:21:31.801087",
+      "raw_confidence": 100.0,
+      "calibrated_confidence": 97.25,
+      "confidence_change": -2.75,
+      "calibration_reason": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+      ],
+      "raw_score": 29.0,
+      "calibrated_score": 28.5,
+      "score_change": -0.5,
+      "score_adjustments": [
+        {
+          "reason": "CONFIDENCE_90_PLUS",
+          "feature": "confidence",
+          "predictive_power": "LOW",
+          "amount": -0.25
+        },
+        {
+          "reason": "WEEKDAY_MONDAY",
+          "feature": "weekday",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        },
+        {
+          "reason": "SYMBOL_SOL",
+          "feature": "symbol",
+          "predictive_power": "LOW",
+          "amount": -0.125
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.94",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_MONDAY",
+        "SYMBOL_SOL"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.25,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.94",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 29.0,
+          "calibrated": 28.5,
+          "adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "LOW",
+              "amount": -0.25
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-d017e039838dceba",
+      "R": -4.14986164,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 19,
+      "weekday": "Monday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-13T19:26:25.258765",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-0bfc1af759e84cd4",
+      "R": -5.26229262,
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 7,
+      "weekday": "Tuesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-14T07:19:54.378300",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-31ec0dbdd2111605",
+      "R": -4.11892628,
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 7,
+      "weekday": "Tuesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-14T07:53:03.369447",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-c7beee6397baee2d",
+      "R": -3.36338604,
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 7,
+      "weekday": "Tuesday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-14T07:53:10.933244",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-d175159ca0835c4c",
+      "R": -1.24898947,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 12,
+      "weekday": "Thursday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-16T12:39:35.808445",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-cc065d8ee478c69c",
+      "R": 2.23083068,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 19,
+      "weekday": "Thursday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-16T19:01:54.245613",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-676506c4a71538c4",
+      "R": -1.22609392,
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 8,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T08:50:33.609186",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-eb7f825c11e652d1",
+      "R": -1.03770033,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T15:32:09.730082",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-0042d3db1e50d660",
+      "R": -1.61119069,
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T15:32:14.956296",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-eaf0e892870be73c",
+      "R": -1.23932512,
+      "symbol": "XRP/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 17,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T17:35:40.023372",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-4f52864527c4b280",
+      "R": 2.22234918,
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 17,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T17:35:43.835213",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-3023a41643b3b006",
+      "R": -1.06501198,
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 17,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T17:35:45.403405",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-4a5589cc5e15c21a",
+      "R": -1.06455352,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 23,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T23:25:43.658763",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-1f9b98356368b953",
+      "R": -1.00410748,
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 23,
+      "weekday": "Friday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-17T23:25:44.993413",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-c505ca631719ad0a",
+      "R": -1.00747295,
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 15,
+      "weekday": "Saturday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-18T15:51:08.926408",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    },
+    {
+      "trade_id": "TR-1c78eec444937787",
+      "R": -1.85193214,
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "confidence": "UNKNOWN",
+      "score": "UNKNOWN",
+      "quality": "UNKNOWN",
+      "trend_alignment": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "atr": "UNKNOWN",
+      "risk_reward": 2.0,
+      "hour": 11,
+      "weekday": "Sunday",
+      "market_regime": "UNKNOWN",
+      "primary_blocker": "NONE",
+      "decision_reason": "UNKNOWN",
+      "entry_type": "UNKNOWN",
+      "opened_at": "2026-07-19T11:09:03.136322",
+      "raw_confidence": null,
+      "calibrated_confidence": null,
+      "confidence_change": 0.0,
+      "calibration_reason": [
+        "UNKNOWN_CONFIDENCE_PRESERVED"
+      ],
+      "raw_score": null,
+      "calibrated_score": null,
+      "score_change": 0.0,
+      "score_adjustments": [
+        {
+          "reason": "UNKNOWN_SCORE_PRESERVED",
+          "amount": 0.0
+        }
+      ],
+      "accepted_by_v1": true,
+      "accepted_by_v2": true,
+      "agreement": true,
+      "reason_difference": [
+        "UNKNOWN_CONFIDENCE_PRESERVED",
+        "UNKNOWN_SCORE_PRESERVED"
+      ],
+      "explanation": {
+        "decision": "Signal accepted",
+        "confidence": {
+          "raw": null,
+          "calibrated": null,
+          "reasons": [
+            "UNKNOWN_CONFIDENCE_PRESERVED"
+          ]
+        },
+        "score": {
+          "raw": null,
+          "calibrated": null,
+          "adjustments": [
+            {
+              "reason": "UNKNOWN_SCORE_PRESERVED",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      }
+    }
+  ],
+  "research_evidence": {
+    "signal_quality": {
+      "score": 23,
+      "status": "POOR",
+      "top_features": [
+        "hour",
+        "weekday",
+        "primary_blocker",
+        "confidence",
+        "symbol"
+      ]
+    },
+    "loss_attribution": {
+      "status": "INVESTIGATE",
+      "top_scenarios": [
+        "DIRECTION=SHORT + PRIMARY_BLOCKER=NONE",
+        "DIRECTION=SHORT + VOLATILITY=UNKNOWN",
+        "TREND_ALIGNMENT=ALIGNED + CONFIDENCE=90+",
+        "TREND_ALIGNMENT=UNKNOWN + CONFIDENCE=UNKNOWN",
+        "QUALITY=UNKNOWN + SCORE=UNKNOWN"
+      ]
+    },
+    "existing_walk_forward": {
+      "status": "OK",
+      "generated_at": "2026-07-19T17:11:53.707259+00:00"
+    },
+    "research_dashboard": {
+      "status": "WARNING",
+      "recommendation": "CONTINUE_SHADOW_RESEARCH"
+    },
+    "execution_simulator": {
+      "status": "ROBUST",
+      "robustness_score": 82
+    },
+    "adaptive_research": {
+      "status": "OK",
+      "global_confidence": null
+    },
+    "trade_registry": {
+      "complete_trades": 42
+    },
+    "ready_for_ab_safety_gate": true
+  },
+  "sources": {
+    "signal_quality": true,
+    "loss_attribution": true,
+    "walk_forward": true,
+    "research_dashboard": true,
+    "execution_simulator": true,
+    "trade_registry": true,
+    "adaptive_research": true
+  },
+  "weights": {
+    "version": "1.0",
+    "acceptance": {
+      "minimum_calibrated_confidence": 80.0,
+      "minimum_calibrated_score": 25.0
+    },
+    "confidence_calibration": {
+      "weak_separation_penalty": -2.5,
+      "high_confidence_penalty": -0.5,
+      "winning_losing_gap_reference": 5.0
+    },
+    "predictive_power_multipliers": {
+      "NONE": 0.25,
+      "LOW": 0.5,
+      "MEDIUM": 0.75,
+      "HIGH": 1.0
+    },
+    "score_adjustments": {
+      "hour_07": -1.0,
+      "quality_B": -0.75,
+      "score_25_26": -0.5,
+      "confidence_90_plus": -0.5,
+      "weekday_Monday": -0.25,
+      "weekday_Tuesday": -0.25,
+      "symbol_SOL": -0.25
+    },
+    "limits": {
+      "maximum_absolute_confidence_change": 5.0,
+      "maximum_absolute_score_change": 3.0
+    }
+  },
+  "recommendation": "Continue Shadow Testing",
+  "restrictions": [
+    "NO_LIVE_IMPORT",
+    "NO_AUTOMATIC_PROMOTION",
+    "V1_UNCHANGED",
+    "NO_SIGNAL_OR_TRADE_PARAMETER_MUTATION"
+  ]
+}

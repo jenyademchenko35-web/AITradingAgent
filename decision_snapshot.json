@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "latest": {
+    "timestamp": "2026-07-22T11:18:58.652911+00:00",
+    "symbol": "BNB/USDT",
+    "direction": "SHORT",
+    "trend": {
+      "long": "10",
+      "short": "50",
+      "reason": "1d: EMA SHORT +20 | 1d: MACD LONG +10 | 4h: EMA SHORT +12 | 4h: MACD SHORT +6 | 1h: EMA SHORT +8 | 1h: MACD SHORT +4 |  | === Trend Summary === | 1d: EMA=BEARISH | MACD=BULLISH | EMA20=573.57 | EMA50=586.02 | MACD=-2.8951 | Signal=-3.8960 | 4h: EMA=BEARISH | MACD=BEARISH | EMA20=571.95 | EMA50=572.25 | MACD=0.0575 | Signal=0.2563 | 1h: EMA=BEARISH | MACD=BEARISH | EMA20=571.84 | EMA50=572.20 | MACD=-1.0346 | Signal=-0.7528"
+    },
+    "structure": {
+      "long": "0",
+      "short": "12",
+      "reason": "1d: цена ниже EMA20 (+1 SHORT) | 1d: цена ниже EMA50 (+1 SHORT) | 1d: EMA20 < EMA50 (+2 SHORT) | 1d: середина диапазона | 4h: цена ниже EMA20 (+1 SHORT) | 4h: цена ниже EMA50 (+1 SHORT) | 4h: EMA20 < EMA50 (+2 SHORT) | 4h: середина диапазона | 1h: цена ниже EMA20 (+1 SHORT) | 1h: цена ниже EMA50 (+1 SHORT) | 1h: EMA20 < EMA50 (+2 SHORT) | 1h: середина диапазона"
+    },
+    "momentum": {
+      "long": "5",
+      "short": "7",
+      "reason": "1d: MACD LONG +5 | 1d: RSI 46.7 neutral | 4h: MACD SHORT +4 | 4h: RSI 48.4 neutral | 1h: MACD SHORT +3 | 1h: RSI 46.2 neutral"
+    },
+    "risk": {
+      "long": "-5",
+      "short": "-5",
+      "reason": "Низкая волатильность | Цена в середине диапазона (-5 LONG, -5 SHORT)"
+    },
+    "raw_score": 24.0,
+    "final_score": 24.0,
+    "confidence": 100.0,
+    "quality": "C",
+    "primary_blocker": "Risk",
+    "market_regime": "",
+    "volatility": "",
+    "timeframe": "1h",
+    "reason": "SHORT wins by 20 points",
+    "mode": "DIAGNOSTIC_ONLY"
+  },
+  "history": [
+    {
+      "timestamp": "2026-07-22T11:18:58.652911+00:00",
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "trend": {
+        "long": "10",
+        "short": "50",
+        "reason": "1d: EMA SHORT +20 | 1d: MACD LONG +10 | 4h: EMA SHORT +12 | 4h: MACD SHORT +6 | 1h: EMA SHORT +8 | 1h: MACD SHORT +4 |  | === Trend Summary === | 1d: EMA=BEARISH | MACD=BULLISH | EMA20=573.57 | EMA50=586.02 | MACD=-2.8951 | Signal=-3.8960 | 4h: EMA=BEARISH | MACD=BEARISH | EMA20=571.95 | EMA50=572.25 | MACD=0.0575 | Signal=0.2563 | 1h: EMA=BEARISH | MACD=BEARISH | EMA20=571.84 | EMA50=572.20 | MACD=-1.0346 | Signal=-0.7528"
+      },
+      "structure": {
+        "long": "0",
+        "short": "12",
+        "reason": "1d: цена ниже EMA20 (+1 SHORT) | 1d: цена ниже EMA50 (+1 SHORT) | 1d: EMA20 < EMA50 (+2 SHORT) | 1d: середина диапазона | 4h: цена ниже EMA20 (+1 SHORT) | 4h: цена ниже EMA50 (+1 SHORT) | 4h: EMA20 < EMA50 (+2 SHORT) | 4h: середина диапазона | 1h: цена ниже EMA20 (+1 SHORT) | 1h: цена ниже EMA50 (+1 SHORT) | 1h: EMA20 < EMA50 (+2 SHORT) | 1h: середина диапазона"
+      },
+      "momentum": {
+        "long": "5",
+        "short": "7",
+        "reason": "1d: MACD LONG +5 | 1d: RSI 46.7 neutral | 4h: MACD SHORT +4 | 4h: RSI 48.4 neutral | 1h: MACD SHORT +3 | 1h: RSI 46.2 neutral"
+      },
+      "risk": {
+        "long": "-5",
+        "short": "-5",
+        "reason": "Низкая волатильность | Цена в середине диапазона (-5 LONG, -5 SHORT)"
+      },
+      "raw_score": 24.0,
+      "final_score": 24.0,
+      "confidence": 100.0,
+      "quality": "C",
+      "primary_blocker": "Risk",
+      "market_regime": "",
+      "volatility": "",
+      "timeframe": "1h",
+      "reason": "SHORT wins by 20 points",
+      "mode": "DIAGNOSTIC_ONLY"
+    }
+  ]
+}

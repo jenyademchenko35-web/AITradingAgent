@@ -1,0 +1,5365 @@
+{
+  "generated_at": "2026-07-22T11:19:58.186066+00:00",
+  "dataset_fingerprint": "c3dfb5a56d0b466e5b3a65265ba19888c04cb7ecce282c781da4a880143dc4e7",
+  "version": "2.1",
+  "mode": "SHADOW_RESEARCH_ONLY",
+  "differences": [
+    {
+      "trade_id": "TR-69f5e07226c99942",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-27T14:26:20.413799",
+      "outcome": "LOSS",
+      "R": -1.49537446,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 66.7,
+          "calibrated": 64.2,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 16.0,
+            "opposing_side": 8.0,
+            "net_directional": 8.0
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 7.75,
+            "opposing_side": 1.5,
+            "net_directional": 6.25
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.0,
+            "opposing_side": 3.4,
+            "net_directional": -3.4
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 2.25,
+            "opposing_side": 0.0,
+            "net_directional": 2.25
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 25.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-3aaceee6f17c6a35",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-27T19:27:10.038503",
+      "outcome": "LOSS",
+      "R": -0.42994472,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 70.3,
+          "calibrated": 67.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 4.25,
+            "net_directional": -1.25
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 0.0,
+            "opposing_side": 2.25,
+            "net_directional": -2.25
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 25.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-c7f62214deee4248",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-27T22:05:01.578303",
+      "outcome": "LOSS",
+      "R": -1.26345894,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 76.5,
+          "calibrated": 74.0,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 1.75,
+            "net_directional": 1.25
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 0.0,
+            "opposing_side": 2.25,
+            "net_directional": -2.25
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 25.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-fc79dcb58aab548a",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-28T01:30:16.583295",
+      "outcome": "LOSS",
+      "R": -0.72840165,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 74.3,
+          "calibrated": 71.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 2.5,
+            "net_directional": 0.5
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 0.0,
+            "opposing_side": 2.25,
+            "net_directional": -2.25
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 25.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-608687f7176f3923",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-28T04:08:12.162651",
+      "outcome": "LOSS",
+      "R": -0.95809408,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 81.2,
+          "calibrated": 78.7,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 0.0,
+            "opposing_side": 2.25,
+            "net_directional": -2.25
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 25.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-337fbdeda5d8831e",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-28T07:31:57.404947",
+      "outcome": "LOSS",
+      "R": -1.2038683,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 70.3,
+          "calibrated": 67.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 25.1875,
+          "adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HOUR_07",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 4.25,
+            "net_directional": -1.25
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 0.0,
+            "opposing_side": 2.25,
+            "net_directional": -2.25
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 25.1875,
+        "calibration_adjustments": [
+          {
+            "reason": "HOUR_07",
+            "feature": "hour",
+            "predictive_power": "LOW",
+            "amount": -0.5
+          },
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-00daf140cae45ec1",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-28T10:09:24.348272",
+      "outcome": "WIN",
+      "R": 2.08786125,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 89.3,
+          "calibrated": 86.8,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.6875,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "QUALITY_B",
+        "SCORE_25_26"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": -0.75,
+            "opposing_side": -0.75,
+            "net_directional": 0.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-e967841f3a9dbfcd",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-28T15:35:30.025277",
+      "outcome": "WIN",
+      "R": 2.56221577,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 80.0,
+          "calibrated": 77.5,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08"
+          ]
+        },
+        "score": {
+          "raw": 28.0,
+          "calibrated": 28.0,
+          "adjustments": [
+            {
+              "reason": "NO_SCORE_ADJUSTMENT",
+              "amount": 0.0
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "NO_SCORE_ADJUSTMENT"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 20.0,
+            "opposing_side": 4.0,
+            "net_directional": 16.0
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 4.25,
+            "opposing_side": 0.5,
+            "net_directional": 3.75
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.0,
+            "opposing_side": 2.4,
+            "net_directional": -1.4
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": 0,
+        "raw_score": 28.0,
+        "calibrated_score": 28.0,
+        "calibration_adjustments": [
+          {
+            "reason": "NO_SCORE_ADJUSTMENT",
+            "amount": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-ce5794abb846103c",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-06-28T21:36:55.672192",
+      "outcome": "LOSS",
+      "R": -1.20517511,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 21.6,
+            "opposing_side": 2.4,
+            "net_directional": 19.2
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 2.5,
+            "net_directional": 0.5
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 1.6,
+            "opposing_side": 1.8,
+            "net_directional": -0.2
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": -0.75,
+            "opposing_side": -0.75,
+            "net_directional": 0.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.3125,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-b2981f35b49cd641",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-10T09:43:39.768892",
+      "outcome": "LOSS",
+      "R": -1.63807433,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 18.4,
+            "opposing_side": 5.6,
+            "net_directional": 12.8
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 2.5,
+            "opposing_side": 0.5,
+            "net_directional": 2.0
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.8,
+            "opposing_side": 1.6,
+            "net_directional": -0.8
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.3125,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-d505ccbb50b3804d",
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-12T19:15:22.757539",
+      "outcome": "LOSS",
+      "R": -3.47433567,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 18.4,
+            "opposing_side": 5.6,
+            "net_directional": 12.8
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.8,
+            "opposing_side": 1.6,
+            "net_directional": -0.8
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.3125,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-31ec0dbdd2111605",
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-14T07:53:03.369447",
+      "outcome": "LOSS",
+      "R": -4.11892628,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 98.0,
+          "calibrated": 95.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 26.0,
+          "calibrated": 24.6875,
+          "adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "HOUR_07",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_TUESDAY"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 18.4,
+            "opposing_side": 5.6,
+            "net_directional": 12.8
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 4.5,
+            "opposing_side": 0.25,
+            "net_directional": 4.25
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.8,
+            "opposing_side": 1.6,
+            "net_directional": -0.8
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 26.0,
+        "calibrated_score": 24.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "HOUR_07",
+            "feature": "hour",
+            "predictive_power": "LOW",
+            "amount": -0.5
+          },
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          },
+          {
+            "reason": "WEEKDAY_TUESDAY",
+            "feature": "weekday",
+            "predictive_power": "LOW",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-c7beee6397baee2d",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-14T07:53:10.933244",
+      "outcome": "LOSS",
+      "R": -3.36338604,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 23.6875,
+          "adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "HOUR_07",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS",
+        "WEEKDAY_TUESDAY"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 18.4,
+            "opposing_side": 5.6,
+            "net_directional": 12.8
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 2.75,
+            "opposing_side": 2.25,
+            "net_directional": 0.5
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.8,
+            "opposing_side": 1.6,
+            "net_directional": -0.8
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 23.6875,
+        "calibration_adjustments": [
+          {
+            "reason": "HOUR_07",
+            "feature": "hour",
+            "predictive_power": "LOW",
+            "amount": -0.5
+          },
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          },
+          {
+            "reason": "WEEKDAY_TUESDAY",
+            "feature": "weekday",
+            "predictive_power": "LOW",
+            "amount": -0.125
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-676506c4a71538c4",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-17T08:50:33.609186",
+      "outcome": "LOSS",
+      "R": -1.22609392,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 24.0,
+            "opposing_side": 0.0,
+            "net_directional": 24.0
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 3.0,
+            "opposing_side": 2.0,
+            "net_directional": 1.0
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 2.4,
+            "opposing_side": 0.0,
+            "net_directional": 2.4
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 0.0,
+            "opposing_side": 3.0,
+            "net_directional": -3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.3125,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-0042d3db1e50d660",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-17T15:32:14.956296",
+      "outcome": "LOSS",
+      "R": -1.61119069,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 18.4,
+            "opposing_side": 5.6,
+            "net_directional": 12.8
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 2.5,
+            "opposing_side": 0.5,
+            "net_directional": 2.0
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.8,
+            "opposing_side": 1.6,
+            "net_directional": -0.8
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.3125,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          }
+        ]
+      }
+    },
+    {
+      "trade_id": "TR-4f52864527c4b280",
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "opened_at": "2026-07-17T17:35:43.835213",
+      "outcome": "WIN",
+      "R": 2.22234918,
+      "accepted_by_v1": true,
+      "accepted_by_v2": false,
+      "full_reason": {
+        "decision": "Signal downgraded below v2 acceptance threshold",
+        "confidence": {
+          "raw": 100.0,
+          "calibrated": 97.125,
+          "reasons": [
+            "WEAK_WIN_LOSS_SEPARATION_0.08",
+            "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+          ]
+        },
+        "score": {
+          "raw": 25.0,
+          "calibrated": 24.3125,
+          "adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+      },
+      "reason_difference": [
+        "WEAK_WIN_LOSS_SEPARATION_0.08",
+        "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+        "QUALITY_B",
+        "SCORE_25_26",
+        "CONFIDENCE_90_PLUS"
+      ],
+      "feature_contribution": {
+        "direction": "SHORT",
+        "modules": [
+          {
+            "feature": "trend",
+            "weight": 0.4,
+            "selected_side": 18.4,
+            "opposing_side": 5.6,
+            "net_directional": 12.8
+          },
+          {
+            "feature": "structure",
+            "weight": 0.25,
+            "selected_side": 4.0,
+            "opposing_side": 0.75,
+            "net_directional": 3.25
+          },
+          {
+            "feature": "momentum",
+            "weight": 0.2,
+            "selected_side": 0.8,
+            "opposing_side": 1.6,
+            "net_directional": -0.8
+          },
+          {
+            "feature": "risk",
+            "weight": 0.15,
+            "selected_side": 3.0,
+            "opposing_side": 0.0,
+            "net_directional": 3.0
+          }
+        ],
+        "quality": -0.1875,
+        "raw_score": 25.0,
+        "calibrated_score": 24.3125,
+        "calibration_adjustments": [
+          {
+            "reason": "QUALITY_B",
+            "feature": "quality",
+            "predictive_power": "NONE",
+            "amount": -0.1875
+          },
+          {
+            "reason": "SCORE_25_26",
+            "feature": "score",
+            "predictive_power": "NONE",
+            "amount": -0.125
+          },
+          {
+            "reason": "CONFIDENCE_90_PLUS",
+            "feature": "confidence",
+            "predictive_power": "MEDIUM",
+            "amount": -0.375
+          }
+        ]
+      }
+    }
+  ],
+  "false_reject_analysis": {
+    "profitable": [
+      {
+        "trade_id": "TR-00daf140cae45ec1",
+        "symbol": "BTC/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-28T10:09:24.348272",
+        "outcome": "WIN",
+        "R": 2.08786125,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 89.3,
+            "calibrated": 86.8,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.6875,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": -0.75,
+              "opposing_side": -0.75,
+              "net_directional": 0.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-e967841f3a9dbfcd",
+        "symbol": "ETH/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-28T15:35:30.025277",
+        "outcome": "WIN",
+        "R": 2.56221577,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 80.0,
+            "calibrated": 77.5,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 28.0,
+            "calibrated": 28.0,
+            "adjustments": [
+              {
+                "reason": "NO_SCORE_ADJUSTMENT",
+                "amount": 0.0
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "NO_SCORE_ADJUSTMENT"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 20.0,
+              "opposing_side": 4.0,
+              "net_directional": 16.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 4.25,
+              "opposing_side": 0.5,
+              "net_directional": 3.75
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.0,
+              "opposing_side": 2.4,
+              "net_directional": -1.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 28.0,
+          "calibrated_score": 28.0,
+          "calibration_adjustments": [
+            {
+              "reason": "NO_SCORE_ADJUSTMENT",
+              "amount": 0.0
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-4f52864527c4b280",
+        "symbol": "AVAX/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-17T17:35:43.835213",
+        "outcome": "WIN",
+        "R": 2.22234918,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.3125,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 4.0,
+              "opposing_side": 0.75,
+              "net_directional": 3.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        }
+      }
+    ],
+    "unprofitable": [
+      {
+        "trade_id": "TR-69f5e07226c99942",
+        "symbol": "BTC/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-27T14:26:20.413799",
+        "outcome": "LOSS",
+        "R": -1.49537446,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 66.7,
+            "calibrated": 64.2,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 25.6875,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 16.0,
+              "opposing_side": 8.0,
+              "net_directional": 8.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 7.75,
+              "opposing_side": 1.5,
+              "net_directional": 6.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.0,
+              "opposing_side": 3.4,
+              "net_directional": -3.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 2.25,
+              "opposing_side": 0.0,
+              "net_directional": 2.25
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-3aaceee6f17c6a35",
+        "symbol": "ETH/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-27T19:27:10.038503",
+        "outcome": "LOSS",
+        "R": -0.42994472,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 70.3,
+            "calibrated": 67.8,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 25.6875,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 4.25,
+              "net_directional": -1.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 2.25,
+              "net_directional": -2.25
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-c7f62214deee4248",
+        "symbol": "BTC/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-27T22:05:01.578303",
+        "outcome": "LOSS",
+        "R": -1.26345894,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 76.5,
+            "calibrated": 74.0,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 25.6875,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 1.75,
+              "net_directional": 1.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 2.25,
+              "net_directional": -2.25
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-fc79dcb58aab548a",
+        "symbol": "ETH/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-28T01:30:16.583295",
+        "outcome": "LOSS",
+        "R": -0.72840165,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 74.3,
+            "calibrated": 71.8,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 25.6875,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 2.5,
+              "net_directional": 0.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 2.25,
+              "net_directional": -2.25
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-608687f7176f3923",
+        "symbol": "BTC/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-28T04:08:12.162651",
+        "outcome": "LOSS",
+        "R": -0.95809408,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 81.2,
+            "calibrated": 78.7,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 25.6875,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 2.25,
+              "net_directional": -2.25
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-337fbdeda5d8831e",
+        "symbol": "ETH/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-28T07:31:57.404947",
+        "outcome": "LOSS",
+        "R": -1.2038683,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 70.3,
+            "calibrated": 67.8,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 25.1875,
+            "adjustments": [
+              {
+                "reason": "HOUR_07",
+                "feature": "hour",
+                "predictive_power": "LOW",
+                "amount": -0.5
+              },
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HOUR_07",
+          "QUALITY_B",
+          "SCORE_25_26"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 4.25,
+              "net_directional": -1.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 2.25,
+              "net_directional": -2.25
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.1875,
+          "calibration_adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-ce5794abb846103c",
+        "symbol": "ETH/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-06-28T21:36:55.672192",
+        "outcome": "LOSS",
+        "R": -1.20517511,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.3125,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 2.5,
+              "net_directional": 0.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": -0.75,
+              "opposing_side": -0.75,
+              "net_directional": 0.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-b2981f35b49cd641",
+        "symbol": "ADA/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-10T09:43:39.768892",
+        "outcome": "LOSS",
+        "R": -1.63807433,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.3125,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.5,
+              "opposing_side": 0.5,
+              "net_directional": 2.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-d505ccbb50b3804d",
+        "symbol": "AVAX/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-12T19:15:22.757539",
+        "outcome": "LOSS",
+        "R": -3.47433567,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.3125,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-31ec0dbdd2111605",
+        "symbol": "BNB/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-14T07:53:03.369447",
+        "outcome": "LOSS",
+        "R": -4.11892628,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 98.0,
+            "calibrated": 95.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 26.0,
+            "calibrated": 24.6875,
+            "adjustments": [
+              {
+                "reason": "HOUR_07",
+                "feature": "hour",
+                "predictive_power": "LOW",
+                "amount": -0.5
+              },
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              },
+              {
+                "reason": "WEEKDAY_TUESDAY",
+                "feature": "weekday",
+                "predictive_power": "LOW",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "HOUR_07",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_TUESDAY"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 4.5,
+              "opposing_side": 0.25,
+              "net_directional": 4.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 24.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-c7beee6397baee2d",
+        "symbol": "ADA/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-14T07:53:10.933244",
+        "outcome": "LOSS",
+        "R": -3.36338604,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 23.6875,
+            "adjustments": [
+              {
+                "reason": "HOUR_07",
+                "feature": "hour",
+                "predictive_power": "LOW",
+                "amount": -0.5
+              },
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              },
+              {
+                "reason": "WEEKDAY_TUESDAY",
+                "feature": "weekday",
+                "predictive_power": "LOW",
+                "amount": -0.125
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "HOUR_07",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_TUESDAY"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 2.25,
+              "net_directional": 0.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 23.6875,
+          "calibration_adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-676506c4a71538c4",
+        "symbol": "ADA/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-17T08:50:33.609186",
+        "outcome": "LOSS",
+        "R": -1.22609392,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.3125,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 24.0,
+              "opposing_side": 0.0,
+              "net_directional": 24.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 2.0,
+              "net_directional": 1.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 2.4,
+              "opposing_side": 0.0,
+              "net_directional": 2.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 3.0,
+              "net_directional": -3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        }
+      },
+      {
+        "trade_id": "TR-0042d3db1e50d660",
+        "symbol": "ADA/USDT",
+        "direction": "SHORT",
+        "opened_at": "2026-07-17T15:32:14.956296",
+        "outcome": "LOSS",
+        "R": -1.61119069,
+        "accepted_by_v1": true,
+        "accepted_by_v2": false,
+        "full_reason": {
+          "decision": "Signal downgraded below v2 acceptance threshold",
+          "confidence": {
+            "raw": 100.0,
+            "calibrated": 97.125,
+            "reasons": [
+              "WEAK_WIN_LOSS_SEPARATION_0.08",
+              "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER"
+            ]
+          },
+          "score": {
+            "raw": 25.0,
+            "calibrated": 24.3125,
+            "adjustments": [
+              {
+                "reason": "QUALITY_B",
+                "feature": "quality",
+                "predictive_power": "NONE",
+                "amount": -0.1875
+              },
+              {
+                "reason": "SCORE_25_26",
+                "feature": "score",
+                "predictive_power": "NONE",
+                "amount": -0.125
+              },
+              {
+                "reason": "CONFIDENCE_90_PLUS",
+                "feature": "confidence",
+                "predictive_power": "MEDIUM",
+                "amount": -0.375
+              }
+            ]
+          },
+          "safety": "SHADOW_ONLY; v1 signal and trading parameters unchanged"
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ],
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.5,
+              "opposing_side": 0.5,
+              "net_directional": 2.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 25.0,
+          "calibrated_score": 24.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        }
+      }
+    ],
+    "profitable_count": 3,
+    "unprofitable_count": 13
+  },
+  "false_accept_analysis": {
+    "unprofitable": [
+      {
+        "trade_id": "TR-8416edde9d850bf9",
+        "symbol": "BTC/USDT",
+        "R": -1.40029368,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 21.6,
+              "opposing_side": 2.4,
+              "net_directional": 19.2
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 2.5,
+              "net_directional": 0.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.6,
+              "opposing_side": 1.8,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 3.0,
+              "net_directional": -3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-c4e6b259c534ecd1",
+        "symbol": "ETH/USDT",
+        "R": -1.00068509,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 20.0,
+              "opposing_side": 4.0,
+              "net_directional": 16.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.5,
+              "opposing_side": 3.0,
+              "net_directional": -0.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.0,
+              "opposing_side": 2.4,
+              "net_directional": -1.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.1875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_MONDAY"
+        ]
+      },
+      {
+        "trade_id": "TR-5c772818388b697a",
+        "symbol": "BTC/USDT",
+        "R": -1.20801999,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 20.0,
+              "opposing_side": 4.0,
+              "net_directional": 16.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 2.75,
+              "net_directional": 0.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.0,
+              "opposing_side": 2.4,
+              "net_directional": -1.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.5,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_MONDAY"
+        ]
+      },
+      {
+        "trade_id": "TR-449686fd43cc678e",
+        "symbol": "ETH/USDT",
+        "R": -2.1314013,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 20.0,
+              "opposing_side": 4.0,
+              "net_directional": 16.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.5,
+              "opposing_side": 0.5,
+              "net_directional": 2.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.0,
+              "opposing_side": 2.4,
+              "net_directional": -1.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.1875,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_MONDAY"
+        ]
+      },
+      {
+        "trade_id": "TR-57e951836470a80f",
+        "symbol": "BTC/USDT",
+        "R": -1.01713744,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 24.0,
+              "opposing_side": 0.0,
+              "net_directional": 24.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 6.25,
+              "net_directional": -3.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 2.4,
+              "opposing_side": 2.6,
+              "net_directional": -0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 3.0,
+              "net_directional": -3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.5,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_TUESDAY"
+        ]
+      },
+      {
+        "trade_id": "TR-5fd96d58c8a5c10b",
+        "symbol": "BTC/USDT",
+        "R": -1.85843958,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 22.4,
+              "opposing_side": 1.6,
+              "net_directional": 20.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 2.75,
+              "net_directional": 0.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.8,
+              "opposing_side": 1.6,
+              "net_directional": 0.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 30.0,
+          "calibrated_score": 29.625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-30cb6d2d9d8dbe34",
+        "symbol": "BTC/USDT",
+        "R": -1.45438647,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 16.0,
+              "opposing_side": 8.0,
+              "net_directional": 8.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 5.75,
+              "opposing_side": 1.0,
+              "net_directional": 4.75
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 2.4,
+              "net_directional": -1.6
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-31b37a3ff5415dcd",
+        "symbol": "BNB/USDT",
+        "R": -1.19084699,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 16.8,
+              "opposing_side": 7.2,
+              "net_directional": 9.6
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 5.25,
+              "opposing_side": 1.5,
+              "net_directional": 3.75
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.0,
+              "opposing_side": 1.4,
+              "net_directional": -0.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-f966d76437abab3d",
+        "symbol": "AVAX/USDT",
+        "R": -5.1867049,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 4.75,
+              "opposing_side": 2.0,
+              "net_directional": 2.75
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-3fd5eb6957c57fb4",
+        "symbol": "XRP/USDT",
+        "R": -2.2847008,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 4.5,
+              "opposing_side": 0.25,
+              "net_directional": 4.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.125,
+          "calibration_adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "HOUR_07",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-caa0e9223617115d",
+        "symbol": "DOGE/USDT",
+        "R": -1.17461087,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 4.5,
+              "opposing_side": 0.25,
+              "net_directional": 4.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 2.6,
+              "net_directional": -1.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.125,
+          "calibration_adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "HOUR_07",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-d4f481317f37bbf4",
+        "symbol": "SOL/USDT",
+        "R": -1.13311743,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 24.0,
+              "opposing_side": 0.0,
+              "net_directional": 24.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 3.75,
+              "net_directional": -0.75
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 2.4,
+              "opposing_side": 0.0,
+              "net_directional": 2.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 3.0,
+              "net_directional": -3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.4375,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "NONE",
+              "amount": -0.0625
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_MONDAY",
+          "SYMBOL_SOL"
+        ]
+      },
+      {
+        "trade_id": "TR-d017e039838dceba",
+        "symbol": "SOL/USDT",
+        "R": -4.14986164,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 24.0,
+              "opposing_side": 0.0,
+              "net_directional": 24.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 3.75,
+              "net_directional": -0.75
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 2.4,
+              "opposing_side": 0.8,
+              "net_directional": 1.6
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 3.0,
+              "net_directional": -3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.4375,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_MONDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "NONE",
+              "amount": -0.0625
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_MONDAY",
+          "SYMBOL_SOL"
+        ]
+      },
+      {
+        "trade_id": "TR-0bfc1af759e84cd4",
+        "symbol": "DOGE/USDT",
+        "R": -5.26229262,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 0.25,
+              "net_directional": 2.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 2.6,
+              "net_directional": -1.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.0,
+          "calibration_adjustments": [
+            {
+              "reason": "HOUR_07",
+              "feature": "hour",
+              "predictive_power": "LOW",
+              "amount": -0.5
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "WEEKDAY_TUESDAY",
+              "feature": "weekday",
+              "predictive_power": "LOW",
+              "amount": -0.125
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "HOUR_07",
+          "CONFIDENCE_90_PLUS",
+          "WEEKDAY_TUESDAY"
+        ]
+      },
+      {
+        "trade_id": "TR-d175159ca0835c4c",
+        "symbol": "SOL/USDT",
+        "R": -1.24898947,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 24.0,
+              "opposing_side": 0.0,
+              "net_directional": 24.0
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 1.75,
+              "net_directional": 1.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 2.4,
+              "opposing_side": 0.0,
+              "net_directional": 2.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 0.0,
+              "opposing_side": 3.0,
+              "net_directional": -3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.5625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "NONE",
+              "amount": -0.0625
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "SYMBOL_SOL"
+        ]
+      },
+      {
+        "trade_id": "TR-eb7f825c11e652d1",
+        "symbol": "SOL/USDT",
+        "R": -1.03770033,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 22.4,
+              "opposing_side": 1.6,
+              "net_directional": 20.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 2.0,
+              "net_directional": 1.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.8,
+              "opposing_side": 2.2,
+              "net_directional": -0.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": -0.75,
+              "opposing_side": -0.75,
+              "net_directional": 0.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.5625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "NONE",
+              "amount": -0.0625
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "SYMBOL_SOL"
+        ]
+      },
+      {
+        "trade_id": "TR-eaf0e892870be73c",
+        "symbol": "XRP/USDT",
+        "R": -1.23932512,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 0.25,
+              "net_directional": 2.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-3023a41643b3b006",
+        "symbol": "DOGE/USDT",
+        "R": -1.06501198,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 0.25,
+              "net_directional": 2.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 27.0,
+          "calibrated_score": 26.625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-4a5589cc5e15c21a",
+        "symbol": "SOL/USDT",
+        "R": -1.06455352,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 22.4,
+              "opposing_side": 1.6,
+              "net_directional": 20.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.8,
+              "opposing_side": 0.6,
+              "net_directional": 1.2
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.5625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "NONE",
+              "amount": -0.0625
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "SYMBOL_SOL"
+        ]
+      },
+      {
+        "trade_id": "TR-1f9b98356368b953",
+        "symbol": "BNB/USDT",
+        "R": -1.00410748,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.75,
+              "opposing_side": 0.25,
+              "net_directional": 2.5
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-c505ca631719ad0a",
+        "symbol": "BNB/USDT",
+        "R": -1.00747295,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 18.4,
+              "opposing_side": 5.6,
+              "net_directional": 12.8
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 2.5,
+              "opposing_side": 0.5,
+              "net_directional": 2.0
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 0.8,
+              "opposing_side": 1.6,
+              "net_directional": -0.8
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": -0.1875,
+          "raw_score": 26.0,
+          "calibrated_score": 25.3125,
+          "calibration_adjustments": [
+            {
+              "reason": "QUALITY_B",
+              "feature": "quality",
+              "predictive_power": "NONE",
+              "amount": -0.1875
+            },
+            {
+              "reason": "SCORE_25_26",
+              "feature": "score",
+              "predictive_power": "NONE",
+              "amount": -0.125
+            },
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "QUALITY_B",
+          "SCORE_25_26",
+          "CONFIDENCE_90_PLUS"
+        ]
+      },
+      {
+        "trade_id": "TR-1c78eec444937787",
+        "symbol": "SOL/USDT",
+        "R": -1.85193214,
+        "feature_contribution": {
+          "direction": "SHORT",
+          "modules": [
+            {
+              "feature": "trend",
+              "weight": 0.4,
+              "selected_side": 16.8,
+              "opposing_side": 7.2,
+              "net_directional": 9.6
+            },
+            {
+              "feature": "structure",
+              "weight": 0.25,
+              "selected_side": 3.5,
+              "opposing_side": 1.25,
+              "net_directional": 2.25
+            },
+            {
+              "feature": "momentum",
+              "weight": 0.2,
+              "selected_side": 1.8,
+              "opposing_side": 1.4,
+              "net_directional": 0.4
+            },
+            {
+              "feature": "risk",
+              "weight": 0.15,
+              "selected_side": 3.0,
+              "opposing_side": 0.0,
+              "net_directional": 3.0
+            }
+          ],
+          "quality": 0,
+          "raw_score": 29.0,
+          "calibrated_score": 28.5625,
+          "calibration_adjustments": [
+            {
+              "reason": "CONFIDENCE_90_PLUS",
+              "feature": "confidence",
+              "predictive_power": "MEDIUM",
+              "amount": -0.375
+            },
+            {
+              "reason": "SYMBOL_SOL",
+              "feature": "symbol",
+              "predictive_power": "NONE",
+              "amount": -0.0625
+            }
+          ]
+        },
+        "reason_difference": [
+          "WEAK_WIN_LOSS_SEPARATION_0.08",
+          "HIGH_CONFIDENCE_LOW_PREDICTIVE_POWER",
+          "CONFIDENCE_90_PLUS",
+          "SYMBOL_SOL"
+        ]
+      }
+    ],
+    "count": 22
+  },
+  "confidence_distribution": {
+    "WIN": {
+      "count": 7,
+      "min": 80.0,
+      "max": 100.0,
+      "mean": 94.9,
+      "median": 100.0,
+      "histogram": [
+        {
+          "range": "80-90",
+          "count": 2
+        },
+        {
+          "range": "90-100",
+          "count": 1
+        },
+        {
+          "range": "100-110",
+          "count": 4
+        }
+      ]
+    },
+    "LOSS": {
+      "count": 35,
+      "min": 66.7,
+      "max": 100.0,
+      "mean": 94.98,
+      "median": 100.0,
+      "histogram": [
+        {
+          "range": "60-70",
+          "count": 1
+        },
+        {
+          "range": "70-80",
+          "count": 4
+        },
+        {
+          "range": "80-90",
+          "count": 1
+        },
+        {
+          "range": "90-100",
+          "count": 6
+        },
+        {
+          "range": "100-110",
+          "count": 23
+        }
+      ]
+    },
+    "class_overlap": {
+      "from": 80.0,
+      "to": 100.0,
+      "overlaps": true
+    }
+  },
+  "score_distribution": {
+    "WIN": {
+      "count": 7,
+      "min": 25.0,
+      "max": 29.0,
+      "mean": 26.7143,
+      "median": 27.0,
+      "histogram": [
+        {
+          "range": "25-30",
+          "count": 7
+        }
+      ]
+    },
+    "LOSS": {
+      "count": 35,
+      "min": 25.0,
+      "max": 30.0,
+      "mean": 26.7429,
+      "median": 26.0,
+      "histogram": [
+        {
+          "range": "25-30",
+          "count": 34
+        },
+        {
+          "range": "30-35",
+          "count": 1
+        }
+      ]
+    },
+    "class_overlap": {
+      "from": 25.0,
+      "to": 29.0,
+      "overlaps": true
+    }
+  },
+  "sensitivity_analysis": {
+    "method": "One weight varied by ±5/10%; remaining weights proportionally normalized",
+    "most_sensitive": [
+      {
+        "variant": "trend_-10%",
+        "weights": {
+          "trend": 0.36,
+          "structure": 0.26666667,
+          "momentum": 0.21333333,
+          "risk": 0.16
+        },
+        "trades": 9,
+        "wins": 1,
+        "losses": 8,
+        "break_even": 0,
+        "winrate": 11.1111,
+        "profit_factor": 0.13212,
+        "net_r": -14.65406722,
+        "expectancy_r": -1.62822969,
+        "max_drawdown_r": 14.654067
+      },
+      {
+        "variant": "structure_+10%",
+        "weights": {
+          "trend": 0.38666667,
+          "structure": 0.275,
+          "momentum": 0.19333333,
+          "risk": 0.145
+        },
+        "trades": 21,
+        "wins": 5,
+        "losses": 16,
+        "break_even": 0,
+        "winrate": 23.8095,
+        "profit_factor": 0.419021,
+        "net_r": -16.44933592,
+        "expectancy_r": -0.78330171,
+        "max_drawdown_r": 17.607132
+      },
+      {
+        "variant": "momentum_+5%",
+        "weights": {
+          "trend": 0.395,
+          "structure": 0.246875,
+          "momentum": 0.21,
+          "risk": 0.148125
+        },
+        "trades": 21,
+        "wins": 5,
+        "losses": 16,
+        "break_even": 0,
+        "winrate": 23.8095,
+        "profit_factor": 0.419021,
+        "net_r": -16.44933592,
+        "expectancy_r": -0.78330171,
+        "max_drawdown_r": 17.607132
+      },
+      {
+        "variant": "momentum_+10%",
+        "weights": {
+          "trend": 0.39,
+          "structure": 0.24375,
+          "momentum": 0.22,
+          "risk": 0.14625
+        },
+        "trades": 21,
+        "wins": 5,
+        "losses": 16,
+        "break_even": 0,
+        "winrate": 23.8095,
+        "profit_factor": 0.419021,
+        "net_r": -16.44933592,
+        "expectancy_r": -0.78330171,
+        "max_drawdown_r": 17.607132
+      },
+      {
+        "variant": "trend_+10%",
+        "weights": {
+          "trend": 0.44,
+          "structure": 0.23333333,
+          "momentum": 0.18666667,
+          "risk": 0.14
+        },
+        "trades": 33,
+        "wins": 6,
+        "losses": 27,
+        "break_even": 0,
+        "winrate": 18.1818,
+        "profit_factor": 0.290762,
+        "net_r": -34.03141289,
+        "expectancy_r": -1.03125494,
+        "max_drawdown_r": 36.119274
+      }
+    ]
+  },
+  "replay_matrix": [
+    {
+      "variant": "current_v2",
+      "weights": {
+        "trend": 0.4,
+        "structure": 0.25,
+        "momentum": 0.2,
+        "risk": 0.15
+      },
+      "trades": 23,
+      "wins": 5,
+      "losses": 18,
+      "break_even": 0,
+      "winrate": 21.7391,
+      "profit_factor": 0.350105,
+      "net_r": -22.02264867,
+      "expectancy_r": -0.95750646,
+      "max_drawdown_r": 23.180444
+    },
+    {
+      "variant": "trend_-10%",
+      "weights": {
+        "trend": 0.36,
+        "structure": 0.26666667,
+        "momentum": 0.21333333,
+        "risk": 0.16
+      },
+      "trades": 9,
+      "wins": 1,
+      "losses": 8,
+      "break_even": 0,
+      "winrate": 11.1111,
+      "profit_factor": 0.13212,
+      "net_r": -14.65406722,
+      "expectancy_r": -1.62822969,
+      "max_drawdown_r": 14.654067
+    },
+    {
+      "variant": "trend_-5%",
+      "weights": {
+        "trend": 0.38,
+        "structure": 0.25833333,
+        "momentum": 0.20666667,
+        "risk": 0.155
+      },
+      "trades": 18,
+      "wins": 4,
+      "losses": 14,
+      "break_even": 0,
+      "winrate": 22.2222,
+      "profit_factor": 0.376331,
+      "net_r": -16.1375436,
+      "expectancy_r": -0.8965302,
+      "max_drawdown_r": 18.300076
+    },
+    {
+      "variant": "trend_+5%",
+      "weights": {
+        "trend": 0.42,
+        "structure": 0.24166667,
+        "momentum": 0.19333333,
+        "risk": 0.145
+      },
+      "trades": 30,
+      "wins": 6,
+      "losses": 24,
+      "break_even": 0,
+      "winrate": 20.0,
+      "profit_factor": 0.319068,
+      "net_r": -29.77467492,
+      "expectancy_r": -0.99248916,
+      "max_drawdown_r": 31.862536
+    },
+    {
+      "variant": "trend_+10%",
+      "weights": {
+        "trend": 0.44,
+        "structure": 0.23333333,
+        "momentum": 0.18666667,
+        "risk": 0.14
+      },
+      "trades": 33,
+      "wins": 6,
+      "losses": 27,
+      "break_even": 0,
+      "winrate": 18.1818,
+      "profit_factor": 0.290762,
+      "net_r": -34.03141289,
+      "expectancy_r": -1.03125494,
+      "max_drawdown_r": 36.119274
+    },
+    {
+      "variant": "structure_-10%",
+      "weights": {
+        "trend": 0.41333333,
+        "structure": 0.225,
+        "momentum": 0.20666667,
+        "risk": 0.155
+      },
+      "trades": 26,
+      "wins": 6,
+      "losses": 20,
+      "break_even": 0,
+      "winrate": 23.0769,
+      "profit_factor": 0.361761,
+      "net_r": -24.6142982,
+      "expectancy_r": -0.94670378,
+      "max_drawdown_r": 27.859955
+    },
+    {
+      "variant": "structure_-5%",
+      "weights": {
+        "trend": 0.40666667,
+        "structure": 0.2375,
+        "momentum": 0.20333333,
+        "risk": 0.1525
+      },
+      "trades": 25,
+      "wins": 6,
+      "losses": 19,
+      "break_even": 0,
+      "winrate": 24.0,
+      "profit_factor": 0.397578,
+      "net_r": -21.13996253,
+      "expectancy_r": -0.8455985,
+      "max_drawdown_r": 24.385619
+    },
+    {
+      "variant": "structure_+5%",
+      "weights": {
+        "trend": 0.39333333,
+        "structure": 0.2625,
+        "momentum": 0.19666667,
+        "risk": 0.1475
+      },
+      "trades": 23,
+      "wins": 5,
+      "losses": 18,
+      "break_even": 0,
+      "winrate": 21.7391,
+      "profit_factor": 0.350105,
+      "net_r": -22.02264867,
+      "expectancy_r": -0.95750646,
+      "max_drawdown_r": 23.180444
+    },
+    {
+      "variant": "structure_+10%",
+      "weights": {
+        "trend": 0.38666667,
+        "structure": 0.275,
+        "momentum": 0.19333333,
+        "risk": 0.145
+      },
+      "trades": 21,
+      "wins": 5,
+      "losses": 16,
+      "break_even": 0,
+      "winrate": 23.8095,
+      "profit_factor": 0.419021,
+      "net_r": -16.44933592,
+      "expectancy_r": -0.78330171,
+      "max_drawdown_r": 17.607132
+    },
+    {
+      "variant": "momentum_-10%",
+      "weights": {
+        "trend": 0.41,
+        "structure": 0.25625,
+        "momentum": 0.18,
+        "risk": 0.15375
+      },
+      "trades": 27,
+      "wins": 6,
+      "losses": 21,
+      "break_even": 0,
+      "winrate": 22.2222,
+      "profit_factor": 0.345186,
+      "net_r": -26.46623034,
+      "expectancy_r": -0.98023075,
+      "max_drawdown_r": 28.554092
+    },
+    {
+      "variant": "momentum_-5%",
+      "weights": {
+        "trend": 0.405,
+        "structure": 0.253125,
+        "momentum": 0.19,
+        "risk": 0.151875
+      },
+      "trades": 25,
+      "wins": 6,
+      "losses": 19,
+      "break_even": 0,
+      "winrate": 24.0,
+      "profit_factor": 0.397578,
+      "net_r": -21.13996253,
+      "expectancy_r": -0.8455985,
+      "max_drawdown_r": 24.385619
+    },
+    {
+      "variant": "momentum_+5%",
+      "weights": {
+        "trend": 0.395,
+        "structure": 0.246875,
+        "momentum": 0.21,
+        "risk": 0.148125
+      },
+      "trades": 21,
+      "wins": 5,
+      "losses": 16,
+      "break_even": 0,
+      "winrate": 23.8095,
+      "profit_factor": 0.419021,
+      "net_r": -16.44933592,
+      "expectancy_r": -0.78330171,
+      "max_drawdown_r": 17.607132
+    },
+    {
+      "variant": "momentum_+10%",
+      "weights": {
+        "trend": 0.39,
+        "structure": 0.24375,
+        "momentum": 0.22,
+        "risk": 0.14625
+      },
+      "trades": 21,
+      "wins": 5,
+      "losses": 16,
+      "break_even": 0,
+      "winrate": 23.8095,
+      "profit_factor": 0.419021,
+      "net_r": -16.44933592,
+      "expectancy_r": -0.78330171,
+      "max_drawdown_r": 17.607132
+    },
+    {
+      "variant": "risk_-10%",
+      "weights": {
+        "trend": 0.40705882,
+        "structure": 0.25441176,
+        "momentum": 0.20352941,
+        "risk": 0.135
+      },
+      "trades": 25,
+      "wins": 6,
+      "losses": 19,
+      "break_even": 0,
+      "winrate": 24.0,
+      "profit_factor": 0.397578,
+      "net_r": -21.13996253,
+      "expectancy_r": -0.8455985,
+      "max_drawdown_r": 24.385619
+    },
+    {
+      "variant": "risk_-5%",
+      "weights": {
+        "trend": 0.40352941,
+        "structure": 0.25220588,
+        "momentum": 0.20176471,
+        "risk": 0.1425
+      },
+      "trades": 25,
+      "wins": 6,
+      "losses": 19,
+      "break_even": 0,
+      "winrate": 24.0,
+      "profit_factor": 0.397578,
+      "net_r": -21.13996253,
+      "expectancy_r": -0.8455985,
+      "max_drawdown_r": 24.385619
+    },
+    {
+      "variant": "risk_+5%",
+      "weights": {
+        "trend": 0.39647059,
+        "structure": 0.24779412,
+        "momentum": 0.19823529,
+        "risk": 0.1575
+      },
+      "trades": 23,
+      "wins": 5,
+      "losses": 18,
+      "break_even": 0,
+      "winrate": 21.7391,
+      "profit_factor": 0.350105,
+      "net_r": -22.02264867,
+      "expectancy_r": -0.95750646,
+      "max_drawdown_r": 23.180444
+    },
+    {
+      "variant": "risk_+10%",
+      "weights": {
+        "trend": 0.39294118,
+        "structure": 0.24558824,
+        "momentum": 0.19647059,
+        "risk": 0.165
+      },
+      "trades": 22,
+      "wins": 5,
+      "losses": 17,
+      "break_even": 0,
+      "winrate": 22.7273,
+      "profit_factor": 0.365805,
+      "net_r": -20.5682622,
+      "expectancy_r": -0.93492101,
+      "max_drawdown_r": 21.726058
+    }
+  ],
+  "best_candidate": {
+    "variant": "structure_+10%",
+    "weights": {
+      "trend": 0.38666667,
+      "structure": 0.275,
+      "momentum": 0.19333333,
+      "risk": 0.145
+    },
+    "trades": 21,
+    "wins": 5,
+    "losses": 16,
+    "break_even": 0,
+    "winrate": 23.8095,
+    "profit_factor": 0.419021,
+    "net_r": -16.44933592,
+    "expectancy_r": -0.78330171,
+    "max_drawdown_r": 17.607132
+  },
+  "optimizer": {
+    "recommendations": [
+      {
+        "feature": "trend",
+        "current": 0.4,
+        "suggested": 0.38666667,
+        "expected_profit_factor": {
+          "current": 0.350105,
+          "suggested": 0.419021
+        },
+        "confidence": "MEDIUM",
+        "automatic_apply": false
+      },
+      {
+        "feature": "structure",
+        "current": 0.25,
+        "suggested": 0.275,
+        "expected_profit_factor": {
+          "current": 0.350105,
+          "suggested": 0.419021
+        },
+        "confidence": "MEDIUM",
+        "automatic_apply": false
+      },
+      {
+        "feature": "momentum",
+        "current": 0.2,
+        "suggested": 0.19333333,
+        "expected_profit_factor": {
+          "current": 0.350105,
+          "suggested": 0.419021
+        },
+        "confidence": "MEDIUM",
+        "automatic_apply": false
+      },
+      {
+        "feature": "risk",
+        "current": 0.15,
+        "suggested": 0.145,
+        "expected_profit_factor": {
+          "current": 0.350105,
+          "suggested": 0.419021
+        },
+        "confidence": "MEDIUM",
+        "automatic_apply": false
+      }
+    ],
+    "confidence": "MEDIUM",
+    "automatic_apply": false,
+    "candidate_found": true
+  },
+  "feature_error_frequency": [
+    {
+      "feature": "momentum",
+      "false_reject_wins": 3
+    },
+    {
+      "feature": "weak_win_loss_separation_0.08",
+      "false_reject_wins": 3
+    },
+    {
+      "feature": "quality_b",
+      "false_reject_wins": 2
+    },
+    {
+      "feature": "score_25_26",
+      "false_reject_wins": 2
+    },
+    {
+      "feature": "no_score_adjustment",
+      "false_reject_wins": 1
+    },
+    {
+      "feature": "high_confidence_low_predictive_power",
+      "false_reject_wins": 1
+    },
+    {
+      "feature": "confidence_90_plus",
+      "false_reject_wins": 1
+    }
+  ],
+  "restrictions": [
+    "NO_LIVE_IMPORT",
+    "NO_AUTOMATIC_WEIGHT_APPLICATION",
+    "V1_UNCHANGED",
+    "NO_NEW_INDICATORS"
+  ]
+}

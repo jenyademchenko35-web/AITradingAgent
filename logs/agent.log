@@ -40975,3 +40975,2356 @@ AVAX/USDT | SHORT | Price=6.45 | SL=6.65 | TP=6.47
 Trade closed: AVAX/USDT -> WIN
 AVAX/USDT -> WIN
 [12:10:04] Trade close notification sent for AVAX/USDT
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=567.30 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.84 | SL=76.71 | TP=75.64
+Cycle duration: 10.86 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T15:27:34.065222+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.90 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.13 | SL=76.71 | TP=75.64
+Cycle duration: 2655.34 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:20:42.485544+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=570.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.15 | SL=76.71 | TP=75.64
+Cycle duration: 9.69 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:26:05.909363+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=570.10 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.12 | SL=76.71 | TP=75.64
+Cycle duration: 9.52 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:31:30.736545+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.80 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.06 | SL=76.71 | TP=75.64
+Cycle duration: 9.27 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:36:55.340593+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=24 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 24
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=24 | Edge=14
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=21 | Edge=8
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.97 | SL=76.71 | TP=75.64
+Cycle duration: 10.03 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:42:21.169629+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.96 | SL=76.71 | TP=75.64
+Cycle duration: 10.97 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:47:46.499975+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=24 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 24
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=24 | Edge=14
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.70 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.93 | SL=76.71 | TP=75.64
+Cycle duration: 10.65 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:53:11.464278+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=83%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=83% | Weighted=24 | Edge=11
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=18 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.50 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.91 | SL=76.71 | TP=75.64
+Cycle duration: 9.66 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T16:58:35.046434+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=83%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=83% | Weighted=24 | Edge=11
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=22 | Edge=10
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=21 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=18 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.20 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.90 | SL=76.71 | TP=75.64
+Cycle duration: 10.08 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:03:58.980170+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=65%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=23 | Edge=12
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=22 | Edge=12
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=21 | Edge=8
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=20 | Edge=8
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=65% | Weighted=21 | Edge=5
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=16 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=567.90 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.77 | SL=76.71 | TP=75.64
+Cycle duration: 9.91 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:09:23.041911+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.90 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.93 | SL=76.71 | TP=75.64
+Cycle duration: 9.89 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:14:46.712834+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=19 | Edge=3
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.40 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.15 | SL=76.71 | TP=75.64
+Cycle duration: 10.24 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:20:11.313573+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.08 | SL=76.71 | TP=75.64
+Cycle duration: 9.54 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:25:35.517693+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.08 | SL=76.71 | TP=75.64
+Cycle duration: 11.49 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:31:01.514917+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=100%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100.0% | Weighted Score=24 | Edge=20
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 100%
+Weighted Score: 24
+Edge: 20 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100% | Weighted=24 | Edge=20
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.13 | SL=76.71 | TP=75.64
+Cycle duration: 10.19 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:36:26.592452+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=100%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100.0% | Weighted Score=24 | Edge=20
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 100%
+Weighted Score: 24
+Edge: 20 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100% | Weighted=24 | Edge=20
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=19 | Edge=3
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.20 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.13 | SL=76.71 | TP=75.64
+Cycle duration: 10.20 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:41:50.314387+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=100%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100.0% | Weighted Score=24 | Edge=20
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 100%
+Weighted Score: 24
+Edge: 20 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100% | Weighted=24 | Edge=20
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=569.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.03 | SL=76.71 | TP=75.64
+Cycle duration: 9.64 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T17:47:16.682407+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=100%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100.0% | Weighted Score=24 | Edge=20
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 100%
+Weighted Score: 24
+Edge: 20 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100% | Weighted=24 | Edge=20
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=16 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.60 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.01 | SL=76.71 | TP=75.64
+Cycle duration: 10.09 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T18:41:40.939697+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=71%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86.0% | Weighted Score=22 | Edge=12
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 86%
+Weighted Score: 22
+Edge: 12 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=22 | Edge=12
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=24 | Edge=9
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=21 | Edge=8
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=20 | Edge=8
+BTC/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=71% | Weighted=21 | Edge=7
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=18 | Edge=4
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=567.20 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.74 | SL=76.71 | TP=75.64
+Cycle duration: 1076.47 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T20:01:44.336449+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=24 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 24
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=24 | Edge=14
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.70 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.99 | SL=76.71 | TP=75.64
+Cycle duration: 54.34 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T20:07:52.691829+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=65%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=24 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=65% | Weighted=21 | Edge=5
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=16 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.60 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.95 | SL=76.71 | TP=75.64
+Cycle duration: 14.51 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T20:13:36.692343+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=65%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=71%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=24 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=71% | Weighted=20 | Edge=7
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=65% | Weighted=21 | Edge=5
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.70 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.96 | SL=76.71 | TP=75.64
+Cycle duration: 1062.05 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T21:43:41.674208+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=24 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BTC/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=23 | Edge=9
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.90 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.90 | SL=76.71 | TP=75.64
+Cycle duration: 9.86 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T21:49:12.172559+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=24 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BTC/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=23 | Edge=9
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=16 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=568.70 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=75.83 | SL=76.71 | TP=75.64
+Cycle duration: 12.39 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T22:58:16.209545+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=50%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+SOL/USDT | SHORT | WATCH | Score=23 | Confidence=98%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=71%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=65%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+AVAX/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=23 | Confidence=98% | Weighted=23 | Edge=16
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=23 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=71% | Weighted=20 | Edge=7
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=65% | Weighted=21 | Edge=5
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=19 | Edge=1
+BTC/USDT: NEUTRAL | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=50% | Weighted=18 | Edge=0
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 2
+WAIT        : 0
+NO TRADE    : 7
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=570.80 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.13 | SL=76.71 | TP=75.64
+Cycle duration: 14.59 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T23:03:45.992653+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=83%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=24 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 24
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=24 | Edge=14
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=83% | Weighted=22 | Edge=11
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ADA/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=17 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=570.30 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.01 | SL=76.71 | TP=75.64
+Cycle duration: 10.41 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T23:09:11.114608+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92.0% | Weighted Score=21 | Edge=14
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 92%
+Weighted Score: 21
+Edge: 14 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=24 | Edge=12
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ADA/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=17 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=18 | Edge=3
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.09 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=570.60 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.00 | SL=76.71 | TP=75.64
+Cycle duration: 10.20 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T23:14:36.266174+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=50%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+SOL/USDT | SHORT | WATCH | Score=23 | Confidence=98%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=23 | Confidence=98.0% | Weighted Score=23 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 23
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=23 | Confidence=98% | Weighted=23 | Edge=16
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=24 | Edge=12
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=23 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=17 | Edge=6
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=19 | Edge=1
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+BTC/USDT: NEUTRAL | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=50% | Weighted=18 | Edge=0
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=571.30 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.11 | SL=76.71 | TP=75.64
+Cycle duration: 11.12 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T23:20:01.273281+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=50%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+SOL/USDT | SHORT | WATCH | Score=23 | Confidence=98%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=23 | Confidence=98.0% | Weighted Score=23 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 23
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=23 | Confidence=98% | Weighted=23 | Edge=16
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=24 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=23 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=19 | Edge=1
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=16 | Edge=1
+BTC/USDT: NEUTRAL | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=50% | Weighted=18 | Edge=0
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=571.00 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.16 | SL=76.71 | TP=75.64
+Cycle duration: 9.58 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-19T23:25:22.981834+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=50%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+[23:25:26] [SOL/USDT] Open trade already exists, skipping.
+SOL/USDT | SHORT | HIGH PRIORITY | Score=27 | Confidence=100%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=65%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=77%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | HIGH PRIORITY | Status=SETUP | Quality=A | Score=27 | Confidence=100.0% | Weighted Score=27 | Edge=19
+Причина:
+Лучший кандидат выбран потому что:
+Статус: SETUP
+Confidence: 100%
+Weighted Score: 27
+Edge: 19 / 15
+Приоритет статуса выше, чем у setup альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | HIGH PRIORITY | Status=SETUP | Quality=A | Score=27 | Confidence=100% | Weighted=27 | Edge=19
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=23 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=22 | Edge=12
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=77% | Weighted=21 | Edge=9
+LINK/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=65% | Weighted=21 | Edge=5
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=16 | Edge=4
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=19 | Edge=1
+BTC/USDT: NEUTRAL | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=50% | Weighted=18 | Edge=0
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 1
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=571.20 | SL=572.29 | TP=566.63
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=76.28 | SL=76.71 | TP=75.64
+Cycle duration: 10.72 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T00:23:51.389327+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+[00:41:37] [SOL/USDT] Cooldown active for SOL_USDT_SHORT
+SOL/USDT | SHORT | SETUP | Score=26 | Confidence=95%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=71%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+
+BEST CANDIDATE:
+============================================================
+SOL/USDT: SHORT | SETUP | Status=SETUP | Quality=B | Score=26 | Confidence=95.0% | Weighted Score=26 | Edge=15
+Причина:
+Лучший кандидат выбран потому что:
+Статус: SETUP
+Confidence: 95%
+Weighted Score: 26
+Edge: 15 / 15
+Приоритет статуса выше, чем у setup альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+SOL/USDT: SHORT | SETUP | Status=SETUP | Quality=B | Score=26 | Confidence=95% | Weighted=26 | Edge=15
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=23 | Edge=12
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+ADA/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=71% | Weighted=21 | Edge=7
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=21 | Edge=4
+XRP/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=19 | Edge=4
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=21 | Edge=2
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=21 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 1
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: XRP/USDT
+XRP/USDT | SHORT | Price=1.10 | SL=1.10 | TP=1.08
+Trade closed: XRP/USDT -> LOSS
+XRP/USDT -> LOSS
+[00:41:44] Trade close notification sent for XRP/USDT
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Checking trade: BNB/USDT
+BNB/USDT | SHORT | Price=572.30 | SL=572.29 | TP=566.63
+Trade closed: BNB/USDT -> LOSS
+BNB/USDT -> LOSS
+[00:41:44] Trade close notification sent for BNB/USDT
+Checking trade: SOL/USDT
+SOL/USDT | SHORT | Price=77.01 | SL=76.71 | TP=75.64
+Trade closed: SOL/USDT -> LOSS
+SOL/USDT -> LOSS
+[00:41:44] Trade close notification sent for SOL/USDT
+Cycle duration: 1073.55 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T03:32:37.691025+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=50%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+ADA/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+
+BEST CANDIDATE:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80.0% | Weighted Score=21 | Edge=10
+Причина:
+Лучший кандидат выбран потому что:
+Статус: NEAR SETUP
+Confidence: 80%
+Weighted Score: 21
+Edge: 10 / 15
+Кандидат ближе остальных к WATCH/SETUP.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+BTC/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=20 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=20 | Edge=8
+LINK/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=20 | Edge=8
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ADA/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=17 | Edge=2
+XRP/USDT: NEUTRAL | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=50% | Weighted=14 | Edge=0
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 0
+WAIT        : 0
+NO TRADE    : 9
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 2029.46 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T07:23:26.726027+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=50%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+BNB/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=24 | Edge=14
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=18 | Edge=1
+ETH/USDT: NEUTRAL | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=50% | Weighted=14 | Edge=0
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 2
+WAIT        : 0
+NO TRADE    : 7
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 4439.56 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T09:53:19.752986+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+BNB/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 2
+WAIT        : 0
+NO TRADE    : 7
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 42.39 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T09:59:28.416298+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+BNB/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=18 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 2
+WAIT        : 0
+NO TRADE    : 7
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 10.55 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T10:31:13.046935+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=21 | Edge=10
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 10.63 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T10:36:54.787533+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=100%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100.0% | Weighted Score=24 | Edge=20
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 100%
+Weighted Score: 24
+Edge: 20 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=100% | Weighted=24 | Edge=20
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 9.60 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T10:42:34.516987+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 9.80 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T10:48:15.231110+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 9.88 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T10:53:55.749429+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 10.01 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T10:59:37.258565+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=80%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=80% | Weighted=20 | Edge=10
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 10.64 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T11:05:19.011072+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=16 | Edge=2
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 9.75 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T11:11:01.175287+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=56%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=53%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=56% | Weighted=16 | Edge=2
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=53% | Weighted=19 | Edge=1
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 9.74 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T11:16:41.939530+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=62%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=62% | Weighted=18 | Edge=4
+BTC/USDT: SHORT | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=59% | Weighted=17 | Edge=3
+============================================================
+Signal counts this cycle:
+HIGH PRIORITY: 0
+SETUP       : 0
+WATCH       : 1
+WAIT        : 0
+NO TRADE    : 8
+Checking trade: DOGE/USDT
+DOGE/USDT | SHORT | Price=0.07 | SL=0.07 | TP=0.07
+Cycle duration: 9.76 seconds
+Sleeping 300 seconds...
+============================================================
+Cycle started at 2026-07-20T11:22:21.943757+00:00
+============================================================
+BTC/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=59%
+ETH/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+SOL/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=92%
+BNB/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=89%
+XRP/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+LINK/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=68%
+ADA/USDT | SHORT | WATCH | Score=24 | Confidence=98%
+AVAX/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=74%
+DOGE/USDT | NEUTRAL | NO TRADE | Score=0 | Confidence=86%
+
+BEST CANDIDATE:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98.0% | Weighted Score=24 | Edge=16
+Причина:
+Лучший кандидат выбран потому что:
+Статус: WATCH
+Confidence: 98%
+Weighted Score: 24
+Edge: 16 / 15
+Приоритет статуса выше, чем у watch альтернатив.
+Не хватает:
+- Directional Edge
+============================================================
+Ranked summary by candidate quality:
+============================================================
+ADA/USDT: SHORT | WATCH | Status=WATCH | Quality=C | Score=24 | Confidence=98% | Weighted=24 | Edge=16
+SOL/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=92% | Weighted=21 | Edge=14
+BNB/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=89% | Weighted=20 | Edge=13
+DOGE/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+XRP/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=86% | Weighted=20 | Edge=12
+AVAX/USDT: SHORT | NO TRADE | Status=NEAR SETUP | Quality=E | Score=0 | Confidence=74% | Weighted=18 | Edge=8
+ETH/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6
+LINK/USDT: LONG | NO TRADE | Status=NO TRADE | Quality=E | Score=0 | Confidence=68% | Weighted=18 | Edge=6

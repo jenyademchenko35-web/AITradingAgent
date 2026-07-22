@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence
 
+from research_data_quality import ResearchDataQuality
+
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -356,6 +358,12 @@ def build_report() -> Dict[str, Any]:
             issue["message"] for issue in issues[:8]
         ],
     }
+    research = ResearchDataQuality(base_dir=BASE_DIR).build_report(write=False)
+    report.update({"research_data_quality": research, "coverage": research["coverage"],
+                   "recovered": research["recovered"], "unknown": research["unknown"],
+                   "missing": research["missing"]})
+    if research["threshold_checks"]:
+        report["status"] = "WARNING"
     return report
 
 

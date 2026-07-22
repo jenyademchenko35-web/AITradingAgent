@@ -1,0 +1,1472 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-22T12:00:56.058190+00:00",
+  "version": "3.0",
+  "mode": "SHADOW_RESEARCH_ONLY",
+  "sample": {
+    "complete_decisions": 42,
+    "wins": 7,
+    "losses": 35
+  },
+  "decision_accuracy_pct": 16.67,
+  "direction_accuracy_pct": 16.67,
+  "direction_intelligence": {
+    "SHORT": {
+      "trades": 42,
+      "wins": 7,
+      "losses": 35,
+      "accuracy_pct": 16.67
+    }
+  },
+  "module_accuracy": [
+    {
+      "module": "Trend",
+      "accuracy_pct": 16.67,
+      "correct": 7,
+      "errors": 35,
+      "evaluated": 42
+    },
+    {
+      "module": "Structure",
+      "accuracy_pct": 30.0,
+      "correct": 12,
+      "errors": 28,
+      "evaluated": 40
+    },
+    {
+      "module": "Momentum",
+      "accuracy_pct": 69.05,
+      "correct": 29,
+      "errors": 13,
+      "evaluated": 42
+    },
+    {
+      "module": "Risk",
+      "accuracy_pct": 38.46,
+      "correct": 15,
+      "errors": 24,
+      "evaluated": 39
+    }
+  ],
+  "root_causes": [
+    {
+      "module": "Trend",
+      "errors": 35,
+      "share_of_losses_pct": 100.0,
+      "repeat_probability": "HIGH"
+    }
+  ],
+  "recommendations": [
+    {
+      "module": "Trend",
+      "action": "Reduce",
+      "current_weight": 0.4,
+      "suggested_weight": 0.38666667,
+      "expected_profit_factor": {
+        "current": 0.350105,
+        "suggested": 0.419021
+      },
+      "confidence": "MEDIUM",
+      "automatic_apply": false,
+      "basis": "v2.1 replay sensitivity candidate; advisory only"
+    }
+  ],
+  "trades": [
+    {
+      "trade_id": "TR-69f5e07226c99942",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.49537446,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 8.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 6.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -3.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 2.25,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-3aaceee6f17c6a35",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -0.42994472,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": -1.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -2.25,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-c7f62214deee4248",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.26345894,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 1.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -2.25,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-fc79dcb58aab548a",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -0.72840165,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 0.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -2.25,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-608687f7176f3923",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -0.95809408,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -2.25,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-337fbdeda5d8831e",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.2038683,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": -1.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -2.25,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-00daf140cae45ec1",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.08786125,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": 3.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "NEUTRAL",
+          "net_directional": 0.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-e967841f3a9dbfcd",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.56221577,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 16.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": 3.75,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": -1.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-ce5794abb846103c",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.20517511,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 0.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "NEUTRAL",
+          "net_directional": 0.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-8416edde9d850bf9",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.40029368,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 0.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-c4e6b259c534ecd1",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.00068509,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 16.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": -0.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -1.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-5c772818388b697a",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.20801999,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 16.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "NEUTRAL",
+          "net_directional": 0.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -1.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-449686fd43cc678e",
+      "symbol": "ETH/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -2.1314013,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 16.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -1.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-1dd5b92dfb0685da",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.12620169,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 19.2,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": -1.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-57e951836470a80f",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.01713744,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 24.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": -3.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-5fd96d58c8a5c10b",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.85843958,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 20.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "NEUTRAL",
+          "net_directional": 0.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 0.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-30cb6d2d9d8dbe34",
+      "symbol": "BTC/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.45438647,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 8.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 4.75,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -1.6,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-31b37a3ff5415dcd",
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.19084699,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 9.6,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 3.75,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-f966d76437abab3d",
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -5.1867049,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.75,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-3fd5eb6957c57fb4",
+      "symbol": "XRP/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -2.2847008,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 4.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-caa0e9223617115d",
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.17461087,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 4.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -1.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-b2981f35b49cd641",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.63807433,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-0a3784c5a89eaafb",
+      "symbol": "XRP/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.58210495,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": 4.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-d505ccbb50b3804d",
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -3.47433567,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-b7b978072d6cd1e1",
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.70233453,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": 4.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-d4f481317f37bbf4",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.13311743,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 24.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": -0.75,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 2.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-d017e039838dceba",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -4.14986164,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 24.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": -0.75,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 1.6,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-0bfc1af759e84cd4",
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -5.26229262,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -1.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-31ec0dbdd2111605",
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -4.11892628,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 4.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-c7beee6397baee2d",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -3.36338604,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 0.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-d175159ca0835c4c",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.24898947,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 24.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 1.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 2.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-cc065d8ee478c69c",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.23083068,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 24.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": 1.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": 2.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-676506c4a71538c4",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.22609392,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 24.0,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 1.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 2.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": -3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-eb7f825c11e652d1",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.03770033,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 20.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 1.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "NEUTRAL",
+          "net_directional": 0.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-0042d3db1e50d660",
+      "symbol": "ADA/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.61119069,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-eaf0e892870be73c",
+      "symbol": "XRP/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.23932512,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-4f52864527c4b280",
+      "symbol": "AVAX/USDT",
+      "direction": "SHORT",
+      "result": "WIN",
+      "R": 2.22234918,
+      "decision": "Correct",
+      "modules": {
+        "trend": {
+          "status": "PASS",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "PASS",
+          "net_directional": 3.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "PASS",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": null,
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-3023a41643b3b006",
+      "symbol": "DOGE/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.06501198,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-4a5589cc5e15c21a",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.06455352,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 20.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 1.2,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-1f9b98356368b953",
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.00410748,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.5,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-c505ca631719ad0a",
+      "symbol": "BNB/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.00747295,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 12.8,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.0,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "PASS",
+          "net_directional": -0.8,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    },
+    {
+      "trade_id": "TR-1c78eec444937787",
+      "symbol": "SOL/USDT",
+      "direction": "SHORT",
+      "result": "LOSS",
+      "R": -1.85193214,
+      "decision": "Wrong",
+      "modules": {
+        "trend": {
+          "status": "FAIL",
+          "net_directional": 9.6,
+          "weight": 0.4
+        },
+        "structure": {
+          "status": "FAIL",
+          "net_directional": 2.25,
+          "weight": 0.25
+        },
+        "momentum": {
+          "status": "FAIL",
+          "net_directional": 0.4,
+          "weight": 0.2
+        },
+        "risk": {
+          "status": "FAIL",
+          "net_directional": 3.0,
+          "weight": 0.15
+        }
+      },
+      "root_cause": "trend",
+      "root_cause_method": "largest positive directional contribution on LOSS",
+      "market_regime": "UNKNOWN"
+    }
+  ],
+  "methodology": {
+    "module_pass": "directional contribution agrees with realized outcome",
+    "root_cause": "largest module contribution supporting a losing direction",
+    "limitations": "Attribution is observational, not proof of causality."
+  },
+  "restrictions": {
+    "live_unchanged": true,
+    "decision_engine_unchanged": true,
+    "weights_applied": false
+  }
+}

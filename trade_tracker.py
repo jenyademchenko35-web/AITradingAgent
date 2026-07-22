@@ -1,4 +1,5 @@
 import csv
+import logging
 from pathlib import Path
 from datetime import datetime
 
@@ -17,6 +18,20 @@ FIELDS = [
     "exit_price",
     "pnl",
 ]
+LOGGER = logging.getLogger(__name__)
+
+
+def _research_diagnostics(trade, *, snapshot=False):
+    """Best-effort diagnostics; failures must never affect trade persistence."""
+    try:
+        from research_data_quality import build_decision_snapshot, validate_research_trade
+        missing = validate_research_trade(trade)
+        if missing:
+            LOGGER.warning("trade research fields unavailable: %s", ", ".join(missing))
+        if snapshot:
+            build_decision_snapshot(symbol=trade.get("symbol"), opened_at=trade.get("opened_at"), extra=trade)
+    except Exception as error:  # research instrumentation is deliberately fail-open
+        LOGGER.warning("research diagnostics failed: %s", error)
 
 def ensure_file():
     if not TRADES_FILE.exists():
@@ -43,6 +58,7 @@ def open_trade(symbol, direction, entry, stop_loss, take_profit):
     with TRADES_FILE.open("a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS)
         writer.writerow(trade)
+    _research_diagnostics(trade, snapshot=True)
 
 def get_open_trades():
     ensure_file()
@@ -67,6 +83,7 @@ def close_trade(symbol, result, exit_price=None, pnl=None):
                 row["closed_at"] = now
                 row["exit_price"] = exit_price if exit_price is not None else ""
                 row["pnl"] = pnl if pnl is not None else ""
+                _research_diagnostics(row)
             trades.append(row)
     with TRADES_FILE.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS)

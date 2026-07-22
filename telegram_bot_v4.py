@@ -57,6 +57,13 @@ from decision_engine_v2 import (
     format_decision_v2,
     load_decision_v2,
 )
+from research_data_quality import (
+    build_decision_snapshot,
+    format_data_quality as format_research_data_quality,
+    run_backfill_pipeline,
+)
+from promotion_gate import format_telegram as format_promotion_gate, run as run_promotion_gate
+from decision_intelligence import format_telegram as format_decision_learning, run as run_decision_learning
 from portfolio_manager import (
     PortfolioManager,
     format_portfolio,
@@ -2814,7 +2821,28 @@ def format_dataquality() -> str:
             "Запусти read-only реестр:\n"
             "venv/bin/python trade_registry.py"
         )
+    if "coverage" in report:
+        return format_research_data_quality(report)
     return format_data_quality_summary(report)
+
+
+def format_coverage() -> str:
+    report = read_quality_report()
+    return format_research_data_quality(report, "coverage") if report else "📊 Data Coverage\nStatus: NOT_AVAILABLE"
+
+
+def format_snapshot() -> str:
+    path = BASE_DIR / "decision_snapshot.json"
+    payload = read_json(path)
+    snapshot = payload.get("latest", {}) if isinstance(payload, dict) else {}
+    if not snapshot:
+        snapshot = build_decision_snapshot(write=False)
+    if not snapshot:
+        return "📸 Decision Snapshot\nStatus: NOT_AVAILABLE"
+    return "\n".join(["📸 Decision Snapshot", f"Symbol: {snapshot.get('symbol','UNKNOWN')}",
+                      f"Direction: {snapshot.get('direction','UNKNOWN')}", f"Score: {snapshot.get('final_score','UNKNOWN')}",
+                      f"Confidence: {snapshot.get('confidence','UNKNOWN')}", f"Quality: {snapshot.get('quality','UNKNOWN')}",
+                      f"Regime: {snapshot.get('market_regime','UNKNOWN')}", f"Timeframe: {snapshot.get('timeframe','UNKNOWN')}"])
 
 
 def format_portfolio_status(view: str = "") -> str:
@@ -3061,6 +3089,20 @@ async def dataquality_command(
     await reply(update, format_dataquality())
 
 
+async def coverage_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_coverage())
+
+
+async def backfill_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    report = run_backfill_pipeline()
+    await reply(update, "\n".join(["🧰 Research Backfill", f"Recovered: {report.get('recovered_total',0)} fields",
+                                   f"Unable: {report.get('unable_total',0)} fields", "LIVE trades.csv unchanged."]))
+
+
+async def snapshot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_snapshot())
+
+
 async def portfolio_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3142,6 +3184,27 @@ async def candidate_command(
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
     await reply(update, format_candidate())
+
+
+async def ready_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Rebuild and show the read-only VPS promotion gate."""
+    await reply(update, format_promotion_gate(run_promotion_gate()))
+
+
+async def learning_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_decision_learning(run_decision_learning(), "learning"))
+
+
+async def modules_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_decision_learning(run_decision_learning(), "modules"))
+
+
+async def accuracy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_decision_learning(run_decision_learning(), "accuracy"))
+
+
+async def rootcause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_decision_learning(run_decision_learning(), "rootcause"))
 
 
 async def learn_command(
@@ -3404,6 +3467,9 @@ def build_app():
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("trades", trades_command))
     app.add_handler(CommandHandler("dataquality", dataquality_command))
+    app.add_handler(CommandHandler("coverage", coverage_command))
+    app.add_handler(CommandHandler("backfill", backfill_command))
+    app.add_handler(CommandHandler("snapshot", snapshot_command))
     app.add_handler(CommandHandler("portfolio", portfolio_command))
     app.add_handler(CommandHandler("execution", execution_command))
     app.add_handler(CommandHandler("lossanalysis", lossanalysis_command))
@@ -3433,6 +3499,11 @@ def build_app():
     app.add_handler(CommandHandler("adaptive", adaptive_command))
     app.add_handler(CommandHandler("walkforward", walkforward_command))
     app.add_handler(CommandHandler("promotion", promotion_command))
+    app.add_handler(CommandHandler("ready", ready_command))
+    app.add_handler(CommandHandler("learning", learning_command))
+    app.add_handler(CommandHandler("modules", modules_command))
+    app.add_handler(CommandHandler("accuracy", accuracy_command))
+    app.add_handler(CommandHandler("rootcause", rootcause_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app

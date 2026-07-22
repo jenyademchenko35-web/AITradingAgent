@@ -1,1 +1,4 @@
 timestamp,symbol,direction,decision,score,confidence,filter_name,reason
+2026-07-20T16:52:07.793469+00:00,SOL/USDT,SHORT,SETUP,26,95,SHORT_BULLISH_1H_MOMENTUM_FAIL,Dry-run only: SHORT signal while 1H EMA trend is BULLISH and Momentum filter is FAIL. Future protective filter would downgrade/block this candidate.
+2026-07-20T16:57:36.794830+00:00,SOL/USDT,SHORT,SETUP,26,95,SHORT_BULLISH_1H_MOMENTUM_FAIL,Dry-run only: SHORT signal while 1H EMA trend is BULLISH and Momentum filter is FAIL. Future protective filter would downgrade/block this candidate.
+2026-07-20T17:03:17.289702+00:00,SOL/USDT,SHORT,SETUP,26,95,SHORT_BULLISH_1H_MOMENTUM_FAIL,Dry-run only: SHORT signal while 1H EMA trend is BULLISH and Momentum filter is FAIL. Future protective filter would downgrade/block this candidate.

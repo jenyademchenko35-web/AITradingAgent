@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from trade_registry import TradeRegistry
+from research_data_quality import ResearchDataQuality, coverage_report
 
 BASE_DIR = Path(__file__).resolve().parent
 REPORT_PATH = BASE_DIR / "reports/signal_quality.json"
@@ -126,9 +127,12 @@ class SignalQualityAnalyzer:
 
     def collect_features(self) -> list[dict[str, Any]]:
         contexts = {self._key(row): row for row in self.context_rows}
+        recovery = ResearchDataQuality(base_dir=self.base_dir, registry=self.registry)
         result = []
         for source in sorted(self.registry.get_complete_trades(), key=lambda row: str(row.get("opened_at", ""))):
-            row = deepcopy(dict(source)); context = contexts.get(self._key(row), {})
+            row = deepcopy(dict(source)); recovered, _ = recovery.recover_trade(row)
+            row.update({key: value for key, value in recovered.items() if value not in (None, "", "UNKNOWN")})
+            context = contexts.get(self._key(row), {})
             opened = _time(row.get("opened_at"))
             entry, stop, target = _num(row.get("entry")), _num(row.get("sl", row.get("stop_loss"))), _num(row.get("tp", row.get("take_profit")))
             trend = str(context.get("trend", row.get("trend", "UNKNOWN"))).upper()
@@ -263,12 +267,15 @@ class SignalQualityAnalyzer:
         sources={name:("OK" if _json(self.base_dir/path) else "NOT_AVAILABLE") for name,path in {
             "loss_attribution":"reports/loss_attribution.json","research_dashboard":"reports/research_dashboard.json",
             "walk_forward":"reports/walk_forward.json","replay":"shadow_replay_report.json","adaptive_research":"adaptive_research_report.json"}.items()}
+        coverage=coverage_report(rows,("confidence","score","quality","market_regime","volatility"))
+        low_data_confidence=any(item["coverage_pct"]<90 for item in coverage["features"])
         return {"generated_at":datetime.now(timezone.utc).isoformat(),"analyzer_version":ANALYZER_VERSION,"mode":"SHADOW_READ_ONLY","dataset_fingerprint":fingerprint,
             "sample":{"complete_trades":len(rows),"wins":len(winners),"losses":len(losers)},"baseline":baseline,
             "feature_ranking":ranking,"winning_profile":winning,"losing_profile":losing,
             "profile_comparison":self._profile_comparison(winning,losing,ranking),"candidate_filters":self._candidate_filters(rows,analyses),
-            "drift":self._drift(rows),"signal_quality_score":quality_score,"signal_quality_status":status,"score_breakdown":breakdown,
-            "recommendation":"INSUFFICIENT_DATA" if len(rows)<self.minimum_sample else ("INVESTIGATE" if status in {"POOR","AVERAGE"} else "KEEP_IN_SHADOW"),
+            "drift":self._drift(rows),"coverage_report":coverage,"data_confidence":"LOW DATA CONFIDENCE" if low_data_confidence else "ADEQUATE",
+            "strong_conclusions_allowed":not low_data_confidence,"signal_quality_score":quality_score,"signal_quality_status":status,"score_breakdown":breakdown,
+            "recommendation":"LOW DATA CONFIDENCE" if low_data_confidence else ("INSUFFICIENT_DATA" if len(rows)<self.minimum_sample else ("INVESTIGATE" if status in {"POOR","AVERAGE"} else "KEEP_IN_SHADOW")),
             "source_health":sources,"allowed_recommendations":sorted(RECOMMENDATIONS),
             "restrictions":["READ_ONLY","NO_AUTOMATIC_APPLICATION","LIVE_AND_TRADING_LOGIC_UNCHANGED"]}
 

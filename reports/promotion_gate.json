@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-22T11:25:13.170342+00:00",
+  "mode": "READ_ONLY_PROMOTION_GATE",
+  "status": "NOT_READY",
+  "shadow_score": 47,
+  "shadow_score_max": 100,
+  "components": {
+    "profit_factor": {
+      "score": 7,
+      "max": 30,
+      "value": 0.237973
+    },
+    "winrate": {
+      "score": 12,
+      "max": 20,
+      "value": 20.6897
+    },
+    "drawdown": {
+      "score": 10,
+      "max": 20,
+      "value": 39.896719
+    },
+    "data_coverage": {
+      "score": 10,
+      "max": 10,
+      "value": 90.62
+    },
+    "replay_stability": {
+      "score": 6,
+      "max": 10,
+      "value": 36.0
+    },
+    "walk_forward": {
+      "score": 0,
+      "max": 5,
+      "value": "CONTINUE_RESEARCH"
+    },
+    "sample_size": {
+      "score": 2,
+      "max": 5,
+      "value": 42
+    }
+  },
+  "checks": {
+    "profit_factor": false,
+    "winrate": false,
+    "net_r": false,
+    "max_drawdown": false,
+    "data_coverage": true,
+    "walk_forward": false,
+    "replay": false,
+    "stability": false,
+    "sample_size": false
+  },
+  "reasons": [
+    {
+      "check": "profit_factor",
+      "reason": "PF below target",
+      "need": ">= 1.0",
+      "current": 0.237973
+    },
+    {
+      "check": "winrate",
+      "reason": "Winrate below target",
+      "need": ">= 35%",
+      "current": 20.6897
+    },
+    {
+      "check": "net_r",
+      "reason": "Net R is not positive",
+      "need": "> 0R",
+      "current": -37.84628152
+    },
+    {
+      "check": "max_drawdown",
+      "reason": "Drawdown above target",
+      "need": "<= 20R",
+      "current": 39.896719
+    },
+    {
+      "check": "walk_forward",
+      "reason": "Walk Forward not passed",
+      "need": "READY_FOR_AB",
+      "current": "CONTINUE_RESEARCH"
+    },
+    {
+      "check": "replay",
+      "reason": "Replay not passed",
+      "need": "positive realistic PF and Net R with sufficient data",
+      "current": "INSUFFICIENT_DATA"
+    },
+    {
+      "check": "stability",
+      "reason": "Stability below target",
+      "need": ">= 60/100",
+      "current": 36.0
+    },
+    {
+      "check": "sample_size",
+      "reason": "Sample size below target",
+      "need": ">= 100 COMPLETE trades",
+      "current": 42
+    }
+  ],
+  "metrics": {
+    "profit_factor": 0.237973,
+    "winrate": 20.6897,
+    "net_r": -37.84628152,
+    "max_drawdown_r": 39.896719,
+    "data_coverage_pct": 90.62,
+    "walk_forward": "CONTINUE_RESEARCH",
+    "replay": "INSUFFICIENT_DATA",
+    "stability_score": 36.0,
+    "complete_trades": 42
+  },
+  "targets": {
+    "profit_factor": 1.0,
+    "winrate": 35.0,
+    "net_r": 0.0,
+    "max_drawdown_r": 20.0,
+    "coverage_pct": 90.0,
+    "stability_score": 60.0,
+    "complete_trades": 100
+  },
+  "restrictions": {
+    "live_unchanged": true,
+    "automatic_promotion": false
+  }
+}

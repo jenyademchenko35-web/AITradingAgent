@@ -60,6 +60,7 @@ SOURCE_SPECS = (
         ("hypothesis_report.json", "strategy_lab_report.json"),
     ),
     SourceSpec("trade_registry", ("reports/trade_registry.json",)),
+    SourceSpec("data_quality", ("reports/data_quality.json",), False),
     SourceSpec("baseline", ("trade_metrics_audit.json",), False),
 )
 
@@ -750,6 +751,8 @@ def build_report(
         for severity in ("HIGH", "MEDIUM", "LOW")
     }
     generated_at = now.isoformat()
+    data_quality = payloads.get("data_quality", {})
+    coverage = data_quality.get("coverage", {}) if isinstance(data_quality, Mapping) else {}
     return {
         "generated_at": generated_at,
         "input_fingerprint": fingerprint,
@@ -767,6 +770,14 @@ def build_report(
         },
         "source_health": health,
         "baseline_metrics": baseline,
+        "data_quality": {
+            "coverage_pct": number(coverage.get("coverage_pct")),
+            "missing": integer(data_quality.get("missing")),
+            "recovered": integer(data_quality.get("recovered")),
+            "unknown": integer(data_quality.get("unknown")),
+            "status": data_quality.get("status", "NO_DATA"),
+            "warnings": coverage.get("warnings", []),
+        },
         "hypothesis_ranking": ranking,
         "research_conflicts": conflicts,
         "conflict_counts": conflict_counts,

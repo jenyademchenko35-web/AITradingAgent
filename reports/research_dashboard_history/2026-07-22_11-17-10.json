@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-22T11:19:25.628104+00:00",
-  "input_fingerprint": "8e7627d3161fcb765e13e3093e5009be9ef375506630e4b441bb4daeb307690f",
+  "generated_at": "2026-07-22T11:17:10.272353+00:00",
+  "input_fingerprint": "9d624e5a945aee0dd63cf139571e9f655190cc031cc2ee8c5ed03925adf581dd",
   "mode": "READ_ONLY_RESEARCH_DASHBOARD",
   "system_research_status": {
     "status": "DEGRADED",
@@ -9,7 +9,7 @@
     "incomplete_metrics": 3,
     "global_confidence_percent": 38.59,
     "research_status": "DEGRADED",
-    "last_refresh": "2026-07-22T11:19:25.628104+00:00",
+    "last_refresh": "2026-07-22T11:17:10.272353+00:00",
     "stale_reports": [
       "adaptive_research",
       "research_orchestrator",
@@ -26,7 +26,7 @@
       "required": true,
       "path": "reports/walk_forward.json",
       "generated_at": "2026-07-19T17:11:53.707259+00:00",
-      "age_hours": 66.126,
+      "age_hours": 66.088,
       "stale": false,
       "sha256": "49af9721ffc8cca983b90e980fc151d76c94ffd9f17ddcbdca522135de9a39e1",
       "error": ""
@@ -43,7 +43,7 @@
       "required": true,
       "path": "adaptive_research_report.json",
       "generated_at": "2026-07-14T12:38:15.466032+00:00",
-      "age_hours": 190.686,
+      "age_hours": 190.649,
       "stale": true,
       "sha256": "ab82cdf38ce7e71711c0553ce88b813d61c342d379b8260617637f853db8085b",
       "error": ""
@@ -53,7 +53,7 @@
       "required": true,
       "path": "research_orchestrator_report.json",
       "generated_at": "2026-07-14T12:38:15.448518+00:00",
-      "age_hours": 190.686,
+      "age_hours": 190.649,
       "stale": true,
       "sha256": "1f47f3758f57e327f2b471c82084e65b0a25b4435be90f05bc73c6004c4376bf",
       "error": ""
@@ -63,7 +63,7 @@
       "required": true,
       "path": "shadow_replay_report.json",
       "generated_at": "2026-07-19T17:11:53.760572+00:00",
-      "age_hours": 66.126,
+      "age_hours": 66.088,
       "stale": false,
       "sha256": "e3bc4f87175cd842662e58b9986f40f992d410a94ee2a28de127e5d84a9e190f",
       "error": ""
@@ -73,7 +73,7 @@
       "required": true,
       "path": "experiment_promotion_report.json",
       "generated_at": "2026-07-19T17:12:01.970330+00:00",
-      "age_hours": 66.123,
+      "age_hours": 66.086,
       "stale": false,
       "sha256": "8efe2d52a4fd2988608c0ad96c4bd83a370e133e4a130c9a218334b09e006f22",
       "error": ""
@@ -83,7 +83,7 @@
       "required": true,
       "path": "hypothesis_report.json",
       "generated_at": "2026-07-19T17:12:01.473673+00:00",
-      "age_hours": 66.123,
+      "age_hours": 66.086,
       "stale": true,
       "sha256": "66e824d438866eb874cb7e36cf84bedf06b71978fe3bb7bbc423948caf37f709",
       "error": ""
@@ -93,7 +93,7 @@
       "required": true,
       "path": "reports/trade_registry.json",
       "generated_at": "2026-07-19T17:13:42.379474+00:00",
-      "age_hours": 66.095,
+      "age_hours": 66.058,
       "stale": false,
       "sha256": "0c30abd999604b37b89cd5c01ee1d8a55dbcd8b43bb580c9fd68edc4efcab097",
       "error": ""
@@ -102,10 +102,10 @@
       "status": "OK",
       "required": false,
       "path": "reports/data_quality.json",
-      "generated_at": "2026-07-22T11:17:37.748561+00:00",
-      "age_hours": 0.03,
+      "generated_at": "2026-07-22T11:17:09.257434+00:00",
+      "age_hours": 0.0,
       "stale": false,
-      "sha256": "7afc65d1ea421029a751dc3be201aec498f50ea4e0f2506695a6dfe3ccc1a521",
+      "sha256": "1d61d36a19ca5e96bbb8836689f6356b7758b8fb5305668405d3bc3ee0d81c34",
       "error": ""
     },
     "baseline": {
@@ -113,7 +113,7 @@
       "required": false,
       "path": "trade_metrics_audit.json",
       "generated_at": "2026-07-14T12:38:14.237304+00:00",
-      "age_hours": 190.686,
+      "age_hours": 190.649,
       "stale": true,
       "sha256": "516a279af301f91e248570efad9beae166f9afb14f1acdf7c1848adffa7d06a3",
       "error": ""
@@ -131,14 +131,14 @@
     "metric_unit": "R"
   },
   "data_quality": {
-    "coverage_pct": 90.62,
-    "missing": 0,
-    "recovered": 273,
-    "unknown": 63,
-    "status": "WARNING",
+    "coverage_pct": 80.95,
+    "missing": 128,
+    "recovered": 208,
+    "unknown": 0,
+    "status": "POOR",
     "warnings": [
       "COVERAGE_BELOW_90",
-      "UNKNOWN_ABOVE_5"
+      "MISSING_ABOVE_0"
     ]
   },
   "hypothesis_ranking": [
