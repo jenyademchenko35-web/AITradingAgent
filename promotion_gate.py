@@ -41,6 +41,7 @@ def _points(value: float, target: float, maximum: int, *, inverse: bool = False)
 
 def build_report(*, base_dir: str | Path = BASE_DIR) -> dict[str, Any]:
     root = Path(base_dir)
+    trades_path = root / "trades.csv"
     replay = _read(root / "shadow_replay_report.json")
     walk = _read(root / "reports/walk_forward.json")
     quality = _read(root / "reports/data_quality.json")
@@ -89,7 +90,10 @@ def build_report(*, base_dir: str | Path = BASE_DIR) -> dict[str, Any]:
             reason, need, current = labels[key]
             reasons.append({"check": key, "reason": reason, "need": need, "current": current})
     score = sum(item["score"] for item in components.values())
+    source_modified = (datetime.fromtimestamp(trades_path.stat().st_mtime, tz=timezone.utc).isoformat()
+                       if trades_path.exists() else "")
     return {"schema_version": 1, "generated_at": datetime.now(timezone.utc).isoformat(),
+            "source_trades_modified": source_modified,
             "mode": "READ_ONLY_PROMOTION_GATE", "status": "READY_FOR_VPS" if all(checks.values()) else "NOT_READY",
             "shadow_score": score, "shadow_score_max": 100, "components": components,
             "checks": checks, "reasons": reasons,

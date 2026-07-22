@@ -21,6 +21,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("modules", "🧩 Module Accuracy"),
     BotCommand("accuracy", "🎯 Decision Accuracy"),
     BotCommand("rootcause", "🧠 Decision Root Causes"),
+    BotCommand("datasources", "🗂 Источники отчётов"),
     BotCommand("portfolio", "📊 Portfolio"),
     BotCommand("execution", "⚙️ Execution Simulator"),
     BotCommand("lossanalysis", "🔎 Loss Attribution"),

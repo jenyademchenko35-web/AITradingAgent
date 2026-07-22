@@ -34,6 +34,9 @@ def _module_verdict(net: float, won: bool) -> str:
 
 def build_report(*, base_dir: str | Path = BASE_DIR) -> dict[str, Any]:
     root = Path(base_dir); source = _read(root / "reports/decision_engine_v2.json")
+    trades_path = root / "trades.csv"
+    source_modified = (datetime.fromtimestamp(trades_path.stat().st_mtime, tz=timezone.utc).isoformat()
+                       if trades_path.exists() else "")
     comparisons = source.get("comparisons", [])
     trades=[]; stats={name: Counter() for name in MODULES}; roots=Counter(); directions=defaultdict(Counter)
     for row in comparisons if isinstance(comparisons, list) else []:
@@ -78,7 +81,8 @@ def build_report(*, base_dir: str | Path = BASE_DIR) -> dict[str, Any]:
                                     "confidence":item.get("confidence","LOW"),"automatic_apply":False,
                                     "basis":"v2.1 replay sensitivity candidate; advisory only"})
     total=len(trades); wins=sum(1 for row in trades if row["result"] == "WIN")
-    return {"schema_version":1,"generated_at":datetime.now(timezone.utc).isoformat(),"version":"3.0",
+    return {"schema_version":1,"generated_at":datetime.now(timezone.utc).isoformat(),
+            "source_trades_modified":source_modified,"version":"3.0",
             "mode":"SHADOW_RESEARCH_ONLY","sample":{"complete_decisions":total,"wins":wins,"losses":total-wins},
             "decision_accuracy_pct":round(100*wins/total,2) if total else None,
             "direction_accuracy_pct":round(100*wins/total,2) if total else None,

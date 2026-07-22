@@ -8,6 +8,7 @@ __pycache__/
 # AITradingAgent runtime artifacts
 logs/*.log
 *_report.json
+!reports/consistency_report.json
 *_summary.txt
 decision_debug.csv
 decision_diagnostics.csv

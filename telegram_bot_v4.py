@@ -62,8 +62,8 @@ from research_data_quality import (
     format_data_quality as format_research_data_quality,
     run_backfill_pipeline,
 )
-from promotion_gate import format_telegram as format_promotion_gate, run as run_promotion_gate
-from decision_intelligence import format_telegram as format_decision_learning, run as run_decision_learning
+from promotion_gate import format_telegram as format_promotion_gate
+from decision_intelligence import format_telegram as format_decision_learning
 from portfolio_manager import (
     PortfolioManager,
     format_portfolio,
@@ -81,6 +81,10 @@ from research_orchestrator.formatter import (
 from research_dashboard import (
     format_telegram as format_research_dashboard,
     read_dashboard as read_research_dashboard,
+)
+from report_synchronization import (
+    datasource_status,
+    synchronize_reports,
 )
 from telegram_formatters import (
     format_ai_coach as v5_format_ai_coach,
@@ -2771,6 +2775,32 @@ def format_dashboard(args: Optional[List[str]] = None) -> str:
     return format_research_dashboard(report, section)
 
 
+def format_datasources() -> str:
+    """Show report provenance and freshness against the canonical trades file."""
+    labels = {
+        "research_dashboard": "Research Dashboard",
+        "promotion_gate": "Promotion Gate",
+        "decision_intelligence": "Decision Intelligence",
+    }
+    lines = ["🗂 Data Sources"]
+    for key, row in datasource_status(base_dir=BASE_DIR).items():
+        lines.extend([
+            "",
+            labels[key],
+            "Source:",
+            str(row["source"]),
+            "Generated:",
+            format_time(str(row["generated_at"])),
+            "Trades Timestamp:",
+            format_time(str(row["source_trades_modified"])),
+            "Status:",
+            str(row["status"]),
+            "Sample:",
+            str(row["sample"]),
+        ])
+    return "\n".join(lines)
+
+
 def format_market() -> str:
     """Format the simplified UI v5 market screen."""
     return v5_format_market()
@@ -2948,6 +2978,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Register chat and show the health dashboard."""
     if update.effective_chat:
         save_chat_id(update.effective_chat.id)
+    result = synchronize_reports(base_dir=BASE_DIR)
+    if result["refreshed"]:
+        await reply(update, "Dashboard is outdated.\nRefreshing research reports...\nDone.")
+    if result["consistency"]["status"] != "PASSED":
+        await reply(update, "Dashboard consistency check failed. Stale data will not be shown.")
+        return
     await reply(update, format_dashboard())
 
 
@@ -2998,6 +3034,7 @@ def help_text() -> str:
             "/promotion details",
             "/walkforward",
             "/dataquality | /trades health",
+            "/datasources",
         ]
     )
 
@@ -3010,6 +3047,14 @@ async def dashboard_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
+    section = context.args[0].strip().lower() if context.args else ""
+    if section not in {"trading", "live", "news", "lab", "memory"}:
+        result = synchronize_reports(base_dir=BASE_DIR)
+        if result["refreshed"]:
+            await reply(update, "Dashboard is outdated.\nRefreshing research reports...\nDone.")
+        if result["consistency"]["status"] != "PASSED":
+            await reply(update, "Dashboard consistency check failed. Stale data will not be shown.")
+            return
     await reply(update, format_dashboard(context.args))
 
 
@@ -3188,23 +3233,32 @@ async def candidate_command(
 
 async def ready_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Rebuild and show the read-only VPS promotion gate."""
-    await reply(update, format_promotion_gate(run_promotion_gate()))
+    synchronize_reports(base_dir=BASE_DIR)
+    await reply(update, format_promotion_gate(read_json(BASE_DIR / "reports/promotion_gate.json")))
 
 
 async def learning_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await reply(update, format_decision_learning(run_decision_learning(), "learning"))
+    synchronize_reports(base_dir=BASE_DIR)
+    await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "learning"))
 
 
 async def modules_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await reply(update, format_decision_learning(run_decision_learning(), "modules"))
+    synchronize_reports(base_dir=BASE_DIR)
+    await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "modules"))
 
 
 async def accuracy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await reply(update, format_decision_learning(run_decision_learning(), "accuracy"))
+    synchronize_reports(base_dir=BASE_DIR)
+    await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "accuracy"))
 
 
 async def rootcause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await reply(update, format_decision_learning(run_decision_learning(), "rootcause"))
+    synchronize_reports(base_dir=BASE_DIR)
+    await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "rootcause"))
+
+
+async def datasources_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_datasources())
 
 
 async def learn_command(
@@ -3402,6 +3456,14 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     elif query.data == "regime:view":
         text = format_regime()
     else:
+        if query.data == "dashboard":
+            result = synchronize_reports(base_dir=BASE_DIR)
+            if result["consistency"]["status"] != "PASSED":
+                await query.edit_message_text(
+                    text="Dashboard consistency check failed. Stale data will not be shown.",
+                    reply_markup=reply_markup,
+                )
+                return
         actions = {
             "dashboard": format_dashboard,
             "coach": format_coach,
@@ -3504,6 +3566,7 @@ def build_app():
     app.add_handler(CommandHandler("modules", modules_command))
     app.add_handler(CommandHandler("accuracy", accuracy_command))
     app.add_handler(CommandHandler("rootcause", rootcause_command))
+    app.add_handler(CommandHandler("datasources", datasources_command))
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_error_handler(on_error)
     return app

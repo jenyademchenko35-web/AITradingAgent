@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-07-22T12:54:14.208598+00:00",
+  "source_trades_modified": "2026-07-22T08:29:07.796942+00:00",
+  "commands": {
+    "stats": {
+      "source": "trades.csv",
+      "sample": "all closed trades; performance metrics use COMPLETE rows"
+    },
+    "dashboard": {
+      "source": "reports/research_dashboard.json",
+      "canonical_source": "trades.csv",
+      "sample": "all closed trades; performance metrics use COMPLETE rows"
+    },
+    "ready": {
+      "source": "reports/promotion_gate.json",
+      "canonical_source": "trades.csv",
+      "sample": "COMPLETE trades for sample size; replay metrics for promotion evidence"
+    },
+    "learning": {
+      "source": "decision_learning.json",
+      "upstream": "reports/decision_engine_v2.json",
+      "sample": "COMPLETE decisions available in DecisionEngine v2 comparisons"
+    },
+    "modules": {
+      "source": "decision_learning.json",
+      "upstream": "reports/decision_engine_v2.json",
+      "sample": "COMPLETE decisions available in DecisionEngine v2 comparisons"
+    },
+    "accuracy": {
+      "source": "decision_learning.json",
+      "upstream": "reports/decision_engine_v2.json",
+      "sample": "COMPLETE decisions available in DecisionEngine v2 comparisons"
+    },
+    "rootcause": {
+      "source": "decision_learning.json",
+      "upstream": "reports/decision_engine_v2.json",
+      "sample": "losing COMPLETE decisions available in DecisionEngine v2 comparisons"
+    }
+  }
+}

@@ -753,8 +753,12 @@ def build_report(
     generated_at = now.isoformat()
     data_quality = payloads.get("data_quality", {})
     coverage = data_quality.get("coverage", {}) if isinstance(data_quality, Mapping) else {}
+    trades_path = base_dir / "trades.csv"
+    source_modified = (datetime.fromtimestamp(trades_path.stat().st_mtime, tz=timezone.utc).isoformat()
+                       if trades_path.exists() else "")
     return {
         "generated_at": generated_at,
+        "source_trades_modified": source_modified,
         "input_fingerprint": fingerprint,
         "mode": "READ_ONLY_RESEARCH_DASHBOARD",
         "system_research_status": {

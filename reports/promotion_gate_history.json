@@ -16,6 +16,22 @@
         "stability_score": 36.0,
         "complete_trades": 42
       }
+    },
+    {
+      "generated_at": "2026-07-22T12:52:38.212547+00:00",
+      "status": "NOT_READY",
+      "shadow_score": 37,
+      "metrics": {
+        "profit_factor": 0.237973,
+        "winrate": 20.6897,
+        "net_r": -37.84628152,
+        "max_drawdown_r": 39.896719,
+        "data_coverage_pct": 0.0,
+        "walk_forward": "CONTINUE_RESEARCH",
+        "replay": "INSUFFICIENT_DATA",
+        "stability_score": 36.0,
+        "complete_trades": 42
+      }
     }
   ]
 }

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-22T12:00:56.058190+00:00",
+  "generated_at": "2026-07-22T12:52:38.217025+00:00",
+  "source_trades_modified": "2026-07-22T08:29:07.796942+00:00",
   "version": "3.0",
   "mode": "SHADOW_RESEARCH_ONLY",
   "sample": {

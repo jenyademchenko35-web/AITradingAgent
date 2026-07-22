@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-22T11:25:13.170342+00:00",
+  "generated_at": "2026-07-22T12:52:38.212547+00:00",
+  "source_trades_modified": "2026-07-22T08:29:07.796942+00:00",
   "mode": "READ_ONLY_PROMOTION_GATE",
   "status": "NOT_READY",
-  "shadow_score": 47,
+  "shadow_score": 37,
   "shadow_score_max": 100,
   "components": {
     "profit_factor": {
@@ -22,9 +23,9 @@
       "value": 39.896719
     },
     "data_coverage": {
-      "score": 10,
+      "score": 0,
       "max": 10,
-      "value": 90.62
+      "value": 0.0
     },
     "replay_stability": {
       "score": 6,
@@ -47,7 +48,7 @@
     "winrate": false,
     "net_r": false,
     "max_drawdown": false,
-    "data_coverage": true,
+    "data_coverage": false,
     "walk_forward": false,
     "replay": false,
     "stability": false,
@@ -79,6 +80,12 @@
       "current": 39.896719
     },
     {
+      "check": "data_coverage",
+      "reason": "Data coverage below target",
+      "need": ">= 90%",
+      "current": 0.0
+    },
+    {
       "check": "walk_forward",
       "reason": "Walk Forward not passed",
       "need": "READY_FOR_AB",
@@ -108,7 +115,7 @@
     "winrate": 20.6897,
     "net_r": -37.84628152,
     "max_drawdown_r": 39.896719,
-    "data_coverage_pct": 90.62,
+    "data_coverage_pct": 0.0,
     "walk_forward": "CONTINUE_RESEARCH",
     "replay": "INSUFFICIENT_DATA",
     "stability_score": 36.0,
