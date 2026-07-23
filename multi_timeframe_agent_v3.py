@@ -61,7 +61,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator, MACD
+from ta.trend import ADXIndicator, EMAIndicator, MACD
 from ta.volatility import AverageTrueRange
 
 LOGGER = ConsoleOutputManager(LOG_LEVEL)
@@ -432,6 +432,14 @@ class TFData:
     price_position: float
     trend_ema: str
     trend_macd: str
+    high: float = 0.0
+    low: float = 0.0
+    volume: float = 0.0
+    volume_sma: float = 0.0
+    volume_ratio: float = 0.0
+    ema200: float = 0.0
+    adx: float = 0.0
+    atr_percentile: float = 0.0
 
 
 @dataclass
@@ -449,6 +457,7 @@ class MarketSnapshot:
 def build_tf(df: pd.DataFrame) -> TFData:
     df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
     df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
+    df["ema200"] = EMAIndicator(df["close"], window=200).ema_indicator()
 
     df["rsi"] = RSIIndicator(df["close"]).rsi()
 
@@ -461,6 +470,10 @@ def build_tf(df: pd.DataFrame) -> TFData:
         df["low"],
         df["close"],
     ).average_true_range()
+    df["adx"] = ADXIndicator(df["high"], df["low"], df["close"]).adx()
+    df["volume_sma"] = df["volume"].rolling(20).mean()
+    df["volume_ratio"] = df["volume"] / df["volume_sma"].replace(0, float("nan"))
+    df["atr_percentile"] = df["atr"].rolling(100).rank(pct=True) * 100
 
     df["high20"] = df["high"].rolling(20).max()
     df["low20"] = df["low"].rolling(20).min()
@@ -491,6 +504,14 @@ def build_tf(df: pd.DataFrame) -> TFData:
         trend_macd="BULLISH"
         if last.macd > last.macd_signal
         else "BEARISH",
+        high=float(last.high),
+        low=float(last.low),
+        volume=float(last.volume),
+        volume_sma=float(last.volume_sma),
+        volume_ratio=float(last.volume_ratio),
+        ema200=float(last.ema200),
+        adx=float(last.adx),
+        atr_percentile=float(last.atr_percentile),
     )
 
 
@@ -1046,6 +1067,52 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
     decision.execution_status = "NO_TRADE"
     decision.veto_reasons = []
     decision.failed_filters = []
+    # Research observers are isolated from LIVE execution. Their failures never
+    # change the decision or prevent the normal setup tracking below.
+    try:
+        import hashlib
+        from candidate_laboratory import CandidateLaboratory
+        from candidate_report import build_reports
+        from feature_logger import FeatureLogger, build_feature_row
+
+        snapshot_id = hashlib.sha256(
+            f"{decision_timestamp}|{decision.cycle_id}|{symbol}".encode()
+        ).hexdigest()[:24]
+        feature_row = build_feature_row(
+            timestamp=decision_timestamp,
+            cycle_id=decision.cycle_id,
+            snapshot_id=snapshot_id,
+            symbol=symbol,
+            market=market,
+            decision=decision,
+            trend=trend,
+            structure=structure,
+            momentum=momentum,
+            risk=risk,
+        )
+        FeatureLogger().log(feature_row)
+        laboratory = CandidateLaboratory(DecisionEngine.calculate)
+        laboratory.run(
+            snapshot=feature_row,
+            live_decision=decision,
+            trend=trend,
+            structure=structure,
+            momentum=momentum,
+            risk=risk,
+            live_weights=weights,
+        )
+        laboratory.update_shadow_trades(
+            symbol=symbol,
+            high=market.tf1h.high,
+            low=market.tf1h.low,
+            timestamp=decision_timestamp,
+        )
+        build_reports()
+    except Exception as exc:
+        LOGGER.timestamped(
+            f"[{symbol}] Candidate Laboratory/Feature Logger error: {exc}",
+            minimum="NORMAL",
+        )
     save_signal(symbol, decision, trend, structure, momentum, risk)
 
     save_decision_debug(

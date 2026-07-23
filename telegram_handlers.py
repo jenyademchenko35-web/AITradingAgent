@@ -45,6 +45,9 @@ BOT_COMMANDS_V5 = [
     BotCommand("promotion", "🧪 Promotion Engine"),
     BotCommand("research", "🔬 Research Orchestrator"),
     BotCommand("walkforward", "📈 Walk Forward"),
+    BotCommand("candidates", "🧪 Candidate Laboratory"),
+    BotCommand("candidate", "🧪 Candidate detail"),
+    BotCommand("datafeatures", "📊 Feature coverage"),
     BotCommand("help", "❔ Помощь"),
 ]
 

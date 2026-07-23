@@ -13,6 +13,11 @@ logs/*.log
 decision_debug.csv
 decision_diagnostics.csv
 decision_explanations.csv
+candidate_decisions.csv
+candidate_shadow_trades.csv
+decision_features.csv
+reports/candidate_laboratory.json
+reports/candidate_comparison.json
 diagnostics_report.json
 signals_v3.csv
 agent_v3_stats.json

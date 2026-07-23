@@ -1,0 +1,34 @@
+{
+  "session_utc": {
+    "asia": [0, 8],
+    "london": [7, 16],
+    "new_york": [13, 22]
+  },
+  "LIVE_BASELINE": {
+    "enabled": true,
+    "shadow_only": true,
+    "version": "1.0.0",
+    "description": "Exact baseline copy; uses the unmodified live weights."
+  },
+  "MOMENTUM_RELAXED": {
+    "enabled": true,
+    "shadow_only": true,
+    "version": "1.0.0",
+    "description": "Minimal relaxation: add 2 points to each positive Momentum side before the baseline DecisionEngine calculation.",
+    "overrides": {
+      "momentum_threshold_delta": -2
+    }
+  },
+  "STRUCTURE_FOCUSED": {
+    "enabled": true,
+    "shadow_only": true,
+    "version": "1.0.0",
+    "description": "Higher Structure and slightly lower Momentum contribution; normalized weights only.",
+    "weights": {
+      "trend": 0.38,
+      "structure": 0.30,
+      "momentum": 0.17,
+      "risk": 0.15
+    }
+  }
+}

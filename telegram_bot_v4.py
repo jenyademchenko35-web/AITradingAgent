@@ -183,6 +183,8 @@ EXPERIMENT_PROMOTION_REPORT_FILE = BASE_DIR / "experiment_promotion_report.json"
 WALK_FORWARD_REPORT_FILE = BASE_DIR / "reports" / "walk_forward.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
+FEATURES_FILE = BASE_DIR / "decision_features.csv"
+CANDIDATE_REPORT_FILE = BASE_DIR / "reports" / "candidate_laboratory.json"
 WEIGHTS_FILE = BASE_DIR / "strategy_weights.json"
 VENV_PYTHON = BASE_DIR / "venv" / "bin" / "python"
 
@@ -2984,7 +2986,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if result["consistency"]["status"] != "PASSED":
         await reply(update, "Dashboard consistency check failed. Stale data will not be shown.")
         return
-    await reply(update, format_dashboard())
+    lab_status = read_json(CANDIDATE_REPORT_FILE).get("status", "COLLECTING")
+    await reply(update, f"{format_dashboard()}\n\nCandidate Lab: {lab_status}")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3033,6 +3036,7 @@ def help_text() -> str:
             "/adaptive status|recommendations|stages",
             "/promotion details",
             "/walkforward",
+            "/candidates /candidate <id> /datafeatures",
             "/dataquality | /trades health",
             "/datasources",
         ]
@@ -3228,7 +3232,65 @@ async def candidate_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    await reply(update, format_candidate())
+    candidate_id = context.args[0].strip().upper() if context.args else ""
+    report = read_json(CANDIDATE_REPORT_FILE)
+    candidate = report.get("candidates", {}).get(candidate_id)
+    if not candidate:
+        await reply(update, "Candidate не найден. Используй /candidates.")
+        return
+    await reply(update, format_candidate_lab_entry(candidate_id, candidate, detailed=True))
+
+
+def format_candidate_lab_entry(candidate_id: str, data: Mapping[str, Any], detailed: bool = False) -> str:
+    pf = data.get("profit_factor")
+    lines = [
+        candidate_id,
+        f"Closed: {data.get('complete_trades', 0)}",
+        f"PF: {pf if pf is not None else 'N/A'}",
+        f"Net R: {data.get('net_r', 0)}",
+        f"Winrate: {data.get('winrate', 0)}%",
+        f"Max DD: {data.get('max_drawdown_r', 0)}",
+    ]
+    if detailed:
+        lines.extend([
+            f"Decisions: {data.get('total_decisions', 0)}",
+            f"Setups: {data.get('setups', 0)}",
+            f"Open: {data.get('open_trades', 0)}",
+            f"Average R: {data.get('average_r', 0)}",
+            f"Status: {data.get('status', 'INSUFFICIENT_DATA')}",
+        ])
+    return "\n".join(lines)
+
+
+async def candidates_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    report = read_json(CANDIDATE_REPORT_FILE)
+    blocks = ["🧪 Candidate Laboratory"]
+    for candidate_id, data in report.get("candidates", {}).items():
+        blocks.append(format_candidate_lab_entry(candidate_id, data))
+    blocks.append(f"Status:\n{report.get('status', 'COLLECTING')}")
+    await reply(update, "\n\n".join(blocks))
+
+
+async def datafeatures_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    rows = read_csv_rows(FEATURES_FILE)
+    total = len(rows)
+    def coverage(field: str) -> str:
+        count = sum(row.get(field) not in ("", None, "UNKNOWN") for row in rows)
+        return f"{(count / total * 100):.1f}%" if total else "0.0%"
+    unique = len({row.get("snapshot_id") for row in rows if row.get("snapshot_id")})
+    last = rows[-1].get("timestamp", "N/A") if rows else "N/A"
+    await reply(update, "\n".join([
+        "📊 Decision Features",
+        f"Snapshots: {total}",
+        f"Unique snapshot_id: {unique}",
+        f"ATR coverage: {coverage('atr')}",
+        f"ADX coverage: {coverage('adx')}",
+        f"Volume coverage: {coverage('volume')}",
+        f"Market Regime coverage: {coverage('market_regime')}",
+        f"Session coverage: {coverage('session')}",
+        f"Rows with missing_features: {sum(bool(row.get('missing_features')) for row in rows)}",
+        f"Last record: {last}",
+    ]))
 
 
 async def ready_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3541,6 +3603,8 @@ def build_app():
     app.add_handler(CommandHandler("research", research_command))
     app.add_handler(CommandHandler("experiments", experiments_command))
     app.add_handler(CommandHandler("candidate", candidate_command))
+    app.add_handler(CommandHandler("candidates", candidates_command))
+    app.add_handler(CommandHandler("datafeatures", datafeatures_command))
     app.add_handler(CommandHandler("learn", learn_command))
     app.add_handler(CommandHandler("quality", quality_command))
     app.add_handler(CommandHandler("filters", filters_command))
