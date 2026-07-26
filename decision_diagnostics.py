@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import json
 from collections import Counter, defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
@@ -44,6 +45,43 @@ EXECUTION_STATUSES = {
     "NO_TRADE",
 }
 
+@dataclass(frozen=True)
+class RiskCheck:
+    """One observable check behind the existing Risk Engine verdict."""
+
+    name: str
+    passed: bool
+    actual: Any = None
+    required: Any = None
+    message: str = ""
+    fail_reason: str = ""
+
+
+@dataclass(frozen=True)
+class RiskDiagnostics:
+    """Detailed, read-only explanation of an existing Risk Engine verdict."""
+
+    passed: bool
+    checks: list[RiskCheck] = field(default_factory=list)
+
+    @property
+    def fail_reason(self) -> str:
+        if self.passed:
+            return ""
+        return next(
+            (
+                check.fail_reason
+                for check in self.checks
+                if not check.passed and check.fail_reason
+            ),
+            "RISK_SCORE_NOT_DIRECTIONAL",
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        payload = asdict(self)
+        payload["fail_reason"] = self.fail_reason
+        return payload
+
 
 class DecisionDiagnostics:
     """Analyze why a decision did or did not become a trade candidate."""
@@ -65,6 +103,14 @@ class DecisionDiagnostics:
         "structure",
         "momentum",
         "risk",
+        "risk_rr",
+        "risk_rr_required",
+        "risk_atr",
+        "risk_atr_limit",
+        "risk_stop_distance",
+        "risk_position_size",
+        "risk_volatility",
+        "risk_fail_reason",
         "primary_blocker",
         "lost_score",
         "potential_score",
@@ -127,6 +173,11 @@ class DecisionDiagnostics:
         candidate_direction = self._candidate_direction(decision)
         contributions = self._contributions(engines, candidate_direction)
         statuses = self._statuses(engines, candidate_direction)
+        risk_diagnostics = self._risk_diagnostics(
+            risk_engine,
+            candidate_direction,
+            statuses["risk"] == "PASS",
+        )
         lost_by_engine = self._lost_by_engine(engines, candidate_direction)
 
         primary_blocker = self._primary_blocker(statuses, lost_by_engine, decision)
@@ -180,6 +231,7 @@ class DecisionDiagnostics:
             "structure": statuses["structure"],
             "momentum": statuses["momentum"],
             "risk": statuses["risk"],
+            "risk_diagnostics": risk_diagnostics.to_dict(),
             "primary_blocker": primary_blocker,
             "contributions": contributions,
             "actual_score": actual_score,
@@ -218,6 +270,7 @@ class DecisionDiagnostics:
                 f"Structure       : {report.get('structure', '')}",
                 f"Momentum        : {report.get('momentum', '')}",
                 f"Risk            : {report.get('risk', '')}",
+                self.format_risk_diagnostics(report.get("risk_diagnostics", {})),
                 "Primary Blocker",
                 str(report.get("primary_blocker", "")),
                 "Contributions",
@@ -255,6 +308,7 @@ class DecisionDiagnostics:
     def build_json_report(self) -> Dict[str, Any]:
         """Build diagnostics_report.json from the diagnostics CSV."""
         primary_blockers: Counter[str] = Counter()
+        risk_fail_reasons: Counter[str] = Counter()
         lost_scores = []
         symbols: Dict[str, Counter[str]] = defaultdict(Counter)
         timestamps: list[datetime] = []
@@ -268,6 +322,7 @@ class DecisionDiagnostics:
                     base_dir=self.report_file.parent,
                 ),
                 "primary_blockers": {},
+                "risk_fail_reasons": {},
                 "average_lost_score": 0,
                 "symbols": {},
             }
@@ -281,6 +336,9 @@ class DecisionDiagnostics:
                 if parsed_timestamp is not None:
                     timestamps.append(parsed_timestamp)
                 blocker = row.get("primary_blocker", "")
+                risk_fail_reason = row.get("risk_fail_reason", "")
+                if risk_fail_reason:
+                    risk_fail_reasons[risk_fail_reason] += 1
                 symbol = self._normalize_symbol(row.get("symbol", ""))
                 if blocker:
                     primary_blockers[blocker] += 1
@@ -306,6 +364,7 @@ class DecisionDiagnostics:
                 data_period_end=(max(timestamps).isoformat() if timestamps else ""),
             ),
             "primary_blockers": dict(primary_blockers),
+            "risk_fail_reasons": dict(risk_fail_reasons),
             "average_lost_score": average_lost_score,
             "symbols": {
                 symbol: dict(counter)
@@ -316,6 +375,19 @@ class DecisionDiagnostics:
         return report
 
     def _csv_row(self, report: Mapping[str, Any]) -> Dict[str, Any]:
+        risk = report.get("risk_diagnostics", {})
+        checks = {
+            str(check.get("name", "")): check
+            for check in risk.get("checks", [])
+            if isinstance(check, Mapping)
+        } if isinstance(risk, Mapping) else {}
+
+        def actual(name: str) -> Any:
+            return checks.get(name, {}).get("actual", "")
+
+        def required(name: str) -> Any:
+            return checks.get(name, {}).get("required", "")
+
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "decision_timestamp": report.get("decision_timestamp", ""),
@@ -333,10 +405,100 @@ class DecisionDiagnostics:
             "structure": report.get("structure", ""),
             "momentum": report.get("momentum", ""),
             "risk": report.get("risk", ""),
+            "risk_rr": actual("RiskReward"),
+            "risk_rr_required": required("RiskReward"),
+            "risk_atr": actual("ATR"),
+            "risk_atr_limit": required("ATR"),
+            "risk_stop_distance": actual("StopDistance"),
+            "risk_position_size": actual("PositionSize"),
+            "risk_volatility": actual("Volatility"),
+            "risk_fail_reason": (
+                risk.get("fail_reason", "") if isinstance(risk, Mapping) else ""
+            ),
             "primary_blocker": report.get("primary_blocker", ""),
             "lost_score": report.get("lost_score", 0),
             "potential_score": report.get("potential_score", 0),
         }
+
+    @staticmethod
+    def format_risk_diagnostics(value: Any) -> str:
+        """Render RiskDiagnostics in a compact Telegram-friendly form."""
+        if not isinstance(value, Mapping):
+            return "Risk Engine\nNo detailed data"
+        lines = ["Risk Engine"]
+        for check in value.get("checks", []):
+            if not isinstance(check, Mapping):
+                continue
+            lines.extend(
+                [
+                    str(check.get("name", "")).replace("RiskReward", "Risk/Reward"),
+                    "PASS" if check.get("passed") else "FAIL",
+                ]
+            )
+            if check.get("actual") not in (None, ""):
+                lines.append(f"Actual: {check.get('actual')}")
+            if check.get("required") not in (None, ""):
+                lines.append(f"Required: {check.get('required')}")
+        lines.extend(["FINAL", "PASS" if value.get("passed") else "FAIL"])
+        return "\n".join(lines)
+
+    def _risk_diagnostics(
+        self,
+        result: Any,
+        candidate_direction: str,
+        passed: bool,
+    ) -> RiskDiagnostics:
+        """Explain the legacy verdict using metadata emitted by RiskEngine."""
+        metadata = self._read(result, "diagnostic_values", {}) or {}
+        checks: list[RiskCheck] = []
+        if isinstance(metadata, Mapping):
+            atr_pct = self._safe_float(metadata.get("atr_pct"))
+            atr_limit = self._safe_float(metadata.get("atr_limit"))
+            if atr_pct is not None and atr_limit is not None:
+                atr_passed = atr_pct <= atr_limit
+                checks.append(RiskCheck(
+                    "ATR", atr_passed, round(atr_pct, 4), f"<={atr_limit:g}",
+                    "" if atr_passed else "ATR above existing threshold",
+                    "" if atr_passed else "ATR_TOO_HIGH",
+                ))
+                checks.append(RiskCheck(
+                    "Volatility", atr_passed, round(atr_pct, 4), f"<={atr_limit:g}",
+                    "" if atr_passed else "Volatility above existing ATR threshold",
+                    "" if atr_passed else "VOLATILITY_TOO_HIGH",
+                ))
+            position = self._safe_float(metadata.get("price_position"))
+            low = self._safe_float(metadata.get("price_zone_low"))
+            high = self._safe_float(metadata.get("price_zone_high"))
+            if position is not None and low is not None and high is not None:
+                favorable = not (low <= position <= high)
+                checks.append(RiskCheck(
+                    "PriceZone", favorable, round(position, 4),
+                    f"<{low:g} LONG or >{high:g} SHORT",
+                    "" if favorable else "Price in existing neutral range",
+                    "" if favorable else "PRICE_ZONE_UNFAVORABLE",
+                ))
+            for name, actual_key, required_key in (
+                ("RiskReward", "risk_reward", "risk_reward_required"),
+                ("StopDistance", "stop_distance", "stop_distance_required"),
+                ("PositionSize", "position_size", "position_size_limit"),
+            ):
+                actual_value = metadata.get(actual_key)
+                required_value = metadata.get(required_key)
+                checks.append(RiskCheck(
+                    name, True, actual_value, required_value,
+                    "Informational; not an early Risk Engine blocker",
+                ))
+
+        legacy_check = RiskCheck(
+            "DirectionalScore",
+            passed,
+            round(self._selected_score(result, candidate_direction), 4),
+            ">0 and greater than opposite direction",
+            "" if passed else "Legacy Risk directional score did not pass",
+            "" if passed else "RISK_SCORE_NOT_DIRECTIONAL",
+        )
+        checks.append(legacy_check)
+        return RiskDiagnostics(passed=passed, checks=checks)
 
     @classmethod
     def apply_status_to_decision(

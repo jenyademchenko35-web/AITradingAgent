@@ -28,6 +28,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("quality", "📈 Signal Quality"),
     BotCommand("decisionv2", "🧪 DecisionEngine v2"),
     BotCommand("stats", "📊 Статистика"),
+    BotCommand("riskstats", "🛡 Risk Engine Statistics"),
     BotCommand("coach", "🧠 AI Coach"),
     BotCommand("settings", "⚙️ Settings"),
     BotCommand("developer", "🛠 Developer"),

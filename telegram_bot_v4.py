@@ -6,6 +6,7 @@ import csv
 import json
 import os
 import subprocess
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -64,6 +65,9 @@ from research_data_quality import (
 )
 from promotion_gate import format_telegram as format_promotion_gate
 from decision_intelligence import format_telegram as format_decision_learning
+from root_cause_analyzer import RootCauseAnalyzer
+from ai_research_dashboard import AIResearchDashboard
+from feature_logger import summarize_feature_coverage
 from portfolio_manager import (
     PortfolioManager,
     format_portfolio,
@@ -1539,7 +1543,73 @@ def format_diagnostics(symbol: str) -> str:
         auto_log=False,
     )
     report = diagnostics.analyze(decision, trend, structure, momentum, risk)
+    persisted = _nearest_symbol_row(
+        read_csv_rows(DIAGNOSTICS_FILE),
+        row.get("symbol", symbol),
+        row.get("timestamp", ""),
+    )
+    if persisted and any(
+        persisted.get(field)
+        for field in ("risk_rr", "risk_atr", "risk_fail_reason")
+    ):
+        failed = persisted.get("risk_fail_reason", "")
+
+        def check(name: str, actual_field: str, required_field: str = "") -> dict[str, Any]:
+            actual = persisted.get(actual_field, "")
+            required = persisted.get(required_field, "") if required_field else ""
+            reason_by_name = {
+                "RiskReward": "RR_TOO_LOW",
+                "ATR": "ATR_TOO_HIGH",
+                "StopDistance": "STOP_TOO_WIDE",
+                "Volatility": "VOLATILITY_TOO_HIGH",
+                "PositionSize": "POSITION_TOO_LARGE",
+            }
+            return {
+                "name": name,
+                "passed": failed != reason_by_name.get(name),
+                "actual": actual,
+                "required": required,
+            }
+
+        report["risk_diagnostics"] = {
+            "passed": persisted.get("risk", "").upper() == "PASS",
+            "checks": [
+                check("RiskReward", "risk_rr", "risk_rr_required"),
+                check("ATR", "risk_atr", "risk_atr_limit"),
+                check("StopDistance", "risk_stop_distance"),
+                check("Volatility", "risk_volatility", "risk_atr_limit"),
+                check("PositionSize", "risk_position_size"),
+            ],
+            "fail_reason": failed,
+        }
     return localize_diagnostics(diagnostics.format_report(report))
+
+
+def format_riskstats() -> str:
+    """Format aggregate Risk Engine failure reasons from persisted diagnostics."""
+    report = read_json(BASE_DIR / "diagnostics_report.json")
+    counts = report.get("risk_fail_reasons", {})
+    if not isinstance(counts, Mapping) or not counts:
+        counts = Counter(
+            row.get("risk_fail_reason", "")
+            for row in read_csv_rows(DIAGNOSTICS_FILE)
+            if row.get("risk_fail_reason", "")
+        )
+    labels = (
+        ("RR too low", "RR_TOO_LOW"),
+        ("ATR too high", "ATR_TOO_HIGH"),
+        ("Stop too wide", "STOP_TOO_WIDE"),
+        ("Volatility", "VOLATILITY_TOO_HIGH"),
+        ("Position size", "POSITION_TOO_LARGE"),
+    )
+    lines = ["Risk Engine Statistics"]
+    for label, reason in labels:
+        lines.extend([f"{label}:", str(int(counts.get(reason, 0)))])
+    known = {reason for _, reason in labels}
+    other = sum(int(value) for reason, value in counts.items() if reason not in known)
+    if other:
+        lines.extend(["Other existing Risk reasons:", str(other)])
+    return "\n".join(lines)
 
 
 def calculate_trade_stats() -> Dict[str, Any]:
@@ -2762,19 +2832,17 @@ def format_promotion(args: List[str] | None = None) -> str:
 
 
 def format_dashboard(args: Optional[List[str]] = None) -> str:
-    """Format Research Dashboard v1 with legacy operational drill-downs."""
+    """Format the unified dashboard, preserving legacy drill-down sections."""
     section = args[0].strip().lower() if args else ""
     if section in {"trading", "live", "news", "lab", "memory"}:
         return format_live_dashboard(section)
-    report = read_research_dashboard()
-    if not report:
-        return (
-            "📊 Research Dashboard\n\n"
-            "Status: NOT_AVAILABLE\n"
-            "Запусти read-only отчёт:\n"
-            "venv/bin/python research_dashboard.py"
-        )
-    return format_research_dashboard(report, section)
+    if section:
+        report = read_research_dashboard()
+        if not report:
+            return "📊 Research Dashboard\n\nStatus: NOT_AVAILABLE"
+        return format_research_dashboard(report, section)
+    dashboard = AIResearchDashboard(BASE_DIR)
+    return dashboard.format_telegram(dashboard.build_report())
 
 
 def format_datasources() -> str:
@@ -2980,14 +3048,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Register chat and show the health dashboard."""
     if update.effective_chat:
         save_chat_id(update.effective_chat.id)
-    result = synchronize_reports(base_dir=BASE_DIR)
-    if result["refreshed"]:
-        await reply(update, "Dashboard is outdated.\nRefreshing research reports...\nDone.")
-    if result["consistency"]["status"] != "PASSED":
-        await reply(update, "Dashboard consistency check failed. Stale data will not be shown.")
-        return
-    lab_status = read_json(CANDIDATE_REPORT_FILE).get("status", "COLLECTING")
-    await reply(update, f"{format_dashboard()}\n\nCandidate Lab: {lab_status}")
+    await reply(update, format_dashboard())
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3051,14 +3112,6 @@ async def dashboard_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
-    section = context.args[0].strip().lower() if context.args else ""
-    if section not in {"trading", "live", "news", "lab", "memory"}:
-        result = synchronize_reports(base_dir=BASE_DIR)
-        if result["refreshed"]:
-            await reply(update, "Dashboard is outdated.\nRefreshing research reports...\nDone.")
-        if result["consistency"]["status"] != "PASSED":
-            await reply(update, "Dashboard consistency check failed. Stale data will not be shown.")
-            return
     await reply(update, format_dashboard(context.args))
 
 
@@ -3122,6 +3175,10 @@ async def diagnostics_command(
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply(update, format_stats())
+
+
+async def riskstats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_riskstats())
 
 
 async def trades_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3271,26 +3328,31 @@ async def candidates_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await reply(update, "\n\n".join(blocks))
 
 
-async def datafeatures_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    rows = read_csv_rows(FEATURES_FILE)
-    total = len(rows)
-    def coverage(field: str) -> str:
-        count = sum(row.get(field) not in ("", None, "UNKNOWN") for row in rows)
-        return f"{(count / total * 100):.1f}%" if total else "0.0%"
-    unique = len({row.get("snapshot_id") for row in rows if row.get("snapshot_id")})
-    last = rows[-1].get("timestamp", "N/A") if rows else "N/A"
-    await reply(update, "\n".join([
+def format_datafeatures(rows: list[Mapping[str, Any]]) -> str:
+    """Format feature coverage while treating UNKNOWN regime as present."""
+    coverage = summarize_feature_coverage(rows)
+    return "\n".join([
         "📊 Decision Features",
-        f"Snapshots: {total}",
-        f"Unique snapshot_id: {unique}",
-        f"ATR coverage: {coverage('atr')}",
-        f"ADX coverage: {coverage('adx')}",
-        f"Volume coverage: {coverage('volume')}",
-        f"Market Regime coverage: {coverage('market_regime')}",
-        f"Session coverage: {coverage('session')}",
-        f"Rows with missing_features: {sum(bool(row.get('missing_features')) for row in rows)}",
-        f"Last record: {last}",
-    ]))
+        f"Snapshots: {coverage['snapshots']}",
+        f"Unique snapshot_id: {coverage['unique_snapshot_id']}",
+        "",
+        "Coverage:",
+        f"ATR: {coverage['atr']:.1f}%",
+        f"ADX: {coverage['adx']:.1f}%",
+        f"Volume: {coverage['volume']:.1f}%",
+        f"Market Regime field: {coverage['market_regime_field']:.1f}%",
+        f"Defined Market Regime: {coverage['defined_market_regime']:.1f}%",
+        f"Unknown Market Regime: {coverage['unknown_market_regime']:.1f}%",
+        f"Session: {coverage['session']:.1f}%",
+        "",
+        f"Rows with missing_features: {coverage['missing_features']}",
+        f"Rows with UNKNOWN regime: {coverage['unknown_rows']}",
+        f"Last record: {coverage['last_record']}",
+    ])
+
+
+async def datafeatures_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_datafeatures(read_csv_rows(FEATURES_FILE)))
 
 
 async def ready_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3315,8 +3377,8 @@ async def accuracy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def rootcause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    synchronize_reports(base_dir=BASE_DIR)
-    await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "rootcause"))
+    analyzer = RootCauseAnalyzer(BASE_DIR)
+    await reply(update, analyzer.format_telegram(analyzer.build_report()))
 
 
 async def datasources_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3589,6 +3651,7 @@ def build_app():
     app.add_handler(CommandHandler("watchlist", watchlist_command))
     app.add_handler(CommandHandler("diagnostics", diagnostics_command))
     app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("riskstats", riskstats_command))
     app.add_handler(CommandHandler("trades", trades_command))
     app.add_handler(CommandHandler("dataquality", dataquality_command))
     app.add_handler(CommandHandler("coverage", coverage_command))

@@ -14,6 +14,8 @@ from config import (
     PRICE_ZONE_HIGH,
     SETUP_COOLDOWN_HOURS,
     RUN_INTERVAL,
+    RISK_PER_TRADE,
+    RISK_REWARD,
 )
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -821,11 +823,27 @@ class RiskEngine:
             short_score += 20
             reasons.append("Хорошая зона для SHORT (+20 SHORT)")
 
-        return EngineResult(
+        result = EngineResult(
             long=long_score,
             short=short_score,
             reason="\n".join(reasons),
         )
+        # Read-only observability metadata. It is consumed after the legacy
+        # scores are calculated and therefore cannot affect trading decisions.
+        result.diagnostic_values = {
+            "atr_pct": atr_pct,
+            "atr_limit": ATR_HIGH,
+            "price_position": pos,
+            "price_zone_low": PRICE_ZONE_LOW,
+            "price_zone_high": PRICE_ZONE_HIGH,
+            "risk_reward": RISK_REWARD,
+            "risk_reward_required": RISK_REWARD,
+            "stop_distance": atr,
+            "stop_distance_required": "1 ATR",
+            "position_size": RISK_PER_TRADE,
+            "position_size_limit": f"<={RISK_PER_TRADE:g}",
+        }
+        return result
 
 
 class DecisionEngine:
