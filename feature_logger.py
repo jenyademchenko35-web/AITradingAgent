@@ -8,6 +8,7 @@ import math
 import os
 import tempfile
 import threading
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -16,6 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent
 FEATURES_FILE = BASE_DIR / "decision_features.csv"
 CONFIG_FILE = BASE_DIR / "candidate_configs.json"
 LOCK = threading.RLock()
+LOGGER = logging.getLogger(__name__)
 
 FIELDS = [
     "timestamp", "cycle_id", "snapshot_id", "symbol", "timeframe",
@@ -93,6 +95,37 @@ def classify_session(timestamp: Any, config_path: str | Path = CONFIG_FILE) -> s
     return active[0] if active else "OFF_HOURS"
 
 
+def summarize_feature_coverage(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Return the shared technical/defined coverage contract."""
+    total = len(rows)
+
+    def percentage(field: str, *, unknown_is_filled: bool = False) -> float:
+        missing = ("", None) if unknown_is_filled else ("", None, "UNKNOWN")
+        count = sum(row.get(field) not in missing for row in rows)
+        return round(count / total * 100, 1) if total else 0.0
+
+    unknown = sum(
+        str(row.get("market_regime", "")).strip().upper() == "UNKNOWN"
+        for row in rows
+    )
+    return {
+        "snapshots": total,
+        "unique_snapshot_id": len({
+            row.get("snapshot_id") for row in rows if row.get("snapshot_id")
+        }),
+        "atr": percentage("atr"),
+        "adx": percentage("adx"),
+        "volume": percentage("volume"),
+        "market_regime_field": percentage("market_regime", unknown_is_filled=True),
+        "defined_market_regime": percentage("market_regime"),
+        "unknown_market_regime": round(unknown / total * 100, 1) if total else 0.0,
+        "session": percentage("session"),
+        "missing_features": sum(bool(row.get("missing_features")) for row in rows),
+        "unknown_rows": unknown,
+        "last_record": rows[-1].get("timestamp", "N/A") if rows else "N/A",
+    }
+
+
 def _repair_or_create(path: Path) -> None:
     if path.exists() and path.stat().st_size:
         try:
@@ -116,11 +149,19 @@ class FeatureLogger:
         timestamp = row["timestamp"] or datetime.now(timezone.utc).isoformat()
         row["timestamp"] = timestamp
         row["session"] = row["session"] or classify_session(timestamp)
-        row["market_regime"] = row["market_regime"] or classify_market_regime(row)
+        if not row["market_regime"]:
+            try:
+                row["market_regime"] = classify_market_regime(row)
+            except Exception as exc:
+                row["market_regime"] = "UNKNOWN"
+                LOGGER.warning("market regime classification failed; using UNKNOWN: %s", exc)
+        if str(row["market_regime"]).strip().upper() not in REGIMES:
+            LOGGER.warning("unsupported market regime %r; using UNKNOWN", row["market_regime"])
+            row["market_regime"] = "UNKNOWN"
         dt = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00")).astimezone(timezone.utc)
         row["hour_utc"] = row["hour_utc"] if row["hour_utc"] != "" else dt.hour
         row["weekday"] = row["weekday"] if row["weekday"] != "" else dt.weekday()
-        optional = ("atr", "adx", "volume", "market_regime", "session")
+        optional = ("atr", "adx", "volume", "session")
         missing = [name for name in optional if row.get(name) in ("", None, "UNKNOWN")]
         supplied = snapshot.get("missing_features", "")
         row["missing_features"] = ",".join(filter(None, [str(supplied), *missing]))
