@@ -93,11 +93,13 @@ class CandidateLaboratory:
         config_path: str | Path = CONFIG_FILE,
         decisions_path: str | Path = DECISIONS_FILE,
         trades_path: str | Path = TRADES_FILE,
+        track_trades: bool = True,
     ) -> None:
         self.decision_fn = decision_fn
         self.config_path = Path(config_path)
         self.decisions_path = Path(decisions_path)
         self.trades_path = Path(trades_path)
+        self.track_trades = track_trades
 
     def _configs(self) -> dict[str, Any]:
         try:
@@ -152,7 +154,7 @@ class CandidateLaboratory:
                     source, timestamp, candidate_id, config, decision,
                     trend, structure, candidate_momentum, risk, weights,
                 )
-                if self._append_decision(row):
+                if self._append_decision(row) and self.track_trades:
                     self._open_shadow_if_needed(row)
                 results.append(row)
             except Exception as exc:  # candidate isolation is a core safety property

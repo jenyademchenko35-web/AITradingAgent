@@ -1109,8 +1109,11 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
             risk=risk,
         )
         FeatureLogger().log(feature_row)
-        laboratory = CandidateLaboratory(DecisionEngine.calculate)
-        laboratory.run(
+        laboratory = CandidateLaboratory(
+            DecisionEngine.calculate,
+            track_trades=False,
+        )
+        candidate_decisions = laboratory.run(
             snapshot=feature_row,
             live_decision=decision,
             trend=trend,
@@ -1119,11 +1122,21 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
             risk=risk,
             live_weights=weights,
         )
-        laboratory.update_shadow_trades(
+        from candidate_shadow_tracker import CandidateShadowTracker
+        shadow_result = CandidateShadowTracker().process_cycle(
+            decisions=candidate_decisions,
             symbol=symbol,
             high=market.tf1h.high,
             low=market.tf1h.low,
+            close=market.tf1h.close,
             timestamp=decision_timestamp,
+        )
+        LOGGER.timestamped(
+            f"[{symbol}] Shadow tracker: opened="
+            f"{len(shadow_result['opened'])}, closed="
+            f"{len(shadow_result['closed'])}, open="
+            f"{shadow_result['open_count']}",
+            minimum="NORMAL",
         )
         build_reports()
     except Exception as exc:

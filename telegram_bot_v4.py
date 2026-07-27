@@ -67,6 +67,10 @@ from promotion_gate import format_telegram as format_promotion_gate
 from decision_intelligence import format_telegram as format_decision_learning
 from root_cause_analyzer import RootCauseAnalyzer
 from ai_research_dashboard import AIResearchDashboard
+from candidate_shadow_tracker import (
+    CandidateShadowTracker,
+    format_status as format_shadow_status,
+)
 from feature_logger import summarize_feature_coverage
 from portfolio_manager import (
     PortfolioManager,
@@ -3333,6 +3337,14 @@ async def candidate_command(
     await reply(update, format_candidate_lab_entry(candidate_id, candidate, detailed=True))
 
 
+async def shadowstatus_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Report persisted shadow state; never starts validation or trading."""
+    await reply(update, format_shadow_status(CandidateShadowTracker().status()))
+
+
 def format_candidate_lab_entry(candidate_id: str, data: Mapping[str, Any], detailed: bool = False) -> str:
     pf = data.get("profit_factor")
     lines = [
@@ -3702,6 +3714,7 @@ def build_app():
     app.add_handler(CommandHandler("experiments", experiments_command))
     app.add_handler(CommandHandler("candidate", candidate_command))
     app.add_handler(CommandHandler("candidates", candidates_command))
+    app.add_handler(CommandHandler("shadowstatus", shadowstatus_command))
     app.add_handler(CommandHandler("datafeatures", datafeatures_command))
     app.add_handler(CommandHandler("learn", learn_command))
     app.add_handler(CommandHandler("quality", quality_command))

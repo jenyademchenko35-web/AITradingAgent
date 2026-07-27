@@ -15,6 +15,7 @@ decision_diagnostics.csv
 decision_explanations.csv
 candidate_decisions.csv
 candidate_shadow_trades.csv
+candidate_shadow_open_trades.json
 decision_features.csv
 reports/candidate_laboratory.json
 reports/candidate_comparison.json

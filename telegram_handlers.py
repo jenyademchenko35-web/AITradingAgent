@@ -48,6 +48,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("walkforward", "📈 Walk Forward"),
     BotCommand("candidates", "🧪 Candidate Laboratory"),
     BotCommand("candidate", "🧪 Candidate detail"),
+    BotCommand("shadowstatus", "👤 Shadow validation status"),
     BotCommand("datafeatures", "📊 Feature coverage"),
     BotCommand("help", "❔ Помощь"),
 ]

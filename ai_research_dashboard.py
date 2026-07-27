@@ -42,6 +42,25 @@ def _number(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def load_shadow_validation(base_dir: str | Path = BASE_DIR) -> dict[str, Any]:
+    """Load tracker state without running or mutating shadow validation."""
+    from candidate_shadow_tracker import CandidateShadowTracker
+
+    root = Path(base_dir)
+    tracker = CandidateShadowTracker(
+        config_path=root / "candidate_configs.json",
+        open_trades_path=root / "candidate_shadow_open_trades.json",
+        closed_trades_path=root / "candidate_shadow_trades.csv",
+    )
+    status = tracker.status()
+    validation = tracker.validate()
+    return {
+        **status,
+        "status": "VALID" if validation["valid"] else "INVALID",
+        "errors": validation["errors"],
+    }
+
+
 def _git_branch(root: Path) -> str:
     try:
         head = (root / ".git" / "HEAD").read_text(encoding="utf-8").strip()
@@ -294,6 +313,7 @@ class AIResearchDashboard:
                 ),
             },
             "candidate": candidate,
+            "shadow_validation": load_shadow_validation(self.base_dir),
             "walk_forward": load_walk_forward(self.base_dir),
             "root_cause": root,
             "features": features,
@@ -337,6 +357,16 @@ class AIResearchDashboard:
             ])
         else:
             lines.extend(["No candidate data", ""])
+        shadow = report.get("shadow_validation", {})
+        shadow_counts = shadow.get("closed_by_strategy", {})
+        lines.extend([
+            SEPARATOR, "", "👤 Shadow Validation", "",
+            f"Status:\n{shadow.get('status', 'NOT_AVAILABLE')}", "",
+            f"Open:\n{shadow.get('open_trades', 0)}", "",
+            f"Closed:\n{shadow.get('closed_trades', 0)}", "",
+            f"LIVE_BASELINE:\n{shadow_counts.get('LIVE_BASELINE', 0)}", "",
+            f"MOMENTUM_RELAXED:\n{shadow_counts.get('MOMENTUM_RELAXED', 0)}", "",
+        ])
         walk_forward = report.get("walk_forward", {})
         lines.extend([
             SEPARATOR, "", "🔬 Walk-Forward", "",
