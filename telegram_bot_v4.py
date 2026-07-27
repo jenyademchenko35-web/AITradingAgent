@@ -185,6 +185,8 @@ ADAPTIVE_RESEARCH_REPORT_FILE = BASE_DIR / "adaptive_research_report.json"
 ADAPTIVE_RESEARCH_STATE_FILE = BASE_DIR / "adaptive_research_state.json"
 EXPERIMENT_PROMOTION_REPORT_FILE = BASE_DIR / "experiment_promotion_report.json"
 WALK_FORWARD_REPORT_FILE = BASE_DIR / "reports" / "walk_forward.json"
+WALK_FORWARD_LEGACY_DEFAULT_FILE = WALK_FORWARD_REPORT_FILE
+WALK_FORWARD_VALIDATION_REPORT_FILE = BASE_DIR / "walk_forward_report.json"
 STATS_FILE = BASE_DIR / "agent_v3_stats.json"
 TRADES_FILE = BASE_DIR / "trades.csv"
 FEATURES_FILE = BASE_DIR / "decision_features.csv"
@@ -2982,14 +2984,47 @@ def format_decisionv2_status(view: str = "") -> str:
 
 
 def format_walkforward() -> str:
-    """Format the latest persisted Shadow Walk-Forward report."""
+    """Format a persisted report only; never run validation in the bot."""
+    # Preserve the injectable legacy path used by older integrations/tests.
+    legacy_override = WALK_FORWARD_REPORT_FILE != WALK_FORWARD_LEGACY_DEFAULT_FILE
+    report = {} if legacy_override else read_json(WALK_FORWARD_VALIDATION_REPORT_FILE)
+    if report and isinstance(report.get("candidate"), dict):
+        candidate = report.get("candidate", {})
+        baseline = report.get("baseline", {})
+        comparison = report.get("comparison", {})
+        bootstrap = report.get("bootstrap", {})
+        windows = int(candidate.get("windows", 0) or 0)
+        pf = candidate.get("profit_factor")
+        pf_text = "N/A" if pf is None else str(pf)
+        return "\n".join([
+            "🔬 Walk-Forward Validation",
+            "Candidate:",
+            str(candidate.get("name", "N/A")),
+            "Status:",
+            str(report.get("status", "INSUFFICIENT_DATA")),
+            "Windows:",
+            str(windows),
+            "Out-of-Sample Trades:",
+            str(candidate.get("trades", 0)),
+            "Baseline PF:",
+            str(baseline.get("profit_factor", "N/A")),
+            "Candidate PF:",
+            pf_text,
+            "Net R:",
+            f"{candidate.get('net_r', 0)}R",
+            "Better Windows:",
+            f"{comparison.get('candidate_better_windows', 0)} / {windows}",
+            "Profitable Windows:",
+            f"{candidate.get('profitable_windows', 0)} / {windows}",
+            "Confidence:",
+            str(bootstrap.get("confidence", "LOW")),
+            "Recommendation:",
+            str(report.get("recommendation", "Do not apply to live strategy.")),
+        ])
     report = read_json(WALK_FORWARD_REPORT_FILE)
     if not report:
         return (
-            "📈 Walk Forward\n\n"
-            "Status: NO_DATA\n"
-            "Запусти read-only отчёт:\n"
-            "venv/bin/python walk_forward_validator.py"
+            "Walk-Forward Validation ещё не запускалась."
         )
     counts = report.get("verdict_counts", {})
     best = report.get("best", {})

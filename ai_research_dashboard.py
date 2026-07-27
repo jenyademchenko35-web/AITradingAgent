@@ -122,6 +122,33 @@ def _normalize_news_status(item: Mapping[str, Any]) -> str:
     return status
 
 
+def load_walk_forward(base_dir: Path) -> dict[str, Any]:
+    """Read the new walk-forward schema defensively; never break Dashboard."""
+    payload = _json(base_dir / "walk_forward_report.json")
+    if not payload or not isinstance(payload.get("status"), str):
+        return {
+            "status": "NOT_RUN", "candidate": "N/A", "oos_pf": 0.0,
+            "oos_net_r": 0.0, "better_windows": "0 / 0",
+            "profitable_windows": "0 / 0", "confidence": "LOW",
+        }
+    candidate = payload.get("candidate")
+    comparison = payload.get("comparison")
+    bootstrap = payload.get("bootstrap")
+    candidate = candidate if isinstance(candidate, Mapping) else {}
+    comparison = comparison if isinstance(comparison, Mapping) else {}
+    bootstrap = bootstrap if isinstance(bootstrap, Mapping) else {}
+    windows = int(candidate.get("windows", 0) or 0)
+    return {
+        "status": payload.get("status", "NOT_RUN"),
+        "candidate": candidate.get("name", "N/A"),
+        "oos_pf": candidate.get("profit_factor", 0),
+        "oos_net_r": _number(candidate.get("net_r")),
+        "better_windows": f"{int(comparison.get('candidate_better_windows', 0) or 0)} / {windows}",
+        "profitable_windows": f"{int(candidate.get('profitable_windows', 0) or 0)} / {windows}",
+        "confidence": bootstrap.get("confidence", "LOW"),
+    }
+
+
 def _age(path: Path, now: datetime | None = None) -> str:
     try:
         seconds = max(
@@ -267,6 +294,7 @@ class AIResearchDashboard:
                 ),
             },
             "candidate": candidate,
+            "walk_forward": load_walk_forward(self.base_dir),
             "root_cause": root,
             "features": features,
             "news": news,
@@ -309,6 +337,17 @@ class AIResearchDashboard:
             ])
         else:
             lines.extend(["No candidate data", ""])
+        walk_forward = report.get("walk_forward", {})
+        lines.extend([
+            SEPARATOR, "", "🔬 Walk-Forward", "",
+            f"Status:\n{walk_forward.get('status', 'NOT_RUN')}", "",
+            f"Candidate:\n{walk_forward.get('candidate', 'N/A')}", "",
+            f"OOS PF:\n{walk_forward.get('oos_pf', 0)}", "",
+            f"OOS Net R:\n{_number(walk_forward.get('oos_net_r')):.2f}R", "",
+            f"Better Windows:\n{walk_forward.get('better_windows', '0 / 0')}", "",
+            f"Profitable Windows:\n{walk_forward.get('profitable_windows', '0 / 0')}", "",
+            f"Confidence:\n{walk_forward.get('confidence', 'LOW')}", "",
+        ])
         lines.extend([SEPARATOR, "", "🧠 Root Cause", ""])
         causes = report.get("root_cause", {}).get("causes", [])
         lines.extend(
