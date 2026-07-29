@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.aitradingagent.watchdog</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/jeynademcenko/AITradingAgent/venv/bin/python</string>
+        <string>/Users/jeynademcenko/AITradingAgent/watchdog_agent.py</string>
+        <string>--interval</string>
+        <string>60</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/jeynademcenko/AITradingAgent</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/jeynademcenko/AITradingAgent/logs/watchdog_launchagent.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/jeynademcenko/AITradingAgent/logs/watchdog_launchagent.err.log</string>
+</dict>
+</plist>

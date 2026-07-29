@@ -63,3 +63,4 @@ trade_metrics_audit_summary.txt
 normalized_trade_metrics.csv
 adaptive_research_state.json
 .adaptive_research.lock
+.watchdog.lock
