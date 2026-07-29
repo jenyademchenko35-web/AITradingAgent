@@ -1,0 +1,10 @@
+TRADE INTELLIGENCE — READ-ONLY ANALYTICS
+Analyzed: 42
+Wins / Losses: 7 / 35
+WinRate: 16.67%
+Profit Factor: 0.26343032451850223
+Net R: -46.174
+Context FULL/PARTIAL/MISSING: 0/42/0
+Loss probable causes: {'GOOD_SETUP_BAD_OUTCOME': 21, 'STOP_TOO_TIGHT': 9, 'LATE_ENTRY': 2, 'UNKNOWN': 2, 'TAKE_PROFIT_TOO_FAR': 1}
+
+Recommendations are analytical only and are never applied automatically.
