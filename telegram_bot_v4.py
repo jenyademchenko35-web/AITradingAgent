@@ -37,7 +37,7 @@ from live_monitor.formatters import (
     load_state as load_live_monitor_state,
     state_age_text as live_state_age_text,
 )
-from notification_manager import save_chat_id
+from notification_manager import load_chat_id, save_chat_id
 from execution_simulator import (
     ExecutionSimulator,
     format_execution,
@@ -3055,6 +3055,12 @@ def format_walkforward() -> str:
     )
 
 
+def format_research_lab_v2(section: str) -> str:
+    """Read persisted research.db only; never starts research or trading."""
+    from research_lab_v2.dashboard import ResearchDashboardV2
+    return ResearchDashboardV2(BASE_DIR / "research.db").format(section)
+
+
 def with_v5_footer(text: str) -> str:
     """Append the compact UI footer when a legacy formatter is reused."""
     if "Version: v1.0 / Telegram UI v5" in text:
@@ -3136,6 +3142,8 @@ def help_text() -> str:
             "/adaptive status|recommendations|stages",
             "/promotion details",
             "/walkforward",
+            "/research_rank /features /strategies /promotions /top",
+            "/researchlab",
             "/candidates /candidate <id> /datafeatures",
             "/dataquality | /trades health",
             "/datasources",
@@ -3582,6 +3590,65 @@ async def walkforward_command(
     await reply(update, format_walkforward())
 
 
+async def research_rank_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_research_lab_v2("research_rank"))
+
+
+async def features_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_research_lab_v2("features"))
+
+
+async def strategies_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_research_lab_v2("strategies"))
+
+
+async def promotions_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_research_lab_v2("promotions"))
+
+
+async def top_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_research_lab_v2("top"))
+
+
+async def researchlab_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, format_research_lab_v2("researchlab"))
+
+
+def is_researchlab_owner(update: Update) -> bool:
+    owner_id = load_chat_id()
+    user_id = getattr(getattr(update, "effective_user", None), "id", None)
+    try:
+        return owner_id is not None and int(user_id) == int(owner_id)
+    except (TypeError, ValueError):
+        return False
+
+
+async def _researchlab_override(update: Update, *, enabled: bool | None = None,
+                                dry_run: bool | None = None) -> None:
+    if not is_researchlab_owner(update):
+        await reply(update, "Research Lab v2: owner-only command.")
+        return
+    from research_lab_v2.config import set_runtime_override
+    set_runtime_override(enabled=enabled, dry_run=dry_run)
+    await reply(update, format_research_lab_v2("researchlab"))
+
+
+async def researchlab_on_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _researchlab_override(update, enabled=True)
+
+
+async def researchlab_off_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _researchlab_override(update, enabled=False)
+
+
+async def researchlab_dry_on_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _researchlab_override(update, dry_run=True)
+
+
+async def researchlab_dry_off_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await _researchlab_override(update, dry_run=False)
+
+
 async def promotion_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3735,6 +3802,16 @@ def build_app():
     app.add_handler(CommandHandler("consensus", consensus_command))
     app.add_handler(CommandHandler("adaptive", adaptive_command))
     app.add_handler(CommandHandler("walkforward", walkforward_command))
+    app.add_handler(CommandHandler("research_rank", research_rank_command))
+    app.add_handler(CommandHandler("features", features_command))
+    app.add_handler(CommandHandler("strategies", strategies_command))
+    app.add_handler(CommandHandler("promotions", promotions_command))
+    app.add_handler(CommandHandler("top", top_command))
+    app.add_handler(CommandHandler("researchlab", researchlab_command))
+    app.add_handler(CommandHandler("researchlab_on", researchlab_on_command))
+    app.add_handler(CommandHandler("researchlab_off", researchlab_off_command))
+    app.add_handler(CommandHandler("researchlab_dry_on", researchlab_dry_on_command))
+    app.add_handler(CommandHandler("researchlab_dry_off", researchlab_dry_off_command))
     app.add_handler(CommandHandler("promotion", promotion_command))
     app.add_handler(CommandHandler("ready", ready_command))
     app.add_handler(CommandHandler("learning", learning_command))

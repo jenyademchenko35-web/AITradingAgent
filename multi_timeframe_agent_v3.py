@@ -1108,6 +1108,20 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
             momentum=momentum,
             risk=risk,
         )
+        # Carry the already-computed observer snapshot to the post-cycle lab.
+        # This only adds metadata to the result object; DecisionEngine output
+        # and all execution gates remain unchanged.
+        if _research_lab_is_enabled():
+            decision.research_feature_snapshot = {
+                **feature_row,
+                "signal": decision.signal,
+                "decision": decision.signal,
+                "trend_score": max(float(trend.long), float(trend.short)),
+                "structure_score": max(float(structure.long), float(structure.short)),
+                "momentum_score": max(float(momentum.long), float(momentum.short)),
+                "risk_score": max(float(risk.long), float(risk.short)),
+                "signal_score": float(decision.score),
+            }
         FeatureLogger().log(feature_row)
         laboratory = CandidateLaboratory(
             DecisionEngine.calculate,
@@ -1435,11 +1449,38 @@ def update_open_trades(current_prices):
                     pnl=round(pnl, 2),
                 )
 # Main analysis pipeline for one execution cycle
+def _research_lab_is_enabled():
+    try:
+        from research_lab_v2.config import get_settings
+        return bool(get_settings().enabled)
+    except Exception:
+        return False
+
+
+def _run_research_lab_observer(cycle_id, snapshots):
+    """Run the isolated observer after the normal cycle; always fail open."""
+    try:
+        if not _research_lab_is_enabled():
+            return None
+        from research_lab_v2.runtime import process_agent_cycle
+        return process_agent_cycle(cycle_id=cycle_id, snapshots=snapshots)
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({
+            "event": "research_lab_v2_error",
+            "cycle_id": cycle_id,
+            "error": str(exc),
+            "fail_open": True,
+        }, sort_keys=True))
+        return None
+
+
 def run_once():
     decisions = []
     api_errors = 0
     current_prices = {}
     analysis_contexts = {}
+    research_snapshots = []
+    research_lab_enabled = _research_lab_is_enabled()
     cycle_id = datetime.now(timezone.utc).isoformat()
     for symbol in SYMBOLS:
         analysis_started_at = datetime.now(timezone.utc)
@@ -1453,6 +1494,21 @@ def run_once():
             elapsed = t1 - t0
             LOGGER.symbol_summary(symbol, decision, elapsed)
             decisions.append((symbol, decision))
+            try:
+                if not research_lab_enabled:
+                    continue
+                from research_lab_v2.runtime import build_feature_snapshot
+                research_snapshots.append(build_feature_snapshot(
+                    cycle_id=cycle_id, symbol=symbol, decision=decision, market=market,
+                ))
+            except Exception as exc:
+                LOGGER.timestamped(json.dumps({
+                    "event": "research_lab_v2_snapshot_error",
+                    "cycle_id": cycle_id,
+                    "symbol": symbol,
+                    "error": str(exc),
+                    "fail_open": True,
+                }, sort_keys=True))
         except Exception as e:
             LOGGER.symbol_error(symbol, e)
             api_errors += 1
@@ -1488,6 +1544,7 @@ def run_once():
     LOGGER.signal_counts(counts)
 
     update_open_trades(current_prices)
+    _run_research_lab_observer(cycle_id, research_snapshots)
 
 
 # Continuous scheduler
@@ -1521,6 +1578,10 @@ if __name__ == "__main__":
     parser.add_argument("--interval", type=int, default=RUN_INTERVAL, help="Interval between runs in seconds when looping")
 
     args = parser.parse_args()
+    # Telegram runtime overrides are intentionally ephemeral. A production
+    # agent restart restores env/default configuration before the first cycle.
+    from research_lab_v2.config import clear_runtime_override
+    clear_runtime_override()
     LOGGER.startup(datetime.now(timezone.utc).isoformat())
     if args.loop:
         run_loop(args.interval)

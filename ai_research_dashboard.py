@@ -10,6 +10,7 @@ from typing import Any, Mapping
 
 from feature_logger import summarize_feature_coverage
 from root_cause_analyzer import RootCauseAnalyzer
+from research_lab_v2.dashboard import ResearchDashboardV2
 from trade_metrics_normalizer import aggregate_trade_metrics
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -368,6 +369,7 @@ class AIResearchDashboard:
             "candidate": candidate,
             "shadow_validation": load_shadow_validation(self.base_dir),
             "walk_forward": load_walk_forward(self.base_dir),
+            "research_v2": ResearchDashboardV2(self.base_dir / "research.db").build_report(),
             "root_cause": root,
             "features": features,
             "news": news,
@@ -432,6 +434,46 @@ class AIResearchDashboard:
             f"Better Windows:\n{walk_forward.get('better_windows', '0 / 0')}", "",
             f"Profitable Windows:\n{walk_forward.get('profitable_windows', '0 / 0')}", "",
             f"Confidence:\n{walk_forward.get('confidence', 'LOW')}", "",
+        ])
+        research_v2 = report.get("research_v2", {})
+        runtime_v2 = research_v2.get("runtime_status", {})
+        top_strategies = research_v2.get("top_strategies", [])
+        blocked_v2 = runtime_v2.get("blocked", {})
+        lines.extend([
+            SEPARATOR, "", "🧬 Research Lab v2", "",
+            f"Enabled:\n{'ON' if runtime_v2.get('enabled') else 'OFF'}", "",
+            f"Dry Run:\n{'ON' if runtime_v2.get('dry_run') else 'OFF'}", "",
+            "Strategies Enabled:\n" + ", ".join(runtime_v2.get("strategies_enabled", [])), "",
+            f"Runs This Cycle:\n{runtime_v2.get('runs_this_cycle', 0)}", "",
+            f"Would Open:\n{runtime_v2.get('would_open', 0)}", "",
+            f"Opened Shadow:\n{runtime_v2.get('opened_shadow', 0)}", "",
+            "Blocked:\n" + (", ".join(f"{key}={value}" for key, value in blocked_v2.items()) or "none"), "",
+            f"DB Status:\n{runtime_v2.get('database_status', 'NOT_INITIALIZED')}", "",
+            f"Last Error:\n{runtime_v2.get('last_error') or 'none'}", "",
+            f"Last Processed Cycle:\n{runtime_v2.get('last_processed_cycle', 'NEVER')}", "",
+            "TOP STRATEGIES", "",
+        ])
+        for row in top_strategies[:5]:
+            lines.extend([
+                f"{row.get('rank')}. {row.get('strategy_id')}",
+                f"PF {row.get('profit_factor')} | WR {_number(row.get('winrate')):.1f}% | "
+                f"NetR {_number(row.get('net_r')):.2f} | WF {row.get('walk_forward')}", "",
+            ])
+        if not top_strategies:
+            lines.extend(["No ranked strategies", ""])
+        best = research_v2.get("best_candidate", {})
+        progress = research_v2.get("research_progress", {})
+        lines.extend([
+            f"Best Candidate:\n{best.get('strategy_id', 'N/A')}", "",
+            f"Promotion Probability:\n{_number(research_v2.get('promotion_probability')):.1f}%", "",
+            f"Research Progress:\n{progress.get('strategy_runs', 0)} runs / "
+            f"{progress.get('registered_strategies', 0)} strategies", "",
+            "Top Features:\n" + ", ".join(
+                str(row.get("feature_name")) for row in research_v2.get("top_features", [])
+            ) if research_v2.get("top_features") else "Top Features:\nN/A", "",
+            "Worst Features:\n" + ", ".join(
+                str(row.get("feature_name")) for row in research_v2.get("worst_features", [])
+            ) if research_v2.get("worst_features") else "Worst Features:\nN/A", "",
         ])
         lines.extend([SEPARATOR, "", "🧠 Root Cause", ""])
         causes = report.get("root_cause", {}).get("causes", [])

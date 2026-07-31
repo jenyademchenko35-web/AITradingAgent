@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "candidate_configs.json"
 OPEN_TRADES_FILE = BASE_DIR / "candidate_shadow_open_trades.json"
 CLOSED_TRADES_FILE = BASE_DIR / "candidate_shadow_trades.csv"
-TRACKED_STRATEGIES = ("LIVE_BASELINE", "MOMENTUM_RELAXED")
+REQUIRED_STRATEGIES = ("LIVE_BASELINE", "MOMENTUM_RELAXED")
 LOCK = threading.RLock()
 
 TRADE_FIELDS = [
@@ -72,7 +72,7 @@ def _atomic_json(path: Path, payload: Any) -> None:
 
 
 class CandidateShadowTracker:
-    """Track only LIVE_BASELINE and MOMENTUM_RELAXED paper positions."""
+    """Track any explicitly configured, enabled shadow-only strategy."""
 
     def __init__(
         self, *, config_path: str | Path = CONFIG_FILE,
@@ -94,11 +94,11 @@ class CandidateShadowTracker:
         if not isinstance(payload, Mapping):
             return {}
         return {
-            name: dict(payload[name])
-            for name in TRACKED_STRATEGIES
-            if isinstance(payload.get(name), Mapping)
-            and payload[name].get("enabled") is True
-            and payload[name].get("shadow_only") is True
+            str(name).upper(): dict(config)
+            for name, config in payload.items()
+            if isinstance(config, Mapping)
+            and config.get("enabled") is True
+            and config.get("shadow_only") is True
         }
 
     def load_open_trades(self) -> list[dict[str, Any]]:
@@ -260,6 +260,7 @@ class CandidateShadowTracker:
                     "market_regime": decision.get("market_regime", ""),
                     "session": decision.get("session", ""),
                     "source_snapshot_id": decision.get("source_snapshot_id", ""),
+                    "feature_snapshot": decision.get("feature_snapshot", {}),
                     "shadow_only": True,
                 }
                 remaining.append(trade)
@@ -290,7 +291,7 @@ class CandidateShadowTracker:
     def validate(self) -> dict[str, Any]:
         errors: list[str] = []
         configs = self.load_configs()
-        for name in TRACKED_STRATEGIES:
+        for name in REQUIRED_STRATEGIES:
             if name not in configs:
                 errors.append(f"{name}: enabled shadow-only config not found")
         open_rows = self.load_open_trades()

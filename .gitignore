@@ -57,6 +57,12 @@ research_consensus.csv
 research_orchestrator.log
 research_orchestrator_evidence.csv
 research_orchestrator_conflicts.csv
+research.db
+research.db-wal
+research.db-shm
+research_lab_v2_status.json
+research_lab_v2_shadow_open.json
+research_lab_v2_runtime_override.json
 shadow_replay_trades.csv
 trade_metrics_audit.json
 trade_metrics_audit_summary.txt

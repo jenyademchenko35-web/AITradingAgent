@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from feature_logger import classify_market_regime, classify_session
+from strategies import registry
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "candidate_configs.json"
@@ -154,6 +155,15 @@ class CandidateLaboratory:
                     source, timestamp, candidate_id, config, decision,
                     trend, structure, candidate_momentum, risk, weights,
                 )
+                strategy = registry.get(candidate_id)
+                if strategy and strategy.shadow_only:
+                    gate = strategy.evaluate({**source, **row})
+                    if not gate.get("accepted", False):
+                        row["decision"] = "WAIT"
+                        row["primary_blocker"] = " | ".join(gate.get("reasons", []))
+                # Retained in memory/open JSON and research.db. The legacy CSV
+                # schema intentionally remains unchanged for compatibility.
+                row["feature_snapshot"] = deepcopy(source)
                 if self._append_decision(row) and self.track_trades:
                     self._open_shadow_if_needed(row)
                 results.append(row)
@@ -202,7 +212,9 @@ class CandidateLaboratory:
             if key in existing:
                 return False
             with self.decisions_path.open("a", newline="", encoding="utf-8") as stream:
-                csv.DictWriter(stream, fieldnames=DECISION_FIELDS).writerow(row)
+                csv.DictWriter(
+                    stream, fieldnames=DECISION_FIELDS, extrasaction="ignore",
+                ).writerow(row)
                 stream.flush()
                 os.fsync(stream.fileno())
             return True
