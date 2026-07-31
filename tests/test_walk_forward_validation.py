@@ -1,5 +1,6 @@
 import csv
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -37,6 +38,16 @@ def write_config(path: Path):
             "overrides": {"momentum_threshold_delta": -2},
         }
     }), encoding="utf-8")
+
+
+def timed_trade(index, count, strategy, start, end):
+    fraction = index / (count - 1)
+    stamp = start + (end - start) * fraction
+    return {
+        **trade(index, strategy, 1 if index % 3 == 0 else -0.4),
+        "closed_at": stamp.isoformat().replace("+00:00", "Z"),
+        "shadow_trade_id": f"{strategy}-{index}",
+    }
 
 
 def test_data_is_sorted_by_time():
@@ -197,6 +208,37 @@ def test_validation_builds_three_shared_time_windows_with_107_per_strategy(tmp_p
     assert len(windows) == 6
 
 
+def test_server_time_range_with_107_baseline_and_120_candidate_builds_three_windows(tmp_path):
+    source, config = tmp_path / "trades.csv", tmp_path / "config.json"
+    overlap_start = datetime(2026, 7, 27, 22, 28, 28, tzinfo=timezone.utc)
+    overlap_end = datetime(2026, 7, 31, 7, 11, 30, tzinfo=timezone.utc)
+    rows = [
+        timed_trade(i, 107, "LIVE_BASELINE", overlap_start, overlap_end)
+        for i in range(107)
+    ] + [
+        timed_trade(i, 120, "MOMENTUM_RELAXED", overlap_start, overlap_end)
+        for i in range(120)
+    ]
+    write_csv(source, rows)
+    write_config(config)
+
+    report, window_rows = wfv.run_validation(
+        data_path=source, config_path=config,
+        train_size=60, test_size=15, step_size=15,
+    )
+
+    assert report["status"] != "INSUFFICIENT_WALK_FORWARD_WINDOWS"
+    assert report["configuration"]["possible_windows"] == 3
+    assert report["candidate"]["windows"] == 3
+    assert len(window_rows) == 6
+    assert {row["window_id"] for row in window_rows} == {1, 2, 3}
+    candidate_windows = [
+        row for row in window_rows if row["strategy"] == "MOMENTUM_RELAXED"
+    ]
+    for previous, current in zip(candidate_windows, candidate_windows[1:]):
+        assert previous["test_end"] <= current["test_start"]
+
+
 def test_shared_windows_have_equal_periods_and_no_leakage():
     baseline = prepared(107, "LIVE_BASELINE")
     candidate = prepared(107, "MOMENTUM_RELAXED")
@@ -257,3 +299,23 @@ def test_dashboard_shows_reason_instead_of_zero_metrics(tmp_path):
     assert loaded["oos_pf"] is None
     assert loaded["better_windows"] == "N/A"
     assert "3 are required" in loaded["reason"]
+
+
+def test_dashboard_rejects_report_after_source_csv_changes(tmp_path):
+    source, config = tmp_path / "trades.csv", tmp_path / "config.json"
+    rows = [trade(i, "LIVE_BASELINE") for i in range(107)]
+    rows += [trade(i, "MOMENTUM_RELAXED") for i in range(107)]
+    write_csv(source, rows)
+    write_config(config)
+    report, windows = wfv.run_validation(data_path=source, config_path=config)
+    wfv.save_outputs(
+        report, windows, tmp_path / "walk_forward_report.json",
+        tmp_path / "walk_forward_summary.txt", tmp_path / "walk_forward_windows.csv",
+    )
+    assert load_walk_forward(tmp_path)["status"] != "STALE_WALK_FORWARD_REPORT"
+
+    source.write_text(source.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    loaded = load_walk_forward(tmp_path)
+    assert loaded["status"] == "STALE_WALK_FORWARD_REPORT"
+    assert loaded["oos_pf"] is None
+    assert "explicitly" in loaded["reason"]

@@ -141,6 +141,48 @@ def _normalize_news_status(item: Mapping[str, Any]) -> str:
     return status
 
 
+def _walk_forward_stale_reason(base_dir: Path, payload: Mapping[str, Any]) -> str | None:
+    """Explain when a persisted validation report no longer matches its input."""
+    source_value = payload.get("data_source")
+    if not source_value:
+        return None
+    source = Path(str(source_value))
+    if not source.is_absolute():
+        source = base_dir / source
+    try:
+        current = source.stat()
+    except OSError:
+        return None
+
+    audit = payload.get("data_audit")
+    audit = audit if isinstance(audit, Mapping) else {}
+    snapshot = audit.get("source_snapshot")
+    snapshot = snapshot if isinstance(snapshot, Mapping) else {}
+    if snapshot:
+        expected_size = int(snapshot.get("size_bytes", -1) or -1)
+        expected_mtime = int(snapshot.get("mtime_ns", -1) or -1)
+        if current.st_size != expected_size or current.st_mtime_ns != expected_mtime:
+            return (
+                "Walk-forward report is stale: its source CSV changed after validation. "
+                "Run walk_forward_validation.py explicitly."
+            )
+        return None
+
+    generated_at = str(payload.get("generated_at") or "").strip()
+    try:
+        generated = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+        if generated.tzinfo is None:
+            generated = generated.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    if current.st_mtime > generated.timestamp():
+        return (
+            "Walk-forward report predates its source CSV and may be stale. "
+            "Run walk_forward_validation.py explicitly."
+        )
+    return None
+
+
 def load_walk_forward(base_dir: Path) -> dict[str, Any]:
     """Read the new walk-forward schema defensively; never break Dashboard."""
     payload = _json(base_dir / "walk_forward_report.json")
@@ -150,6 +192,14 @@ def load_walk_forward(base_dir: Path) -> dict[str, Any]:
             "oos_net_r": None, "better_windows": "N/A",
             "profitable_windows": "N/A", "confidence": "LOW",
             "reason": "Walk-forward report is missing or invalid.",
+        }
+    stale_reason = _walk_forward_stale_reason(base_dir, payload)
+    if stale_reason:
+        return {
+            "status": "STALE_WALK_FORWARD_REPORT", "candidate": "N/A",
+            "oos_pf": None, "oos_net_r": None, "better_windows": "N/A",
+            "profitable_windows": "N/A", "confidence": "LOW",
+            "reason": stale_reason,
         }
     candidate = payload.get("candidate")
     comparison = payload.get("comparison")

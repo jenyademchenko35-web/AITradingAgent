@@ -243,6 +243,16 @@ def load_trades(path: str | Path) -> tuple[list[dict[str, Any]], dict[str, Any]]
                      skip_reasons={"file_not_found": 1}, read_error="file_not_found")
         return [], audit
     try:
+        source_stat = source.stat()
+        audit["source_snapshot"] = {
+            "size_bytes": source_stat.st_size,
+            "mtime_ns": source_stat.st_mtime_ns,
+        }
+    except OSError:
+        # The normal read-error path below remains authoritative if the source
+        # disappears between the existence check and opening it.
+        pass
+    try:
         with source.open(newline="", encoding="utf-8-sig") as stream:
             rows = list(csv.DictReader(stream))
     except (OSError, csv.Error, UnicodeError) as exc:
@@ -414,9 +424,11 @@ def _finite_pf(value: Any) -> float:
 
 
 def _json_value(value: Any) -> Any:
-    if isinstance(value, float) and math.isinf(value):
-        return "INF"
     if isinstance(value, float):
+        if math.isinf(value):
+            return "INF"
+        if math.isnan(value):
+            return None
         return round(value, 6)
     if isinstance(value, dict):
         return {key: _json_value(item) for key, item in value.items()}
