@@ -16,7 +16,7 @@ import statistics
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -43,6 +43,7 @@ WINDOW_FIELDS = (
     "window_id", "train_start", "train_end", "test_start", "test_end",
     "strategy", "trades", "wins", "losses", "winrate", "profit_factor",
     "net_r", "average_r", "max_drawdown_r", "profitable", "market_regime",
+    "closed_trades", "candidate_better_than_baseline", "candidate_profitable",
 )
 
 
@@ -53,6 +54,15 @@ class Window:
     train_end: int
     test_start: int
     test_end: int
+
+
+@dataclass(frozen=True)
+class TimeWindow:
+    window_id: int
+    train_start: datetime
+    train_end: datetime
+    test_start: datetime
+    test_end: datetime
 
 
 def _number(value: Any) -> float | None:
@@ -122,20 +132,23 @@ def normalize_trade(row: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str 
     if status not in {"WIN", "LOSS", "CLOSED", "PROFIT", "STOPPED", "TP", "SL"}:
         return None, "invalid_status"
     timestamp = _parse_timestamp(_first(
-        row, "closed_at", "exit_time", "timestamp", "time", "opened_at",
+        row, "closed_at", "close_time", "exit_time", "timestamp", "time", "opened_at",
     ))
     if timestamp is None:
         return None, "invalid_timestamp"
     result_r = _number(_first(row, "pnl_r", "result_r", "net_r", "r_result", "rr_result"))
     if result_r is None:
         return None, "missing_result_r"
-    strategy = _canonical_strategy(_first(row, "candidate_id", "strategy", "candidate"))
+    strategy = _canonical_strategy(_first(
+        row, "candidate_id", "strategy_name", "strategy", "candidate",
+    ))
     if not strategy:
         return None, "missing_strategy"
     side = str(_first(row, "direction", "side") or "").strip().upper()
     if side not in {"LONG", "SHORT"}:
         side = "UNKNOWN"
     normalized = {
+        "trade_id": str(_first(row, "shadow_trade_id", "trade_id", "id") or "").strip(),
         "timestamp": timestamp.isoformat(),
         "_timestamp": timestamp,
         "symbol": str(_first(row, "symbol", "pair") or "UNKNOWN").strip().upper(),
@@ -174,30 +187,50 @@ def prepare_trades(rows: Iterable[Mapping[str, Any]]) -> tuple[list[dict[str, An
     prepared: list[dict[str, Any]] = []
     reasons: Counter[str] = Counter()
     seen: set[tuple[Any, ...]] = set()
+    raw_strategies: Counter[str] = Counter()
+    valid_strategies: Counter[str] = Counter()
+    closed_rows = 0
     rows_read = 0
     for row in rows:
         rows_read += 1
+        status = str(_first(row, "status", "result", "trade_status") or "").strip().upper()
+        if status in {"WIN", "LOSS", "CLOSED", "PROFIT", "STOPPED", "TP", "SL"}:
+            closed_rows += 1
+        raw_strategy = _canonical_strategy(_first(
+            row, "candidate_id", "strategy_name", "strategy", "candidate",
+        ))
+        if raw_strategy:
+            raw_strategies[raw_strategy] += 1
         trade, reason = normalize_trade(row)
         if trade is None:
             reasons[reason or "invalid_row"] += 1
             continue
-        key = (
-            trade["timestamp"], trade["symbol"], trade["side"],
+        key = (("trade_id", trade["trade_id"]) if trade["trade_id"] else (
+            "legacy", trade["timestamp"], trade["symbol"], trade["side"],
             trade["strategy"], round(trade["result_r"], 10),
-        )
+        ))
         if key in seen:
             reasons["duplicate"] += 1
             continue
         seen.add(key)
         prepared.append(trade)
+        valid_strategies[trade["strategy"]] += 1
     prepared.sort(key=lambda item: (
         item["_timestamp"], item["symbol"], item["side"], item["strategy"],
     ))
     audit = {
         "rows_read": rows_read,
+        "closed_rows": closed_rows,
         "valid_closed_trades": len(prepared),
         "rows_skipped": sum(reasons.values()),
         "skip_reasons": dict(sorted(reasons.items())),
+        "rows_by_strategy": dict(sorted(raw_strategies.items())),
+        "valid_by_strategy": dict(sorted(valid_strategies.items())),
+        "filter_stages": {
+            "total_rows": rows_read,
+            "closed_status_rows": closed_rows,
+            "normalized_valid_rows": len(prepared),
+        },
     }
     return prepared, audit
 
@@ -257,6 +290,74 @@ def build_windows(
     return windows, {
         "train_size": train_size, "test_size": test_size, "step_size": step_size,
         "min_test_trades": min_test_trades,
+    }
+
+
+def build_time_windows(
+    baseline: Sequence[Mapping[str, Any]], candidate: Sequence[Mapping[str, Any]],
+    train_size: int = DEFAULT_TRAIN_SIZE, test_size: int = DEFAULT_TEST_SIZE,
+    step_size: int = DEFAULT_STEP_SIZE, min_test_trades: int = DEFAULT_MIN_TEST_TRADES,
+) -> tuple[list[TimeWindow], dict[str, int]]:
+    """Build expanding, non-overlapping OOS periods shared by both strategies."""
+    minimum_required = MIN_TRAIN_SIZE + MIN_WINDOWS * min_test_trades
+    sample_size = min(len(baseline), len(candidate))
+    resolved_train = max(MIN_TRAIN_SIZE, int(train_size))
+    resolved_test = max(min_test_trades, int(test_size))
+    if sample_size < resolved_train + MIN_WINDOWS * resolved_test:
+        resolved_train = MIN_TRAIN_SIZE
+        resolved_test = min_test_trades
+
+    timestamps = sorted({
+        row["_timestamp"] for row in [*baseline, *candidate]
+    })
+    windows: list[TimeWindow] = []
+    if sample_size < minimum_required or not timestamps:
+        return windows, {
+            "train_size": resolved_train, "test_size": resolved_test,
+            "step_size": resolved_test, "min_test_trades": min_test_trades,
+            "minimum_required_per_strategy": minimum_required,
+            "possible_windows": 0,
+        }
+
+    def count_before(rows: Sequence[Mapping[str, Any]], boundary: datetime) -> int:
+        return sum(row["_timestamp"] < boundary for row in rows)
+
+    boundary_index = next((
+        index for index, stamp in enumerate(timestamps)
+        if count_before(baseline, stamp) >= resolved_train
+        and count_before(candidate, stamp) >= resolved_train
+    ), None)
+    if boundary_index is None:
+        return windows, {
+            "train_size": resolved_train, "test_size": resolved_test,
+            "step_size": resolved_test, "min_test_trades": min_test_trades,
+            "minimum_required_per_strategy": minimum_required,
+            "possible_windows": 0,
+        }
+
+    train_start = timestamps[0]
+    test_start = timestamps[boundary_index]
+    while len(windows) < MIN_WINDOWS:
+        endpoints = timestamps[boundary_index + 1:] + [timestamps[-1] + timedelta(microseconds=1)]
+        test_end = next((
+            stamp for stamp in endpoints
+            if sum(test_start <= row["_timestamp"] < stamp for row in baseline) >= resolved_test
+            and sum(test_start <= row["_timestamp"] < stamp for row in candidate) >= resolved_test
+        ), None)
+        if test_end is None:
+            break
+        windows.append(TimeWindow(
+            len(windows) + 1, train_start, test_start, test_start, test_end,
+        ))
+        if len(windows) >= MIN_WINDOWS or test_end not in timestamps:
+            break
+        boundary_index = timestamps.index(test_end)
+        test_start = test_end
+    return windows, {
+        "train_size": resolved_train, "test_size": resolved_test,
+        "step_size": resolved_test, "min_test_trades": min_test_trades,
+        "minimum_required_per_strategy": minimum_required,
+        "possible_windows": len(windows),
     }
 
 
@@ -331,22 +432,35 @@ def _dominant_regime(trades: Sequence[Mapping[str, Any]]) -> str:
 
 def evaluate_windows(
     baseline: Sequence[Mapping[str, Any]], candidate: Sequence[Mapping[str, Any]],
-    windows: Sequence[Window],
+    windows: Sequence[Window | TimeWindow],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     rows: list[dict[str, Any]] = []
     baseline_oos: list[dict[str, Any]] = []
     candidate_oos: list[dict[str, Any]] = []
     for window in windows:
+        slices: list[tuple[str, list[Mapping[str, Any]], list[Mapping[str, Any]], list[dict[str, Any]]]] = []
         for strategy, source, collector in (
             ("LIVE_BASELINE", baseline, baseline_oos),
             (candidate[0]["strategy"] if candidate else "CANDIDATE", candidate, candidate_oos),
         ):
-            train = source[window.train_start:window.train_end]
-            test = source[window.test_start:window.test_end]
+            if isinstance(window, TimeWindow):
+                train = [row for row in source if window.train_start <= row["_timestamp"] < window.train_end]
+                test = [row for row in source if window.test_start <= row["_timestamp"] < window.test_end]
+            else:
+                train = list(source[window.train_start:window.train_end])
+                test = list(source[window.test_start:window.test_end])
             if not test:
                 continue
             collector.extend(test)
-            metrics = calculate_metrics(test)
+            slices.append((strategy, train, test, collector))
+        metrics_by_strategy = {
+            strategy: calculate_metrics(test) for strategy, _, test, _ in slices
+        }
+        baseline_pf = _finite_pf(metrics_by_strategy.get("LIVE_BASELINE", {}).get("profit_factor"))
+        candidate_strategy = candidate[0]["strategy"] if candidate else "CANDIDATE"
+        candidate_pf = _finite_pf(metrics_by_strategy.get(candidate_strategy, {}).get("profit_factor"))
+        for strategy, train, test, _ in slices:
+            metrics = metrics_by_strategy[strategy]
             rows.append({
                 "window_id": window.window_id,
                 "train_start": train[0]["timestamp"] if train else "",
@@ -354,8 +468,11 @@ def evaluate_windows(
                 "test_start": test[0]["timestamp"],
                 "test_end": test[-1]["timestamp"],
                 "strategy": strategy,
+                "closed_trades": metrics["trades"],
                 **metrics,
                 "profitable": metrics["net_r"] > 0,
+                "candidate_better_than_baseline": candidate_pf > baseline_pf,
+                "candidate_profitable": metrics_by_strategy.get(candidate_strategy, {}).get("net_r", 0) > 0,
                 "market_regime": _dominant_regime(test),
             })
     return rows, baseline_oos, candidate_oos
@@ -540,11 +657,12 @@ def confidence_label(bootstrap: Mapping[str, Any]) -> str:
 
 def _empty_report(
     status: str, candidate_id: str, candidate_config: Mapping[str, Any] | None,
-    audit: Mapping[str, Any], configuration: Mapping[str, Any],
+    audit: Mapping[str, Any], configuration: Mapping[str, Any], reason: str | None = None,
 ) -> dict[str, Any]:
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "status": status,
+        "reason": reason or status,
         "data_source": audit.get("data_source"),
         "data_audit": dict(audit),
         "configuration": {
@@ -581,21 +699,47 @@ def run_validation(
         ), []
     baseline = [row for row in trades if row["strategy"] == "LIVE_BASELINE"]
     candidate_rows = [row for row in trades if row["strategy"] == candidate_id]
+    audit = {
+        **audit,
+        "target_strategy_counts": {
+            "LIVE_BASELINE": len(baseline), candidate_id: len(candidate_rows),
+        },
+    }
+    audit["filter_stages"] = {
+        **audit.get("filter_stages", {}),
+        "target_strategies_valid": len(baseline) + len(candidate_rows),
+    }
     if not baseline or not candidate_rows:
+        if not trades and audit.get("skip_reasons", {}).get("invalid_timestamp"):
+            reason = "No valid timestamps remain after filtering."
+        elif not baseline:
+            reason = f"LIVE_BASELINE has {len(baseline)} valid trades; at least {MIN_TRAIN_SIZE + MIN_WINDOWS * min_test_trades} are required."
+        else:
+            reason = f"{candidate_id} has {len(candidate_rows)} valid trades; at least {MIN_TRAIN_SIZE + MIN_WINDOWS * min_test_trades} are required."
         return _empty_report(
-            "INSUFFICIENT_DATA", candidate_id, candidate_config, audit, requested,
+            "INSUFFICIENT_DATA", candidate_id, candidate_config, audit, requested, reason,
         ), []
     sample_size = min(len(baseline), len(candidate_rows))
-    baseline = baseline[:sample_size]
-    candidate_rows = candidate_rows[:sample_size]
-    windows, resolved = build_windows(
-        sample_size, train_size, test_size, step_size, min_test_trades,
+    windows, resolved = build_time_windows(
+        baseline, candidate_rows, train_size, test_size, step_size, min_test_trades,
     )
-    configuration = {**requested, **resolved, "sample_size_per_strategy": sample_size}
+    configuration = {
+        **requested, **resolved, "sample_size_per_strategy": sample_size,
+        "valid_baseline_trades": len(baseline),
+        "valid_candidate_trades": len(candidate_rows),
+        "window_basis": "shared_utc_time_periods",
+    }
+    audit["filter_stages"]["walk_forward_eligible"] = len(baseline) + len(candidate_rows)
     if len(windows) < MIN_WINDOWS:
+        minimum = resolved["minimum_required_per_strategy"]
+        reason = (
+            f"Only {len(windows)} shared chronological windows are possible after filtering; "
+            f"{MIN_WINDOWS} are required. Valid trades: LIVE_BASELINE={len(baseline)}, "
+            f"{candidate_id}={len(candidate_rows)}; minimum per strategy={minimum}."
+        )
         return _empty_report(
             "INSUFFICIENT_WALK_FORWARD_WINDOWS", candidate_id,
-            candidate_config, audit, configuration,
+            candidate_config, audit, configuration, reason,
         ), []
     window_rows, baseline_oos, candidate_oos = evaluate_windows(
         baseline, candidate_rows, windows,
@@ -647,6 +791,7 @@ def run_validation(
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "status": status,
+        "reason": "Validation completed with shared chronological OOS windows.",
         "data_source": str(source),
         "data_audit": audit,
         "configuration": {
@@ -676,9 +821,13 @@ def format_summary(report: Mapping[str, Any]) -> str:
         "WALK-FORWARD VALIDATION",
         f"Candidate: {candidate.get('name', 'N/A')}",
         f"Status: {report.get('status', 'INSUFFICIENT_DATA')}",
+        f"Reason: {report.get('reason', 'N/A')}",
         f"Data Source: {report.get('data_source', 'N/A')}",
         f"Rows Read: {audit.get('rows_read', 0)}",
         f"Valid Closed Trades: {audit.get('valid_closed_trades', 0)}",
+        f"Closed Rows: {audit.get('closed_rows', 0)}",
+        f"Rows By Strategy: {json.dumps(audit.get('rows_by_strategy', {}), ensure_ascii=False)}",
+        f"Valid By Strategy: {json.dumps(audit.get('valid_by_strategy', {}), ensure_ascii=False)}",
         f"Rows Skipped: {audit.get('rows_skipped', 0)}",
         f"Skip Reasons: {json.dumps(audit.get('skip_reasons', {}), ensure_ascii=False)}",
         f"Windows: {windows}",

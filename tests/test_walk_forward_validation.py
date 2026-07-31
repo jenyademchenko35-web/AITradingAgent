@@ -71,6 +71,14 @@ def test_duplicates_are_excluded():
     assert audit["skip_reasons"]["duplicate"] == 1
 
 
+def test_distinct_shadow_trade_ids_are_not_collapsed():
+    first = {**trade(0), "shadow_trade_id": "shadow-1"}
+    second = {**trade(0), "shadow_trade_id": "shadow-2"}
+    rows, audit = wfv.prepare_trades([first, second])
+    assert len(rows) == 2
+    assert audit["skip_reasons"].get("duplicate", 0) == 0
+
+
 def test_open_trades_are_excluded():
     rows, audit = wfv.prepare_trades([trade(0, status="OPEN")])
     assert rows == []
@@ -175,3 +183,77 @@ def test_bootstrap_is_reproducible():
     first = wfv.bootstrap_analysis(candidate, baseline, seed=17)
     second = wfv.bootstrap_analysis(candidate, baseline, seed=17)
     assert first == second
+
+
+def test_validation_builds_three_shared_time_windows_with_107_per_strategy(tmp_path):
+    source, config = tmp_path / "trades.csv", tmp_path / "config.json"
+    rows = [trade(i, "LIVE_BASELINE", 1 if i % 3 == 0 else -0.4) for i in range(107)]
+    rows += [trade(i, "MOMENTUM_RELAXED", 1 if i % 2 == 0 else -0.5) for i in range(107)]
+    write_csv(source, rows)
+    write_config(config)
+    report, windows = wfv.run_validation(data_path=source, config_path=config)
+    assert report["configuration"]["possible_windows"] == 3
+    assert report["candidate"]["windows"] == 3
+    assert len(windows) == 6
+
+
+def test_shared_windows_have_equal_periods_and_no_leakage():
+    baseline = prepared(107, "LIVE_BASELINE")
+    candidate = prepared(107, "MOMENTUM_RELAXED")
+    windows, _ = wfv.build_time_windows(baseline, candidate)
+    rows, _, _ = wfv.evaluate_windows(baseline, candidate, windows)
+    for window in windows:
+        assert window.train_end == window.test_start
+        assert window.test_start < window.test_end
+    for window_id in range(1, 4):
+        pair = [row for row in rows if row["window_id"] == window_id]
+        assert len(pair) == 2
+        assert pair[0]["test_start"] == pair[1]["test_start"]
+        assert pair[0]["test_end"] == pair[1]["test_end"]
+
+
+def test_exact_minimum_sample_includes_final_oos_trade():
+    baseline = prepared(105, "LIVE_BASELINE")
+    candidate = prepared(105, "MOMENTUM_RELAXED")
+    windows, config = wfv.build_time_windows(baseline, candidate)
+    rows, baseline_oos, candidate_oos = wfv.evaluate_windows(baseline, candidate, windows)
+    assert config["possible_windows"] == 3
+    assert len(rows) == 6
+    assert len(baseline_oos) == len(candidate_oos) == 45
+
+
+def test_alias_columns_and_invalid_rows_are_diagnosed():
+    good = {
+        "close_time": "2026-01-01T00:00:00Z", "strategy_name": "momentum relaxed",
+        "result": "WIN", "pnl_r": "1.2", "symbol": "BTC/USDT", "side": "LONG",
+    }
+    rows, audit = wfv.prepare_trades([good, {**good, "close_time": "bad"}])
+    assert rows[0]["strategy"] == "MOMENTUM_RELAXED"
+    assert audit["closed_rows"] == 2
+    assert audit["skip_reasons"] == {"invalid_timestamp": 1}
+    assert audit["rows_by_strategy"] == {"MOMENTUM_RELAXED": 2}
+    assert audit["valid_by_strategy"] == {"MOMENTUM_RELAXED": 1}
+
+
+def test_insufficient_windows_include_actionable_reason(tmp_path):
+    source, config = tmp_path / "trades.csv", tmp_path / "config.json"
+    rows = [trade(i, "LIVE_BASELINE") for i in range(70)]
+    rows += [trade(i, "MOMENTUM_RELAXED") for i in range(70)]
+    write_csv(source, rows)
+    write_config(config)
+    report, windows = wfv.run_validation(data_path=source, config_path=config)
+    assert report["status"] == "INSUFFICIENT_WALK_FORWARD_WINDOWS"
+    assert "minimum per strategy=105" in report["reason"]
+    assert windows == []
+
+
+def test_dashboard_shows_reason_instead_of_zero_metrics(tmp_path):
+    (tmp_path / "walk_forward_report.json").write_text(json.dumps({
+        "status": "INSUFFICIENT_WALK_FORWARD_WINDOWS",
+        "reason": "Only 0 shared windows; 3 are required.",
+        "candidate": {"name": "Momentum Relaxed"},
+    }), encoding="utf-8")
+    loaded = load_walk_forward(tmp_path)
+    assert loaded["oos_pf"] is None
+    assert loaded["better_windows"] == "N/A"
+    assert "3 are required" in loaded["reason"]

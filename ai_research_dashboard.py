@@ -146,9 +146,10 @@ def load_walk_forward(base_dir: Path) -> dict[str, Any]:
     payload = _json(base_dir / "walk_forward_report.json")
     if not payload or not isinstance(payload.get("status"), str):
         return {
-            "status": "NOT_RUN", "candidate": "N/A", "oos_pf": 0.0,
-            "oos_net_r": 0.0, "better_windows": "0 / 0",
-            "profitable_windows": "0 / 0", "confidence": "LOW",
+            "status": "NOT_RUN", "candidate": "N/A", "oos_pf": None,
+            "oos_net_r": None, "better_windows": "N/A",
+            "profitable_windows": "N/A", "confidence": "LOW",
+            "reason": "Walk-forward report is missing or invalid.",
         }
     candidate = payload.get("candidate")
     comparison = payload.get("comparison")
@@ -157,14 +158,16 @@ def load_walk_forward(base_dir: Path) -> dict[str, Any]:
     comparison = comparison if isinstance(comparison, Mapping) else {}
     bootstrap = bootstrap if isinstance(bootstrap, Mapping) else {}
     windows = int(candidate.get("windows", 0) or 0)
+    has_windows = windows > 0
     return {
         "status": payload.get("status", "NOT_RUN"),
         "candidate": candidate.get("name", "N/A"),
-        "oos_pf": candidate.get("profit_factor", 0),
-        "oos_net_r": _number(candidate.get("net_r")),
-        "better_windows": f"{int(comparison.get('candidate_better_windows', 0) or 0)} / {windows}",
-        "profitable_windows": f"{int(candidate.get('profitable_windows', 0) or 0)} / {windows}",
+        "oos_pf": candidate.get("profit_factor") if has_windows else None,
+        "oos_net_r": _number(candidate.get("net_r")) if has_windows else None,
+        "better_windows": f"{int(comparison.get('candidate_better_windows', 0) or 0)} / {windows}" if has_windows else "N/A",
+        "profitable_windows": f"{int(candidate.get('profitable_windows', 0) or 0)} / {windows}" if has_windows else "N/A",
         "confidence": bootstrap.get("confidence", "LOW"),
+        "reason": payload.get("reason") or ("Validation produced no OOS windows." if not has_windows else ""),
     }
 
 
@@ -368,12 +371,14 @@ class AIResearchDashboard:
             f"MOMENTUM_RELAXED:\n{shadow_counts.get('MOMENTUM_RELAXED', 0)}", "",
         ])
         walk_forward = report.get("walk_forward", {})
+        has_oos = walk_forward.get("oos_pf") is not None
         lines.extend([
             SEPARATOR, "", "🔬 Walk-Forward", "",
             f"Status:\n{walk_forward.get('status', 'NOT_RUN')}", "",
             f"Candidate:\n{walk_forward.get('candidate', 'N/A')}", "",
-            f"OOS PF:\n{walk_forward.get('oos_pf', 0)}", "",
-            f"OOS Net R:\n{_number(walk_forward.get('oos_net_r')):.2f}R", "",
+            f"Reason:\n{walk_forward.get('reason', 'N/A')}", "",
+            f"OOS PF:\n{walk_forward.get('oos_pf') if has_oos else 'N/A'}", "",
+            f"OOS Net R:\n{_number(walk_forward.get('oos_net_r')):.2f}R" if has_oos else "OOS Net R:\nN/A", "",
             f"Better Windows:\n{walk_forward.get('better_windows', '0 / 0')}", "",
             f"Profitable Windows:\n{walk_forward.get('profitable_windows', '0 / 0')}", "",
             f"Confidence:\n{walk_forward.get('confidence', 'LOW')}", "",
