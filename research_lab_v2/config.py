@@ -13,6 +13,7 @@ RESEARCH_LAB_DB_PATH = "research.db"
 RESEARCH_LAB_PROCESS_EVERY_N_CYCLES = 1
 RESEARCH_LAB_RANK_EVERY_N_CYCLES = 12
 RESEARCH_LAB_FEATURE_ANALYSIS_EVERY_N_CLOSED = 100
+RESEARCH_LAB_SIGNAL_COOLDOWN_MINUTES = 60
 MAX_ENABLED_SHADOW_STRATEGIES = 3
 MAX_OPEN_SHADOW_TRADES_TOTAL = 12
 MAX_OPEN_SHADOW_TRADES_PER_STRATEGY = 4
@@ -43,6 +44,7 @@ class ResearchLabSettings:
     process_every_n_cycles: int = RESEARCH_LAB_PROCESS_EVERY_N_CYCLES
     rank_every_n_cycles: int = RESEARCH_LAB_RANK_EVERY_N_CYCLES
     feature_analysis_every_n_closed: int = RESEARCH_LAB_FEATURE_ANALYSIS_EVERY_N_CLOSED
+    signal_cooldown_minutes: int = RESEARCH_LAB_SIGNAL_COOLDOWN_MINUTES
     max_enabled_shadow_strategies: int = MAX_ENABLED_SHADOW_STRATEGIES
     max_open_shadow_trades_total: int = MAX_OPEN_SHADOW_TRADES_TOTAL
     max_open_shadow_trades_per_strategy: int = MAX_OPEN_SHADOW_TRADES_PER_STRATEGY
@@ -59,6 +61,7 @@ def settings_from_env() -> ResearchLabSettings:
         process_every_n_cycles=max(1, _int_env("RESEARCH_LAB_PROCESS_EVERY_N_CYCLES", 1)),
         rank_every_n_cycles=max(1, _int_env("RESEARCH_LAB_RANK_EVERY_N_CYCLES", 12)),
         feature_analysis_every_n_closed=max(1, _int_env("RESEARCH_LAB_FEATURE_ANALYSIS_EVERY_N_CLOSED", 100)),
+        signal_cooldown_minutes=max(0, _int_env("RESEARCH_LAB_SIGNAL_COOLDOWN_MINUTES", 60)),
         max_enabled_shadow_strategies=max(0, _int_env("MAX_ENABLED_SHADOW_STRATEGIES", 3)),
         max_open_shadow_trades_total=max(0, _int_env("MAX_OPEN_SHADOW_TRADES_TOTAL", 12)),
         max_open_shadow_trades_per_strategy=max(0, _int_env("MAX_OPEN_SHADOW_TRADES_PER_STRATEGY", 4)),

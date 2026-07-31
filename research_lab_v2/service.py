@@ -43,6 +43,14 @@ class ResearchLab:
                 shadow_trade_id=decision.get("shadow_trade_id"),
                 would_open_trade=bool(decision.get("would_open_trade", False)),
                 block_reason=decision.get("block_reason"),
+                condition_active=bool(decision.get("condition_active", False)),
+                entry_triggered=bool(decision.get("entry_triggered", False)),
+                trigger_reason=decision.get("trigger_reason"),
+                signal_fingerprint=decision.get("signal_fingerprint"),
+                previous_fingerprint=decision.get("previous_fingerprint"),
+                is_new_signal=bool(decision.get("is_new_signal", False)),
+                blocked_reason=decision.get("blocked_reason"),
+                signal_audit_version=decision.get("signal_audit_version"),
             )
         for trade in closed:
             strategy_id = str(trade.get("candidate_id", "")).upper()

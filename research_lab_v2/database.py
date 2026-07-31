@@ -25,7 +25,11 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
     decision TEXT NOT NULL, status TEXT NOT NULL,
     feature_snapshot_json TEXT NOT NULL, result_r REAL,
     shadow_trade_id TEXT, would_open_trade INTEGER NOT NULL DEFAULT 0,
-    block_reason TEXT,
+    block_reason TEXT, condition_active INTEGER NOT NULL DEFAULT 0,
+    entry_triggered INTEGER NOT NULL DEFAULT 0, trigger_reason TEXT,
+    signal_fingerprint TEXT, previous_fingerprint TEXT,
+    is_new_signal INTEGER NOT NULL DEFAULT 0, blocked_reason TEXT,
+    signal_audit_version TEXT,
     UNIQUE(cycle_id, strategy_id, symbol, timeframe)
 );
 CREATE TABLE IF NOT EXISTS strategy_metrics (
@@ -54,6 +58,14 @@ CREATE TABLE IF NOT EXISTS candidate_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT, strategy_id TEXT NOT NULL REFERENCES strategies(id),
     timestamp TEXT NOT NULL, status TEXT NOT NULL, promotion_probability REAL NOT NULL,
     reasons_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS signal_states (
+    strategy_id TEXT NOT NULL REFERENCES strategies(id),
+    symbol TEXT NOT NULL, timeframe TEXT NOT NULL,
+    condition_active INTEGER NOT NULL DEFAULT 0,
+    direction TEXT NOT NULL DEFAULT '', signal_fingerprint TEXT,
+    last_triggered_at TEXT, updated_at TEXT NOT NULL,
+    PRIMARY KEY(strategy_id, symbol, timeframe)
 );
 CREATE INDEX IF NOT EXISTS idx_runs_strategy_time ON strategy_runs(strategy_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_metrics_strategy_time ON strategy_metrics(strategy_id, calculated_at);
@@ -106,6 +118,14 @@ class ResearchDatabase:
             "timeframe": "TEXT NOT NULL DEFAULT '1h'",
             "would_open_trade": "INTEGER NOT NULL DEFAULT 0",
             "block_reason": "TEXT",
+            "condition_active": "INTEGER NOT NULL DEFAULT 0",
+            "entry_triggered": "INTEGER NOT NULL DEFAULT 0",
+            "trigger_reason": "TEXT",
+            "signal_fingerprint": "TEXT",
+            "previous_fingerprint": "TEXT",
+            "is_new_signal": "INTEGER NOT NULL DEFAULT 0",
+            "blocked_reason": "TEXT",
+            "signal_audit_version": "TEXT",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -142,26 +162,103 @@ class ResearchDatabase:
                    features: Mapping[str, Any], result_r: float | None = None,
                    shadow_trade_id: str | None = None,
                    would_open_trade: bool = False,
-                   block_reason: str | None = None) -> None:
+                   block_reason: str | None = None,
+                   condition_active: bool = False,
+                   entry_triggered: bool = False,
+                   trigger_reason: str | None = None,
+                   signal_fingerprint: str | None = None,
+                   previous_fingerprint: str | None = None,
+                   is_new_signal: bool = False,
+                   blocked_reason: str | None = None,
+                   signal_audit_version: str | None = None) -> None:
         with self.connect() as db:
             db.execute("""
                 INSERT INTO strategy_runs
                 (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
                  feature_snapshot_json, result_r, shadow_trade_id, would_open_trade,
-                 block_reason)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(cycle_id, strategy_id, symbol, timeframe) DO UPDATE SET
-                    timestamp=excluded.timestamp,
-                    decision=excluded.decision,
-                    status=excluded.status,
-                    feature_snapshot_json=excluded.feature_snapshot_json,
-                    result_r=COALESCE(excluded.result_r, strategy_runs.result_r),
-                    shadow_trade_id=COALESCE(excluded.shadow_trade_id, strategy_runs.shadow_trade_id),
-                    would_open_trade=excluded.would_open_trade,
-                    block_reason=excluded.block_reason
+                 block_reason, condition_active, entry_triggered, trigger_reason,
+                 signal_fingerprint, previous_fingerprint, is_new_signal, blocked_reason,
+                 signal_audit_version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(cycle_id, strategy_id, symbol, timeframe) DO NOTHING
             """, (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
                   json.dumps(dict(features), ensure_ascii=False, sort_keys=True, default=str),
-                  result_r, shadow_trade_id, int(would_open_trade), block_reason))
+                  result_r, shadow_trade_id, int(would_open_trade), block_reason,
+                  int(condition_active), int(entry_triggered), trigger_reason,
+                  signal_fingerprint, previous_fingerprint, int(is_new_signal),
+                  blocked_reason, signal_audit_version))
+
+    def load_signal_states(self) -> dict[tuple[str, str, str], dict[str, Any]]:
+        with self.connect() as db:
+            rows = db.execute("SELECT * FROM signal_states").fetchall()
+        return {
+            (row["strategy_id"], row["symbol"], row["timeframe"]): dict(row)
+            for row in rows
+        }
+
+    def upsert_signal_state(self, *, strategy_id: str, symbol: str, timeframe: str,
+                            condition_active: bool, direction: str,
+                            signal_fingerprint: str | None,
+                            last_triggered_at: str | None, updated_at: str) -> None:
+        with self.connect() as db:
+            db.execute("""
+                INSERT INTO signal_states
+                (strategy_id, symbol, timeframe, condition_active, direction,
+                 signal_fingerprint, last_triggered_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(strategy_id, symbol, timeframe) DO UPDATE SET
+                    condition_active=excluded.condition_active,
+                    direction=excluded.direction,
+                    signal_fingerprint=excluded.signal_fingerprint,
+                    last_triggered_at=excluded.last_triggered_at,
+                    updated_at=excluded.updated_at
+            """, (strategy_id, symbol, timeframe, int(condition_active), direction,
+                  signal_fingerprint, last_triggered_at, updated_at))
+
+    def dry_run_diagnostics(self) -> dict[str, dict[str, Any]]:
+        with self.connect() as db:
+            rows = db.execute("""
+                SELECT strategy_id, symbol, condition_active, entry_triggered,
+                       would_open_trade, blocked_reason, signal_fingerprint
+                FROM strategy_runs
+                WHERE cycle_id NOT LIKE '%:closed:%'
+                  AND signal_audit_version = 'event_dedup_v1'
+                ORDER BY id
+            """).fetchall()
+        report: dict[str, dict[str, Any]] = {}
+        fingerprints: dict[str, set[str]] = {}
+        symbols: dict[str, set[str]] = {}
+        for raw in rows:
+            row = dict(raw)
+            strategy_id = row["strategy_id"]
+            item = report.setdefault(strategy_id, {
+                "evaluations": 0, "condition_active": 0,
+                "new_entry_triggers": 0, "repeated_active_conditions": 0,
+                "would_open": 0, "blocked_by_reason": {},
+                "signal_rate": 0.0, "unique_signal_fingerprints": 0,
+                "symbols_with_signals": [],
+            })
+            item["evaluations"] += 1
+            item["condition_active"] += int(row["condition_active"] or 0)
+            item["new_entry_triggers"] += int(row["entry_triggered"] or 0)
+            item["would_open"] += int(row["would_open_trade"] or 0)
+            if row["condition_active"] and not row["entry_triggered"]:
+                item["repeated_active_conditions"] += 1
+            reason = str(row["blocked_reason"] or "")
+            if reason:
+                item["blocked_by_reason"][reason] = item["blocked_by_reason"].get(reason, 0) + 1
+            fingerprint = str(row["signal_fingerprint"] or "")
+            if fingerprint:
+                fingerprints.setdefault(strategy_id, set()).add(fingerprint)
+            if row["entry_triggered"]:
+                symbols.setdefault(strategy_id, set()).add(str(row["symbol"]))
+        for strategy_id, item in report.items():
+            item["signal_rate"] = round(
+                item["would_open"] / item["evaluations"] * 100, 2
+            ) if item["evaluations"] else 0.0
+            item["unique_signal_fingerprints"] = len(fingerprints.get(strategy_id, set()))
+            item["symbols_with_signals"] = sorted(symbols.get(strategy_id, set()))
+        return report
 
     def record_metrics(self, strategy_id: str, metrics: Mapping[str, Any],
                        calculated_at: str | None = None) -> None:

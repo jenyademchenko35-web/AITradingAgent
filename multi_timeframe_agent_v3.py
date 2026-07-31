@@ -1112,6 +1112,13 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
         # This only adds metadata to the result object; DecisionEngine output
         # and all execution gates remain unchanged.
         if _research_lab_is_enabled():
+            def component_direction(component):
+                if float(component.long) > float(component.short):
+                    return "LONG"
+                if float(component.short) > float(component.long):
+                    return "SHORT"
+                return "BOTH"
+
             decision.research_feature_snapshot = {
                 **feature_row,
                 "signal": decision.signal,
@@ -1121,6 +1128,15 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 "momentum_score": max(float(momentum.long), float(momentum.short)),
                 "risk_score": max(float(risk.long), float(risk.short)),
                 "signal_score": float(decision.score),
+                "trend_long_score": float(trend.long),
+                "trend_short_score": float(trend.short),
+                "trend_direction": component_direction(trend),
+                "momentum_long_score": float(momentum.long),
+                "momentum_short_score": float(momentum.short),
+                "momentum_direction": component_direction(momentum),
+                "risk_long_score": float(risk.long),
+                "risk_short_score": float(risk.short),
+                "risk_direction": component_direction(risk),
             }
         FeatureLogger().log(feature_row)
         laboratory = CandidateLaboratory(

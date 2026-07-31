@@ -107,19 +107,40 @@ class ResearchDashboardV2:
         if section == "researchlab":
             runtime = report["runtime_status"]
             blocked = runtime.get("blocked", {})
-            return "\n".join([
+            lines = [
                 "Research Lab v2 - RUNTIME",
                 f"Enabled: {'ON' if runtime.get('enabled') else 'OFF'}",
                 f"Dry Run: {'ON' if runtime.get('dry_run') else 'OFF'}",
                 "Allowlist: " + ", ".join(runtime.get("strategies_enabled", [])),
                 f"Last Cycle: {runtime.get('last_processed_cycle', 'NEVER')}",
                 f"Evaluations: {runtime.get('runs_this_cycle', 0)}",
+                f"New Entry Triggers: {runtime.get('new_entry_triggers', 0)}",
                 f"Would Open: {runtime.get('would_open', 0)}",
                 f"Opened Shadow: {runtime.get('opened_shadow', 0)}",
                 "Blocked: " + (", ".join(f"{key}={value}" for key, value in blocked.items()) or "none"),
                 f"DB: {runtime.get('database_status', 'NOT_INITIALIZED')}",
                 f"Last Error: {runtime.get('last_error') or 'none'}",
-            ])
+            ]
+            diagnostics = runtime.get("dry_run_diagnostics", {})
+            for strategy_id in sorted(diagnostics):
+                item = diagnostics[strategy_id]
+                reasons = item.get("blocked_by_reason", {})
+                lines.extend([
+                    "",
+                    strategy_id,
+                    f"Evaluations: {item.get('evaluations', 0)}",
+                    f"Condition Active: {item.get('condition_active', 0)}",
+                    f"New Entry Triggers: {item.get('new_entry_triggers', 0)}",
+                    f"Repeated Active: {item.get('repeated_active_conditions', 0)}",
+                    f"Would Open: {item.get('would_open', 0)}",
+                    f"Signal Rate: {item.get('signal_rate', 0):.2f}%",
+                    f"Unique Fingerprints: {item.get('unique_signal_fingerprints', 0)}",
+                    "Symbols: " + (", ".join(item.get("symbols_with_signals", [])) or "none"),
+                    "Blocked: " + (", ".join(
+                        f"{reason}={count}" for reason, count in sorted(reasons.items())
+                    ) or "none"),
+                ])
+            return "\n".join(lines)
         if section == "promotions":
             return "\n".join(["Research Lab v2 - PROMOTIONS"] + [
                 f"{row['strategy_id']}: {row['status']} ({row['promotion_probability']:.1f}%)"

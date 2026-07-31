@@ -2,6 +2,7 @@ import json
 import asyncio
 import sqlite3
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -25,6 +26,8 @@ from research_lab_v2.parameter_search import generate_variants, register_variant
 from research_lab_v2.runtime import (
     ResearchLabRuntime,
     ShadowResearchBook,
+    build_feature_snapshot,
+    classify_signal_event,
 )
 from research_lab_v2.service import ResearchLab
 from strategies import StrategyDefinition, StrategyRegistry, registry
@@ -179,8 +182,10 @@ def _snapshot(cycle_id="cycle-1", symbol="BTC/USDT"):
         "symbol": symbol, "timeframe": "1h", "current_price": 100.0,
         "high": 101.0, "low": 99.0, "atr": 2.0, "direction": "LONG",
         "signal": "SETUP", "decision": "SETUP", "trend_score": 60.0,
-        "structure_score": 60.0, "momentum_score": 60.0,
-        "risk_score": 60.0, "signal_score": 60.0, "adx": 30.0,
+        "structure_score": 60.0, "momentum_score": 25.0,
+        "risk_score": 20.0, "signal_score": 60.0, "adx": 30.0,
+        "trend_direction": "LONG", "momentum_direction": "LONG",
+        "risk_direction": "LONG",
         "volume_ratio": 1.2, "atr_percentile": 40.0,
     }
 
@@ -396,3 +401,185 @@ def test_research_database_is_gitignored():
     root = Path(__file__).resolve().parents[1]
     ignored = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "research.db" in ignored
+
+
+def _trend_only_settings(tmp_path, **changes):
+    return replace(
+        _runtime_settings(tmp_path),
+        allowlist=("TREND_CONFIRM",),
+        **changes,
+    )
+
+
+def _at(minutes: int) -> str:
+    return f"2026-07-31T10:{minutes:02d}:00+00:00"
+
+
+def test_constant_trend_is_one_event_not_one_event_per_cycle(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    results = []
+    for index, minute in enumerate((0, 5, 10, 15, 20, 25)):
+        snapshot = _snapshot(f"constant-{index}")
+        snapshot.update(timestamp=_at(minute), snapshot_id=f"snapshot-{index}",
+                        current_price=100 + index)
+        results.append(runtime.process_cycle(
+            cycle_id=f"constant-{index}", snapshots=[snapshot],
+            settings=_trend_only_settings(tmp_path),
+        ))
+    assert [row["would_open"] for row in results] == [1, 0, 0, 0, 0, 0]
+    diagnostic = results[-1]["dry_run_diagnostics"]["TREND_CONFIRM"]
+    assert diagnostic["evaluations"] == 6
+    assert diagnostic["condition_active"] == 6
+    assert diagnostic["new_entry_triggers"] == 1
+    assert diagnostic["repeated_active_conditions"] == 5
+    assert diagnostic["unique_signal_fingerprints"] == 1
+
+
+def test_condition_reappearance_creates_new_entry_event(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    snapshots = []
+    for index, score in enumerate((60, 40, 60)):
+        row = _snapshot(f"reactivate-{index}")
+        row.update(timestamp=_at(index * 5), trend_score=score)
+        snapshots.append(row)
+    results = [runtime.process_cycle(
+        cycle_id=f"reactivate-{index}", snapshots=[row],
+        settings=_trend_only_settings(tmp_path),
+    ) for index, row in enumerate(snapshots)]
+    assert [row["would_open"] for row in results] == [1, 0, 1]
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        reasons = [row[0] for row in db.execute(
+            "SELECT trigger_reason FROM strategy_runs ORDER BY id"
+        )]
+    assert reasons == ["CONDITION_ACTIVATED", "CONDITION_INACTIVE", "CONDITION_REACTIVATED"]
+
+
+def test_direction_change_creates_new_signal(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    first = _snapshot("direction-1")
+    first["timestamp"] = _at(0)
+    second = _snapshot("direction-2")
+    second.update(timestamp=_at(5), direction="SHORT", trend_direction="SHORT",
+                  momentum_direction="SHORT", risk_direction="SHORT")
+    runtime.process_cycle(cycle_id="direction-1", snapshots=[first],
+                          settings=_trend_only_settings(tmp_path))
+    result = runtime.process_cycle(cycle_id="direction-2", snapshots=[second],
+                                   settings=_trend_only_settings(tmp_path))
+    assert result["would_open"] == 1
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        row = db.execute(
+            "SELECT trigger_reason, is_new_signal FROM strategy_runs ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    assert row == ("DIRECTION_CHANGED", 1)
+
+
+def test_fingerprint_change_creates_new_signal_but_timestamp_does_not(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    first = _snapshot("fingerprint-1")
+    first.update(timestamp=_at(0), market_regime="TREND")
+    duplicate = _snapshot("fingerprint-2")
+    duplicate.update(timestamp=_at(5), market_regime="TREND", snapshot_id="different")
+    changed = _snapshot("fingerprint-3")
+    changed.update(timestamp=_at(10), market_regime="VOLATILE_TREND")
+    results = [runtime.process_cycle(
+        cycle_id=row["cycle_id"], snapshots=[row], settings=_trend_only_settings(tmp_path)
+    ) for row in (first, duplicate, changed)]
+    assert [row["would_open"] for row in results] == [1, 0, 1]
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        rows = db.execute(
+            "SELECT signal_fingerprint, previous_fingerprint, trigger_reason "
+            "FROM strategy_runs ORDER BY id"
+        ).fetchall()
+    assert rows[0][0] == rows[1][0]
+    assert rows[2][0] != rows[2][1]
+    assert rows[2][2] == "SETUP_FINGERPRINT_CHANGED"
+
+
+def test_configurable_cooldown_retriggers_after_expiry(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    settings = _trend_only_settings(tmp_path, signal_cooldown_minutes=60)
+    outcomes = []
+    for index, stamp in enumerate(("2026-07-31T10:00:00+00:00",
+                                   "2026-07-31T10:59:00+00:00",
+                                   "2026-07-31T11:00:00+00:00")):
+        row = _snapshot(f"cooldown-{index}")
+        row["timestamp"] = stamp
+        outcomes.append(runtime.process_cycle(
+            cycle_id=f"cooldown-{index}", snapshots=[row], settings=settings,
+        )["would_open"])
+    assert outcomes == [1, 0, 1]
+
+
+def test_54_five_minute_cycles_have_five_signals_after_dedup(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    settings = _trend_only_settings(tmp_path, signal_cooldown_minutes=60)
+    start = datetime(2026, 7, 31, 0, 0, tzinfo=timezone.utc)
+    result = {}
+    for index in range(54):
+        row = _snapshot(f"saved-sequence-{index}")
+        row["timestamp"] = (start + timedelta(minutes=index * 5)).isoformat()
+        result = runtime.process_cycle(cycle_id=row["cycle_id"], snapshots=[row], settings=settings)
+    diagnostic = result["dry_run_diagnostics"]["TREND_CONFIRM"]
+    assert diagnostic["would_open"] == 5
+    assert diagnostic["signal_rate"] == 9.26
+    assert diagnostic["evaluations"] == 54
+
+
+def test_native_component_values_reach_strict_strategy_gates():
+    snapshot = _snapshot()
+    assert registry.get("MOMENTUM_STRICT").evaluate(snapshot)["accepted"] is True
+    assert registry.get("RISK_CONSERVATIVE").evaluate(snapshot)["accepted"] is True
+    snapshot["momentum_score"] = 19
+    snapshot["risk_score"] = 14
+    assert registry.get("MOMENTUM_STRICT").evaluate(snapshot)["rejection_category"] == "MOMENTUM_TOO_WEAK"
+    assert registry.get("RISK_CONSERVATIVE").evaluate(snapshot)["rejection_category"] == "RISK_TOO_HIGH"
+
+    missing = _snapshot()
+    missing.pop("momentum_score")
+    assert registry.get("MOMENTUM_STRICT").evaluate(missing)["rejection_category"] == "MISSING_FEATURE"
+
+    mismatched = _snapshot()
+    mismatched["momentum_direction"] = "SHORT"
+    assert registry.get("MOMENTUM_STRICT").evaluate(mismatched)["rejection_category"] == "TREND_MISMATCH"
+
+
+def test_feature_snapshot_uses_engine_values_not_rsi_or_atr_aliases():
+    tf = SimpleNamespace(close=100, high=101, low=99, atr=2, adx=30,
+                         volume_ratio=1.2, atr_percentile=90, ema200=95,
+                         ema20=101, ema50=99, trend_ema="BULLISH", rsi=70)
+    decision = SimpleNamespace(
+        direction="LONG", signal="SETUP", score=30,
+        decision_timestamp="2026-07-31T10:00:00+00:00",
+        research_feature_snapshot={
+            "trend_score": 60, "trend_direction": "LONG",
+            "momentum_score": 21, "momentum_direction": "LONG",
+            "risk_score": 20, "risk_direction": "LONG",
+        },
+    )
+    snapshot = build_feature_snapshot(
+        cycle_id="features", symbol="BTC/USDT", decision=decision,
+        market=SimpleNamespace(tf1h=tf),
+    )
+    assert snapshot["momentum_score"] == 21
+    assert snapshot["risk_score"] == 20
+    assert snapshot["momentum_score"] != tf.rsi
+    assert snapshot["risk_score"] != 100 - tf.atr_percentile
+
+
+def test_rejection_diagnostics_are_grouped_by_reason(tmp_path):
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    row = _snapshot("rejections")
+    row.update(momentum_score=10, risk_score=5)
+    result = runtime.process_cycle(cycle_id="rejections", snapshots=[row],
+                                   settings=_runtime_settings(tmp_path))
+    diagnostics = result["dry_run_diagnostics"]
+    assert diagnostics["MOMENTUM_STRICT"]["blocked_by_reason"] == {"MOMENTUM_TOO_WEAK": 1}
+    assert diagnostics["RISK_CONSERVATIVE"]["blocked_by_reason"] == {"RISK_TOO_HIGH": 1}
+    assert result["opened_shadow"] == 0

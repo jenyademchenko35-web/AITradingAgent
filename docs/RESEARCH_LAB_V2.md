@@ -100,12 +100,32 @@ Environment settings:
 - `RESEARCH_LAB_PROCESS_EVERY_N_CYCLES=1`
 - `RESEARCH_LAB_RANK_EVERY_N_CYCLES=12`
 - `RESEARCH_LAB_FEATURE_ANALYSIS_EVERY_N_CLOSED=100`
+- `RESEARCH_LAB_SIGNAL_COOLDOWN_MINUTES=60`
 - `MAX_ENABLED_SHADOW_STRATEGIES=3`
 - `MAX_OPEN_SHADOW_TRADES_TOTAL=12`
 - `MAX_OPEN_SHADOW_TRADES_PER_STRATEGY=4`
 - `MAX_OPEN_SHADOW_TRADES_PER_SYMBOL=2`
 - `RESEARCH_LAB_DRY_RUN=true`
 - `RESEARCH_LAB_FAIL_OPEN=true`
+
+## Dry-run signal semantics
+
+Every strategy/symbol evaluation is stored on every cycle. A passing level
+condition is recorded as `condition_active`; it becomes `would_open_trade` only
+for a new entry event. Event identity uses strategy, symbol, timeframe,
+direction, live signal class, market regime and strategy-specific components.
+Timestamp, snapshot ID and raw price are deliberately excluded from the
+fingerprint. Timestamp is used only to enforce the configurable cooldown.
+
+Persistent `signal_states` provide restart-safe edge detection. Direction
+changes, condition reactivation, setup fingerprint changes and cooldown expiry
+can create a new event. An unchanged active level is stored with
+`BLOCKED_DUPLICATE_SIGNAL` and `CONDITION_STILL_ACTIVE` without opening or
+modifying any live or legacy shadow position.
+
+Native component scales are explicit: trend 55/60, momentum 20/25 and risk
+15/20. This avoids the previous unreachable 55-point thresholds for the
+25-point MomentumEngine and 20-point RiskEngine.
 
 Telegram read-only commands: `/researchlab`, `/research_rank`, `/features`,
 `/strategies`, `/promotions`, and `/top`. Owner-only runtime overrides are

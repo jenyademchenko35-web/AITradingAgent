@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import math
 import time
 import uuid
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -27,11 +28,13 @@ MANDATORY_FEATURE_FIELDS = {
     "timestamp", "cycle_id", "symbol", "timeframe", "current_price",
     "high", "low", "atr", "direction", "signal", "trend_score",
     "structure_score", "momentum_score", "risk_score", "signal_score",
+    "trend_direction", "momentum_direction", "risk_direction",
 }
 BLOCK_REASONS = {
     "BLOCKED_TOTAL_LIMIT", "BLOCKED_STRATEGY_LIMIT", "BLOCKED_SYMBOL_LIMIT",
     "BLOCKED_DUPLICATE_SYMBOL", "BLOCKED_INVALID_TRADE_PLAN",
     "BLOCKED_NOT_ALLOWLISTED",
+    "BLOCKED_DUPLICATE_SIGNAL", "CONDITION_STILL_ACTIVE",
 }
 
 
@@ -45,6 +48,89 @@ def _number(value: Any, default: float = 0.0) -> float:
         return number if math.isfinite(number) else default
     except (TypeError, ValueError):
         return default
+
+
+def _timestamp(value: Any) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _signal_fingerprint(strategy_id: str, snapshot: Mapping[str, Any],
+                        evaluation: Mapping[str, Any]) -> str:
+    """Stable setup identity; timestamps, snapshot IDs and prices are excluded."""
+    payload = {
+        "strategy_id": strategy_id,
+        "symbol": str(snapshot.get("symbol", "")),
+        "timeframe": str(snapshot.get("timeframe", "1h")),
+        "direction": str(snapshot.get("direction", "")).upper(),
+        "signal": str(snapshot.get("signal", "")).upper(),
+        "market_regime": str(snapshot.get("market_regime", "")),
+        "components": dict(evaluation.get("fingerprint_components", {})),
+    }
+    serialized = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:24]
+
+
+def classify_signal_event(*, strategy_id: str, snapshot: Mapping[str, Any],
+                          evaluation: Mapping[str, Any],
+                          previous: Mapping[str, Any] | None,
+                          cooldown_minutes: int) -> dict[str, Any]:
+    condition_active = bool(evaluation.get("accepted"))
+    previous = dict(previous or {})
+    previous_fingerprint = str(previous.get("signal_fingerprint") or "") or None
+    fingerprint = _signal_fingerprint(strategy_id, snapshot, evaluation) if condition_active else None
+    direction = str(snapshot.get("direction", "")).upper()
+    if not condition_active:
+        reason = str(evaluation.get("rejection_category") or "OTHER")
+        return {
+            "condition_active": False, "entry_triggered": False,
+            "trigger_reason": "CONDITION_INACTIVE", "signal_fingerprint": None,
+            "previous_fingerprint": previous_fingerprint, "is_new_signal": False,
+            "blocked_reason": reason,
+        }
+    if str(snapshot.get("signal", "")).upper() not in ELIGIBLE_SIGNALS:
+        return {
+            "condition_active": True, "entry_triggered": False,
+            "trigger_reason": "CONDITION_ACTIVE_NO_ENTRY_SIGNAL",
+            "signal_fingerprint": fingerprint,
+            "previous_fingerprint": previous_fingerprint, "is_new_signal": False,
+            "blocked_reason": "BLOCKED_SIGNAL_NOT_ELIGIBLE",
+        }
+    trigger_reason = ""
+    if not previous:
+        trigger_reason = "CONDITION_ACTIVATED"
+    elif not bool(previous.get("condition_active")):
+        trigger_reason = "CONDITION_REACTIVATED"
+    elif str(previous.get("direction", "")).upper() != direction:
+        trigger_reason = "DIRECTION_CHANGED"
+    elif previous_fingerprint != fingerprint:
+        trigger_reason = "SETUP_FINGERPRINT_CHANGED"
+    elif not previous.get("last_triggered_at"):
+        trigger_reason = "FIRST_ENTRY_OPPORTUNITY"
+    else:
+        last_triggered = _timestamp(previous.get("last_triggered_at"))
+        current = _timestamp(snapshot.get("timestamp"))
+        if (last_triggered is not None and current is not None and
+                current - last_triggered >= timedelta(minutes=max(0, cooldown_minutes))):
+            trigger_reason = "COOLDOWN_EXPIRED"
+    if trigger_reason:
+        return {
+            "condition_active": True, "entry_triggered": True,
+            "trigger_reason": trigger_reason, "signal_fingerprint": fingerprint,
+            "previous_fingerprint": previous_fingerprint, "is_new_signal": True,
+            "blocked_reason": "",
+        }
+    return {
+        "condition_active": True, "entry_triggered": False,
+        "trigger_reason": "CONDITION_STILL_ACTIVE", "signal_fingerprint": fingerprint,
+        "previous_fingerprint": previous_fingerprint, "is_new_signal": False,
+        "blocked_reason": "BLOCKED_DUPLICATE_SIGNAL",
+    }
 
 
 def _atomic_json(path: Path, payload: Any) -> None:
@@ -63,6 +149,7 @@ def load_runtime_status(path: Path = STATUS_FILE) -> dict[str, Any]:
             "enabled": settings.enabled, "dry_run": settings.dry_run,
             "strategies_enabled": list(settings.allowlist), "runs_this_cycle": 0,
             "would_open": 0, "opened_shadow": 0, "blocked": {},
+            "new_entry_triggers": 0, "dry_run_diagnostics": {},
             "database_status": "NOT_INITIALIZED", "last_error": "",
             "last_processed_cycle": "NEVER",
         }
@@ -113,10 +200,13 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
         "direction": direction, "signal": str(getattr(decision, "signal", "")),
         "decision": str(getattr(decision, "signal", "")),
         "signal_score": _number(getattr(decision, "score", 0)),
-        "trend_score": _number(getattr(decision, "long_total", 0)),
+        "trend_score": None,
         "structure_score": _number(getattr(decision, "score", 0)),
-        "momentum_score": _number(getattr(tf, "rsi", 0)),
-        "risk_score": max(0.0, 100.0 - _number(getattr(tf, "atr_percentile", 0))),
+        "momentum_score": None,
+        "risk_score": None,
+        "trend_direction": None,
+        "momentum_direction": None,
+        "risk_direction": None,
     }
     observer = getattr(decision, "research_feature_snapshot", {})
     if isinstance(observer, Mapping):
@@ -245,6 +335,7 @@ class ResearchLabRuntime:
             "enabled": settings.enabled, "dry_run": settings.dry_run,
             "strategies_enabled": list(settings.allowlist), "runs_this_cycle": 0,
             "would_open": 0, "opened_shadow": 0, "blocked": {},
+            "new_entry_triggers": 0, "dry_run_diagnostics": {},
             "database_status": "OK", "last_error": "",
             "last_processed_cycle": "NEVER", **updates,
         }
@@ -301,65 +392,131 @@ class ResearchLabRuntime:
                           feature_interval=settings.feature_analysis_every_n_closed)
         decisions: list[dict[str, Any]] = []
         blocked: Counter[str] = Counter()
-        would_open = opened = signals = 0
+        would_open = opened = signals = new_entry_triggers = 0
         closed: list[dict[str, Any]] = []
         try:
             lab.database.initialize()
+            lab.register_strategies()
+            signal_states = lab.database.load_signal_states()
             if not settings.dry_run:
                 closed = self.shadow_book.close_from_snapshots(rows)
             for snapshot in rows:
+                pending_states = []
                 for strategy_id in settings.allowlist:
                     spec = registry.get(strategy_id)
-                    result = spec.evaluate(snapshot) if spec else {"accepted": False}
-                    eligible = (bool(result.get("accepted")) and
-                                str(snapshot.get("signal", "")).upper() in ELIGIBLE_SIGNALS)
+                    result = spec.evaluate(snapshot) if spec else {
+                        "accepted": False, "reasons": ["MISSING_STRATEGY"],
+                        "rejection_category": "OTHER",
+                    }
+                    key = (strategy_id, str(snapshot["symbol"]),
+                           str(snapshot.get("timeframe", "1h")))
+                    event = classify_signal_event(
+                        strategy_id=strategy_id, snapshot=snapshot, evaluation=result,
+                        previous=signal_states.get(key),
+                        cooldown_minutes=settings.signal_cooldown_minutes,
+                    )
                     plan = _trade_plan(snapshot)
-                    reason = None
+                    reason = str(event.get("blocked_reason") or "") or None
                     trade_id = None
-                    if eligible:
+                    condition_active = bool(event["condition_active"])
+                    is_new_signal = bool(event["is_new_signal"])
+                    entry_triggered = bool(event["entry_triggered"])
+                    if condition_active:
                         signals += 1
-                        reason = self.shadow_book.block_reason(
+                    if entry_triggered:
+                        safety_reason = self.shadow_book.block_reason(
                             strategy_id=strategy_id, symbol=str(snapshot["symbol"]), plan=plan,
                             open_trades=self.shadow_book.load(), settings=settings,
                         )
-                        if reason:
-                            blocked[reason] += 1
+                        if safety_reason:
+                            reason = safety_reason
+                            entry_triggered = False
                         else:
-                            would_open += 1
-                            if not settings.dry_run:
+                            if settings.dry_run:
+                                would_open += 1
+                                new_entry_triggers += 1
+                            else:
                                 trade_id, reason = self.shadow_book.open(
                                     strategy_id=strategy_id, snapshot=snapshot,
                                     plan=plan, settings=settings,
                                 )
                                 if reason:
-                                    blocked[reason] += 1
+                                    entry_triggered = False
                                 elif trade_id:
+                                    would_open += 1
+                                    new_entry_triggers += 1
                                     opened += 1
+                    if reason:
+                        blocked[reason] += 1
+                    triggered_at = (
+                        str(snapshot.get("timestamp"))
+                        if entry_triggered else
+                        (signal_states.get(key) or {}).get("last_triggered_at")
+                    )
+                    state = {
+                        "strategy_id": strategy_id, "symbol": str(snapshot["symbol"]),
+                        "timeframe": str(snapshot.get("timeframe", "1h")),
+                        "condition_active": condition_active,
+                        "direction": str(snapshot.get("direction", "")).upper(),
+                        "signal_fingerprint": event.get("signal_fingerprint"),
+                        "last_triggered_at": triggered_at,
+                        "updated_at": str(snapshot.get("timestamp", _utc())),
+                    }
+                    pending_states.append((key, state))
+                    feature_snapshot = {
+                        **snapshot, "trade_plan": plan,
+                        "condition_active": condition_active,
+                        "entry_triggered": entry_triggered,
+                        "trigger_reason": event["trigger_reason"],
+                        "signal_fingerprint": event.get("signal_fingerprint"),
+                        "previous_fingerprint": event.get("previous_fingerprint"),
+                        "is_new_signal": is_new_signal,
+                        "signal_audit_version": "event_dedup_v1",
+                        "blocked_reason": reason,
+                        "evaluation_reasons": list(result.get("reasons", [])),
+                        "rejection_category": result.get("rejection_category", ""),
+                    }
                     decisions.append({
                         "candidate_id": strategy_id,
                         "decision": str(snapshot.get("signal", "")),
-                        "status": reason or ("WOULD_OPEN" if eligible and settings.dry_run else
+                        "status": reason or ("WOULD_OPEN" if entry_triggered and settings.dry_run else
                                              "OPENED_SHADOW" if trade_id else "EVALUATED"),
-                        "would_open_trade": bool(eligible and not reason),
-                        "block_reason": reason, "shadow_trade_id": trade_id,
-                        "feature_snapshot": {**snapshot, "trade_plan": plan},
+                        "would_open_trade": bool(entry_triggered and not reason),
+                        "block_reason": reason, "blocked_reason": reason,
+                        "condition_active": condition_active,
+                        "entry_triggered": entry_triggered,
+                        "trigger_reason": event["trigger_reason"],
+                        "signal_fingerprint": event.get("signal_fingerprint"),
+                        "previous_fingerprint": event.get("previous_fingerprint"),
+                        "is_new_signal": is_new_signal,
+                        "signal_audit_version": "event_dedup_v1",
+                        "shadow_trade_id": trade_id,
+                        "feature_snapshot": feature_snapshot,
                     })
                 lab.process_cycle(cycle_id=cycle_id, snapshot=snapshot,
                                   decisions=decisions[-len(settings.allowlist):],
                                   closed_trades=closed)
+                for key, state in pending_states:
+                    lab.database.upsert_signal_state(**state)
+                    signal_states[key] = state
                 closed = []
             duration = round((time.perf_counter() - started) * 1000, 2)
+            diagnostics = lab.database.dry_run_diagnostics()
             status = self._status(
                 settings, runs_this_cycle=len(decisions), would_open=would_open,
                 opened_shadow=opened, blocked=dict(blocked), database_status="OK",
                 last_processed_cycle=cycle_id, strategies_evaluated=len(settings.allowlist),
                 symbols_evaluated=len(rows), signals_produced=signals,
+                new_entry_triggers=new_entry_triggers,
+                dry_run_diagnostics=diagnostics,
                 duration_ms=duration,
             )
             _write_log("info", {"event": "research_lab_cycle", "cycle_id": cycle_id,
                 "strategies_evaluated": len(settings.allowlist), "symbols_evaluated": len(rows),
                 "signals_produced": signals, "would_open": would_open, "opened": opened,
-                "blocked": dict(blocked), "duration_ms": duration, "errors": []}, self.log_path)
+                "new_entry_triggers": new_entry_triggers,
+                "blocked": dict(blocked), "duration_ms": duration, "errors": [],
+                "dry_run_diagnostics": diagnostics}, self.log_path)
             return status
         except ResearchDatabaseBusy as exc:
             _write_log("error", {"event": "research_lab_cycle", "cycle_id": cycle_id,
