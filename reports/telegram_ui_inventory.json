@@ -1,0 +1,4435 @@
+{
+  "schema_version": 1,
+  "generated_for": "@TradeWatcherCrypto_Bot Telegram UI v2 planning",
+  "scope": "static code audit; no server/runtime files were executed or modified",
+  "summary": {
+    "registered_commands": 71,
+    "botfather_commands": 47,
+    "commands_missing_from_botfather_menu": 24,
+    "callback_query_handlers": 1,
+    "emitted_unique_callback_patterns": 16,
+    "recognized_callback_routes": 18,
+    "button_placements_static_plus_dynamic": "18 static placements plus N symbol buttons",
+    "keyboard_layouts": 3,
+    "compatibility_keyboard_wrappers": 1,
+    "photo_senders": 0,
+    "document_senders": 0
+  },
+  "commands": [
+    {
+      "command": "/start",
+      "purpose": "Register the current chat as the notification destination and open the research dashboard.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "start",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3092,
+        "registration_line": 3757
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_dashboard"
+      ],
+      "message_builder": [
+        "format_dashboard"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📊 Dashboard",
+      "state_changes": [
+        "writes bot_config.json and replaces the stored notification chat id"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/help",
+      "purpose": "Show the hand-written command guide.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "help_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3099,
+        "registration_line": 3758
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through help_text"
+      ],
+      "message_builder": [
+        "help_text"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "❔ Помощь",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/dashboard",
+      "purpose": "Show the combined AI Research Dashboard; optional research/live drill-down section.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "dashboard_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3158,
+        "registration_line": 3759
+      },
+      "arguments": "[hypotheses|conflicts|status|history|trading|live|news|lab|memory]",
+      "data_sources": [
+        "trades.csv",
+        "agent_v3_stats.json",
+        "reports/candidate_laboratory.json",
+        "candidate_shadow_trades.csv",
+        "walk_forward_report.json",
+        "research.db",
+        "decision_features.csv",
+        "research/news reports"
+      ],
+      "message_builder": [
+        "format_dashboard"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📊 Dashboard",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/coach",
+      "purpose": "Show compact AI Coach observations and blockers.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "coach_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3165,
+        "registration_line": 3760
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_coach"
+      ],
+      "message_builder": [
+        "format_coach"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧠 AI Coach",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/opportunities",
+      "purpose": "Rank current setup and near-setup opportunities.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "opportunities_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3201,
+        "registration_line": 3761
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_debug.csv",
+        "decision_diagnostics.csv",
+        "decision_explanations.csv"
+      ],
+      "message_builder": [
+        "format_opportunities"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🎯 Возможности",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/settings",
+      "purpose": "Show read-only runtime settings.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "settings_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3291,
+        "registration_line": 3762
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_settings"
+      ],
+      "message_builder": [
+        "format_settings"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "⚙️ Settings",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/developer",
+      "purpose": "Open the developer/research menu.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "developer_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3298,
+        "registration_line": 3763
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_developer"
+      ],
+      "message_builder": [
+        "format_developer"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "developer_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🛠 Developer",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/v2",
+      "purpose": "Show v2 readiness status.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "v2_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3172,
+        "registration_line": 3764
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_v2_readiness"
+      ],
+      "message_builder": [
+        "format_v2_readiness"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/symbols",
+      "purpose": "Show per-symbol signal coverage.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "symbols_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3176,
+        "registration_line": 3765
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_symbols_report"
+      ],
+      "message_builder": [
+        "format_symbols_report"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/equity",
+      "purpose": "Show equity report.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "equity_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3183,
+        "registration_line": 3766
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_equity_report"
+      ],
+      "message_builder": [
+        "format_equity_report"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/timeline",
+      "purpose": "Show decision timeline.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "timeline_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3190,
+        "registration_line": 3767
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_timeline_report"
+      ],
+      "message_builder": [
+        "format_timeline_report"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/status",
+      "purpose": "Show legacy agent status summary.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "status_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3154,
+        "registration_line": 3768
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through format_status"
+      ],
+      "message_builder": [
+        "format_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/market",
+      "purpose": "Show compact market state and symbol drill-down buttons.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "market_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3197,
+        "registration_line": 3769
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_debug.csv",
+        "signals_v3.csv"
+      ],
+      "message_builder": [
+        "format_market"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "market_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📈 Рынок",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/watchlist",
+      "purpose": "Show actionable and near-actionable symbols.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "watchlist_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3208,
+        "registration_line": 3770
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_debug.csv",
+        "signals_v3.csv"
+      ],
+      "message_builder": [
+        "format_watchlist"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📋 Watchlist",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/diagnostics",
+      "purpose": "Show decision diagnostics for a requested symbol.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "diagnostics_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3212,
+        "registration_line": 3771
+      },
+      "arguments": "<symbol>",
+      "data_sources": [
+        "decision_diagnostics.csv",
+        "decision_debug.csv",
+        "decision_explanations.csv"
+      ],
+      "message_builder": [
+        "format_diagnostics"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing symbol returns usage text",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/stats",
+      "purpose": "Show closed-trade performance metrics.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "stats_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3223,
+        "registration_line": 3772
+      },
+      "arguments": "",
+      "data_sources": [
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_stats"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📊 Статистика",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/riskstats",
+      "purpose": "Show Risk Engine distribution and outcome statistics.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "riskstats_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3227,
+        "registration_line": 3773
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_debug.csv",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_riskstats"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🛡 Risk Engine Statistics",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/trades",
+      "purpose": "Show open live trades; the health argument redirects to data quality.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "trades_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3231,
+        "registration_line": 3774
+      },
+      "arguments": "[health]",
+      "data_sources": [
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_dataquality",
+        "format_trades"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📂 Сделки",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/dataquality",
+      "purpose": "Show persisted Trade Registry/research data quality.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "dataquality_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3238,
+        "registration_line": 3775
+      },
+      "arguments": "",
+      "data_sources": [
+        "data_quality_report.json"
+      ],
+      "message_builder": [
+        "format_dataquality"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📋 Data Quality",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/coverage",
+      "purpose": "Show field/data coverage.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "coverage_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3245,
+        "registration_line": 3776
+      },
+      "arguments": "",
+      "data_sources": [
+        "data_quality_report.json"
+      ],
+      "message_builder": [
+        "format_coverage"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📊 Data Coverage",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/backfill",
+      "purpose": "Run the research backfill pipeline and show recovered/unrecoverable fields.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "backfill_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3249,
+        "registration_line": 3777
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through backfill_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧰 Research Backfill",
+      "state_changes": [
+        "runs research backfill and writes derived research artifacts"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/snapshot",
+      "purpose": "Show the latest decision snapshot, with an in-memory fallback build.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "snapshot_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3255,
+        "registration_line": 3778
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_snapshot.json",
+        "current research inputs"
+      ],
+      "message_builder": [
+        "format_snapshot"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📸 Decision Snapshot",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/portfolio",
+      "purpose": "Show Portfolio Manager report or compute a current summary.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "portfolio_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3259,
+        "registration_line": 3779
+      },
+      "arguments": "[view]",
+      "data_sources": [
+        "portfolio_report.json",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_portfolio_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📊 Portfolio",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/execution",
+      "purpose": "Show execution simulator report; can compute normal/stress output.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "execution_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3267,
+        "registration_line": 3780
+      },
+      "arguments": "[summary|stress]",
+      "data_sources": [
+        "execution report/current simulator inputs"
+      ],
+      "message_builder": [
+        "format_execution_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "⚙️ Execution Simulator",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/lossanalysis",
+      "purpose": "Show loss-attribution report; can compute it if absent.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "lossanalysis_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3275,
+        "registration_line": 3781
+      },
+      "arguments": "[view]",
+      "data_sources": [
+        "loss attribution report",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_lossanalysis_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🔎 Loss Attribution",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/decisionv2",
+      "purpose": "Show DecisionEngine v2 analytical report; can compute it if absent.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "decisionv2_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3283,
+        "registration_line": 3782
+      },
+      "arguments": "[view]",
+      "data_sources": [
+        "DecisionEngine v2 report/current decisions"
+      ],
+      "message_builder": [
+        "format_decisionv2_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧪 DecisionEngine v2",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/posttrade",
+      "purpose": "Show post-trade analysis.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "posttrade_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3305,
+        "registration_line": 3783
+      },
+      "arguments": "",
+      "data_sources": [
+        "post_trade_analysis_report.json",
+        "post_trade_analysis_trades.csv"
+      ],
+      "message_builder": [
+        "format_posttrade"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/calibration",
+      "purpose": "Show calibration report.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "calibration_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3312,
+        "registration_line": 3784
+      },
+      "arguments": "",
+      "data_sources": [
+        "calibration_report.json"
+      ],
+      "message_builder": [
+        "format_calibration"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/research",
+      "purpose": "Show research orchestrator/dashboard overview or selected section.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "research_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3319,
+        "registration_line": 3785
+      },
+      "arguments": "[section]",
+      "data_sources": [
+        "research_orchestrator_report.json",
+        "research dashboard reports"
+      ],
+      "message_builder": [
+        "format_research"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🔬 Research Orchestrator",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/experiments",
+      "purpose": "Show experiment summary or full details.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "experiments_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3327,
+        "registration_line": 3786
+      },
+      "arguments": "[full]",
+      "data_sources": [
+        "strategy_experiments_report.json",
+        "strategy_experiments_results.csv"
+      ],
+      "message_builder": [
+        "format_experiments"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/candidate",
+      "purpose": "Show one Candidate Laboratory entry by id.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "candidate_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3335,
+        "registration_line": 3787
+      },
+      "arguments": "<candidate_id>",
+      "data_sources": [
+        "reports/candidate_laboratory.json"
+      ],
+      "message_builder": [
+        "format_candidate_lab_entry"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧪 Candidate detail",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unknown candidate returns usage or not-found text",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/candidates",
+      "purpose": "Show all Candidate Laboratory entries.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "candidates_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3377,
+        "registration_line": 3788
+      },
+      "arguments": "",
+      "data_sources": [
+        "reports/candidate_laboratory.json"
+      ],
+      "message_builder": [
+        "format_candidate_lab_entry"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧪 Candidate Laboratory",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/shadowstatus",
+      "purpose": "Show isolated legacy candidate shadow validation status.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "shadowstatus_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3348,
+        "registration_line": 3789
+      },
+      "arguments": "",
+      "data_sources": [
+        "candidate_shadow_trades.csv",
+        "candidate shadow state"
+      ],
+      "message_builder": [
+        "format_shadow_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "👤 Shadow validation status",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/datafeatures",
+      "purpose": "Show decision feature coverage.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "datafeatures_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3409,
+        "registration_line": 3790
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_features.csv"
+      ],
+      "message_builder": [
+        "format_datafeatures"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📊 Feature coverage",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/learn",
+      "purpose": "Show auto-learning recommendation.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "learn_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3443,
+        "registration_line": 3791
+      },
+      "arguments": "",
+      "data_sources": [
+        "auto_learning_recommendation.json"
+      ],
+      "message_builder": [
+        "format_learn"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/quality",
+      "purpose": "Show signal-quality analysis.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "quality_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3450,
+        "registration_line": 3792
+      },
+      "arguments": "[view]",
+      "data_sources": [
+        "signal quality report/current decisions"
+      ],
+      "message_builder": [
+        "format_signalquality_status"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📈 Signal Quality",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/filters",
+      "purpose": "Show filter effectiveness.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "filters_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3458,
+        "registration_line": 3793
+      },
+      "arguments": "",
+      "data_sources": [
+        "filter_effectiveness_report.json"
+      ],
+      "message_builder": [
+        "format_filters"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/blocked",
+      "purpose": "Explain blocker distribution, optionally by component.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "blocked_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3465,
+        "registration_line": 3794
+      },
+      "arguments": "[Momentum|Structure|Risk|Trend|ALL]",
+      "data_sources": [
+        "decision_diagnostics.csv",
+        "decision_explanations.csv"
+      ],
+      "message_builder": [
+        "format_blocked"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/regime",
+      "purpose": "Show current market-regime report.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "regime_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3481,
+        "registration_line": 3795
+      },
+      "arguments": "",
+      "data_sources": [
+        "market_regime_report.json"
+      ],
+      "message_builder": [
+        "format_regime"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/history",
+      "purpose": "Show recent signal/trade history.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "history_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3488,
+        "registration_line": 3796
+      },
+      "arguments": "",
+      "data_sources": [
+        "signals_v3.csv",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_history"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/report",
+      "purpose": "Show daily report.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "report_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3492,
+        "registration_line": 3797
+      },
+      "arguments": "",
+      "data_sources": [
+        "trades.csv",
+        "agent_v3_stats.json"
+      ],
+      "message_builder": [
+        "format_daily_report"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/news",
+      "purpose": "Show news overview or requested subsection/symbol.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "news_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3496,
+        "registration_line": 3798
+      },
+      "arguments": "[overview|sources|health|symbol|risks|stale]",
+      "data_sources": [
+        "market_news_feed.json",
+        "market_news_sources.json",
+        "market_news_health.json"
+      ],
+      "message_builder": [
+        "format_news"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📰 Новости рынка",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/heatmap",
+      "purpose": "Show market heatmap.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "heatmap_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3501,
+        "registration_line": 3799
+      },
+      "arguments": "",
+      "data_sources": [
+        "market_heatmap_report.json"
+      ],
+      "message_builder": [
+        "format_heatmap"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🗺 Тепловая карта рынка",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/live",
+      "purpose": "Show live monitor overview, symbol, trades, or setups.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "live_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3505,
+        "registration_line": 3800
+      },
+      "arguments": "[symbol|trades|setups]",
+      "data_sources": [
+        "live_monitor_state.json"
+      ],
+      "message_builder": [
+        "format_live_monitor"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📡 Live Monitor",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/system",
+      "purpose": "Show live-monitor process/data health.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "system_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3528,
+        "registration_line": 3801
+      },
+      "arguments": "",
+      "data_sources": [
+        "live_monitor_state.json"
+      ],
+      "message_builder": [
+        "format_live_system"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🖥 Система",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/intelligence",
+      "purpose": "Show Market Intelligence report.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "intelligence_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3535,
+        "registration_line": 3802
+      },
+      "arguments": "",
+      "data_sources": [
+        "market_intelligence_report.json"
+      ],
+      "message_builder": [
+        "format_intelligence"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧠 Market Intelligence",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/memory",
+      "purpose": "Show trade-memory summary, optionally for a symbol.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "memory_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3542,
+        "registration_line": 3803
+      },
+      "arguments": "[symbol]",
+      "data_sources": [
+        "trade_memory_summary.txt",
+        "trade_market_context.csv"
+      ],
+      "message_builder": [
+        "format_memory"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧾 Память сделок",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/context",
+      "purpose": "Show current trade/market context.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "context_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3550,
+        "registration_line": 3804
+      },
+      "arguments": "",
+      "data_sources": [
+        "trade_market_context.csv",
+        "market/news reports"
+      ],
+      "message_builder": [
+        "format_context"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🔎 Контекст рынка",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/lab",
+      "purpose": "Show Strategy Lab report or section.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "lab_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3557,
+        "registration_line": 3805
+      },
+      "arguments": "[section]",
+      "data_sources": [
+        "strategy_lab_report.json",
+        "hypothesis_report.json"
+      ],
+      "message_builder": [
+        "format_lab"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧪 Strategy Lab",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/replay",
+      "purpose": "Show shadow replay overview, last trade, symbol, summary, or patterns.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "replay_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3564,
+        "registration_line": 3806
+      },
+      "arguments": "[last|symbol|summary|patterns]",
+      "data_sources": [
+        "trade_replay_report.json",
+        "shadow_replay_report.json"
+      ],
+      "message_builder": [
+        "format_replay"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🔁 Shadow Replay",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/consensus",
+      "purpose": "Show research-consensus overview or group.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "consensus_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3571,
+        "registration_line": 3807
+      },
+      "arguments": "[momentum|edge|news|summary]",
+      "data_sources": [
+        "research_consensus_report.json"
+      ],
+      "message_builder": [
+        "format_consensus"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧠 Research Consensus",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/adaptive",
+      "purpose": "Show adaptive-research overview/status/recommendations/stages.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "adaptive_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3578,
+        "registration_line": 3808
+      },
+      "arguments": "[status|recommendations|stages]",
+      "data_sources": [
+        "adaptive_research_report.json",
+        "adaptive_research_state.json"
+      ],
+      "message_builder": [
+        "format_adaptive"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧠 Adaptive Research",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/walkforward",
+      "purpose": "Read and show the latest persisted walk-forward report.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "walkforward_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3585,
+        "registration_line": 3809
+      },
+      "arguments": "",
+      "data_sources": [
+        "walk_forward_report.json",
+        "reports/walk_forward.json"
+      ],
+      "message_builder": [
+        "format_walkforward"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "📈 Walk Forward",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/research_rank",
+      "purpose": "Show Research Lab v2 strategy ranking.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "research_rank_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3593,
+        "registration_line": 3810
+      },
+      "arguments": "",
+      "data_sources": [
+        "research.db"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/features",
+      "purpose": "Show Research Lab v2 best/worst features.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "features_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3597,
+        "registration_line": 3811
+      },
+      "arguments": "",
+      "data_sources": [
+        "research.db"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/strategies",
+      "purpose": "Show Research Lab v2 strategy registry.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "strategies_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3601,
+        "registration_line": 3812
+      },
+      "arguments": "",
+      "data_sources": [
+        "research.db"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/promotions",
+      "purpose": "Show Research Lab v2 promotion decisions.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "promotions_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3605,
+        "registration_line": 3813
+      },
+      "arguments": "",
+      "data_sources": [
+        "research.db"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/top",
+      "purpose": "Alias of the Research Lab v2 top-strategy ranking.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "top_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3609,
+        "registration_line": 3814
+      },
+      "arguments": "",
+      "data_sources": [
+        "research.db"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab",
+      "purpose": "Show Research Lab v2 runtime state and diagnostics.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "researchlab_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3613,
+        "registration_line": 3815
+      },
+      "arguments": "",
+      "data_sources": [
+        "research.db",
+        "research_lab_runtime_status.json",
+        "research_lab_shadow_trades.json"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧬 Research Lab v2",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_trades",
+      "purpose": "Show only the isolated Research Lab shadow ledger.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "researchlab_trades_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3617,
+        "registration_line": 3816
+      },
+      "arguments": "",
+      "data_sources": [
+        "research_lab_shadow_trades.json"
+      ],
+      "message_builder": [
+        "format_research_lab_v2"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧬 Research Lab shadow trades",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "missing/unreadable research.db yields empty/default sections or may raise into the global logger",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_on",
+      "purpose": "Owner-only runtime override: enable Research Lab v2.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_on_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3641,
+        "registration_line": 3817
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_on_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_off",
+      "purpose": "Owner-only runtime override: disable Research Lab v2.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_off_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3645,
+        "registration_line": 3818
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_off_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_dry_on",
+      "purpose": "Owner-only runtime override: enable global Research Lab dry-run.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_dry_on_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3649,
+        "registration_line": 3819
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_dry_on_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_dry_off",
+      "purpose": "Owner-only runtime override: disable global Research Lab dry-run.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_dry_off_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3653,
+        "registration_line": 3820
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_dry_off_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/promotion",
+      "purpose": "Show experiment promotion engine status/details.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "promotion_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3657,
+        "registration_line": 3821
+      },
+      "arguments": "[details]",
+      "data_sources": [
+        "experiment_promotion_report.json"
+      ],
+      "message_builder": [
+        "format_promotion"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧪 Promotion Engine",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/ready",
+      "purpose": "Synchronize reports and show the VPS promotion gate.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "ready_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3413,
+        "registration_line": 3822
+      },
+      "arguments": "",
+      "data_sources": [
+        "reports/promotion_gate.json",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_promotion_gate"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🚦 VPS Promotion Gate",
+      "state_changes": [
+        "synchronize_reports writes/refreshes derived reports"
+      ],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/learning",
+      "purpose": "Synchronize reports and show decision-learning summary.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "learning_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3419,
+        "registration_line": 3823
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_learning.json",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_decision_learning"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧠 Decision Learning",
+      "state_changes": [
+        "synchronize_reports writes/refreshes derived reports"
+      ],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/modules",
+      "purpose": "Synchronize reports and show module accuracy.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "modules_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3424,
+        "registration_line": 3824
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_learning.json",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_decision_learning"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧩 Module Accuracy",
+      "state_changes": [
+        "synchronize_reports writes/refreshes derived reports"
+      ],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/accuracy",
+      "purpose": "Synchronize reports and show decision accuracy.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "accuracy_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3429,
+        "registration_line": 3825
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision_learning.json",
+        "trades.csv"
+      ],
+      "message_builder": [
+        "format_decision_learning"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🎯 Decision Accuracy",
+      "state_changes": [
+        "synchronize_reports writes/refreshes derived reports"
+      ],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/rootcause",
+      "purpose": "Build and show current decision root causes.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "rootcause_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3434,
+        "registration_line": 3826
+      },
+      "arguments": "",
+      "data_sources": [
+        "decision logs/trades.csv"
+      ],
+      "message_builder": [
+        "format_telegram"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🧠 Decision Root Causes",
+      "state_changes": [],
+      "possible_errors": [
+        "missing/stale/malformed source generally becomes NOT_AVAILABLE, N/A, zero, or an empty-state message",
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/datasources",
+      "purpose": "Show report provenance, freshness, source timestamps, and samples.",
+      "owner_only": false,
+      "audience": "all Telegram users/chats reaching the bot",
+      "handler": {
+        "name": "datasources_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3439,
+        "registration_line": 3827
+      },
+      "arguments": "",
+      "data_sources": [
+        "canonical report metadata and trades.csv timestamps"
+      ],
+      "message_builder": [
+        "format_datasources"
+      ],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": true,
+      "botfather_description": "🗂 Источники отчётов",
+      "state_changes": [],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    }
+  ],
+  "botfather_commands": [
+    {
+      "command": "/start",
+      "description": "📊 Dashboard"
+    },
+    {
+      "command": "/dashboard",
+      "description": "📊 Dashboard"
+    },
+    {
+      "command": "/market",
+      "description": "📈 Рынок"
+    },
+    {
+      "command": "/opportunities",
+      "description": "🎯 Возможности"
+    },
+    {
+      "command": "/watchlist",
+      "description": "📋 Watchlist"
+    },
+    {
+      "command": "/trades",
+      "description": "📂 Сделки"
+    },
+    {
+      "command": "/dataquality",
+      "description": "📋 Data Quality"
+    },
+    {
+      "command": "/coverage",
+      "description": "📊 Data Coverage"
+    },
+    {
+      "command": "/backfill",
+      "description": "🧰 Research Backfill"
+    },
+    {
+      "command": "/snapshot",
+      "description": "📸 Decision Snapshot"
+    },
+    {
+      "command": "/ready",
+      "description": "🚦 VPS Promotion Gate"
+    },
+    {
+      "command": "/learning",
+      "description": "🧠 Decision Learning"
+    },
+    {
+      "command": "/modules",
+      "description": "🧩 Module Accuracy"
+    },
+    {
+      "command": "/accuracy",
+      "description": "🎯 Decision Accuracy"
+    },
+    {
+      "command": "/rootcause",
+      "description": "🧠 Decision Root Causes"
+    },
+    {
+      "command": "/datasources",
+      "description": "🗂 Источники отчётов"
+    },
+    {
+      "command": "/portfolio",
+      "description": "📊 Portfolio"
+    },
+    {
+      "command": "/execution",
+      "description": "⚙️ Execution Simulator"
+    },
+    {
+      "command": "/lossanalysis",
+      "description": "🔎 Loss Attribution"
+    },
+    {
+      "command": "/quality",
+      "description": "📈 Signal Quality"
+    },
+    {
+      "command": "/decisionv2",
+      "description": "🧪 DecisionEngine v2"
+    },
+    {
+      "command": "/stats",
+      "description": "📊 Статистика"
+    },
+    {
+      "command": "/riskstats",
+      "description": "🛡 Risk Engine Statistics"
+    },
+    {
+      "command": "/coach",
+      "description": "🧠 AI Coach"
+    },
+    {
+      "command": "/settings",
+      "description": "⚙️ Settings"
+    },
+    {
+      "command": "/developer",
+      "description": "🛠 Developer"
+    },
+    {
+      "command": "/news",
+      "description": "📰 Новости рынка"
+    },
+    {
+      "command": "/heatmap",
+      "description": "🗺 Тепловая карта рынка"
+    },
+    {
+      "command": "/live",
+      "description": "📡 Live Monitor"
+    },
+    {
+      "command": "/system",
+      "description": "🖥 Система"
+    },
+    {
+      "command": "/intelligence",
+      "description": "🧠 Market Intelligence"
+    },
+    {
+      "command": "/memory",
+      "description": "🧾 Память сделок"
+    },
+    {
+      "command": "/context",
+      "description": "🔎 Контекст рынка"
+    },
+    {
+      "command": "/lab",
+      "description": "🧪 Strategy Lab"
+    },
+    {
+      "command": "/replay",
+      "description": "🔁 Shadow Replay"
+    },
+    {
+      "command": "/consensus",
+      "description": "🧠 Research Consensus"
+    },
+    {
+      "command": "/adaptive",
+      "description": "🧠 Adaptive Research"
+    },
+    {
+      "command": "/promotion",
+      "description": "🧪 Promotion Engine"
+    },
+    {
+      "command": "/research",
+      "description": "🔬 Research Orchestrator"
+    },
+    {
+      "command": "/walkforward",
+      "description": "📈 Walk Forward"
+    },
+    {
+      "command": "/researchlab",
+      "description": "🧬 Research Lab v2"
+    },
+    {
+      "command": "/researchlab_trades",
+      "description": "🧬 Research Lab shadow trades"
+    },
+    {
+      "command": "/candidates",
+      "description": "🧪 Candidate Laboratory"
+    },
+    {
+      "command": "/candidate",
+      "description": "🧪 Candidate detail"
+    },
+    {
+      "command": "/shadowstatus",
+      "description": "👤 Shadow validation status"
+    },
+    {
+      "command": "/datafeatures",
+      "description": "📊 Feature coverage"
+    },
+    {
+      "command": "/help",
+      "description": "❔ Помощь"
+    }
+  ],
+  "callbacks": [
+    {
+      "button_text": "📊 Dashboard",
+      "callback_data": "dashboard",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "AI Research Dashboard",
+      "emitted_by": "main_keyboard, developer_keyboard and market_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": "synchronize_reports is run before display"
+    },
+    {
+      "button_text": "📈 Market",
+      "callback_data": "market",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Market list",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "🎯 Opportunities",
+      "callback_data": "opportunities",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Opportunity ranking",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "📋 Watchlist",
+      "callback_data": "watchlist",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Watchlist",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "📂 Trades",
+      "callback_data": "trades",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Open trades",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "📊 Statistics",
+      "callback_data": "stats",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Trade statistics",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "🧠 AI Coach",
+      "callback_data": "coach",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "AI Coach",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "⚙️ Settings",
+      "callback_data": "settings",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Read-only settings",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": false,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "🛠 Developer",
+      "callback_data": "developer",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Developer submenu",
+      "emitted_by": "main_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "Replay",
+      "callback_data": "dev:replay",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Replay overview",
+      "emitted_by": "developer_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "Diagnostics",
+      "callback_data": "dev:diagnostics",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Diagnostics usage hint",
+      "emitted_by": "developer_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": "does not open symbol diagnostics"
+    },
+    {
+      "button_text": "Experiments",
+      "callback_data": "dev:experiments",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Experiment summary",
+      "emitted_by": "developer_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "Research",
+      "callback_data": "dev:research",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Research overview",
+      "emitted_by": "developer_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "Dry Runs",
+      "callback_data": "dev:dryrun",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Dry-run file counts",
+      "emitted_by": "developer_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "Reports",
+      "callback_data": "dev:reports",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Report availability",
+      "emitted_by": "developer_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": ""
+    },
+    {
+      "button_text": "{symbol without /USDT}",
+      "callback_data": "symbol:{symbol}",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Symbol detail",
+      "emitted_by": "market_keyboard",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": "retains the symbol grid; no explicit Back to Market button"
+    },
+    {
+      "button_text": null,
+      "callback_data": "blocked:{blocker}",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Blocker detail",
+      "emitted_by": "no current keyboard emits it",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": "latent/stale route; handler attaches the main keyboard"
+    },
+    {
+      "button_text": null,
+      "callback_data": "regime:view",
+      "handler": "handle_button",
+      "handler_file": "telegram_bot_v4.py",
+      "destination": "Market regime detail",
+      "emitted_by": "no current keyboard emits it",
+      "edits_message": true,
+      "fallback_delivery": "new reply_text only when edit raises BadRequest",
+      "back_navigation": true,
+      "dead_end": false,
+      "notes": "latent/stale route; handler attaches the main keyboard"
+    }
+  ],
+  "keyboards": [
+    {
+      "name": "main_keyboard",
+      "file": "telegram_handlers.py",
+      "button_placements": 9,
+      "unique_callbacks": 9,
+      "back_button": false,
+      "purpose": "root navigation"
+    },
+    {
+      "name": "developer_keyboard",
+      "file": "telegram_handlers.py",
+      "button_placements": 7,
+      "unique_callbacks": 7,
+      "back_button": true,
+      "purpose": "research/developer submenu"
+    },
+    {
+      "name": "market_keyboard",
+      "file": "telegram_handlers.py",
+      "button_placements": "N symbols + 1",
+      "unique_callbacks": "N symbol callbacks + dashboard",
+      "back_button": true,
+      "purpose": "symbol drill-down"
+    }
+  ],
+  "handlers": {
+    "commands": [
+      {
+        "command": "/start",
+        "handler": {
+          "name": "start",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3092,
+          "registration_line": 3757
+        }
+      },
+      {
+        "command": "/help",
+        "handler": {
+          "name": "help_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3099,
+          "registration_line": 3758
+        }
+      },
+      {
+        "command": "/dashboard",
+        "handler": {
+          "name": "dashboard_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3158,
+          "registration_line": 3759
+        }
+      },
+      {
+        "command": "/coach",
+        "handler": {
+          "name": "coach_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3165,
+          "registration_line": 3760
+        }
+      },
+      {
+        "command": "/opportunities",
+        "handler": {
+          "name": "opportunities_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3201,
+          "registration_line": 3761
+        }
+      },
+      {
+        "command": "/settings",
+        "handler": {
+          "name": "settings_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3291,
+          "registration_line": 3762
+        }
+      },
+      {
+        "command": "/developer",
+        "handler": {
+          "name": "developer_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3298,
+          "registration_line": 3763
+        }
+      },
+      {
+        "command": "/v2",
+        "handler": {
+          "name": "v2_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3172,
+          "registration_line": 3764
+        }
+      },
+      {
+        "command": "/symbols",
+        "handler": {
+          "name": "symbols_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3176,
+          "registration_line": 3765
+        }
+      },
+      {
+        "command": "/equity",
+        "handler": {
+          "name": "equity_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3183,
+          "registration_line": 3766
+        }
+      },
+      {
+        "command": "/timeline",
+        "handler": {
+          "name": "timeline_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3190,
+          "registration_line": 3767
+        }
+      },
+      {
+        "command": "/status",
+        "handler": {
+          "name": "status_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3154,
+          "registration_line": 3768
+        }
+      },
+      {
+        "command": "/market",
+        "handler": {
+          "name": "market_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3197,
+          "registration_line": 3769
+        }
+      },
+      {
+        "command": "/watchlist",
+        "handler": {
+          "name": "watchlist_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3208,
+          "registration_line": 3770
+        }
+      },
+      {
+        "command": "/diagnostics",
+        "handler": {
+          "name": "diagnostics_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3212,
+          "registration_line": 3771
+        }
+      },
+      {
+        "command": "/stats",
+        "handler": {
+          "name": "stats_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3223,
+          "registration_line": 3772
+        }
+      },
+      {
+        "command": "/riskstats",
+        "handler": {
+          "name": "riskstats_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3227,
+          "registration_line": 3773
+        }
+      },
+      {
+        "command": "/trades",
+        "handler": {
+          "name": "trades_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3231,
+          "registration_line": 3774
+        }
+      },
+      {
+        "command": "/dataquality",
+        "handler": {
+          "name": "dataquality_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3238,
+          "registration_line": 3775
+        }
+      },
+      {
+        "command": "/coverage",
+        "handler": {
+          "name": "coverage_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3245,
+          "registration_line": 3776
+        }
+      },
+      {
+        "command": "/backfill",
+        "handler": {
+          "name": "backfill_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3249,
+          "registration_line": 3777
+        }
+      },
+      {
+        "command": "/snapshot",
+        "handler": {
+          "name": "snapshot_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3255,
+          "registration_line": 3778
+        }
+      },
+      {
+        "command": "/portfolio",
+        "handler": {
+          "name": "portfolio_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3259,
+          "registration_line": 3779
+        }
+      },
+      {
+        "command": "/execution",
+        "handler": {
+          "name": "execution_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3267,
+          "registration_line": 3780
+        }
+      },
+      {
+        "command": "/lossanalysis",
+        "handler": {
+          "name": "lossanalysis_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3275,
+          "registration_line": 3781
+        }
+      },
+      {
+        "command": "/decisionv2",
+        "handler": {
+          "name": "decisionv2_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3283,
+          "registration_line": 3782
+        }
+      },
+      {
+        "command": "/posttrade",
+        "handler": {
+          "name": "posttrade_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3305,
+          "registration_line": 3783
+        }
+      },
+      {
+        "command": "/calibration",
+        "handler": {
+          "name": "calibration_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3312,
+          "registration_line": 3784
+        }
+      },
+      {
+        "command": "/research",
+        "handler": {
+          "name": "research_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3319,
+          "registration_line": 3785
+        }
+      },
+      {
+        "command": "/experiments",
+        "handler": {
+          "name": "experiments_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3327,
+          "registration_line": 3786
+        }
+      },
+      {
+        "command": "/candidate",
+        "handler": {
+          "name": "candidate_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3335,
+          "registration_line": 3787
+        }
+      },
+      {
+        "command": "/candidates",
+        "handler": {
+          "name": "candidates_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3377,
+          "registration_line": 3788
+        }
+      },
+      {
+        "command": "/shadowstatus",
+        "handler": {
+          "name": "shadowstatus_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3348,
+          "registration_line": 3789
+        }
+      },
+      {
+        "command": "/datafeatures",
+        "handler": {
+          "name": "datafeatures_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3409,
+          "registration_line": 3790
+        }
+      },
+      {
+        "command": "/learn",
+        "handler": {
+          "name": "learn_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3443,
+          "registration_line": 3791
+        }
+      },
+      {
+        "command": "/quality",
+        "handler": {
+          "name": "quality_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3450,
+          "registration_line": 3792
+        }
+      },
+      {
+        "command": "/filters",
+        "handler": {
+          "name": "filters_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3458,
+          "registration_line": 3793
+        }
+      },
+      {
+        "command": "/blocked",
+        "handler": {
+          "name": "blocked_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3465,
+          "registration_line": 3794
+        }
+      },
+      {
+        "command": "/regime",
+        "handler": {
+          "name": "regime_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3481,
+          "registration_line": 3795
+        }
+      },
+      {
+        "command": "/history",
+        "handler": {
+          "name": "history_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3488,
+          "registration_line": 3796
+        }
+      },
+      {
+        "command": "/report",
+        "handler": {
+          "name": "report_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3492,
+          "registration_line": 3797
+        }
+      },
+      {
+        "command": "/news",
+        "handler": {
+          "name": "news_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3496,
+          "registration_line": 3798
+        }
+      },
+      {
+        "command": "/heatmap",
+        "handler": {
+          "name": "heatmap_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3501,
+          "registration_line": 3799
+        }
+      },
+      {
+        "command": "/live",
+        "handler": {
+          "name": "live_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3505,
+          "registration_line": 3800
+        }
+      },
+      {
+        "command": "/system",
+        "handler": {
+          "name": "system_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3528,
+          "registration_line": 3801
+        }
+      },
+      {
+        "command": "/intelligence",
+        "handler": {
+          "name": "intelligence_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3535,
+          "registration_line": 3802
+        }
+      },
+      {
+        "command": "/memory",
+        "handler": {
+          "name": "memory_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3542,
+          "registration_line": 3803
+        }
+      },
+      {
+        "command": "/context",
+        "handler": {
+          "name": "context_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3550,
+          "registration_line": 3804
+        }
+      },
+      {
+        "command": "/lab",
+        "handler": {
+          "name": "lab_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3557,
+          "registration_line": 3805
+        }
+      },
+      {
+        "command": "/replay",
+        "handler": {
+          "name": "replay_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3564,
+          "registration_line": 3806
+        }
+      },
+      {
+        "command": "/consensus",
+        "handler": {
+          "name": "consensus_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3571,
+          "registration_line": 3807
+        }
+      },
+      {
+        "command": "/adaptive",
+        "handler": {
+          "name": "adaptive_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3578,
+          "registration_line": 3808
+        }
+      },
+      {
+        "command": "/walkforward",
+        "handler": {
+          "name": "walkforward_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3585,
+          "registration_line": 3809
+        }
+      },
+      {
+        "command": "/research_rank",
+        "handler": {
+          "name": "research_rank_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3593,
+          "registration_line": 3810
+        }
+      },
+      {
+        "command": "/features",
+        "handler": {
+          "name": "features_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3597,
+          "registration_line": 3811
+        }
+      },
+      {
+        "command": "/strategies",
+        "handler": {
+          "name": "strategies_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3601,
+          "registration_line": 3812
+        }
+      },
+      {
+        "command": "/promotions",
+        "handler": {
+          "name": "promotions_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3605,
+          "registration_line": 3813
+        }
+      },
+      {
+        "command": "/top",
+        "handler": {
+          "name": "top_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3609,
+          "registration_line": 3814
+        }
+      },
+      {
+        "command": "/researchlab",
+        "handler": {
+          "name": "researchlab_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3613,
+          "registration_line": 3815
+        }
+      },
+      {
+        "command": "/researchlab_trades",
+        "handler": {
+          "name": "researchlab_trades_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3617,
+          "registration_line": 3816
+        }
+      },
+      {
+        "command": "/researchlab_on",
+        "handler": {
+          "name": "researchlab_on_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3641,
+          "registration_line": 3817
+        }
+      },
+      {
+        "command": "/researchlab_off",
+        "handler": {
+          "name": "researchlab_off_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3645,
+          "registration_line": 3818
+        }
+      },
+      {
+        "command": "/researchlab_dry_on",
+        "handler": {
+          "name": "researchlab_dry_on_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3649,
+          "registration_line": 3819
+        }
+      },
+      {
+        "command": "/researchlab_dry_off",
+        "handler": {
+          "name": "researchlab_dry_off_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3653,
+          "registration_line": 3820
+        }
+      },
+      {
+        "command": "/promotion",
+        "handler": {
+          "name": "promotion_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3657,
+          "registration_line": 3821
+        }
+      },
+      {
+        "command": "/ready",
+        "handler": {
+          "name": "ready_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3413,
+          "registration_line": 3822
+        }
+      },
+      {
+        "command": "/learning",
+        "handler": {
+          "name": "learning_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3419,
+          "registration_line": 3823
+        }
+      },
+      {
+        "command": "/modules",
+        "handler": {
+          "name": "modules_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3424,
+          "registration_line": 3824
+        }
+      },
+      {
+        "command": "/accuracy",
+        "handler": {
+          "name": "accuracy_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3429,
+          "registration_line": 3825
+        }
+      },
+      {
+        "command": "/rootcause",
+        "handler": {
+          "name": "rootcause_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3434,
+          "registration_line": 3826
+        }
+      },
+      {
+        "command": "/datasources",
+        "handler": {
+          "name": "datasources_command",
+          "file": "telegram_bot_v4.py",
+          "definition_line": 3439,
+          "registration_line": 3827
+        }
+      }
+    ],
+    "callback": [
+      {
+        "name": "handle_button",
+        "file": "telegram_bot_v4.py",
+        "line": 3664,
+        "pattern": null,
+        "scope": "all callback queries"
+      }
+    ],
+    "errors": [
+      {
+        "name": "on_error",
+        "file": "telegram_bot_v4.py",
+        "line": 3741,
+        "user_reply": false,
+        "behavior": "print error to stdout"
+      }
+    ],
+    "outbound_notifications": [
+      {
+        "name": "send_notification",
+        "file": "multi_timeframe_agent_v3.py",
+        "content_builder": "notification_manager.format_signal",
+        "transport": "Bot.send_message"
+      },
+      {
+        "name": "TradeCloseNotifier.notify_closed_trade",
+        "file": "trade_close_notifier.py",
+        "content_builder": "TradeCloseNotifier.format_trade_close",
+        "transport": "Bot.send_message"
+      }
+    ]
+  },
+  "message_builders": [
+    {
+      "name": "format_summary",
+      "file": "adaptive_research/formatter.py",
+      "line": 20
+    },
+    {
+      "name": "format_overview",
+      "file": "adaptive_research/formatter.py",
+      "line": 58
+    },
+    {
+      "name": "format_status",
+      "file": "adaptive_research/formatter.py",
+      "line": 83
+    },
+    {
+      "name": "format_recommendations",
+      "file": "adaptive_research/formatter.py",
+      "line": 106
+    },
+    {
+      "name": "format_stages",
+      "file": "adaptive_research/formatter.py",
+      "line": 134
+    },
+    {
+      "name": "format_dashboard",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 26
+    },
+    {
+      "name": "format_overview",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 54
+    },
+    {
+      "name": "format_trading",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 105
+    },
+    {
+      "name": "format_live",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 129
+    },
+    {
+      "name": "format_news",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 148
+    },
+    {
+      "name": "format_lab",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 167
+    },
+    {
+      "name": "format_memory",
+      "file": "dashboard/dashboard_formatter.py",
+      "line": 212
+    },
+    {
+      "name": "format_live",
+      "file": "live_monitor/formatters.py",
+      "line": 33
+    },
+    {
+      "name": "format_overview",
+      "file": "live_monitor/formatters.py",
+      "line": 53
+    },
+    {
+      "name": "format_trades",
+      "file": "live_monitor/formatters.py",
+      "line": 87
+    },
+    {
+      "name": "format_trade_lines",
+      "file": "live_monitor/formatters.py",
+      "line": 109
+    },
+    {
+      "name": "format_items",
+      "file": "live_monitor/formatters.py",
+      "line": 149
+    },
+    {
+      "name": "format_setups",
+      "file": "live_monitor/formatters.py",
+      "line": 167
+    },
+    {
+      "name": "format_symbol",
+      "file": "live_monitor/formatters.py",
+      "line": 188
+    },
+    {
+      "name": "format_item_lines",
+      "file": "live_monitor/formatters.py",
+      "line": 205
+    },
+    {
+      "name": "format_system",
+      "file": "live_monitor/formatters.py",
+      "line": 233
+    },
+    {
+      "name": "format_summary_text",
+      "file": "news_observer/formatter.py",
+      "line": 14
+    },
+    {
+      "name": "format_telegram",
+      "file": "news_observer/formatter.py",
+      "line": 47
+    },
+    {
+      "name": "_format_sources",
+      "file": "news_observer/formatter.py",
+      "line": 118
+    },
+    {
+      "name": "_format_health",
+      "file": "news_observer/formatter.py",
+      "line": 134
+    },
+    {
+      "name": "_format_items",
+      "file": "news_observer/formatter.py",
+      "line": 151
+    },
+    {
+      "name": "format_signal",
+      "file": "notification_manager.py",
+      "line": 58
+    },
+    {
+      "name": "format_summary",
+      "file": "research_consensus/consensus_formatter.py",
+      "line": 18
+    },
+    {
+      "name": "format_overview",
+      "file": "research_consensus/consensus_formatter.py",
+      "line": 69
+    },
+    {
+      "name": "format_group",
+      "file": "research_consensus/consensus_formatter.py",
+      "line": 98
+    },
+    {
+      "name": "format_summary_command",
+      "file": "research_consensus/consensus_formatter.py",
+      "line": 142
+    },
+    {
+      "name": "format",
+      "file": "research_lab_v2/dashboard.py",
+      "line": 102
+    },
+    {
+      "name": "format_summary",
+      "file": "research_orchestrator/formatter.py",
+      "line": 25
+    },
+    {
+      "name": "format_telegram",
+      "file": "research_orchestrator/formatter.py",
+      "line": 81
+    },
+    {
+      "name": "_format_overview",
+      "file": "research_orchestrator/formatter.py",
+      "line": 108
+    },
+    {
+      "name": "_format_evidence",
+      "file": "research_orchestrator/formatter.py",
+      "line": 136
+    },
+    {
+      "name": "_format_conflicts",
+      "file": "research_orchestrator/formatter.py",
+      "line": 150
+    },
+    {
+      "name": "_format_stale",
+      "file": "research_orchestrator/formatter.py",
+      "line": 166
+    },
+    {
+      "name": "_format_next",
+      "file": "research_orchestrator/formatter.py",
+      "line": 183
+    },
+    {
+      "name": "_format_hypothesis",
+      "file": "research_orchestrator/formatter.py",
+      "line": 195
+    },
+    {
+      "name": "format_time",
+      "file": "telegram_bot_v4.py",
+      "line": 286
+    },
+    {
+      "name": "format_local_time",
+      "file": "telegram_bot_v4.py",
+      "line": 294
+    },
+    {
+      "name": "format_experiment_metrics",
+      "file": "telegram_bot_v4.py",
+      "line": 611
+    },
+    {
+      "name": "format_experiments",
+      "file": "telegram_bot_v4.py",
+      "line": 634
+    },
+    {
+      "name": "format_weight_block",
+      "file": "telegram_bot_v4.py",
+      "line": 745
+    },
+    {
+      "name": "format_candidate",
+      "file": "telegram_bot_v4.py",
+      "line": 772
+    },
+    {
+      "name": "format_learn",
+      "file": "telegram_bot_v4.py",
+      "line": 847
+    },
+    {
+      "name": "format_quality",
+      "file": "telegram_bot_v4.py",
+      "line": 929
+    },
+    {
+      "name": "format_filters",
+      "file": "telegram_bot_v4.py",
+      "line": 992
+    },
+    {
+      "name": "format_blocked",
+      "file": "telegram_bot_v4.py",
+      "line": 1063
+    },
+    {
+      "name": "format_regime",
+      "file": "telegram_bot_v4.py",
+      "line": 1166
+    },
+    {
+      "name": "format_status",
+      "file": "telegram_bot_v4.py",
+      "line": 1194
+    },
+    {
+      "name": "format_analytics_status",
+      "file": "telegram_bot_v4.py",
+      "line": 1293
+    },
+    {
+      "name": "format_coach",
+      "file": "telegram_bot_v4.py",
+      "line": 1426
+    },
+    {
+      "name": "format_market",
+      "file": "telegram_bot_v4.py",
+      "line": 1451
+    },
+    {
+      "name": "format_watchlist",
+      "file": "telegram_bot_v4.py",
+      "line": 1472
+    },
+    {
+      "name": "format_diagnostics",
+      "file": "telegram_bot_v4.py",
+      "line": 1513
+    },
+    {
+      "name": "format_riskstats",
+      "file": "telegram_bot_v4.py",
+      "line": 1594
+    },
+    {
+      "name": "format_v2_readiness",
+      "file": "telegram_bot_v4.py",
+      "line": 1713
+    },
+    {
+      "name": "format_symbols_report",
+      "file": "telegram_bot_v4.py",
+      "line": 1766
+    },
+    {
+      "name": "format_equity_report",
+      "file": "telegram_bot_v4.py",
+      "line": 1794
+    },
+    {
+      "name": "format_timeline_report",
+      "file": "telegram_bot_v4.py",
+      "line": 1828
+    },
+    {
+      "name": "format_stats",
+      "file": "telegram_bot_v4.py",
+      "line": 1872
+    },
+    {
+      "name": "format_trades",
+      "file": "telegram_bot_v4.py",
+      "line": 1890
+    },
+    {
+      "name": "format_top_items",
+      "file": "telegram_bot_v4.py",
+      "line": 1948
+    },
+    {
+      "name": "format_posttrade",
+      "file": "telegram_bot_v4.py",
+      "line": 1960
+    },
+    {
+      "name": "format_calibration",
+      "file": "telegram_bot_v4.py",
+      "line": 1998
+    },
+    {
+      "name": "format_research",
+      "file": "telegram_bot_v4.py",
+      "line": 2052
+    },
+    {
+      "name": "format_history",
+      "file": "telegram_bot_v4.py",
+      "line": 2062
+    },
+    {
+      "name": "format_daily_report",
+      "file": "telegram_bot_v4.py",
+      "line": 2084
+    },
+    {
+      "name": "format_news",
+      "file": "telegram_bot_v4.py",
+      "line": 2131
+    },
+    {
+      "name": "format_heatmap",
+      "file": "telegram_bot_v4.py",
+      "line": 2150
+    },
+    {
+      "name": "format_intelligence",
+      "file": "telegram_bot_v4.py",
+      "line": 2205
+    },
+    {
+      "name": "format_memory",
+      "file": "telegram_bot_v4.py",
+      "line": 2258
+    },
+    {
+      "name": "format_context",
+      "file": "telegram_bot_v4.py",
+      "line": 2271
+    },
+    {
+      "name": "format_lab",
+      "file": "telegram_bot_v4.py",
+      "line": 2343
+    },
+    {
+      "name": "format_shadow_replay_overview",
+      "file": "telegram_bot_v4.py",
+      "line": 2473
+    },
+    {
+      "name": "format_shadow_replay_details",
+      "file": "telegram_bot_v4.py",
+      "line": 2509
+    },
+    {
+      "name": "format_replay",
+      "file": "telegram_bot_v4.py",
+      "line": 2556
+    },
+    {
+      "name": "format_replay_overview",
+      "file": "telegram_bot_v4.py",
+      "line": 2619
+    },
+    {
+      "name": "format_replay_trade",
+      "file": "telegram_bot_v4.py",
+      "line": 2644
+    },
+    {
+      "name": "format_replay_patterns",
+      "file": "telegram_bot_v4.py",
+      "line": 2705
+    },
+    {
+      "name": "format_consensus",
+      "file": "telegram_bot_v4.py",
+      "line": 2723
+    },
+    {
+      "name": "format_adaptive",
+      "file": "telegram_bot_v4.py",
+      "line": 2741
+    },
+    {
+      "name": "format_promotion",
+      "file": "telegram_bot_v4.py",
+      "line": 2771
+    },
+    {
+      "name": "format_dashboard",
+      "file": "telegram_bot_v4.py",
+      "line": 2840
+    },
+    {
+      "name": "format_datasources",
+      "file": "telegram_bot_v4.py",
+      "line": 2854
+    },
+    {
+      "name": "format_market",
+      "file": "telegram_bot_v4.py",
+      "line": 2880
+    },
+    {
+      "name": "format_opportunities",
+      "file": "telegram_bot_v4.py",
+      "line": 2885
+    },
+    {
+      "name": "format_watchlist",
+      "file": "telegram_bot_v4.py",
+      "line": 2890
+    },
+    {
+      "name": "format_stats",
+      "file": "telegram_bot_v4.py",
+      "line": 2895
+    },
+    {
+      "name": "format_trades",
+      "file": "telegram_bot_v4.py",
+      "line": 2900
+    },
+    {
+      "name": "format_coach",
+      "file": "telegram_bot_v4.py",
+      "line": 2905
+    },
+    {
+      "name": "format_settings",
+      "file": "telegram_bot_v4.py",
+      "line": 2910
+    },
+    {
+      "name": "format_developer",
+      "file": "telegram_bot_v4.py",
+      "line": 2915
+    },
+    {
+      "name": "format_dataquality",
+      "file": "telegram_bot_v4.py",
+      "line": 2920
+    },
+    {
+      "name": "format_coverage",
+      "file": "telegram_bot_v4.py",
+      "line": 2935
+    },
+    {
+      "name": "format_snapshot",
+      "file": "telegram_bot_v4.py",
+      "line": 2940
+    },
+    {
+      "name": "format_portfolio_status",
+      "file": "telegram_bot_v4.py",
+      "line": 2954
+    },
+    {
+      "name": "format_execution_status",
+      "file": "telegram_bot_v4.py",
+      "line": 2961
+    },
+    {
+      "name": "format_lossanalysis_status",
+      "file": "telegram_bot_v4.py",
+      "line": 2969
+    },
+    {
+      "name": "format_signalquality_status",
+      "file": "telegram_bot_v4.py",
+      "line": 2976
+    },
+    {
+      "name": "format_decisionv2_status",
+      "file": "telegram_bot_v4.py",
+      "line": 2983
+    },
+    {
+      "name": "format_walkforward",
+      "file": "telegram_bot_v4.py",
+      "line": 2990
+    },
+    {
+      "name": "format_research_lab_v2",
+      "file": "telegram_bot_v4.py",
+      "line": 3058
+    },
+    {
+      "name": "with_v5_footer",
+      "file": "telegram_bot_v4.py",
+      "line": 3064
+    },
+    {
+      "name": "help_text",
+      "file": "telegram_bot_v4.py",
+      "line": 3104
+    },
+    {
+      "name": "format_candidate_lab_entry",
+      "file": "telegram_bot_v4.py",
+      "line": 3356
+    },
+    {
+      "name": "format_datafeatures",
+      "file": "telegram_bot_v4.py",
+      "line": 3386
+    },
+    {
+      "name": "footer",
+      "file": "telegram_formatters.py",
+      "line": 139
+    },
+    {
+      "name": "format_legacy_v5_dashboard",
+      "file": "telegram_formatters.py",
+      "line": 586
+    },
+    {
+      "name": "format_market",
+      "file": "telegram_formatters.py",
+      "line": 631
+    },
+    {
+      "name": "format_symbol_detail",
+      "file": "telegram_formatters.py",
+      "line": 645
+    },
+    {
+      "name": "format_opportunities",
+      "file": "telegram_formatters.py",
+      "line": 685
+    },
+    {
+      "name": "format_watchlist",
+      "file": "telegram_formatters.py",
+      "line": 740
+    },
+    {
+      "name": "format_statistics",
+      "file": "telegram_formatters.py",
+      "line": 757
+    },
+    {
+      "name": "format_trades",
+      "file": "telegram_formatters.py",
+      "line": 778
+    },
+    {
+      "name": "format_ai_coach",
+      "file": "telegram_formatters.py",
+      "line": 797
+    },
+    {
+      "name": "format_opportunities_summary",
+      "file": "telegram_formatters.py",
+      "line": 828
+    },
+    {
+      "name": "format_settings",
+      "file": "telegram_formatters.py",
+      "line": 857
+    },
+    {
+      "name": "format_developer",
+      "file": "telegram_formatters.py",
+      "line": 873
+    },
+    {
+      "name": "format_dry_run",
+      "file": "telegram_formatters.py",
+      "line": 888
+    },
+    {
+      "name": "format_reports_status",
+      "file": "telegram_formatters.py",
+      "line": 896
+    },
+    {
+      "name": "format_price",
+      "file": "trade_close_notifier.py",
+      "line": 103
+    },
+    {
+      "name": "format_signed",
+      "file": "trade_close_notifier.py",
+      "line": 115
+    },
+    {
+      "name": "format_percent",
+      "file": "trade_close_notifier.py",
+      "line": 121
+    },
+    {
+      "name": "format_duration",
+      "file": "trade_close_notifier.py",
+      "line": 126
+    },
+    {
+      "name": "format_trade_close",
+      "file": "trade_close_notifier.py",
+      "line": 289
+    }
+  ],
+  "data_sources": [
+    "DecisionEngine v2 report/current decisions",
+    "adaptive_research_report.json",
+    "adaptive_research_state.json",
+    "agent_v3_stats.json",
+    "auto_learning_recommendation.json",
+    "calibration_report.json",
+    "candidate shadow state",
+    "candidate_shadow_trades.csv",
+    "canonical report metadata and trades.csv timestamps",
+    "current research inputs",
+    "data_quality_report.json",
+    "decision logs/trades.csv",
+    "decision_debug.csv",
+    "decision_diagnostics.csv",
+    "decision_explanations.csv",
+    "decision_features.csv",
+    "decision_learning.json",
+    "decision_snapshot.json",
+    "execution report/current simulator inputs",
+    "experiment_promotion_report.json",
+    "filter_effectiveness_report.json",
+    "hypothesis_report.json",
+    "live_monitor_state.json",
+    "loss attribution report",
+    "market/news reports",
+    "market_heatmap_report.json",
+    "market_intelligence_report.json",
+    "market_news_feed.json",
+    "market_news_health.json",
+    "market_news_sources.json",
+    "market_regime_report.json",
+    "portfolio_report.json",
+    "post_trade_analysis_report.json",
+    "post_trade_analysis_trades.csv",
+    "reports/candidate_laboratory.json",
+    "reports/promotion_gate.json",
+    "reports/walk_forward.json",
+    "research dashboard reports",
+    "research.db",
+    "research/news reports",
+    "research_consensus_report.json",
+    "research_lab_runtime_status.json",
+    "research_lab_shadow_trades.json",
+    "research_orchestrator_report.json",
+    "shadow_replay_report.json",
+    "signal quality report/current decisions",
+    "signals_v3.csv",
+    "strategy_experiments_report.json",
+    "strategy_experiments_results.csv",
+    "strategy_lab_report.json",
+    "trade_market_context.csv",
+    "trade_memory_summary.txt",
+    "trade_replay_report.json",
+    "trades.csv",
+    "walk_forward_report.json"
+  ],
+  "owner_only_actions": [
+    {
+      "command": "/researchlab_on",
+      "purpose": "Owner-only runtime override: enable Research Lab v2.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_on_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3641,
+        "registration_line": 3817
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_on_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_off",
+      "purpose": "Owner-only runtime override: disable Research Lab v2.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_off_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3645,
+        "registration_line": 3818
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_off_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_dry_on",
+      "purpose": "Owner-only runtime override: enable global Research Lab dry-run.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_dry_on_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3649,
+        "registration_line": 3819
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_dry_on_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    },
+    {
+      "command": "/researchlab_dry_off",
+      "purpose": "Owner-only runtime override: disable global Research Lab dry-run.",
+      "owner_only": true,
+      "audience": "stored owner only",
+      "handler": {
+        "name": "researchlab_dry_off_command",
+        "file": "telegram_bot_v4.py",
+        "definition_line": 3653,
+        "registration_line": 3820
+      },
+      "arguments": "",
+      "data_sources": [
+        "derived runtime/report data through researchlab_dry_off_command"
+      ],
+      "message_builder": [],
+      "response": {
+        "content": "plain text",
+        "parse_mode": null,
+        "keyboard": "main_keyboard",
+        "delivery": "new message via reply_text",
+        "max_length": 3900
+      },
+      "botfather_menu": false,
+      "botfather_description": null,
+      "state_changes": [
+        "writes Research Lab runtime override"
+      ],
+      "possible_errors": [
+        "uncaught handler errors are logged to stdout only; the user receives no generic error reply"
+      ]
+    }
+  ],
+  "potential_conflicts": [
+    {
+      "id": "COMMAND_MENU_DRIFT",
+      "severity": "high",
+      "detail": "71 handlers are registered but BotFather exposes 47; missing: /v2, /symbols, /equity, /timeline, /status, /diagnostics, /posttrade, /calibration, /experiments, /learn, /filters, /blocked, /regime, /history, /report, /research_rank, /features, /strategies, /promotions, /top, /researchlab_on, /researchlab_off, /researchlab_dry_on, /researchlab_dry_off"
+    },
+    {
+      "id": "UNKNOWN_COMMAND_SILENCE",
+      "severity": "high",
+      "detail": "No catch-all MessageHandler for unknown slash commands; users receive no response."
+    },
+    {
+      "id": "START_OVERWRITES_OWNER",
+      "severity": "critical",
+      "detail": "Every /start writes bot_config.json; the latest caller becomes the notification destination and the basis for owner checks."
+    },
+    {
+      "id": "CHAT_ID_USER_ID_MIX",
+      "severity": "high",
+      "detail": "Research Lab authorization compares effective_user.id with a stored chat_id; private chats happen to match, group chats do not."
+    },
+    {
+      "id": "PUBLIC_MUTATING_COMMANDS",
+      "severity": "critical",
+      "detail": "/backfill and report synchronization commands are not owner-only and can write derived artifacts."
+    },
+    {
+      "id": "DASHBOARD_PATH_DRIFT",
+      "severity": "high",
+      "detail": "Dashboard callback synchronizes reports before formatting; /dashboard does not. They can show different freshness and have different side effects."
+    },
+    {
+      "id": "TRUNCATION_WITHOUT_PAGINATION",
+      "severity": "high",
+      "detail": "All replies are sliced at 3900 characters; the large dashboard is also sliced at 4096 internally. No pagination or continuation buttons."
+    },
+    {
+      "id": "LATENT_CALLBACKS",
+      "severity": "medium",
+      "detail": "blocked:{blocker} and regime:view are handled but no active keyboard emits them."
+    },
+    {
+      "id": "GLOBAL_CALLBACK_ROUTER",
+      "severity": "medium",
+      "detail": "One CallbackQueryHandler has no pattern and catches every callback; unknown data silently opens help."
+    },
+    {
+      "id": "MIXED_LANGUAGE_TIME_FORMATS",
+      "severity": "medium",
+      "detail": "Russian and English labels, UTC/MSK/system-local timestamps, and numeric precision vary by formatter."
+    },
+    {
+      "id": "SIGNAL_DEDUP_TIMESTAMP",
+      "severity": "high",
+      "detail": "Signal duplicate detection hashes the full formatted text, which includes datetime.now(); identical setups in a later minute are not duplicates."
+    },
+    {
+      "id": "NO_MEDIA",
+      "severity": "medium",
+      "detail": "No photo, chart, animation, or document sending path exists."
+    },
+    {
+      "id": "NO_PARSE_MODE",
+      "severity": "low",
+      "detail": "All messages are plain text; typography relies on emoji, blank lines, and Unicode separators."
+    },
+    {
+      "id": "FORMATTER_FRAGMENTATION",
+      "severity": "medium",
+      "detail": "Formatting is split across legacy, v5, dashboard, news, live, research, consensus, adaptive, and Research Lab modules with overlapping names."
+    },
+    {
+      "id": "DEVELOPER_PUBLIC",
+      "severity": "high",
+      "detail": "The Developer menu and most operational/research commands are accessible to every user; only four Research Lab overrides are guarded."
+    }
+  ]
+}
