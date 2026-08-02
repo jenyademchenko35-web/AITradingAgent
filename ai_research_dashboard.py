@@ -505,4 +505,6 @@ class AIResearchDashboard:
             f"{health['label']} ({health['score']}/100)", "",
             "Recommendation:", "", str(report["recommendation"]),
         ])
-        return "\n".join(lines)[:4096]
+        # Telegram delivery owns pagination.  Returning the complete report
+        # prevents lower sections from disappearing without warning.
+        return "\n".join(lines)

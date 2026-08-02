@@ -413,7 +413,7 @@ def test_owner_only_telegram_runtime_control(monkeypatch, tmp_path):
     import research_lab_v2.config as runtime_config
 
     calls, replies = [], []
-    monkeypatch.setattr(telegram_bot, "load_chat_id", lambda: 42)
+    monkeypatch.setenv("TELEGRAM_OWNER_USER_ID", "42")
     monkeypatch.setattr(runtime_config, "set_runtime_override", lambda **kwargs: calls.append(kwargs))
     monkeypatch.setattr(telegram_bot, "format_research_lab_v2", lambda section: section)
 
@@ -421,11 +421,17 @@ def test_owner_only_telegram_runtime_control(monkeypatch, tmp_path):
         replies.append(text)
 
     monkeypatch.setattr(telegram_bot, "reply", fake_reply)
-    unauthorized = SimpleNamespace(effective_user=SimpleNamespace(id=7))
+    async def owner_reply(text, **kwargs):
+        replies.append(text)
+
+    unauthorized = SimpleNamespace(
+        effective_user=SimpleNamespace(id=7),
+        effective_message=SimpleNamespace(reply_text=owner_reply),
+    )
     authorized = SimpleNamespace(effective_user=SimpleNamespace(id=42))
-    asyncio.run(telegram_bot._researchlab_override(unauthorized, enabled=True))
+    asyncio.run(telegram_bot.researchlab_on_command(unauthorized, SimpleNamespace()))
     assert calls == []
-    asyncio.run(telegram_bot._researchlab_override(authorized, dry_run=False))
+    asyncio.run(telegram_bot.researchlab_dry_off_command(authorized, SimpleNamespace()))
     assert calls == [{"enabled": None, "dry_run": False}]
 
 

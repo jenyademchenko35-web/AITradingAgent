@@ -33,6 +33,7 @@ import ccxt
 import pandas as pd
 import asyncio
 from notification_manager import (
+    decision_signal_fingerprint,
     load_chat_id,
     format_signal,
     is_duplicate,
@@ -965,19 +966,39 @@ async def send_notification(
         symbol: str,
         decision: DecisionResult,
         market: MarketSnapshot,
+        *,
+        entry: float,
+        stop_loss: float,
+        take_profit: float,
     ):
     chat_id = load_chat_id()
     if not chat_id or not BOT_TOKEN:
         return
 
-    text = format_signal(symbol, decision, market)
+    fingerprint = decision_signal_fingerprint(
+        symbol,
+        decision,
+        timeframe="1h",
+        entry=entry,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+    )
 
-    if is_duplicate(text):
+    if is_duplicate(fingerprint):
         return
+
+    text = format_signal(
+        symbol,
+        decision,
+        market,
+        entry=entry,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+    )
 
     bot = Bot(BOT_TOKEN)
     await bot.send_message(chat_id=chat_id, text=text)
-    mark_as_sent(text)
+    mark_as_sent(fingerprint)
 
 
 def send_trade_close_notification(
@@ -1380,6 +1401,9 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                         symbol,
                         decision,
                         market,
+                        entry=entry,
+                        stop_loss=stop_loss,
+                        take_profit=take_profit,
                     )
                 )
                 LOGGER.notification_sent()

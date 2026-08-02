@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import os
 import subprocess
 from collections import Counter
@@ -19,6 +20,8 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
 )
 
 from adaptive_research.formatter import (
@@ -37,7 +40,10 @@ from live_monitor.formatters import (
     load_state as load_live_monitor_state,
     state_age_text as live_state_age_text,
 )
-from notification_manager import load_chat_id, save_chat_id
+from notification_manager import (
+    save_last_active_chat_id,
+    set_notification_chat_id,
+)
 from execution_simulator import (
     ExecutionSimulator,
     format_execution,
@@ -115,6 +121,24 @@ from telegram_handlers import (
     developer_keyboard as v5_developer_keyboard,
     main_keyboard as v5_main_keyboard,
     market_keyboard as v5_market_keyboard,
+)
+from telegram_ui.callbacks import CallbackParseError, parse_callback
+from telegram_ui.errors import (
+    DATA_UNAVAILABLE_TEXT,
+    STALE_BUTTON_TEXT,
+    UNKNOWN_COMMAND_TEXT,
+    edit_paginated_text,
+    report_internal_error,
+    send_paginated_text,
+)
+from telegram_ui.formatters import format_home as format_v2_home
+from telegram_ui.keyboards import deep_screen_keyboard, home_keyboard as v2_home_keyboard
+from telegram_ui.navigation import navigation_store
+from telegram_ui.permissions import (
+    OWNER_ONLY_TEXT,
+    is_owner_update,
+    require_owner,
+    should_use_v2,
 )
 from trade_metrics_normalizer import (
     aggregate_trade_metrics,
@@ -205,6 +229,30 @@ NEWS_WARNING_SECONDS = 2 * 60 * 60
 NEWS_STALE_SECONDS = 6 * 60 * 60
 LOCAL_TZ = timezone(timedelta(hours=3), "MSK")
 BOT_COMMANDS = BOT_COMMANDS_V5
+TELEGRAM_LOGGER = logging.getLogger(__name__)
+
+OWNER_ONLY_COMMANDS = (
+    "backfill",
+    "ready",
+    "learning",
+    "modules",
+    "accuracy",
+    "rootcause",
+    "posttrade",
+    "calibration",
+    "research",
+    "experiments",
+    "learn",
+    "filters",
+    "blocked",
+    "regime",
+    "researchlab_on",
+    "researchlab_off",
+    "researchlab_dry_on",
+    "researchlab_dry_off",
+    "set_notification_chat",
+    "help_admin",
+)
 
 
 load_dotenv()
@@ -3083,8 +3131,9 @@ async def reply(
     """Reply to a command with the main keyboard."""
     if update.message is None:
         return
-    await update.message.reply_text(
-        truncate(text),
+    await send_paginated_text(
+        update.message,
+        text,
         reply_markup=reply_markup or main_keyboard(),
     )
 
@@ -3092,13 +3141,85 @@ async def reply(
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Register chat and show the health dashboard."""
     if update.effective_chat:
-        save_chat_id(update.effective_chat.id)
+        save_last_active_chat_id(update.effective_chat.id)
+    if should_use_v2(update):
+        await reply(update, format_v2_home(), v2_home_keyboard())
+        return
+    await reply(update, format_dashboard())
+
+
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Open the active UI without changing notification settings."""
+    if should_use_v2(update):
+        await reply(update, format_v2_home(), v2_home_keyboard())
+        return
     await reply(update, format_dashboard())
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Show available commands."""
-    await reply(update, help_text())
+    await reply(update, help_overview_text() if should_use_v2(update) else help_text())
+
+
+def help_overview_text() -> str:
+    return "\n".join([
+        "❔ Помощь",
+        "",
+        "/menu — главное меню",
+        "/market — рынок",
+        "/watchlist — наблюдение",
+        "/trades — открытые сделки",
+        "/stats — статистика",
+        "/researchlab — Research Lab",
+        "",
+        "Разделы помощи:",
+        "/help_signals · /help_trading · /help_research",
+    ])
+
+
+async def help_signals_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, "\n".join([
+        "📡 Рынок и сигналы", "", "/market", "/watchlist", "/opportunities",
+        "/diagnostics <монета>", "/live [монета|trades|setups]",
+    ]))
+
+
+async def help_trading_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, "\n".join([
+        "📂 Сделки и статистика", "", "/trades", "/stats", "/riskstats",
+        "/history", "/report", "/portfolio",
+    ]))
+
+
+async def help_research_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, "\n".join([
+        "🔬 Исследования", "", "/research", "/researchlab", "/researchlab_trades",
+        "/research_rank", "/features", "/strategies", "/promotions", "/walkforward",
+    ]))
+
+
+@require_owner
+async def help_admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, "\n".join([
+        "🔐 Команды владельца", "",
+        *(f"/{command}" for command in OWNER_ONLY_COMMANDS if command != "help_admin"),
+    ]))
+
+
+@require_owner
+async def set_notification_chat_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    if update.effective_chat is None:
+        await reply(update, DATA_UNAVAILABLE_TEXT)
+        return
+    set_notification_chat_id(update.effective_chat.id)
+    await reply(update, f"Чат {update.effective_chat.id} назначен получателем уведомлений.")
+
+
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await reply(update, UNKNOWN_COMMAND_TEXT)
 
 
 def help_text() -> str:
@@ -3246,6 +3367,7 @@ async def coverage_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await reply(update, format_coverage())
 
 
+@require_owner
 async def backfill_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     report = run_backfill_pipeline()
     await reply(update, "\n".join(["🧰 Research Backfill", f"Recovered: {report.get('recovered_total',0)} fields",
@@ -3302,6 +3424,7 @@ async def developer_command(
     await reply(update, format_developer(), v5_developer_keyboard())
 
 
+@require_owner
 async def posttrade_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3309,6 +3432,7 @@ async def posttrade_command(
     await reply(update, format_posttrade())
 
 
+@require_owner
 async def calibration_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3316,6 +3440,7 @@ async def calibration_command(
     await reply(update, format_calibration())
 
 
+@require_owner
 async def research_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3324,6 +3449,7 @@ async def research_command(
     await reply(update, format_research(section))
 
 
+@require_owner
 async def experiments_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3410,27 +3536,32 @@ async def datafeatures_command(update: Update, context: ContextTypes.DEFAULT_TYP
     await reply(update, format_datafeatures(read_csv_rows(FEATURES_FILE)))
 
 
+@require_owner
 async def ready_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Rebuild and show the read-only VPS promotion gate."""
     synchronize_reports(base_dir=BASE_DIR)
     await reply(update, format_promotion_gate(read_json(BASE_DIR / "reports/promotion_gate.json")))
 
 
+@require_owner
 async def learning_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     synchronize_reports(base_dir=BASE_DIR)
     await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "learning"))
 
 
+@require_owner
 async def modules_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     synchronize_reports(base_dir=BASE_DIR)
     await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "modules"))
 
 
+@require_owner
 async def accuracy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     synchronize_reports(base_dir=BASE_DIR)
     await reply(update, format_decision_learning(read_json(BASE_DIR / "decision_learning.json"), "accuracy"))
 
 
+@require_owner
 async def rootcause_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     analyzer = RootCauseAnalyzer(BASE_DIR)
     await reply(update, analyzer.format_telegram(analyzer.build_report()))
@@ -3440,6 +3571,7 @@ async def datasources_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     await reply(update, format_datasources())
 
 
+@require_owner
 async def learn_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3455,6 +3587,7 @@ async def quality_command(
     await reply(update, format_signalquality_status(view))
 
 
+@require_owner
 async def filters_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3462,6 +3595,7 @@ async def filters_command(
     await reply(update, format_filters())
 
 
+@require_owner
 async def blocked_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3478,6 +3612,7 @@ async def blocked_command(
     await reply(update, format_blocked(normalized))
 
 
+@require_owner
 async def regime_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -3620,36 +3755,33 @@ async def researchlab_trades_command(update: Update, context: ContextTypes.DEFAU
 
 
 def is_researchlab_owner(update: Update) -> bool:
-    owner_id = load_chat_id()
-    user_id = getattr(getattr(update, "effective_user", None), "id", None)
-    try:
-        return owner_id is not None and int(user_id) == int(owner_id)
-    except (TypeError, ValueError):
-        return False
+    """Compatibility name backed by the canonical Telegram user-id policy."""
+    return is_owner_update(update)
 
 
 async def _researchlab_override(update: Update, *, enabled: bool | None = None,
                                 dry_run: bool | None = None) -> None:
-    if not is_researchlab_owner(update):
-        await reply(update, "Research Lab v2: owner-only command.")
-        return
     from research_lab_v2.config import set_runtime_override
     set_runtime_override(enabled=enabled, dry_run=dry_run)
     await reply(update, format_research_lab_v2("researchlab"))
 
 
+@require_owner
 async def researchlab_on_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _researchlab_override(update, enabled=True)
 
 
+@require_owner
 async def researchlab_off_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _researchlab_override(update, enabled=False)
 
 
+@require_owner
 async def researchlab_dry_on_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _researchlab_override(update, dry_run=True)
 
 
+@require_owner
 async def researchlab_dry_off_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _researchlab_override(update, dry_run=False)
 
@@ -3659,6 +3791,79 @@ async def promotion_command(
     context: ContextTypes.DEFAULT_TYPE,
 ) -> None:
     await reply(update, format_promotion(context.args))
+
+
+def _navigation_key(update: Update) -> tuple[int | None, int | None]:
+    return (
+        getattr(getattr(update, "effective_user", None), "id", None),
+        getattr(getattr(update, "effective_chat", None), "id", None),
+    )
+
+
+def _symbol_from_callback(value: str) -> str:
+    upper = value.upper().replace("/", "").replace("-", "")
+    return f"{upper[:-4]}/USDT" if upper.endswith("USDT") else upper
+
+
+def _v2_screen(screen: str, arguments: tuple[str, ...] = ()) -> tuple[str, InlineKeyboardMarkup]:
+    if screen == "home":
+        return format_v2_home(), v2_home_keyboard()
+    if screen in {"signals", "opportunities"}:
+        return format_opportunities(), deep_screen_keyboard("home")
+    if screen == "market":
+        return format_market(), deep_screen_keyboard("home")
+    if screen == "symbol" and arguments:
+        return v5_format_symbol_detail(_symbol_from_callback(arguments[0])), deep_screen_keyboard("market")
+    if screen == "timeframe" and len(arguments) == 2:
+        symbol, timeframe = _symbol_from_callback(arguments[0]), arguments[1]
+        return (
+            v5_format_symbol_detail(symbol) + f"\n\nВыбранный таймфрейм: {timeframe}",
+            deep_screen_keyboard("market"),
+        )
+    if screen == "research":
+        return with_v5_footer(format_research()), deep_screen_keyboard("home")
+    if screen == "researchlab":
+        return format_research_lab_v2("researchlab"), deep_screen_keyboard("research")
+    return STALE_BUTTON_TEXT, v2_home_keyboard()
+
+
+async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle only validated ui:v2 callbacks; legacy callbacks stay isolated."""
+    query = update.callback_query
+    if query is None:
+        return
+    await query.answer()
+    if not should_use_v2(update):
+        await edit_paginated_text(query, STALE_BUTTON_TEXT, reply_markup=main_keyboard())
+        return
+    try:
+        callback = parse_callback(query.data)
+    except CallbackParseError:
+        await edit_paginated_text(query, STALE_BUTTON_TEXT, reply_markup=v2_home_keyboard())
+        return
+    if callback.action == "research" and not is_owner_update(update):
+        await edit_paginated_text(query, OWNER_ONLY_TEXT, reply_markup=v2_home_keyboard())
+        return
+
+    key = _navigation_key(update)
+    screen, arguments = callback.screen, callback.arguments
+    if callback.action == "back":
+        screen = callback.arguments[0]
+        navigation_store.back(key)
+        arguments = ()
+    elif callback.action == "page":
+        screen = callback.arguments[0]
+        arguments = ()
+        navigation_store.update(key, screen=screen, page=int(callback.arguments[1]))
+    else:
+        navigation_store.update(
+            key,
+            screen=screen,
+            selected_symbol=(callback.arguments[0] if callback.action in {"symbol", "timeframe"} else None),
+            selected_timeframe=(callback.arguments[1] if callback.action == "timeframe" else None),
+        )
+    text, markup = _v2_screen(screen, arguments)
+    await edit_paginated_text(query, text, reply_markup=markup)
 
 
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3673,6 +3878,9 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         text = v5_format_symbol_detail(query.data.split(":", 1)[1])
         reply_markup = v5_market_keyboard(v5_market_symbols())
     elif query.data and query.data.startswith("dev:"):
+        if query.data in {"dev:experiments", "dev:research"} and not is_owner_update(update):
+            await edit_paginated_text(query, OWNER_ONLY_TEXT, reply_markup=v5_developer_keyboard())
+            return
         developer_actions = {
             "dev:replay": lambda: format_replay([]),
             "dev:experiments": lambda: with_v5_footer(format_experiments(full=False)),
@@ -3689,6 +3897,9 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             text = with_v5_footer(text)
         reply_markup = v5_developer_keyboard()
     elif query.data and query.data.startswith("blocked:"):
+        if not is_owner_update(update):
+            await edit_paginated_text(query, OWNER_ONLY_TEXT, reply_markup=main_keyboard())
+            return
         blocker = normalize_blocker(query.data.split(":", 1)[1])
         text = (
             "🚧 Blocked\n\n"
@@ -3697,16 +3908,11 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             else format_blocked(blocker)
         )
     elif query.data == "regime:view":
+        if not is_owner_update(update):
+            await edit_paginated_text(query, OWNER_ONLY_TEXT, reply_markup=main_keyboard())
+            return
         text = format_regime()
     else:
-        if query.data == "dashboard":
-            result = synchronize_reports(base_dir=BASE_DIR)
-            if result["consistency"]["status"] != "PASSED":
-                await query.edit_message_text(
-                    text="Dashboard consistency check failed. Stale data will not be shown.",
-                    reply_markup=reply_markup,
-                )
-                return
         actions = {
             "dashboard": format_dashboard,
             "coach": format_coach,
@@ -3718,29 +3924,25 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "settings": format_settings,
             "developer": format_developer,
         }
-        text = actions.get(query.data, help_text)()
+        action = actions.get(query.data)
+        text = action() if action is not None else STALE_BUTTON_TEXT
         if query.data == "market":
             reply_markup = v5_market_keyboard(v5_market_symbols())
         elif query.data == "developer":
             reply_markup = v5_developer_keyboard()
 
     try:
-        await query.edit_message_text(
-            text=truncate(text),
-            reply_markup=reply_markup,
-        )
+        await edit_paginated_text(query, text, reply_markup=reply_markup)
     except BadRequest as exc:
         if "Message is not modified" in str(exc):
             return
-        await query.message.reply_text(
-            truncate(text),
-            reply_markup=reply_markup,
-        )
+        await send_paginated_text(query.message, text, reply_markup=reply_markup)
 
 
 async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Print compact runtime errors for Telegram polling."""
-    print(f"Ошибка Telegram handler: {context.error}")
+    """Return a short error card and keep details in logs with correlation id."""
+    error = context.error if isinstance(context.error, BaseException) else RuntimeError(str(context.error))
+    await report_internal_error(update, error, TELEGRAM_LOGGER)
 
 
 async def register_bot_commands(app) -> None:
@@ -3755,7 +3957,13 @@ def build_app():
 
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(register_bot_commands).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("menu", menu_command))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("help_signals", help_signals_command))
+    app.add_handler(CommandHandler("help_trading", help_trading_command))
+    app.add_handler(CommandHandler("help_research", help_research_command))
+    app.add_handler(CommandHandler("help_admin", help_admin_command))
+    app.add_handler(CommandHandler("set_notification_chat", set_notification_chat_command))
     app.add_handler(CommandHandler("dashboard", dashboard_command))
     app.add_handler(CommandHandler("coach", coach_command))
     app.add_handler(CommandHandler("opportunities", opportunities_command))
@@ -3825,7 +4033,9 @@ def build_app():
     app.add_handler(CommandHandler("accuracy", accuracy_command))
     app.add_handler(CommandHandler("rootcause", rootcause_command))
     app.add_handler(CommandHandler("datasources", datasources_command))
+    app.add_handler(CallbackQueryHandler(handle_v2_button, pattern=r"^ui:v2:"))
     app.add_handler(CallbackQueryHandler(handle_button))
+    app.add_handler(MessageHandler(filters.COMMAND, unknown_command))
     app.add_error_handler(on_error)
     return app
 

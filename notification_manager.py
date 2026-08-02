@@ -1,45 +1,132 @@
 import json
+import os
 from pathlib import Path
-from datetime import datetime
+import time
+from datetime import datetime, timezone
+
+from telegram_ui.models import build_signal_fingerprint
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "bot_config.json"
 LAST_FILE = BASE_DIR / "last_notification.json"
+SIGNAL_COOLDOWN_SECONDS = int(os.getenv("TELEGRAM_SIGNAL_COOLDOWN_SECONDS", "3600"))
 
 
-def save_chat_id(chat_id: int):
-    """Сохраняет chat_id пользователя."""
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump({"chat_id": chat_id}, f, indent=4)
+def _read_json(path: Path) -> dict:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
-def load_chat_id():
-    """Загружает chat_id пользователя."""
-    if not CONFIG_FILE.exists():
+def _write_json(path: Path, payload: dict) -> None:
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
+
+def save_last_active_chat_id(chat_id: int) -> None:
+    """Remember navigation activity without changing owner or notifications."""
+    payload = _read_json(CONFIG_FILE)
+    payload["last_active_chat_id"] = int(chat_id)
+    _write_json(CONFIG_FILE, payload)
+
+
+def save_chat_id(chat_id: int) -> None:
+    """Backward-compatible alias; /start now updates last-active chat only."""
+    save_last_active_chat_id(chat_id)
+
+
+def load_last_active_chat_id() -> int | None:
+    configured = os.getenv("TELEGRAM_LAST_ACTIVE_CHAT_ID")
+    value = configured if configured not in (None, "") else _read_json(CONFIG_FILE).get("last_active_chat_id")
+    try:
+        return int(value) if value not in (None, "") else None
+    except (TypeError, ValueError):
         return None
 
-    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-        return json.load(f).get("chat_id")
+
+def set_notification_chat_id(chat_id: int) -> None:
+    """Persist an owner-approved notification destination."""
+    payload = _read_json(CONFIG_FILE)
+    payload["notification_chat_id"] = int(chat_id)
+    _write_json(CONFIG_FILE, payload)
 
 
-def save_last_notification(signal: str):
-    """Сохраняет последний отправленный сигнал."""
-    with open(LAST_FILE, "w", encoding="utf-8") as f:
-        json.dump({"signal": signal}, f, indent=4)
+def load_notification_chat_id() -> int | None:
+    configured = os.getenv("TELEGRAM_NOTIFICATION_CHAT_ID")
+    payload = _read_json(CONFIG_FILE)
+    # The legacy chat_id fallback preserves existing deployments until the
+    # owner explicitly runs /set_notification_chat or configures the env var.
+    value = configured if configured not in (None, "") else payload.get(
+        "notification_chat_id", payload.get("chat_id")
+    )
+    try:
+        return int(value) if value not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
 
 
-def last_notification():
-    """Возвращает последний отправленный сигнал."""
-    if not LAST_FILE.exists():
-        return ""
-
-    with open(LAST_FILE, "r", encoding="utf-8") as f:
-        return json.load(f).get("signal", "")
+def load_chat_id() -> int | None:
+    """Backward-compatible notification destination accessor."""
+    return load_notification_chat_id()
 
 
-def is_duplicate(signal: str) -> bool:
-    """Проверяет, не отправлялся ли уже такой сигнал."""
-    return signal == last_notification()
+def save_last_notification(signal: str) -> None:
+    """Backward-compatible wrapper for fingerprint-based state."""
+    mark_as_sent(signal)
+
+
+def last_notification() -> str:
+    """Return the last fingerprint, with legacy text-state fallback."""
+    payload = _read_json(LAST_FILE)
+    return str(payload.get("last_fingerprint") or payload.get("signal") or "")
+
+
+def is_duplicate(
+    signal_fingerprint: str,
+    *,
+    now: float | None = None,
+    cooldown_seconds: int | None = None,
+) -> bool:
+    """Check a stable setup key inside a separate notification cooldown."""
+    payload = _read_json(LAST_FILE)
+    fingerprints = payload.get("fingerprints", {})
+    if not isinstance(fingerprints, dict):
+        fingerprints = {}
+    sent_at = fingerprints.get(signal_fingerprint)
+    if sent_at is None:
+        # Compatibility for the former {"signal": "..."} state.
+        return signal_fingerprint == payload.get("signal")
+    current = time.time() if now is None else float(now)
+    ttl = SIGNAL_COOLDOWN_SECONDS if cooldown_seconds is None else int(cooldown_seconds)
+    try:
+        return current - float(sent_at) < max(0, ttl)
+    except (TypeError, ValueError):
+        return False
+
+
+def decision_signal_fingerprint(
+    symbol,
+    decision,
+    *,
+    timeframe: str,
+    entry,
+    stop_loss,
+    take_profit,
+) -> str:
+    explicit = str(getattr(decision, "signal_fingerprint", "") or "").strip()
+    if explicit:
+        return explicit
+    return build_signal_fingerprint(
+        symbol=symbol,
+        side=decision.direction,
+        timeframe=timeframe,
+        entry=entry,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+        status=decision.signal,
+    )
 
 def trend_name(trend):
     return {
@@ -55,15 +142,25 @@ def direction_name(direction):
         "SHORT": "🔴 SHORT",
     }.get(direction, direction)
 
-def format_signal(symbol, decision, market):
-    entry = market.tf1h.close
-
-    if decision.direction == "LONG":
-        stop_loss = entry - market.tf1h.atr
-        take_profit = entry + market.tf1h.atr * 2
-    else:
-        stop_loss = entry + market.tf1h.atr
-        take_profit = entry - market.tf1h.atr * 2
+def format_signal(
+    symbol,
+    decision,
+    market,
+    *,
+    entry=None,
+    stop_loss=None,
+    take_profit=None,
+):
+    # The active agent path supplies the already accepted trade plan.  The
+    # fallback keeps older direct integrations compatible.
+    entry = market.tf1h.close if entry is None else entry
+    if stop_loss is None or take_profit is None:
+        if decision.direction == "LONG":
+            stop_loss = entry - market.tf1h.atr
+            take_profit = entry + market.tf1h.atr * 2
+        else:
+            stop_loss = entry + market.tf1h.atr
+            take_profit = entry - market.tf1h.atr * 2
 
     risk = abs(entry - stop_loss)
     reward = abs(take_profit - entry)
@@ -100,6 +197,17 @@ def format_signal(symbol, decision, market):
     )
 
 
-def mark_as_sent(signal: str):
-    """Запоминает отправленный сигнал."""
-    save_last_notification(signal)
+def mark_as_sent(signal_fingerprint: str, *, now: float | None = None) -> None:
+    """Persist a bounded map of stable fingerprints and send timestamps."""
+    payload = _read_json(LAST_FILE)
+    fingerprints = payload.get("fingerprints", {})
+    if not isinstance(fingerprints, dict):
+        fingerprints = {}
+    current = time.time() if now is None else float(now)
+    fingerprints[str(signal_fingerprint)] = current
+    recent = sorted(fingerprints.items(), key=lambda item: float(item[1]))[-500:]
+    _write_json(LAST_FILE, {
+        "last_fingerprint": str(signal_fingerprint),
+        "updated_at": datetime.fromtimestamp(current, timezone.utc).isoformat(),
+        "fingerprints": dict(recent),
+    })
