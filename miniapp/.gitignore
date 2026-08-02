@@ -1,0 +1,20 @@
+# Secrets and local environment overrides.
+.env
+backend/.env
+frontend/.env
+**/.env
+
+# Python caches.
+**/__pycache__/
+*.py[cod]
+
+# Mini App runtime data. Source JSON files under frontend remain trackable.
+runtime/
+data/
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/*.csv
+backend/runtime*.json
+backend/*_runtime.json
+backend/*_state.json
