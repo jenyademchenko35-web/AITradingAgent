@@ -51,6 +51,9 @@ class ResearchLab:
                 is_new_signal=bool(decision.get("is_new_signal", False)),
                 blocked_reason=decision.get("blocked_reason"),
                 signal_audit_version=decision.get("signal_audit_version"),
+                strategy_mode=decision.get("strategy_mode"),
+                actual_shadow_opened=bool(decision.get("actual_shadow_opened", False)),
+                shadow_mode_started_at=decision.get("shadow_mode_started_at"),
             )
         for trade in closed:
             strategy_id = str(trade.get("candidate_id", "")).upper()
@@ -67,6 +70,8 @@ class ResearchLab:
                 decision="CLOSED",
                 status=str(trade.get("status", "CLOSED")), features=features,
                 result_r=float(trade.get("pnl_r", 0) or 0), shadow_trade_id=trade_id,
+                strategy_mode="SHADOW_ENABLED", actual_shadow_opened=True,
+                shadow_mode_started_at=trade.get("shadow_mode_started_at"),
             )
         if not closed:
             return {"runs": len(decisions), "closed": 0, "ranked": False}

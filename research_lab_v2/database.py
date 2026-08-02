@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
     entry_triggered INTEGER NOT NULL DEFAULT 0, trigger_reason TEXT,
     signal_fingerprint TEXT, previous_fingerprint TEXT,
     is_new_signal INTEGER NOT NULL DEFAULT 0, blocked_reason TEXT,
-    signal_audit_version TEXT,
+    signal_audit_version TEXT, strategy_mode TEXT,
+    actual_shadow_opened INTEGER NOT NULL DEFAULT 0,
+    shadow_mode_started_at TEXT,
     UNIQUE(cycle_id, strategy_id, symbol, timeframe)
 );
 CREATE TABLE IF NOT EXISTS strategy_metrics (
@@ -126,6 +128,9 @@ class ResearchDatabase:
             "is_new_signal": "INTEGER NOT NULL DEFAULT 0",
             "blocked_reason": "TEXT",
             "signal_audit_version": "TEXT",
+            "strategy_mode": "TEXT",
+            "actual_shadow_opened": "INTEGER NOT NULL DEFAULT 0",
+            "shadow_mode_started_at": "TEXT",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -170,7 +175,10 @@ class ResearchDatabase:
                    previous_fingerprint: str | None = None,
                    is_new_signal: bool = False,
                    blocked_reason: str | None = None,
-                   signal_audit_version: str | None = None) -> None:
+                   signal_audit_version: str | None = None,
+                   strategy_mode: str | None = None,
+                   actual_shadow_opened: bool = False,
+                   shadow_mode_started_at: str | None = None) -> None:
         with self.connect() as db:
             db.execute("""
                 INSERT INTO strategy_runs
@@ -178,15 +186,17 @@ class ResearchDatabase:
                  feature_snapshot_json, result_r, shadow_trade_id, would_open_trade,
                  block_reason, condition_active, entry_triggered, trigger_reason,
                  signal_fingerprint, previous_fingerprint, is_new_signal, blocked_reason,
-                 signal_audit_version)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 signal_audit_version, strategy_mode, actual_shadow_opened,
+                 shadow_mode_started_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(cycle_id, strategy_id, symbol, timeframe) DO NOTHING
             """, (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
                   json.dumps(dict(features), ensure_ascii=False, sort_keys=True, default=str),
                   result_r, shadow_trade_id, int(would_open_trade), block_reason,
                   int(condition_active), int(entry_triggered), trigger_reason,
                   signal_fingerprint, previous_fingerprint, int(is_new_signal),
-                  blocked_reason, signal_audit_version))
+                  blocked_reason, signal_audit_version, strategy_mode,
+                  int(actual_shadow_opened), shadow_mode_started_at))
 
     def load_signal_states(self) -> dict[tuple[str, str, str], dict[str, Any]]:
         with self.connect() as db:
@@ -219,7 +229,8 @@ class ResearchDatabase:
         with self.connect() as db:
             rows = db.execute("""
                 SELECT strategy_id, symbol, condition_active, entry_triggered,
-                       would_open_trade, blocked_reason, signal_fingerprint
+                       would_open_trade, blocked_reason, signal_fingerprint,
+                       actual_shadow_opened
                 FROM strategy_runs
                 WHERE cycle_id NOT LIKE '%:closed:%'
                   AND signal_audit_version = 'event_dedup_v1'
@@ -234,7 +245,8 @@ class ResearchDatabase:
             item = report.setdefault(strategy_id, {
                 "evaluations": 0, "condition_active": 0,
                 "new_entry_triggers": 0, "repeated_active_conditions": 0,
-                "would_open": 0, "blocked_by_reason": {},
+                "would_open": 0, "actual_shadow_opened": 0,
+                "blocked_by_reason": {},
                 "signal_rate": 0.0, "unique_signal_fingerprints": 0,
                 "symbols_with_signals": [],
             })
@@ -242,6 +254,7 @@ class ResearchDatabase:
             item["condition_active"] += int(row["condition_active"] or 0)
             item["new_entry_triggers"] += int(row["entry_triggered"] or 0)
             item["would_open"] += int(row["would_open_trade"] or 0)
+            item["actual_shadow_opened"] += int(row["actual_shadow_opened"] or 0)
             if row["condition_active"] and not row["entry_triggered"]:
                 item["repeated_active_conditions"] += 1
             reason = str(row["blocked_reason"] or "")

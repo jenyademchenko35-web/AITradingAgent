@@ -3614,6 +3614,11 @@ async def researchlab_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     await reply(update, format_research_lab_v2("researchlab"))
 
 
+async def researchlab_trades_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show only the isolated Research Lab ledger; never legacy or live trades."""
+    await reply(update, format_research_lab_v2("researchlab_trades"))
+
+
 def is_researchlab_owner(update: Update) -> bool:
     owner_id = load_chat_id()
     user_id = getattr(getattr(update, "effective_user", None), "id", None)
@@ -3808,6 +3813,7 @@ def build_app():
     app.add_handler(CommandHandler("promotions", promotions_command))
     app.add_handler(CommandHandler("top", top_command))
     app.add_handler(CommandHandler("researchlab", researchlab_command))
+    app.add_handler(CommandHandler("researchlab_trades", researchlab_trades_command))
     app.add_handler(CommandHandler("researchlab_on", researchlab_on_command))
     app.add_handler(CommandHandler("researchlab_off", researchlab_off_command))
     app.add_handler(CommandHandler("researchlab_dry_on", researchlab_dry_on_command))

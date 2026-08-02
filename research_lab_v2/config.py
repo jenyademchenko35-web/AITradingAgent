@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 RESEARCH_LAB_ENABLED = False
 RESEARCH_LAB_DB_PATH = "research.db"
@@ -20,6 +20,16 @@ MAX_OPEN_SHADOW_TRADES_PER_STRATEGY = 4
 MAX_OPEN_SHADOW_TRADES_PER_SYMBOL = 2
 RESEARCH_LAB_DRY_RUN = True
 RESEARCH_LAB_FAIL_OPEN = True
+
+EVALUATE_ONLY = "EVALUATE_ONLY"
+SHADOW_ENABLED = "SHADOW_ENABLED"
+DISABLED = "DISABLED"
+VALID_STRATEGY_MODES = frozenset({EVALUATE_ONLY, SHADOW_ENABLED, DISABLED})
+DEFAULT_STRATEGY_MODES = {
+    "MOMENTUM_STRICT": EVALUATE_ONLY,
+    "TREND_CONFIRM": SHADOW_ENABLED,
+    "RISK_CONSERVATIVE": SHADOW_ENABLED,
+}
 
 SAFE_STRATEGY_ALLOWLIST = ("MOMENTUM_STRICT", "TREND_CONFIRM", "RISK_CONSERVATIVE")
 RUNTIME_OVERRIDE_FILE = Path(__file__).resolve().parent.parent / "research_lab_v2_runtime_override.json"
@@ -52,9 +62,36 @@ class ResearchLabSettings:
     dry_run: bool = RESEARCH_LAB_DRY_RUN
     fail_open: bool = RESEARCH_LAB_FAIL_OPEN
     allowlist: tuple[str, ...] = SAFE_STRATEGY_ALLOWLIST
+    strategy_modes: Mapping[str, str] = field(
+        default_factory=lambda: dict(DEFAULT_STRATEGY_MODES)
+    )
+    shadow_timeout_candles: int = 0
+
+    def strategy_mode(self, strategy_id: str) -> str:
+        return str(self.strategy_modes.get(strategy_id, DISABLED)).upper()
+
+    @property
+    def evaluated_strategies(self) -> tuple[str, ...]:
+        return tuple(
+            strategy_id for strategy_id in self.allowlist
+            if self.strategy_mode(strategy_id) != DISABLED
+        )
+
+    @property
+    def shadow_enabled_strategies(self) -> tuple[str, ...]:
+        return tuple(
+            strategy_id for strategy_id in self.allowlist
+            if self.strategy_mode(strategy_id) == SHADOW_ENABLED
+        )
 
 
 def settings_from_env() -> ResearchLabSettings:
+    modes = {
+        strategy_id: os.getenv(
+            f"RESEARCH_LAB_MODE_{strategy_id}", default_mode
+        ).strip().upper()
+        for strategy_id, default_mode in DEFAULT_STRATEGY_MODES.items()
+    }
     return ResearchLabSettings(
         enabled=_bool_env("RESEARCH_LAB_ENABLED", RESEARCH_LAB_ENABLED),
         database_path=os.getenv("RESEARCH_LAB_DB_PATH", RESEARCH_LAB_DB_PATH),
@@ -68,6 +105,8 @@ def settings_from_env() -> ResearchLabSettings:
         max_open_shadow_trades_per_symbol=max(0, _int_env("MAX_OPEN_SHADOW_TRADES_PER_SYMBOL", 2)),
         dry_run=_bool_env("RESEARCH_LAB_DRY_RUN", RESEARCH_LAB_DRY_RUN),
         fail_open=_bool_env("RESEARCH_LAB_FAIL_OPEN", RESEARCH_LAB_FAIL_OPEN),
+        strategy_modes=modes,
+        shadow_timeout_candles=max(0, _int_env("RESEARCH_LAB_SHADOW_TIMEOUT_CANDLES", 0)),
     )
 
 

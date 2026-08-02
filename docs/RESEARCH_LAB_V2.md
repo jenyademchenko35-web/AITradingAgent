@@ -101,6 +101,10 @@ Environment settings:
 - `RESEARCH_LAB_RANK_EVERY_N_CYCLES=12`
 - `RESEARCH_LAB_FEATURE_ANALYSIS_EVERY_N_CLOSED=100`
 - `RESEARCH_LAB_SIGNAL_COOLDOWN_MINUTES=60`
+- `RESEARCH_LAB_MODE_MOMENTUM_STRICT=EVALUATE_ONLY`
+- `RESEARCH_LAB_MODE_TREND_CONFIRM=SHADOW_ENABLED`
+- `RESEARCH_LAB_MODE_RISK_CONSERVATIVE=SHADOW_ENABLED`
+- `RESEARCH_LAB_SHADOW_TIMEOUT_CANDLES=0` (disabled unless explicitly configured)
 - `MAX_ENABLED_SHADOW_STRATEGIES=3`
 - `MAX_OPEN_SHADOW_TRADES_TOTAL=12`
 - `MAX_OPEN_SHADOW_TRADES_PER_STRATEGY=4`
@@ -127,7 +131,42 @@ Native component scales are explicit: trend 55/60, momentum 20/25 and risk
 15/20. This avoids the previous unreachable 55-point thresholds for the
 25-point MomentumEngine and 20-point RiskEngine.
 
-Telegram read-only commands: `/researchlab`, `/research_rank`, `/features`,
+## Selective shadow mode
+
+Each allowlisted strategy has one independent mode: `DISABLED` skips evaluation,
+`EVALUATE_ONLY` records evaluations and would-open events without creating a
+position, and `SHADOW_ENABLED` may write only to the Research Lab ledger when the
+global dry-run switch is off. `RESEARCH_LAB_ENABLED` remains the master switch;
+`RESEARCH_LAB_DRY_RUN=true` blocks every new shadow position regardless of mode.
+
+Open positions are stored only in `research_lab_v2_shadow_open.json`. Closed
+positions are appended only to `research_lab_shadow_history.csv`; both are
+separate from live trades and the legacy candidate shadow tracker. The ledger
+stores the signal fingerprint, feature snapshot, MFE/MAE in R, holding candles,
+and explicit TP/SL/invalidation/timeout exit data. `REAL_ORDER_ALLOWED` is a
+hard-coded false guard and the Research Lab runtime imports no execution adapter.
+
+Configure these values in the environment managed by the existing
+Watchdog/LaunchAgent (a temporary interactive-shell `export` will not reach an
+already running agent):
+
+```bash
+export RESEARCH_LAB_ENABLED=true
+export RESEARCH_LAB_DRY_RUN=true
+export RESEARCH_LAB_MODE_MOMENTUM_STRICT=EVALUATE_ONLY
+export RESEARCH_LAB_MODE_TREND_CONFIRM=SHADOW_ENABLED
+export RESEARCH_LAB_MODE_RISK_CONSERVATIVE=SHADOW_ENABLED
+```
+
+After the normal managed restart, verify `/researchlab`: real orders must be `NO`, the
+three modes must match the values above, and the Research Lab ledger paths must
+not point to `candidate_shadow_trades.csv`, `trades.csv`, or
+`active_setups_v3.json`. Only then use the owner command `/researchlab_dry_off`;
+it takes effect on the next cycle without a manual duplicate process.
+`/researchlab_trades` reads only this isolated ledger. `/researchlab_dry_on`
+immediately returns all strategies to evaluation-only behavior globally.
+
+Telegram read-only commands: `/researchlab`, `/researchlab_trades`, `/research_rank`, `/features`,
 `/strategies`, `/promotions`, and `/top`. Owner-only runtime overrides are
 `/researchlab_on`, `/researchlab_off`, `/researchlab_dry_on`, and
 `/researchlab_dry_off`. The agent clears overrides on restart, restoring env.

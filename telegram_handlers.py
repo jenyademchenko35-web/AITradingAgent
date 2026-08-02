@@ -47,6 +47,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("research", "🔬 Research Orchestrator"),
     BotCommand("walkforward", "📈 Walk Forward"),
     BotCommand("researchlab", "🧬 Research Lab v2"),
+    BotCommand("researchlab_trades", "🧬 Research Lab shadow trades"),
     BotCommand("candidates", "🧪 Candidate Laboratory"),
     BotCommand("candidate", "🧪 Candidate detail"),
     BotCommand("shadowstatus", "👤 Shadow validation status"),

@@ -1,5 +1,6 @@
 import json
 import asyncio
+import csv
 import sqlite3
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -17,6 +18,9 @@ from research_lab_v2.analytics import (
 )
 from research_lab_v2.dashboard import ResearchDashboardV2
 from research_lab_v2.config import (
+    DISABLED,
+    EVALUATE_ONLY,
+    SHADOW_ENABLED,
     ResearchLabSettings,
     get_settings,
     set_runtime_override,
@@ -24,6 +28,7 @@ from research_lab_v2.config import (
 from research_lab_v2.database import ResearchDatabase, ResearchDatabaseBusy
 from research_lab_v2.parameter_search import generate_variants, register_variants
 from research_lab_v2.runtime import (
+    REAL_ORDER_ALLOWED,
     ResearchLabRuntime,
     ShadowResearchBook,
     build_feature_snapshot,
@@ -79,6 +84,40 @@ def test_sqlite_schema_contains_all_research_tables(tmp_path):
         "strategies", "strategy_runs", "strategy_metrics", "feature_statistics",
         "walk_forward_results", "candidate_history",
     } <= database.table_names()
+
+
+def test_additive_migration_preserves_old_dry_run_evaluations(tmp_path):
+    path = tmp_path / "research.db"
+    with sqlite3.connect(path) as db:
+        db.execute("""
+            CREATE TABLE strategy_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, cycle_id TEXT NOT NULL,
+                strategy_id TEXT NOT NULL, timestamp TEXT NOT NULL,
+                symbol TEXT NOT NULL, timeframe TEXT NOT NULL DEFAULT '1h',
+                decision TEXT NOT NULL, status TEXT NOT NULL,
+                feature_snapshot_json TEXT NOT NULL, result_r REAL,
+                shadow_trade_id TEXT, would_open_trade INTEGER NOT NULL DEFAULT 0,
+                block_reason TEXT, condition_active INTEGER NOT NULL DEFAULT 0,
+                entry_triggered INTEGER NOT NULL DEFAULT 0, trigger_reason TEXT,
+                signal_fingerprint TEXT, previous_fingerprint TEXT,
+                is_new_signal INTEGER NOT NULL DEFAULT 0, blocked_reason TEXT,
+                signal_audit_version TEXT
+            )
+        """)
+        db.execute("""
+            INSERT INTO strategy_runs
+            (cycle_id, strategy_id, timestamp, symbol, decision, status,
+             feature_snapshot_json, would_open_trade, signal_audit_version)
+            VALUES ('old-dry', 'TREND_CONFIRM', '2026-07-31T00:00:00Z',
+                    'BTC/USDT', 'SETUP', 'WOULD_OPEN', '{}', 1, 'event_dedup_v1')
+        """)
+    ResearchDatabase(path).initialize()
+    with sqlite3.connect(path) as db:
+        row = db.execute(
+            "SELECT cycle_id, would_open_trade, actual_shadow_opened, "
+            "shadow_mode_started_at FROM strategy_runs"
+        ).fetchone()
+    assert row == ("old-dry", 1, 0, None)
 
 
 def test_metrics_ranking_and_promotion_rules():
@@ -201,6 +240,9 @@ def test_research_lab_is_disabled_and_dry_run_by_default(monkeypatch, tmp_path):
     settings = get_settings(tmp_path / "no-override.json")
     assert settings.enabled is False
     assert settings.dry_run is True
+    assert settings.strategy_mode("MOMENTUM_STRICT") == EVALUATE_ONLY
+    assert settings.strategy_mode("TREND_CONFIRM") == SHADOW_ENABLED
+    assert settings.strategy_mode("RISK_CONSERVATIVE") == SHADOW_ENABLED
 
 
 def test_runtime_config_override_is_ephemeral_file(monkeypatch, tmp_path):
@@ -221,6 +263,7 @@ def test_dry_run_persists_evaluations_without_shadow_trades(tmp_path):
     assert result["would_open"] == 3
     assert result["opened_shadow"] == 0
     assert not shadow_path.exists()
+    assert result["blocked"]["BLOCKED_GLOBAL_DRY_RUN"] == 3
     with sqlite3.connect(tmp_path / "research.db") as db:
         assert db.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 3
         assert db.execute("SELECT SUM(would_open_trade) FROM strategy_runs").fetchone()[0] == 3
@@ -235,8 +278,9 @@ def test_live_shadow_mode_uses_separate_bounded_book(tmp_path):
                                    settings=settings)
     rows = json.loads(shadow_path.read_text(encoding="utf-8"))
     assert result["opened_shadow"] == 2
-    assert result["blocked"] == {"BLOCKED_SYMBOL_LIMIT": 1}
+    assert result["blocked"] == {"BLOCKED_STRATEGY_EVALUATE_ONLY": 1}
     assert len(rows) == 2
+    assert {row["strategy_id"] for row in rows} == {"TREND_CONFIRM", "RISK_CONSERVATIVE"}
     assert all(row["status"] == "OPEN" for row in rows)
     assert not (tmp_path / "candidate_shadow_trades.csv").exists()
 
@@ -245,7 +289,12 @@ def test_allowlist_is_exact_and_bounded(tmp_path):
     settings = _runtime_settings(tmp_path)
     assert settings.allowlist == ("MOMENTUM_STRICT", "TREND_CONFIRM", "RISK_CONSERVATIVE")
     assert ResearchLabRuntime.validate(settings, [_snapshot()]) == []
-    unsafe = replace(settings, allowlist=(*settings.allowlist, "ADX_CONFIRM"))
+    unsafe = replace(
+        settings,
+        allowlist=(*settings.allowlist, "ADX_CONFIRM"),
+        strategy_modes={**settings.strategy_modes, "ADX_CONFIRM": SHADOW_ENABLED},
+        max_enabled_shadow_strategies=2,
+    )
     errors = ResearchLabRuntime.validate(unsafe, [_snapshot()])
     assert any("unsafe strategy" in error for error in errors)
     assert any("exceeds" in error for error in errors)
@@ -385,7 +434,11 @@ def test_dashboard_includes_runtime_status(tmp_path):
     status_path.write_text(json.dumps({
         "enabled": True, "dry_run": True,
         "strategies_enabled": ["MOMENTUM_STRICT"], "runs_this_cycle": 2,
+        "strategy_modes": {"MOMENTUM_STRICT": "EVALUATE_ONLY"},
+        "real_order_allowed": False,
         "would_open": 1, "opened_shadow": 0,
+        "open_research_shadow_trades": 1,
+        "closed_research_shadow_trades": 2,
         "blocked": {"BLOCKED_SYMBOL_LIMIT": 1}, "database_status": "OK",
         "last_error": "", "last_processed_cycle": "cycle-9",
     }), encoding="utf-8")
@@ -394,6 +447,10 @@ def test_dashboard_includes_runtime_status(tmp_path):
     assert report["runtime_status"]["last_processed_cycle"] == "cycle-9"
     formatted = dashboard.format("researchlab")
     assert "Dry Run: ON" in formatted
+    assert "Real Orders Allowed: NO" in formatted
+    assert "MOMENTUM_STRICT: EVALUATE_ONLY" in formatted
+    assert "Open Research Shadow: 1" in formatted
+    assert "Closed Research Shadow: 2" in formatted
     assert "BLOCKED_SYMBOL_LIMIT=1" in formatted
 
 
@@ -583,3 +640,211 @@ def test_rejection_diagnostics_are_grouped_by_reason(tmp_path):
     assert diagnostics["MOMENTUM_STRICT"]["blocked_by_reason"] == {"MOMENTUM_TOO_WEAK": 1}
     assert diagnostics["RISK_CONSERVATIVE"]["blocked_by_reason"] == {"RISK_TOO_HIGH": 1}
     assert result["opened_shadow"] == 0
+
+
+def test_evaluate_only_is_recorded_but_never_opens_shadow(tmp_path):
+    runtime = ResearchLabRuntime(
+        status_path=tmp_path / "status.json",
+        shadow_book_path=tmp_path / "open.json",
+    )
+    result = runtime.process_cycle(
+        cycle_id="selective-shadow", snapshots=[_snapshot("selective-shadow")],
+        settings=_runtime_settings(tmp_path, dry_run=False),
+    )
+    assert result["opened_shadow"] == 2
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        momentum = db.execute(
+            "SELECT strategy_mode, would_open_trade, actual_shadow_opened, status "
+            "FROM strategy_runs WHERE strategy_id='MOMENTUM_STRICT'"
+        ).fetchone()
+        shadow_rows = db.execute(
+            "SELECT strategy_id, actual_shadow_opened FROM strategy_runs "
+            "WHERE actual_shadow_opened=1 ORDER BY strategy_id"
+        ).fetchall()
+    assert momentum == (EVALUATE_ONLY, 1, 0, "WOULD_OPEN_EVALUATE_ONLY")
+    assert shadow_rows == [("RISK_CONSERVATIVE", 1), ("TREND_CONFIRM", 1)]
+
+
+def test_disabled_strategy_is_not_evaluated(tmp_path):
+    settings = _runtime_settings(
+        tmp_path,
+        strategy_modes={
+            "MOMENTUM_STRICT": DISABLED,
+            "TREND_CONFIRM": EVALUATE_ONLY,
+            "RISK_CONSERVATIVE": EVALUATE_ONLY,
+        },
+    )
+    runtime = ResearchLabRuntime(
+        status_path=tmp_path / "status.json",
+        shadow_book_path=tmp_path / "open.json",
+    )
+    result = runtime.process_cycle(cycle_id="disabled", snapshots=[_snapshot("disabled")],
+                                   settings=settings)
+    assert result["runs_this_cycle"] == 2
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        strategies = {row[0] for row in db.execute("SELECT strategy_id FROM strategy_runs")}
+    assert "MOMENTUM_STRICT" not in strategies
+
+
+@pytest.mark.parametrize(("exit_high", "exit_low", "reason", "pnl_r"), [
+    (104.5, 99.0, "TAKE_PROFIT", 2.0),
+    (101.0, 97.5, "STOP_LOSS", -1.0),
+])
+def test_research_shadow_tp_and_sl_lifecycle(tmp_path, exit_high, exit_low, reason, pnl_r):
+    open_path = tmp_path / "research_lab_shadow_trades.json"
+    history_path = tmp_path / "research_lab_shadow_history.csv"
+    settings = _trend_only_settings(
+        tmp_path,
+        dry_run=False,
+        strategy_modes={
+            "MOMENTUM_STRICT": EVALUATE_ONLY,
+            "TREND_CONFIRM": SHADOW_ENABLED,
+            "RISK_CONSERVATIVE": SHADOW_ENABLED,
+        },
+    )
+    runtime = ResearchLabRuntime(
+        status_path=tmp_path / "status.json", shadow_book_path=open_path,
+        shadow_history_path=history_path,
+    )
+    opened = _snapshot("open")
+    runtime.process_cycle(cycle_id="open", snapshots=[opened], settings=settings)
+    exit_snapshot = _snapshot("close")
+    exit_snapshot.update(
+        timestamp="2026-07-31T10:30:00+00:00",
+        high=exit_high, low=exit_low,
+    )
+    result = runtime.process_cycle(cycle_id="close", snapshots=[exit_snapshot], settings=settings)
+    assert result["closed_shadow_this_cycle"] == 1
+    assert json.loads(open_path.read_text(encoding="utf-8")) == []
+    with history_path.open(encoding="utf-8", newline="") as handle:
+        history = list(csv.DictReader(handle))
+    assert len(history) == 1
+    trade = history[0]
+    assert trade["exit_reason"] == reason
+    assert float(trade["pnl_r"]) == pnl_r
+    assert trade["status"] == "CLOSED"
+    assert int(trade["holding_candles"]) == 1
+    assert trade["signal_fingerprint"]
+    assert trade["shadow_mode_started_at"] == opened["timestamp"]
+    assert json.loads(trade["feature_snapshot_json"])["cycle_id"] == "open"
+
+
+def test_research_shadow_book_survives_runtime_restart(tmp_path):
+    open_path = tmp_path / "open.json"
+    settings = _trend_only_settings(tmp_path, dry_run=False)
+    first = ResearchLabRuntime(status_path=tmp_path / "status.json", shadow_book_path=open_path)
+    first.process_cycle(cycle_id="restart-1", snapshots=[_snapshot("restart-1")],
+                        settings=settings)
+    second = ResearchLabRuntime(status_path=tmp_path / "status.json", shadow_book_path=open_path)
+    duplicate = _snapshot("restart-2")
+    duplicate["timestamp"] = "2026-07-31T10:05:00+00:00"
+    result = second.process_cycle(cycle_id="restart-2", snapshots=[duplicate], settings=settings)
+    assert result["opened_shadow"] == 0
+    assert result["open_research_shadow_trades"] == 1
+    assert len(json.loads(open_path.read_text(encoding="utf-8"))) == 1
+
+
+@pytest.mark.parametrize(("invalidated", "timeout_candles", "expected"), [
+    (True, 0, "INVALIDATED"),
+    (False, 1, "TIMEOUT"),
+])
+def test_research_shadow_invalidation_and_optional_timeout(
+        tmp_path, invalidated, timeout_candles, expected):
+    runtime = ResearchLabRuntime(
+        status_path=tmp_path / "status.json",
+        shadow_book_path=tmp_path / "open.json",
+        shadow_history_path=tmp_path / "history.csv",
+    )
+    settings = _trend_only_settings(
+        tmp_path, dry_run=False, shadow_timeout_candles=timeout_candles,
+    )
+    runtime.process_cycle(cycle_id="exit-open", snapshots=[_snapshot("exit-open")],
+                          settings=settings)
+    row = _snapshot("exit-close")
+    row.update(
+        timestamp="2026-07-31T10:30:00+00:00", high=101.0, low=99.0,
+        invalidated=invalidated,
+    )
+    runtime.process_cycle(cycle_id="exit-close", snapshots=[row], settings=settings)
+    with (tmp_path / "history.csv").open(encoding="utf-8", newline="") as handle:
+        history = list(csv.DictReader(handle))
+    assert history[-1]["exit_reason"] == expected
+
+
+def test_runtime_total_strategy_and_symbol_limits_block_openings(tmp_path):
+    base_modes = {
+        "MOMENTUM_STRICT": SHADOW_ENABLED,
+        "TREND_CONFIRM": SHADOW_ENABLED,
+        "RISK_CONSERVATIVE": SHADOW_ENABLED,
+    }
+    cases = [
+        ({"max_open_shadow_trades_total": 1}, [_snapshot("total")], "BLOCKED_TOTAL_LIMIT"),
+        ({"max_open_shadow_trades_per_symbol": 1}, [_snapshot("symbol")], "BLOCKED_SYMBOL_LIMIT"),
+        ({"max_open_shadow_trades_per_strategy": 1},
+         [_snapshot("strategy-a", "BTC/USDT"), _snapshot("strategy-b", "ETH/USDT")],
+         "BLOCKED_STRATEGY_LIMIT"),
+    ]
+    for index, (limits, snapshots, expected) in enumerate(cases):
+        case_path = tmp_path / str(index)
+        settings = _runtime_settings(
+            case_path, dry_run=False, strategy_modes=base_modes, **limits,
+        )
+        runtime = ResearchLabRuntime(
+            status_path=case_path / "status.json",
+            shadow_book_path=case_path / "open.json",
+        )
+        result = runtime.process_cycle(cycle_id=f"limits-{index}", snapshots=snapshots,
+                                       settings=settings)
+        assert result["blocked"].get(expected, 0) >= 1
+
+
+def test_research_runtime_never_touches_legacy_files_or_live_execution(tmp_path):
+    legacy_paths = [
+        tmp_path / "candidate_shadow_trades.csv",
+        tmp_path / "trades.csv",
+        tmp_path / "active_setups_v3.json",
+    ]
+    for path in legacy_paths:
+        path.write_text(f"sentinel:{path.name}", encoding="utf-8")
+    before = {path: path.read_bytes() for path in legacy_paths}
+    runtime = ResearchLabRuntime(
+        status_path=tmp_path / "status.json",
+        shadow_book_path=tmp_path / "research-open.json",
+    )
+    runtime.process_cycle(
+        cycle_id="isolated", snapshots=[_snapshot("isolated")],
+        settings=_runtime_settings(tmp_path, dry_run=False),
+    )
+    assert {path: path.read_bytes() for path in legacy_paths} == before
+    assert REAL_ORDER_ALLOWED is False
+    source = (Path(__file__).resolve().parents[1] / "research_lab_v2" / "runtime.py").read_text(
+        encoding="utf-8"
+    )
+    assert "execution_adapter" not in source
+    assert "PortfolioManager" not in source
+
+
+def test_telegram_researchlab_trades_reads_only_separate_ledger(tmp_path):
+    open_path = tmp_path / "research-open.json"
+    history_path = tmp_path / "research-history.csv"
+    runtime = ResearchLabRuntime(
+        status_path=tmp_path / "status.json", shadow_book_path=open_path,
+        shadow_history_path=history_path,
+    )
+    runtime.process_cycle(
+        cycle_id="telegram-ledger", snapshots=[_snapshot("telegram-ledger")],
+        settings=_trend_only_settings(tmp_path, dry_run=False),
+    )
+    (tmp_path / "candidate_shadow_trades.csv").write_text(
+        "LEGACY_ONLY_SHOULD_NOT_APPEAR", encoding="utf-8"
+    )
+    dashboard = ResearchDashboardV2(
+        tmp_path / "research.db", status_path=tmp_path / "status.json",
+        shadow_book_path=open_path, shadow_history_path=history_path,
+    )
+    formatted = dashboard.format("researchlab_trades")
+    assert "Research Lab v2 - SHADOW TRADES" in formatted
+    assert "TREND_CONFIRM" in formatted
+    assert "LEGACY_ONLY_SHOULD_NOT_APPEAR" not in formatted
+    from telegram_handlers import BOT_COMMANDS_V5
+    assert "researchlab_trades" in {command.command for command in BOT_COMMANDS_V5}

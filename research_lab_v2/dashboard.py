@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import csv
 from pathlib import Path
 from typing import Any
 
-from .runtime import load_runtime_status
+from .runtime import SHADOW_BOOK_FILE, SHADOW_HISTORY_FILE, load_runtime_status
 
 
 def _rows(path: Path, query: str) -> list[dict[str, Any]]:
@@ -25,9 +26,26 @@ def _rows(path: Path, query: str) -> list[dict[str, Any]]:
 
 class ResearchDashboardV2:
     def __init__(self, database_path: str | Path = "research.db", *,
-                 status_path: str | Path | None = None) -> None:
+                 status_path: str | Path | None = None,
+                 shadow_book_path: str | Path = SHADOW_BOOK_FILE,
+                 shadow_history_path: str | Path = SHADOW_HISTORY_FILE) -> None:
         self.path = Path(database_path)
         self.status_path = Path(status_path) if status_path is not None else None
+        self.shadow_book_path = Path(shadow_book_path)
+        self.shadow_history_path = Path(shadow_history_path)
+
+    def _shadow_ledger(self) -> dict[str, list[dict[str, Any]]]:
+        try:
+            payload = json.loads(self.shadow_book_path.read_text(encoding="utf-8"))
+            open_rows = payload if isinstance(payload, list) else []
+        except (OSError, ValueError, TypeError):
+            open_rows = []
+        try:
+            with self.shadow_history_path.open("r", encoding="utf-8", newline="") as handle:
+                closed_rows = list(csv.DictReader(handle))
+        except OSError:
+            closed_rows = []
+        return {"open": open_rows, "closed": closed_rows}
 
     def build_report(self) -> dict[str, Any]:
         top = _rows(self.path, """
@@ -78,6 +96,7 @@ class ResearchDashboardV2:
                 load_runtime_status(self.status_path)
                 if self.status_path is not None else load_runtime_status()
             ),
+            "shadow_ledger": self._shadow_ledger(),
         }
 
     def format(self, section: str = "top") -> str:
@@ -111,12 +130,28 @@ class ResearchDashboardV2:
                 "Research Lab v2 - RUNTIME",
                 f"Enabled: {'ON' if runtime.get('enabled') else 'OFF'}",
                 f"Dry Run: {'ON' if runtime.get('dry_run') else 'OFF'}",
+                f"Real Orders Allowed: {'YES' if runtime.get('real_order_allowed') else 'NO'}",
                 "Allowlist: " + ", ".join(runtime.get("strategies_enabled", [])),
+                "Strategy Modes:",
+                *[
+                    f"- {strategy_id}: {mode}"
+                    for strategy_id, mode in sorted(runtime.get("strategy_modes", {}).items())
+                ],
                 f"Last Cycle: {runtime.get('last_processed_cycle', 'NEVER')}",
                 f"Evaluations: {runtime.get('runs_this_cycle', 0)}",
                 f"New Entry Triggers: {runtime.get('new_entry_triggers', 0)}",
                 f"Would Open: {runtime.get('would_open', 0)}",
                 f"Opened Shadow: {runtime.get('opened_shadow', 0)}",
+                f"Open Research Shadow: {runtime.get('open_research_shadow_trades', 0)}",
+                f"Closed Research Shadow: {runtime.get('closed_research_shadow_trades', 0)}",
+                "Open Per Strategy: " + (", ".join(
+                    f"{key}={value}" for key, value in sorted(
+                        runtime.get("open_per_strategy", {}).items()
+                    )
+                ) or "none"),
+                f"Shadow Mode Started: {runtime.get('shadow_mode_started_at') or 'NOT_STARTED'}",
+                "Last Opened: " + self._trade_summary(runtime.get("last_opened")),
+                "Last Closed: " + self._trade_summary(runtime.get("last_closed")),
                 "Blocked: " + (", ".join(f"{key}={value}" for key, value in blocked.items()) or "none"),
                 f"DB: {runtime.get('database_status', 'NOT_INITIALIZED')}",
                 f"Last Error: {runtime.get('last_error') or 'none'}",
@@ -133,6 +168,7 @@ class ResearchDashboardV2:
                     f"New Entry Triggers: {item.get('new_entry_triggers', 0)}",
                     f"Repeated Active: {item.get('repeated_active_conditions', 0)}",
                     f"Would Open: {item.get('would_open', 0)}",
+                    f"Actual Shadow Opened: {item.get('actual_shadow_opened', 0)}",
                     f"Signal Rate: {item.get('signal_rate', 0):.2f}%",
                     f"Unique Fingerprints: {item.get('unique_signal_fingerprints', 0)}",
                     "Symbols: " + (", ".join(item.get("symbols_with_signals", [])) or "none"),
@@ -141,9 +177,38 @@ class ResearchDashboardV2:
                     ) or "none"),
                 ])
             return "\n".join(lines)
+        if section == "researchlab_trades":
+            ledger = report["shadow_ledger"]
+            lines = [
+                "Research Lab v2 - SHADOW TRADES",
+                f"Open: {len(ledger['open'])}",
+                f"Closed: {len(ledger['closed'])}",
+                "",
+                "OPEN",
+            ]
+            lines.extend(self._trade_summary(row) for row in ledger["open"])
+            if not ledger["open"]:
+                lines.append("none")
+            lines.extend(["", "LAST CLOSED"])
+            lines.extend(self._trade_summary(row) for row in ledger["closed"][-10:])
+            if not ledger["closed"]:
+                lines.append("none")
+            return "\n".join(lines)
         if section == "promotions":
             return "\n".join(["Research Lab v2 - PROMOTIONS"] + [
                 f"{row['strategy_id']}: {row['status']} ({row['promotion_probability']:.1f}%)"
                 for row in report["top_strategies"] if row["strategy_id"] != "LIVE_BASELINE"
             ])
         return json.dumps(report, ensure_ascii=False, indent=2, default=str)
+
+    @staticmethod
+    def _trade_summary(trade: Any) -> str:
+        if not isinstance(trade, dict):
+            return "none"
+        return (
+            f"{trade.get('shadow_trade_id', 'N/A')} | "
+            f"{trade.get('strategy_id', 'N/A')} | {trade.get('symbol', 'N/A')} "
+            f"{trade.get('side') or trade.get('direction', 'N/A')} | "
+            f"{trade.get('status', 'N/A')} | "
+            f"exit={trade.get('exit_reason', 'OPEN')} | pnl={trade.get('pnl_r', 'N/A')}R"
+        )

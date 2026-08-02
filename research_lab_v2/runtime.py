@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import csv
 import logging
 import math
 import time
@@ -15,14 +16,24 @@ from typing import Any, Iterable, Mapping
 
 from strategies import registry
 
-from .config import ResearchLabSettings, SAFE_STRATEGY_ALLOWLIST, get_settings
+from .config import (
+    DISABLED,
+    EVALUATE_ONLY,
+    SHADOW_ENABLED,
+    VALID_STRATEGY_MODES,
+    ResearchLabSettings,
+    SAFE_STRATEGY_ALLOWLIST,
+    get_settings,
+)
 from .database import ResearchDatabaseBusy
 from .service import ResearchLab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATUS_FILE = BASE_DIR / "research_lab_v2_status.json"
 SHADOW_BOOK_FILE = BASE_DIR / "research_lab_v2_shadow_open.json"
+SHADOW_HISTORY_FILE = BASE_DIR / "research_lab_shadow_history.csv"
 LOG_FILE = BASE_DIR / "logs" / "research_lab_v2.log"
+REAL_ORDER_ALLOWED = False
 ELIGIBLE_SIGNALS = {"SETUP", "HIGH PRIORITY"}
 MANDATORY_FEATURE_FIELDS = {
     "timestamp", "cycle_id", "symbol", "timeframe", "current_price",
@@ -35,6 +46,8 @@ BLOCK_REASONS = {
     "BLOCKED_DUPLICATE_SYMBOL", "BLOCKED_INVALID_TRADE_PLAN",
     "BLOCKED_NOT_ALLOWLISTED",
     "BLOCKED_DUPLICATE_SIGNAL", "CONDITION_STILL_ACTIVE",
+    "BLOCKED_GLOBAL_DRY_RUN", "BLOCKED_STRATEGY_EVALUATE_ONLY",
+    "BLOCKED_STRATEGY_DISABLED", "BLOCKED_REAL_ORDER_GUARD",
 }
 
 
@@ -147,9 +160,15 @@ def load_runtime_status(path: Path = STATUS_FILE) -> dict[str, Any]:
         settings = get_settings()
         return {
             "enabled": settings.enabled, "dry_run": settings.dry_run,
-            "strategies_enabled": list(settings.allowlist), "runs_this_cycle": 0,
+            "strategies_enabled": list(settings.evaluated_strategies),
+            "strategy_modes": dict(settings.strategy_modes), "runs_this_cycle": 0,
             "would_open": 0, "opened_shadow": 0, "blocked": {},
             "new_entry_triggers": 0, "dry_run_diagnostics": {},
+            "open_research_shadow_trades": 0,
+            "closed_research_shadow_trades": 0, "open_per_strategy": {},
+            "last_opened": None, "last_closed": None,
+            "shadow_mode_started_at": None,
+            "real_order_allowed": REAL_ORDER_ALLOWED,
             "database_status": "NOT_INITIALIZED", "last_error": "",
             "last_processed_cycle": "NEVER",
         }
@@ -226,8 +245,18 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
 class ShadowResearchBook:
     """A separate shadow-only book; never touches live or candidate CSV state."""
 
-    def __init__(self, path: str | Path = SHADOW_BOOK_FILE) -> None:
+    HISTORY_FIELDS = (
+        "shadow_trade_id", "strategy_id", "symbol", "timeframe", "side",
+        "entry_time", "entry_price", "stop_loss", "take_profit", "risk_r",
+        "signal_fingerprint", "status", "exit_time", "exit_price",
+        "exit_reason", "pnl_r", "mfe_r", "mae_r", "holding_candles",
+        "shadow_mode_started_at", "feature_snapshot_json",
+    )
+
+    def __init__(self, path: str | Path = SHADOW_BOOK_FILE,
+                 history_path: str | Path = SHADOW_HISTORY_FILE) -> None:
         self.path = Path(path)
+        self.history_path = Path(history_path)
 
     def load(self) -> list[dict[str, Any]]:
         try:
@@ -236,26 +265,112 @@ class ShadowResearchBook:
             return []
         return payload if isinstance(payload, list) else []
 
-    def close_from_snapshots(self, snapshots: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    def history(self) -> list[dict[str, Any]]:
+        try:
+            with self.history_path.open("r", encoding="utf-8", newline="") as handle:
+                return list(csv.DictReader(handle))
+        except OSError:
+            return []
+
+    def _append_history(self, trade: Mapping[str, Any]) -> None:
+        self.history_path.parent.mkdir(parents=True, exist_ok=True)
+        write_header = not self.history_path.exists() or self.history_path.stat().st_size == 0
+        with self.history_path.open("a", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=self.HISTORY_FIELDS, extrasaction="ignore")
+            if write_header:
+                writer.writeheader()
+            payload = dict(trade)
+            payload.setdefault("side", payload.get("direction"))
+            payload.setdefault("entry_time", payload.get("opened_at"))
+            payload.setdefault("entry_price", payload.get("entry"))
+            payload.setdefault("risk_r", 1.0)
+            payload["feature_snapshot_json"] = json.dumps(
+                payload.get("feature_snapshot", {}), ensure_ascii=False,
+                sort_keys=True, default=str,
+            )
+            writer.writerow(payload)
+
+    def summary(self) -> dict[str, Any]:
+        open_rows = self.load()
+        closed_rows = self.history()
+        all_rows = [*closed_rows, *open_rows]
+        last_opened = max(
+            all_rows,
+            key=lambda row: str(row.get("entry_time") or row.get("opened_at") or ""),
+            default=None,
+        )
+        open_per_strategy = dict(Counter(
+            str(row.get("strategy_id", "")) for row in open_rows
+        ))
+        return {
+            "open_research_shadow_trades": len(open_rows),
+            "closed_research_shadow_trades": len(closed_rows),
+            "open_per_strategy": open_per_strategy,
+            "last_opened": last_opened,
+            "last_closed": closed_rows[-1] if closed_rows else None,
+            "shadow_book_path": str(self.path.resolve()),
+            "shadow_history_path": str(self.history_path.resolve()),
+        }
+
+    def close_from_snapshots(self, snapshots: Iterable[Mapping[str, Any]], *,
+                             settings: ResearchLabSettings) -> list[dict[str, Any]]:
         by_symbol = {str(row.get("symbol")): row for row in snapshots}
         remaining, closed = [], []
-        for trade in self.load():
+        open_rows = self.load()
+        for original in open_rows:
+            trade = dict(original)
             row = by_symbol.get(str(trade.get("symbol")))
             if not row:
                 remaining.append(trade)
                 continue
             high, low = _number(row.get("high")), _number(row.get("low"))
-            direction = str(trade.get("direction", ""))
+            current = _number(row.get("current_price"), _number(trade.get("entry_price")))
+            direction = str(trade.get("side") or trade.get("direction", ""))
             sl, tp = _number(trade.get("stop_loss")), _number(trade.get("take_profit"))
+            entry = _number(trade.get("entry_price"), _number(trade.get("entry")))
+            price_risk = abs(entry - sl)
+            if price_risk > 0:
+                favorable = (high - entry) / price_risk if direction == "LONG" else (entry - low) / price_risk
+                adverse = (low - entry) / price_risk if direction == "LONG" else (entry - high) / price_risk
+                trade["mfe_r"] = round(max(_number(trade.get("mfe_r")), favorable), 6)
+                trade["mae_r"] = round(min(_number(trade.get("mae_r")), adverse), 6)
+            trade["holding_candles"] = int(trade.get("holding_candles", 0) or 0) + 1
             loss = low <= sl if direction == "LONG" else high >= sl
             win = high >= tp if direction == "LONG" else low <= tp
-            if not loss and not win:
+            invalidated = bool(row.get("research_invalidated") or row.get("invalidated"))
+            timed_out = (
+                settings.shadow_timeout_candles > 0 and
+                trade["holding_candles"] >= settings.shadow_timeout_candles
+            )
+            if not loss and not win and not invalidated and not timed_out:
                 remaining.append(trade)
                 continue
-            closed.append({**trade, "status": "LOSS" if loss else "WIN",
-                           "pnl_r": -1.0 if loss else _number(trade.get("rr"), 0),
-                           "closed_at": str(row.get("timestamp", _utc()))})
-        if len(remaining) != len(self.load()):
+            if loss:
+                exit_reason, exit_price = "STOP_LOSS", sl
+            elif win:
+                exit_reason, exit_price = "TAKE_PROFIT", tp
+            elif invalidated:
+                exit_reason, exit_price = "INVALIDATED", current
+            else:
+                exit_reason, exit_price = "TIMEOUT", current
+            if price_risk > 0:
+                pnl_r = ((exit_price - entry) / price_risk if direction == "LONG"
+                         else (entry - exit_price) / price_risk)
+            else:
+                pnl_r = 0.0
+            closed_trade = {
+                **trade,
+                "status": "CLOSED",
+                "result": "WIN" if pnl_r > 0 else "LOSS" if pnl_r < 0 else "BREAKEVEN",
+                "exit_time": str(row.get("timestamp", _utc())),
+                "closed_at": str(row.get("timestamp", _utc())),
+                "exit_price": exit_price,
+                "exit_reason": exit_reason,
+                "pnl_r": round(pnl_r, 6),
+            }
+            self._append_history(closed_trade)
+            closed.append(closed_trade)
+        if open_rows or remaining:
             _atomic_json(self.path, remaining)
         return closed
 
@@ -286,7 +401,9 @@ class ShadowResearchBook:
         return None
 
     def open(self, *, strategy_id: str, snapshot: Mapping[str, Any],
-             plan: Mapping[str, Any], settings: ResearchLabSettings) -> tuple[str | None, str | None]:
+             plan: Mapping[str, Any], settings: ResearchLabSettings,
+             signal_fingerprint: str | None,
+             shadow_mode_started_at: str) -> tuple[str | None, str | None]:
         rows = self.load()
         reason = self.block_reason(strategy_id=strategy_id, symbol=str(snapshot["symbol"]),
                                    plan=plan, open_trades=rows, settings=settings)
@@ -297,7 +414,14 @@ class ShadowResearchBook:
             "shadow_trade_id": trade_id, "strategy_id": strategy_id,
             "candidate_id": strategy_id, "symbol": snapshot["symbol"],
             "timeframe": snapshot.get("timeframe", "1h"), "status": "OPEN",
-            "opened_at": snapshot["timestamp"], **dict(plan),
+            "side": plan["direction"], "direction": plan["direction"],
+            "entry_time": snapshot["timestamp"], "opened_at": snapshot["timestamp"],
+            "entry_price": plan["entry"], "entry": plan["entry"],
+            "stop_loss": plan["stop_loss"], "take_profit": plan["take_profit"],
+            "rr": plan["rr"], "risk_r": 1.0,
+            "signal_fingerprint": signal_fingerprint,
+            "mfe_r": 0.0, "mae_r": 0.0, "holding_candles": 0,
+            "shadow_mode_started_at": shadow_mode_started_at,
             "feature_snapshot": dict(snapshot),
         })
         _atomic_json(self.path, rows)
@@ -321,9 +445,16 @@ def _trade_plan(snapshot: Mapping[str, Any]) -> dict[str, Any]:
 class ResearchLabRuntime:
     def __init__(self, *, status_path: str | Path = STATUS_FILE,
                  shadow_book_path: str | Path = SHADOW_BOOK_FILE,
+                 shadow_history_path: str | Path | None = None,
                  log_path: str | Path | None = None) -> None:
         self.status_path = Path(status_path)
-        self.shadow_book = ShadowResearchBook(shadow_book_path)
+        shadow_path = Path(shadow_book_path)
+        if shadow_history_path is None:
+            shadow_history_path = (
+                SHADOW_HISTORY_FILE if shadow_path == SHADOW_BOOK_FILE
+                else shadow_path.with_name(f"{shadow_path.stem}_history.csv")
+            )
+        self.shadow_book = ShadowResearchBook(shadow_path, shadow_history_path)
         self.log_path = Path(log_path) if log_path is not None else (
             LOG_FILE if self.status_path == STATUS_FILE
             else self.status_path.parent / "research_lab_v2.log"
@@ -331,13 +462,21 @@ class ResearchLabRuntime:
         self.cycle_number = 0
 
     def _status(self, settings: ResearchLabSettings, **updates: Any) -> dict[str, Any]:
+        try:
+            previous = json.loads(self.status_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            previous = {}
+        ledger = self.shadow_book.summary()
         payload = {
             "enabled": settings.enabled, "dry_run": settings.dry_run,
-            "strategies_enabled": list(settings.allowlist), "runs_this_cycle": 0,
+            "strategies_enabled": list(settings.evaluated_strategies),
+            "strategy_modes": dict(settings.strategy_modes), "runs_this_cycle": 0,
             "would_open": 0, "opened_shadow": 0, "blocked": {},
             "new_entry_triggers": 0, "dry_run_diagnostics": {},
+            "shadow_mode_started_at": previous.get("shadow_mode_started_at"),
+            "real_order_allowed": REAL_ORDER_ALLOWED,
             "database_status": "OK", "last_error": "",
-            "last_processed_cycle": "NEVER", **updates,
+            "last_processed_cycle": "NEVER", **ledger, **updates,
         }
         _atomic_json(self.status_path, payload)
         return payload
@@ -345,12 +484,22 @@ class ResearchLabRuntime:
     @staticmethod
     def validate(settings: ResearchLabSettings, snapshots: list[Mapping[str, Any]]) -> list[str]:
         errors = []
+        if REAL_ORDER_ALLOWED:
+            errors.append("REAL_ORDER_ALLOWED must remain false")
         if set(settings.allowlist) - set(SAFE_STRATEGY_ALLOWLIST):
             errors.append("allowlist contains an unsafe strategy")
         if not settings.fail_open:
             errors.append("fail_open must remain enabled in production")
-        if len(settings.allowlist) > settings.max_enabled_shadow_strategies:
+        if len(settings.shadow_enabled_strategies) > settings.max_enabled_shadow_strategies:
             errors.append("enabled strategy count exceeds configured maximum")
+        unknown_modes = {
+            strategy_id: mode for strategy_id, mode in settings.strategy_modes.items()
+            if str(mode).upper() not in VALID_STRATEGY_MODES
+        }
+        if unknown_modes:
+            errors.append(f"invalid strategy modes: {unknown_modes}")
+        if set(settings.strategy_modes) - set(SAFE_STRATEGY_ALLOWLIST):
+            errors.append("strategy modes contain an unsafe strategy")
         for strategy_id in settings.allowlist:
             spec = registry.get(strategy_id)
             if spec is None:
@@ -398,11 +547,22 @@ class ResearchLabRuntime:
             lab.database.initialize()
             lab.register_strategies()
             signal_states = lab.database.load_signal_states()
-            if not settings.dry_run:
-                closed = self.shadow_book.close_from_snapshots(rows)
+            try:
+                previous_status = json.loads(self.status_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, TypeError):
+                previous_status = {}
+            shadow_mode_started_at = previous_status.get("shadow_mode_started_at")
+            if (not settings.dry_run and settings.shadow_enabled_strategies and
+                    not shadow_mode_started_at):
+                shadow_mode_started_at = str(rows[0].get("timestamp", _utc())) if rows else _utc()
+            closed = self.shadow_book.close_from_snapshots(rows, settings=settings)
+            closed_this_cycle = len(closed)
+            active_strategies = settings.evaluated_strategies
             for snapshot in rows:
                 pending_states = []
-                for strategy_id in settings.allowlist:
+                snapshot_decisions: list[dict[str, Any]] = []
+                for strategy_id in active_strategies:
+                    strategy_mode = settings.strategy_mode(strategy_id)
                     spec = registry.get(strategy_id)
                     result = spec.evaluate(snapshot) if spec else {
                         "accepted": False, "reasons": ["MISSING_STRATEGY"],
@@ -418,33 +578,39 @@ class ResearchLabRuntime:
                     plan = _trade_plan(snapshot)
                     reason = str(event.get("blocked_reason") or "") or None
                     trade_id = None
+                    actual_shadow_opened = False
+                    would_open_trade = False
                     condition_active = bool(event["condition_active"])
                     is_new_signal = bool(event["is_new_signal"])
                     entry_triggered = bool(event["entry_triggered"])
                     if condition_active:
                         signals += 1
                     if entry_triggered:
+                        new_entry_triggers += 1
                         safety_reason = self.shadow_book.block_reason(
                             strategy_id=strategy_id, symbol=str(snapshot["symbol"]), plan=plan,
                             open_trades=self.shadow_book.load(), settings=settings,
                         )
                         if safety_reason:
                             reason = safety_reason
-                            entry_triggered = False
                         else:
+                            would_open_trade = True
+                            would_open += 1
                             if settings.dry_run:
-                                would_open += 1
-                                new_entry_triggers += 1
+                                reason = "BLOCKED_GLOBAL_DRY_RUN"
+                            elif strategy_mode == EVALUATE_ONLY:
+                                reason = "BLOCKED_STRATEGY_EVALUATE_ONLY"
+                            elif strategy_mode != SHADOW_ENABLED:
+                                reason = "BLOCKED_STRATEGY_DISABLED"
                             else:
                                 trade_id, reason = self.shadow_book.open(
                                     strategy_id=strategy_id, snapshot=snapshot,
                                     plan=plan, settings=settings,
+                                    signal_fingerprint=event.get("signal_fingerprint"),
+                                    shadow_mode_started_at=str(shadow_mode_started_at or _utc()),
                                 )
-                                if reason:
-                                    entry_triggered = False
-                                elif trade_id:
-                                    would_open += 1
-                                    new_entry_triggers += 1
+                                if trade_id:
+                                    actual_shadow_opened = True
                                     opened += 1
                     if reason:
                         blocked[reason] += 1
@@ -472,16 +638,26 @@ class ResearchLabRuntime:
                         "previous_fingerprint": event.get("previous_fingerprint"),
                         "is_new_signal": is_new_signal,
                         "signal_audit_version": "event_dedup_v1",
+                        "strategy_mode": strategy_mode,
+                        "actual_shadow_opened": actual_shadow_opened,
+                        "shadow_mode_started_at": shadow_mode_started_at,
                         "blocked_reason": reason,
                         "evaluation_reasons": list(result.get("reasons", [])),
                         "rejection_category": result.get("rejection_category", ""),
                     }
-                    decisions.append({
+                    if actual_shadow_opened:
+                        decision_status = "OPENED_SHADOW"
+                    elif would_open_trade and settings.dry_run:
+                        decision_status = "WOULD_OPEN_DRY_RUN"
+                    elif would_open_trade and strategy_mode == EVALUATE_ONLY:
+                        decision_status = "WOULD_OPEN_EVALUATE_ONLY"
+                    else:
+                        decision_status = reason or "EVALUATED"
+                    decision_row = {
                         "candidate_id": strategy_id,
                         "decision": str(snapshot.get("signal", "")),
-                        "status": reason or ("WOULD_OPEN" if entry_triggered and settings.dry_run else
-                                             "OPENED_SHADOW" if trade_id else "EVALUATED"),
-                        "would_open_trade": bool(entry_triggered and not reason),
+                        "status": decision_status,
+                        "would_open_trade": would_open_trade,
                         "block_reason": reason, "blocked_reason": reason,
                         "condition_active": condition_active,
                         "entry_triggered": entry_triggered,
@@ -490,11 +666,16 @@ class ResearchLabRuntime:
                         "previous_fingerprint": event.get("previous_fingerprint"),
                         "is_new_signal": is_new_signal,
                         "signal_audit_version": "event_dedup_v1",
+                        "strategy_mode": strategy_mode,
+                        "actual_shadow_opened": actual_shadow_opened,
+                        "shadow_mode_started_at": shadow_mode_started_at,
                         "shadow_trade_id": trade_id,
                         "feature_snapshot": feature_snapshot,
-                    })
+                    }
+                    decisions.append(decision_row)
+                    snapshot_decisions.append(decision_row)
                 lab.process_cycle(cycle_id=cycle_id, snapshot=snapshot,
-                                  decisions=decisions[-len(settings.allowlist):],
+                                  decisions=snapshot_decisions,
                                   closed_trades=closed)
                 for key, state in pending_states:
                     lab.database.upsert_signal_state(**state)
@@ -505,15 +686,18 @@ class ResearchLabRuntime:
             status = self._status(
                 settings, runs_this_cycle=len(decisions), would_open=would_open,
                 opened_shadow=opened, blocked=dict(blocked), database_status="OK",
-                last_processed_cycle=cycle_id, strategies_evaluated=len(settings.allowlist),
+                last_processed_cycle=cycle_id, strategies_evaluated=len(active_strategies),
                 symbols_evaluated=len(rows), signals_produced=signals,
                 new_entry_triggers=new_entry_triggers,
+                closed_shadow_this_cycle=closed_this_cycle,
+                shadow_mode_started_at=shadow_mode_started_at,
                 dry_run_diagnostics=diagnostics,
                 duration_ms=duration,
             )
             _write_log("info", {"event": "research_lab_cycle", "cycle_id": cycle_id,
-                "strategies_evaluated": len(settings.allowlist), "symbols_evaluated": len(rows),
+                "strategies_evaluated": len(active_strategies), "symbols_evaluated": len(rows),
                 "signals_produced": signals, "would_open": would_open, "opened": opened,
+                "closed": closed_this_cycle, "strategy_modes": dict(settings.strategy_modes),
                 "new_entry_triggers": new_entry_triggers,
                 "blocked": dict(blocked), "duration_ms": duration, "errors": [],
                 "dry_run_diagnostics": diagnostics}, self.log_path)
