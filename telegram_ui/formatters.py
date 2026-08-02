@@ -72,11 +72,12 @@ def format_duration(seconds: Any) -> str:
 def format_status(value: Any) -> str:
     status = str(value or "UNKNOWN").upper()
     return {
-        "HIGH PRIORITY": "🔥 ВЫСОКИЙ ПРИОРИТЕТ",
-        "SETUP": "🟢 СЕТАП",
-        "WATCH": "🟡 НАБЛЮДАТЬ",
-        "WAIT": "⏳ ЖДАТЬ",
+        "HIGH PRIORITY": "🔥 СИЛЬНЫЙ СИГНАЛ",
+        "SETUP": "🟢 ГОТОВ К ВХОДУ",
+        "WATCH": "🟡 НАБЛЮДЕНИЕ",
+        "WAIT": "🔵 ОЖИДАНИЕ",
         "NO TRADE": "⚪ НЕТ СДЕЛКИ",
+        "INVALID": "🔴 СИГНАЛ ОТМЕНЁН",
         "OPEN": "🟢 ОТКРЫТА",
         "CLOSED": "⚪ ЗАКРЫТА",
     }.get(status, status.replace("_", " "))
@@ -84,7 +85,7 @@ def format_status(value: Any) -> str:
 
 def format_side(value: Any) -> str:
     side = str(value or "").upper()
-    return {"LONG": "🟢 ЛОНГ", "SHORT": "🔴 ШОРТ", "NEUTRAL": "⚪ ОЖИДАНИЕ"}.get(side, side)
+    return {"LONG": "🟢 ЛОНГ", "SHORT": "🔴 ШОРТ", "NEUTRAL": "НЕЙТРАЛЬНО"}.get(side, side)
 
 
 def format_signal_card(payload: SignalCardPayload) -> str:

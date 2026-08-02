@@ -15,6 +15,7 @@ from .models import (
     build_signal_fingerprint,
 )
 from .permissions import TelegramUIFlags, get_ui_flags
+from .signal_cards import build_signal_card, build_why_screen
 
 __all__ = [
     "CALLBACK_PREFIX",
@@ -28,5 +29,7 @@ __all__ = [
     "TradeCardPayload",
     "UserContext",
     "build_signal_fingerprint",
+    "build_signal_card",
+    "build_why_screen",
     "get_ui_flags",
 ]

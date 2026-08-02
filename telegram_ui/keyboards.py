@@ -21,13 +21,108 @@ RECOMMENDED_BOTFATHER_COMMANDS = (
 def home_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("📡 Сигналы", callback_data=build_callback("signals")),
+            InlineKeyboardButton("📊 Сигналы", callback_data=build_callback("signals")),
             InlineKeyboardButton("📈 Рынок", callback_data=build_callback("market")),
         ],
         [
-            InlineKeyboardButton("🔬 Исследования", callback_data=build_callback("research")),
-            InlineKeyboardButton("🧬 Research Lab", callback_data=build_callback("researchlab")),
+            InlineKeyboardButton("💼 Сделки", callback_data=build_callback("trades")),
+            InlineKeyboardButton("📉 Статистика", callback_data=build_callback("stats")),
         ],
+        [
+            InlineKeyboardButton("🧠 Аналитика", callback_data=build_callback("analytics")),
+            InlineKeyboardButton("🔬 Research Lab", callback_data=build_callback("researchlab")),
+        ],
+        [
+            InlineKeyboardButton("⚙️ Настройки", callback_data=build_callback("settings")),
+            InlineKeyboardButton("ℹ️ Помощь", callback_data=build_callback("help")),
+        ],
+    ])
+
+
+def symbols_keyboard(symbols: list[str] | tuple[str, ...]) -> InlineKeyboardMarkup:
+    buttons = [
+        InlineKeyboardButton(
+            symbol.split("/", 1)[0],
+            callback_data=build_callback("symbol", symbol.replace("/", "").replace("-", "")),
+        )
+        for symbol in symbols
+    ]
+    rows = [buttons[index:index + 3] for index in range(0, len(buttons), 3)]
+    rows.append([InlineKeyboardButton("📈 Обзор рынка", callback_data=build_callback("market"))])
+    rows.append([
+        InlineKeyboardButton("⬅️ Назад", callback_data=build_callback("back", "home")),
+        InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home")),
+    ])
+    return InlineKeyboardMarkup(rows)
+
+
+def timeframe_keyboard(symbol: str, timeframes: tuple[str, ...]) -> InlineKeyboardMarkup:
+    rows = [[
+        InlineKeyboardButton(value, callback_data=build_callback("timeframe", symbol, value))
+        for value in timeframes
+    ]] if timeframes else []
+    rows.extend([
+        [InlineKeyboardButton("⬅️ К монетам", callback_data=build_callback("back", "signals"))],
+        [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
+    ])
+    return InlineKeyboardMarkup(rows)
+
+
+def signal_card_keyboard(symbol: str, timeframe: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Обновить", callback_data=build_callback("refresh", symbol, timeframe)),
+            InlineKeyboardButton("🧠 Почему?", callback_data=build_callback("why", symbol, timeframe)),
+        ],
+        [
+            InlineKeyboardButton("📊 Статистика", callback_data=build_callback("signalstats", symbol, timeframe)),
+            InlineKeyboardButton("📈 График", callback_data=build_callback("chart", symbol, timeframe)),
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data=build_callback("back", "symbol")),
+            InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home")),
+        ],
+    ])
+
+
+def market_keyboard(symbols: list[str] | tuple[str, ...]) -> InlineKeyboardMarkup:
+    buttons = [InlineKeyboardButton(
+        symbol.split("/", 1)[0],
+        callback_data=build_callback("symbol", symbol.replace("/", "").replace("-", "")),
+    ) for symbol in symbols]
+    rows = [buttons[index:index + 3] for index in range(0, len(buttons), 3)]
+    rows.extend([
+        [InlineKeyboardButton("🔄 Обновить", callback_data=build_callback("market"))],
+        [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
+    ])
+    return InlineKeyboardMarkup(rows)
+
+
+def section_keyboard(detail_action: str | None = None) -> InlineKeyboardMarkup:
+    rows = []
+    if detail_action:
+        rows.append([InlineKeyboardButton("Подробнее", callback_data=build_callback(detail_action))])
+    rows.append([InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))])
+    return InlineKeyboardMarkup(rows)
+
+
+def researchlab_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("Shadow сделки", callback_data=build_callback("researchlab_trades")),
+            InlineKeyboardButton("Рейтинг", callback_data=build_callback("research_rank")),
+        ],
+        [
+            InlineKeyboardButton("⬅️ Назад", callback_data=build_callback("back", "home")),
+            InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home")),
+        ],
+    ])
+
+
+def help_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("Показать команды", callback_data=build_callback("commands"))],
+        [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
     ])
 
 

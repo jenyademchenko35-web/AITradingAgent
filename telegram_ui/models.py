@@ -15,13 +15,13 @@ class SignalCardPayload:
     status: str
     timeframe: str
     strategy_id: str
-    current_price: float
-    entry: float
-    stop_loss: float
-    take_profit: float
-    risk_reward: float
-    risk_percent: float
-    target_percent: float
+    current_price: float | None
+    entry: float | None
+    stop_loss: float | None
+    take_profit: float | None
+    risk_reward: float | None
+    risk_percent: float | None
+    target_percent: float | None
     confidence: float
     quality: str
     score: float
@@ -34,6 +34,12 @@ class SignalCardPayload:
     cycle_id: str
     snapshot_id: str
     signal_fingerprint: str
+    component_scores: tuple[tuple[str, float, float | None], ...] = ()
+    adx: float | None = None
+    atr_percent: float | None = None
+    market_regime: str = ""
+    confirmations: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
