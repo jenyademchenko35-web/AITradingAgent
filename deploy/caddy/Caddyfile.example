@@ -1,17 +1,21 @@
-miniapp.example.com {
+example.com {
     encode zstd gzip
 
     request_body {
         max_size 64KB
     }
 
+    # The public site is HTTPS; only this hop may reach the private backend.
     @backend path /api/* /healthz /readyz
     handle @backend {
         reverse_proxy 127.0.0.1:8081
     }
 
+    @assets path /assets/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+
     handle {
-        root * /ABSOLUTE/PATH/TO/AITradingAgent/miniapp/frontend/dist
+        root * __PROJECT_ROOT__/miniapp/frontend/dist
         try_files {path} /index.html
         file_server
     }

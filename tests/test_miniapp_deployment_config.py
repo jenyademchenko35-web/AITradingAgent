@@ -1,7 +1,10 @@
 import os
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 import miniapp.backend.config as config_module
+from miniapp.backend.app import create_app
 from miniapp.backend.config import MiniAppSettings
 
 
@@ -141,3 +144,30 @@ def test_examples_contain_no_real_values_and_plist_binds_localhost():
     assert "BOT_TOKEN" not in frontend
     assert "127.0.0.1" in plist
     assert ".env" not in plist
+
+
+def test_production_templates_are_https_only_and_use_safe_placeholders():
+    caddy = (ROOT / "deploy/caddy/Caddyfile.example").read_text(encoding="utf-8")
+    plist = (ROOT / "deploy/macos/com.tradewatcher.miniapp.plist.example").read_text(encoding="utf-8")
+    backend = (ROOT / "miniapp/backend/.env.example").read_text(encoding="utf-8")
+    assert caddy.startswith("example.com {")
+    assert "encode zstd gzip" in caddy
+    assert "max-age=31536000; includeSubDomains" in caddy
+    assert "Content-Security-Policy" in caddy
+    assert "Cache-Control \"public, max-age=31536000, immutable\"" in caddy
+    assert "__PROJECT_ROOT__" in caddy
+    assert "/ABSOLUTE/PATH/TO" not in caddy
+    assert "__PROJECT_ROOT__" in plist
+    assert "/ABSOLUTE/PATH/TO" not in plist
+    assert "ThrottleInterval" in plist
+    assert "https://example.com" in backend
+    assert "TELEGRAM_BOT_TOKEN=\n" in backend
+
+
+def test_backend_serves_an_existing_production_frontend_build(tmp_path):
+    dist = tmp_path / "miniapp" / "frontend" / "dist"
+    dist.mkdir(parents=True)
+    (dist / "index.html").write_text("<main>TradeWatcher static build</main>", encoding="utf-8")
+    response = TestClient(create_app(settings=MiniAppSettings(data_dir=tmp_path))).get("/")
+    assert response.status_code == 200
+    assert "TradeWatcher static build" in response.text

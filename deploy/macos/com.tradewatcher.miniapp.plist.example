@@ -6,12 +6,12 @@
   <string>com.tradewatcher.miniapp</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/ABSOLUTE/PATH/TO/AITradingAgent/venv/bin/python</string>
+    <string>__PROJECT_ROOT__/venv/bin/python</string>
     <string>-m</string>
     <string>miniapp.backend.run</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/ABSOLUTE/PATH/TO/AITradingAgent</string>
+  <string>__PROJECT_ROOT__</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -19,12 +19,14 @@
     <key>SuccessfulExit</key>
     <false/>
   </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
   <key>ProcessType</key>
   <string>Background</string>
   <key>StandardOutPath</key>
-  <string>/ABSOLUTE/PATH/TO/AITradingAgent/logs/miniapp.log</string>
+  <string>__PROJECT_ROOT__/logs/miniapp.log</string>
   <key>StandardErrorPath</key>
-  <string>/ABSOLUTE/PATH/TO/AITradingAgent/logs/miniapp_error.log</string>
+  <string>__PROJECT_ROOT__/logs/miniapp_error.log</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>MINIAPP_HOST</key>
