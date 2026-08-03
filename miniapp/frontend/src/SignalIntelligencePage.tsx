@@ -19,15 +19,26 @@ function Component({ label, score, maximum }: { label: string; score: number | n
   return <div className="component"><div><span>{label}</span><b>{score === null ? "—" : `${score}${maximum === null ? "" : ` / ${maximum}`}`}</b></div>{percent !== null && <div className="progress"><i style={{ width: `${percent}%` }} /></div>}</div>;
 }
 
-function EvidenceList({ title, items }: { title: string; items: string[] }) {
-  if (!items.length) return null;
-  return <div><h3>{title}</h3>{items.map((item) => <p key={item}>• {item}</p>)}</div>;
+function EvidenceGroup({ title, items }: { title: string; items: string[] }) {
+  return <div className="evidence-group"><div><h4>{title}</h4><span>{items.length}</span></div>{items.length ? <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul> : <p className="evidence-empty">Нет сохранённых данных</p>}</div>;
 }
 
 function formatMsk(timestamp: string | null) {
   if (!timestamp) return "—";
   const parsed = new Date(timestamp);
   return Number.isNaN(parsed.getTime()) ? timestamp : parsed.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
+}
+
+function DecisionTimeline({ payload, hasPlan }: { payload: SignalIntelligencePayload; hasPlan: boolean }) {
+  const steps = [
+    ["Trend", payload.trend_score !== null ? "SAVED" : "NO DATA"],
+    ["Momentum", payload.momentum_score !== null ? "SAVED" : "NO DATA"],
+    ["Structure", payload.structure_score !== null ? "SAVED" : "NO DATA"],
+    ["Risk", payload.risk_score !== null ? "SAVED" : "NO DATA"],
+    ["Execution", hasPlan ? "PLAN SAVED" : "NO PLAN"],
+    ["Final", payload.status ?? "UNKNOWN"],
+  ];
+  return <section className="panel decision-timeline"><div className="section-heading"><div><h2>Decision Timeline</h2><p>Только сохранённые этапы решения; Mini App не оценивает их заново.</p></div></div><div>{steps.map(([label, status]) => <div className="timeline-step" key={label}><b>{label}</b><span>→</span><small>{status}</small></div>)}</div></section>;
 }
 
 export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, onNavigate }: {
@@ -63,6 +74,14 @@ export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, o
   if (error || !payload) return <main><section className="panel"><button className="back" onClick={onBack}>← Signals</button><div className="error">{error || "Snapshot не найден."}</div></section></main>;
   const hasPlan = payload.entry !== null && payload.stop_loss !== null && payload.take_profit !== null;
   const noTrade = ["NO TRADE", "WAIT", "WATCH"].includes(payload.status ?? "");
+  const scoreComponents = [
+    { label: "Trend", score: payload.trend_score, maximum: payload.trend_max_score },
+    { label: "Momentum", score: payload.momentum_score, maximum: payload.momentum_max_score },
+    { label: "Structure", score: payload.structure_score, maximum: payload.structure_max_score },
+    { label: "Risk", score: payload.risk_score, maximum: payload.risk_max_score },
+  ].filter((item) => item.maximum !== null && item.maximum > 0);
+  const confirmations = payload.confirmations.length ? payload.confirmations : payload.explanation.confirmations;
+  const blockers = payload.blockers.length ? payload.blockers : payload.explanation.blockers;
 
   return <main className="intelligence-page">
     <button className="back" onClick={onBack}>← Signals</button>
@@ -71,12 +90,14 @@ export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, o
 
     {view === "intelligence" && <>
       <section className="panel"><h2>Overview</h2><div className="metrics"><div className="metric"><span>Confidence</span><strong>{value(payload.confidence, "%")}</strong></div><div className="metric"><span>Quality</span><strong>{value(payload.quality)}</strong></div><div className="metric"><span>Score</span><strong>{value(payload.score)}</strong></div><div className="metric"><span>Strategy</span><strong>{value(payload.strategy_id)}</strong></div></div></section>
-      <section className="panel"><h2>Components</h2><Component label="Trend" score={payload.trend_score} maximum={payload.trend_max_score} /><Component label="Momentum" score={payload.momentum_score} maximum={payload.momentum_max_score} /><Component label="Structure" score={payload.structure_score} maximum={payload.structure_max_score} /><Component label="Risk" score={payload.risk_score} maximum={payload.risk_max_score} /></section>
+      <DecisionTimeline payload={payload} hasPlan={hasPlan} />
+      {scoreComponents.length > 0 && <section className="panel" data-testid="score-dashboard"><div className="section-heading"><div><h2>Score Dashboard</h2><p>Только сохранённые scores с известными максимумами.</p></div></div><div className="score-dashboard">{scoreComponents.map((item) => <Component key={item.label} {...item} />)}</div></section>}
       <section className="panel"><h2>Indicators</h2><div className="levels"><div className="metric"><span>RSI</span><strong>{value(payload.rsi)}</strong></div><div className="metric"><span>ADX</span><strong>{value(payload.adx)}</strong></div><div className="metric"><span>ATR %</span><strong>{value(payload.atr_percent)}</strong></div><div className="metric"><span>Volume Ratio</span><strong>{value(payload.volume_ratio)}</strong></div><div className="metric"><span>Market Regime</span><strong>{value(payload.market_regime)}</strong></div><div className="metric"><span>Session</span><strong>{value(payload.session)}</strong></div></div></section>
       {hasPlan && <section className="panel" data-testid="execution-block"><h2>Execution</h2><div className="levels"><div className="metric"><span>Current Price</span><strong>{value(payload.current_price)}</strong></div><div className="metric"><span>Entry</span><strong>{value(payload.entry)}</strong></div><div className="metric"><span>SL</span><strong>{value(payload.stop_loss)}</strong></div><div className="metric"><span>TP</span><strong>{value(payload.take_profit)}</strong></div><div className="metric"><span>Risk %</span><strong>{value(payload.risk_percent)}</strong></div><div className="metric"><span>Target %</span><strong>{value(payload.target_percent)}</strong></div><div className="metric"><span>RR</span><strong>{value(payload.risk_reward)}</strong></div></div></section>}
-      <section className="panel" id="why"><h2>{noTrade ? "Почему нет сделки" : "Почему сигнал открыт"}</h2><EvidenceList title="Подтверждения" items={payload.explanation.confirmations} /><EvidenceList title="Ограничения" items={payload.explanation.limitations} /><EvidenceList title="Blockers" items={payload.explanation.blockers} />{!payload.explanation.confirmations.length && !payload.explanation.limitations.length && !payload.explanation.blockers.length && <div className="empty compact">Нет сохранённых объяснений.</div>}</section>
+      {!hasPlan && <section className="panel" data-testid="execution-empty"><h2>Execution</h2><div className="plan-empty"><b>Торговый план не сохранён</b><p>Источник не передал полный набор Entry, SL и TP. Mini App не рассчитывает отсутствующие уровни; сохранённые причины показаны в блоке WHY.</p></div></section>}
+      <section className="panel" id="why"><div className="section-heading"><div><h2>WHY</h2><p>{noTrade ? "Почему сейчас нет готовой сделки" : "Какие сохранённые факты сопровождают сигнал"}</p></div></div><div className="why-zones"><div className="why-zone positive"><h3>Подтверждения</h3><EvidenceGroup title="Confirmations" items={confirmations} /></div><div className="why-zone warning"><h3>Проблемы</h3><EvidenceGroup title="Warnings" items={payload.warnings} /><EvidenceGroup title="Ограничения" items={payload.explanation.limitations} /></div><div className="why-zone blocking"><h3>Причины отсутствия сделки</h3><EvidenceGroup title="Blockers" items={blockers} /><EvidenceGroup title="Failed filters" items={payload.failed_filters} /><EvidenceGroup title="Veto reasons" items={payload.veto_reasons} /></div></div></section>
       <section className="panel" id="changes"><h2>Что изменилось за последние циклы</h2>{changes.status === "NO_HISTORY" ? <div className="empty compact">История отсутствует.</div> : <><div className="change-grid">{Object.entries(changes.deltas).filter(([, delta]) => delta !== null).map(([metric, delta]) => <div key={metric}><span>{metric}</span><b>{delta! > 0 ? "+" : ""}{delta}</b></div>)}</div>{changes.blockers_removed.map((item) => <p key={item}>Blocker removed: {item}</p>)}{changes.blockers_added.map((item) => <p key={item}>Blocker added: {item}</p>)}</>}</section>
-      <section className="panel" id="requirements"><h2>Что нужно для сигнала</h2>{requirements.items.length ? requirements.items.map((item) => <div className="requirement" key={`${item.metric}-${item.required_value}`}><b>{item.metric}</b><span>{value(item.current_value)} · нужно {item.comparison} {item.required_value}</span><small>{item.source}</small></div>) : <div className="empty compact">Точные недостающие thresholds не сохранены.</div>}</section>
+      <section className="panel" id="requirements"><div className="section-heading"><div><h2>Requirements</h2><p>Сохранённые условия стратегии без сгенерированных thresholds.</p></div></div>{requirements.items.length ? <div className="requirements-list">{requirements.items.map((item) => <div className="requirement" key={`${item.metric}-${item.required_value}`}><div><small>Metric</small><b>{item.metric}</b></div><div><small>Current</small><b>{value(item.current_value)}</b></div><div><small>Required</small><b>{value(item.required_value)}</b></div><div><small>Comparison</small><b>{item.comparison}</b></div><div><small>Status</small><b className={`requirement-status ${item.status.toLowerCase().replaceAll("_", "-")}`}>{item.status}</b></div><small className="requirement-source">Source: {item.source}</small></div>)}</div> : <div className="empty compact">Точные недостающие thresholds не сохранены.</div>}</section>
       <section className="panel"><h2>История компонентов</h2><div className="spark-grid"><MiniHistoryChart history={history.items} field="confidence" label="Confidence" /><MiniHistoryChart history={history.items} field="score" label="Score" /><MiniHistoryChart history={history.items} field="trend_score" label="Trend" /><MiniHistoryChart history={history.items} field="momentum_score" label="Momentum" /><MiniHistoryChart history={history.items} field="current_price" label="Current price" /></div></section>
     </>}
 

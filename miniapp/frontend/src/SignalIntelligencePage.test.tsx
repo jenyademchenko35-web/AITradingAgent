@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import type { SignalIntelligencePayload } from "../../shared/contracts";
 import type { MiniAppApiClient } from "./api";
@@ -40,20 +40,61 @@ function api(current = payload()): MiniAppApiClient {
   };
 }
 
-test("renders evidence, component bars, real plan, changes and requirements", async () => {
-  render(<SignalIntelligencePage api={api()} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
-  expect(await screen.findByText("Components")).toBeInTheDocument();
+test("renders separated evidence, score dashboard, real plan and requirements", async () => {
+  const current = payload({
+    warnings: ["spread elevated"], blockers: ["NO_TRADE_PLAN"],
+    failed_filters: ["ADX_FILTER"], veto_reasons: ["RISK_VETO"],
+    explanation: {
+      confirmations: ["trend alignment"], limitations: ["low sample"],
+      blockers: ["NO_TRADE_PLAN"],
+    },
+  });
+  render(<SignalIntelligencePage api={api(current)} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
+  expect(await screen.findByText("Score Dashboard")).toBeInTheDocument();
+  expect(screen.getByText("Decision Timeline")).toBeInTheDocument();
   expect(screen.getByText("55 / 60")).toBeInTheDocument();
   expect(screen.getByTestId("execution-block")).toBeInTheDocument();
-  expect(screen.getByText(/trend alignment/)).toBeInTheDocument();
+  expect(screen.getByText("Подтверждения")).toBeInTheDocument();
+  expect(screen.getByText("Проблемы")).toBeInTheDocument();
+  expect(screen.getByText("Причины отсутствия сделки")).toBeInTheDocument();
+  expect(screen.getByText("trend alignment")).toBeInTheDocument();
+  expect(screen.getByText("spread elevated")).toBeInTheDocument();
+  expect(screen.getByText("NO_TRADE_PLAN")).toBeInTheDocument();
+  expect(screen.getByText("ADX_FILTER")).toBeInTheDocument();
+  expect(screen.getByText("RISK_VETO")).toBeInTheDocument();
   expect(screen.getByText("Blocker removed: WEAK_MOMENTUM")).toBeInTheDocument();
-  expect(screen.getByText(/нужно >= 20/)).toBeInTheDocument();
+  const requirements = within(screen.getByText("Requirements").closest("section")!);
+  expect(requirements.getByText("ADX")).toBeInTheDocument();
+  expect(requirements.getByText("17")).toBeInTheDocument();
+  expect(requirements.getByText("20")).toBeInTheDocument();
+  expect(requirements.getByText(">=")).toBeInTheDocument();
+  expect(requirements.getByText("NOT_MET")).toBeInTheDocument();
 });
 
-test("does not render execution block when saved plan is incomplete", async () => {
+test("explains an incomplete saved plan without inventing levels", async () => {
   render(<SignalIntelligencePage api={api(payload({ entry: null, stop_loss: null, take_profit: null }))} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
-  await screen.findByText("Components");
+  await screen.findByText("Score Dashboard");
   expect(screen.queryByTestId("execution-block")).not.toBeInTheDocument();
+  expect(screen.getByTestId("execution-empty")).toHaveTextContent("Торговый план не сохранён");
+  expect(screen.getByTestId("execution-empty")).toHaveTextContent("не рассчитывает отсутствующие уровни");
+});
+
+test("shows component scores only when a real maximum is saved", async () => {
+  const first = render(<SignalIntelligencePage api={api(payload({
+    momentum_max_score: null, structure_max_score: null, risk_max_score: null,
+  }))} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
+  expect(await screen.findByTestId("score-dashboard")).toBeInTheDocument();
+  expect(screen.getByText("55 / 60")).toBeInTheDocument();
+  expect(screen.queryByText("20 / 25")).not.toBeInTheDocument();
+  first.unmount();
+
+  const emptyClient = api(payload({
+    trend_max_score: null, momentum_max_score: null,
+    structure_max_score: null, risk_max_score: null,
+  }));
+  render(<SignalIntelligencePage api={emptyClient} symbol="ETH/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
+  await screen.findByText("Overview");
+  expect(screen.queryByTestId("score-dashboard")).not.toBeInTheDocument();
 });
 
 test("renders empty history and insufficient similar sample", async () => {
