@@ -48,6 +48,51 @@ def test_runtime_endpoints_project_only_saved_sources(tmp_path):
     assert history.json()["items"][0]["status"] == "SETUP"
 
 
+def test_system_projects_existing_agent_runtime_json_without_process_inspection(tmp_path):
+    client = _client(tmp_path)
+    (tmp_path / "dashboard_state.json").write_text(json.dumps({
+        "generated_at": "2026-08-03T10:01:00Z",
+        "system": {"status": "ONLINE", "uptime_seconds": 1800},
+        "trading": {"last_cycle": "2026-08-03T10:00:00Z", "next_cycle_seconds": 120},
+        "live_monitor": {"interval": 3},
+        "strategy_lab": {"status": "WARNING"},
+        "telegram": {"status": "ONLINE"}, "news": {"status": "READY"},
+    }), encoding="utf-8")
+    (tmp_path / "live_monitor_state.json").write_text(json.dumps({
+        "status": "ONLINE", "generated_at": "2026-08-03T10:01:01Z", "interval": 3,
+    }), encoding="utf-8")
+    (tmp_path / "agent_v3_stats.json").write_text(json.dumps({"runs": 228}), encoding="utf-8")
+    (tmp_path / "research_lab_v2_status.json").write_text(json.dumps({
+        "enabled": True, "last_processed_cycle": "NEVER",
+    }), encoding="utf-8")
+
+    response = client.get("/api/system", headers={"X-Telegram-Init-Data": _signed()})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["server"] == "ONLINE"
+    assert payload["agent"] == "ONLINE"
+    assert payload["cycle"] == "2026-08-03T10:00:00Z"
+    assert payload["uptime_seconds"] == 1800
+    assert payload["research"] == "ONLINE"
+    assert payload["interval_seconds"] == 3
+    assert payload["last_cycle_timestamp"] == "2026-08-03T10:00:00Z"
+
+
+def test_system_uses_live_monitor_and_agent_stats_fallbacks_when_dashboard_is_absent(tmp_path):
+    repository = ReadOnlyRepository(tmp_path, cache_ttl_seconds=60)
+    (tmp_path / "live_monitor_state.json").write_text(json.dumps({
+        "status": "READY", "current_cycle": "monitor-cycle-7", "uptime_seconds": 90,
+    }), encoding="utf-8")
+    (tmp_path / "agent_v3_stats.json").write_text(json.dumps({"runs": 15}), encoding="utf-8")
+    (tmp_path / "research_lab_v2_status.json").write_text(json.dumps({"enabled": False}), encoding="utf-8")
+    payload = repository.system()
+    assert payload["agent"] == "ONLINE"
+    assert payload["server"] == "READY"
+    assert payload["cycle"] == "monitor-cycle-7"
+    assert payload["uptime_seconds"] == 90
+    assert payload["research"] == "OFF"
+
+
 def test_runtime_endpoints_are_get_only_and_health_is_safe(tmp_path):
     client = _client(tmp_path)
     headers = {"X-Telegram-Init-Data": _signed()}

@@ -30,6 +30,13 @@ class _SnapshotCacheEntry:
     expires_at: float
     rows: tuple[dict[str, Any], ...]
 
+
+@dataclass(frozen=True)
+class _RuntimeJsonCacheEntry:
+    signature: tuple[int, int] | None
+    expires_at: float
+    payload: Mapping[str, Any]
+
 def _number(value: Any) -> float | None:
     try:
         return float(value) if value not in (None, "") else None
@@ -52,12 +59,53 @@ class ReadOnlyRepository:
         )
         self._snapshot_cache: _SnapshotCacheEntry | None = None
         self._snapshot_lock = threading.RLock()
+        self._runtime_json_cache: dict[str, _RuntimeJsonCacheEntry] = {}
+        self._runtime_json_lock = threading.RLock()
         self._max_snapshot_bytes = max(
             1_048_576, min(33_554_432, self.max_source_rows * 4096),
         )
 
     def read_csv(self, path: str | Path) -> list[dict[str, str]]:
         return self._cache.read(path)
+
+    def _runtime_json(self, filename: str) -> dict[str, Any]:
+        """Read one bounded, published runtime object without writing or importing runtime code."""
+        path = self.base_dir / filename
+        try:
+            stat = path.stat()
+            signature: tuple[int, int] | None = (stat.st_mtime_ns, stat.st_size)
+        except OSError:
+            signature = None
+        now = time.monotonic()
+        with self._runtime_json_lock:
+            cached = self._runtime_json_cache.get(filename)
+            if cached and cached.signature == signature and now < cached.expires_at:
+                return dict(cached.payload)
+
+        payload: Mapping[str, Any] = {}
+        if signature is not None and signature[1] <= self._max_snapshot_bytes:
+            try:
+                with path.open("r", encoding="utf-8") as handle:
+                    raw = handle.read(self._max_snapshot_bytes + 1)
+                if len(raw.encode("utf-8")) <= self._max_snapshot_bytes:
+                    decoded = json.loads(raw)
+                    if isinstance(decoded, Mapping):
+                        payload = decoded
+            except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+                payload = {}
+        frozen = dict(payload)
+        with self._runtime_json_lock:
+            self._runtime_json_cache[filename] = _RuntimeJsonCacheEntry(
+                signature=signature, expires_at=now + self.cache_ttl_seconds, payload=frozen,
+            )
+        return dict(frozen)
+
+    @staticmethod
+    def _published_value(*values: Any) -> Any:
+        for value in values:
+            if value not in (None, "", "N/A", "NEVER"):
+                return value
+        return None
 
     @staticmethod
     def _adapt_signal_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
@@ -210,19 +258,56 @@ class ReadOnlyRepository:
 
     def system(self) -> dict[str, Any]:
         """Safe projection of already-published runtime status; no process inspection."""
-        dashboard = self.dashboard()
-        runtime = self.research().get("runtime_status", {})
+        dashboard_state = self._runtime_json("dashboard_state.json")
+        live_monitor = self._runtime_json("live_monitor_state.json")
+        agent_stats = self._runtime_json("agent_v3_stats.json")
+        research_status = self._runtime_json("research_lab_v2_status.json")
+        system_status = dashboard_state.get("system")
+        trading = dashboard_state.get("trading")
+        dashboard_live = dashboard_state.get("live_monitor")
+        dashboard_research = dashboard_state.get("strategy_lab")
+        telegram = dashboard_state.get("telegram")
+        news = dashboard_state.get("news")
+        safe_system = system_status if isinstance(system_status, Mapping) else {}
+        safe_trading = trading if isinstance(trading, Mapping) else {}
+        safe_dashboard_live = dashboard_live if isinstance(dashboard_live, Mapping) else {}
+        safe_dashboard_research = dashboard_research if isinstance(dashboard_research, Mapping) else {}
+        safe_telegram = telegram if isinstance(telegram, Mapping) else {}
+        safe_news = news if isinstance(news, Mapping) else {}
+        has_agent_runtime = any((dashboard_state, live_monitor, agent_stats))
+        research = self._published_value(
+            research_status.get("status"),
+            "ONLINE" if research_status.get("enabled") is True else None,
+            "OFF" if research_status.get("enabled") is False else None,
+            safe_dashboard_research.get("status"),
+        ) or "UNKNOWN"
         return {
-            "server": dashboard.get("status"),
-            "agent": runtime.get("agent"),
-            "telegram": runtime.get("telegram"),
-            "research": dashboard.get("research_status"),
-            "news": runtime.get("news"),
-            "cycle": runtime.get("last_processed_cycle"),
-            "interval_seconds": runtime.get("interval_seconds"),
-            "next_cycle_seconds": runtime.get("next_cycle_seconds"),
-            "last_cycle_timestamp": runtime.get("last_cycle_timestamp"),
-            "uptime_seconds": runtime.get("uptime_seconds"),
+            "server": self._published_value(safe_system.get("status"), live_monitor.get("status")),
+            "agent": "ONLINE" if has_agent_runtime else None,
+            "telegram": self._published_value(safe_telegram.get("status")),
+            "research": research,
+            "news": self._published_value(safe_news.get("status")),
+            "cycle": self._published_value(
+                safe_trading.get("last_cycle"), safe_trading.get("cycle"),
+                live_monitor.get("cycle"), live_monitor.get("current_cycle"),
+                live_monitor.get("last_cycle"), agent_stats.get("runs"),
+            ),
+            "interval_seconds": self._published_value(
+                live_monitor.get("interval"), safe_dashboard_live.get("interval"),
+                agent_stats.get("interval_seconds"),
+            ),
+            "next_cycle_seconds": self._published_value(
+                safe_trading.get("next_cycle_seconds"), live_monitor.get("next_cycle_seconds"),
+                agent_stats.get("next_cycle_seconds"),
+            ),
+            "last_cycle_timestamp": self._published_value(
+                safe_trading.get("last_cycle"), live_monitor.get("generated_at"),
+                dashboard_state.get("generated_at"),
+            ),
+            "uptime_seconds": self._published_value(
+                safe_system.get("uptime_seconds"), safe_trading.get("uptime_seconds"),
+                live_monitor.get("uptime_seconds"), agent_stats.get("uptime_seconds"),
+            ),
             "read_only": True,
         }
 
