@@ -4,7 +4,7 @@ import { afterEach } from "vitest";
 
 afterEach(() => {
   cleanup();
-  window.history.replaceState({}, "", "/");
+  if (typeof window !== "undefined") window.history.replaceState({}, "", "/");
 });
 
 class ResizeObserverMock {
