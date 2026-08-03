@@ -31,7 +31,8 @@ def test_intelligence_routes_are_authenticated_get_only(tmp_path):
     paths = [
         "/api/signal/BTCUSDT/1h/intelligence", "/api/signal/BTCUSDT/1h/history",
         "/api/signal/BTCUSDT/1h/changes", "/api/signal/BTCUSDT/1h/requirements",
-        "/api/signal/BTCUSDT/1h/similar?source=LIVE",
+        "/api/signal/BTCUSDT/1h/similar?source=LIVE", "/api/system", "/api/activity",
+        "/api/shadow", "/api/research/live",
     ]
     assert all(client.get(path, headers=headers).status_code == 200 for path in paths)
     for method in (client.post, client.put, client.patch, client.delete):
@@ -63,5 +64,6 @@ def test_requests_do_not_write_runtime_files(tmp_path):
     data.signal_changes("BTCUSDT", "1h")
     data.signal_requirements("BTCUSDT", "1h")
     data.similar_setups("BTCUSDT", "1h", source="LIVE")
+    data.system(); data.activity(); data.shadow(); data.research_live(); data.health_checks()
     after = {path: path.stat().st_mtime_ns for path in tmp_path.iterdir()}
     assert after == before

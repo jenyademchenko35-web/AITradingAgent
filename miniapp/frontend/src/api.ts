@@ -4,6 +4,46 @@ import type {
   SimilarResponse, SimilarSource, WatchlistItem,
 } from "../../shared/contracts";
 
+export interface RuntimeSystem {
+  server: string | null;
+  agent: string | null;
+  telegram: string | null;
+  research: string | null;
+  news: string | null;
+  cycle: string | number | null;
+  interval_seconds: number | null;
+  next_cycle_seconds: number | null;
+  last_cycle_timestamp: string | null;
+  uptime_seconds: number | null;
+  read_only: boolean | null;
+}
+
+export interface ActivityEvent {
+  timestamp: string | null;
+  type: string | null;
+  symbol: string | null;
+  timeframe: string | null;
+  status: string | null;
+}
+
+export interface ShadowRuntime {
+  active: Record<string, unknown>[];
+  closed: Record<string, unknown>[];
+  strategies: Record<string, unknown> | unknown[] | null;
+  symbols: string[] | null;
+  updated: string | null;
+}
+
+export interface ResearchLiveReport {
+  runtime_status: Record<string, unknown> | null;
+  best_candidate: Record<string, unknown> | null;
+  promotion_probability: unknown;
+  ranking: Record<string, unknown>[];
+  recommendation: unknown;
+  top_features: Record<string, unknown>[];
+  worst_features: Record<string, unknown>[];
+}
+
 export interface MiniAppApiClient {
   dashboard(): Promise<DashboardResponse>;
   watchlist(): Promise<WatchlistItem[]>;
@@ -11,6 +51,10 @@ export interface MiniAppApiClient {
   openTrades(): Promise<ListResponse>;
   stats(): Promise<Record<string, number>>;
   research(): Promise<Record<string, unknown>>;
+  system(): Promise<RuntimeSystem>;
+  activity(): Promise<ActivityEvent[]>;
+  shadow(): Promise<ShadowRuntime>;
+  researchLive(): Promise<ResearchLiveReport>;
   intelligence(symbol: string, timeframe: string): Promise<SignalIntelligencePayload>;
   signalHistory(symbol: string, timeframe: string, page?: number): Promise<HistoryResponse>;
   signalChanges(symbol: string, timeframe: string): Promise<ChangesResponse>;
@@ -48,6 +92,10 @@ export class MiniAppApi implements MiniAppApiClient {
   openTrades = () => this.get<ListResponse>("/api/trades/open");
   stats = () => this.get<Record<string, number>>("/api/stats");
   research = () => this.get<Record<string, unknown>>("/api/research");
+  system = () => this.get<RuntimeSystem>("/api/system");
+  activity = () => this.get<ActivityEvent[]>("/api/activity");
+  shadow = () => this.get<ShadowRuntime>("/api/shadow");
+  researchLive = () => this.get<ResearchLiveReport>("/api/research/live");
   intelligence = (symbol: string, timeframe: string) => this.get<SignalIntelligencePayload>(
     `/api/signal/${encodeURIComponent(symbol.replace("/", ""))}/${timeframe}/intelligence`,
   );

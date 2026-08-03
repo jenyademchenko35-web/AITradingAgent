@@ -29,7 +29,7 @@ function payload(overrides: Partial<SignalIntelligencePayload> = {}): SignalInte
 function api(current = payload()): MiniAppApiClient {
   return {
     dashboard: vi.fn(), watchlist: vi.fn(), signal: vi.fn(), openTrades: vi.fn(),
-    stats: vi.fn(), research: vi.fn(), intelligence: vi.fn().mockResolvedValue(current),
+    stats: vi.fn(), research: vi.fn(), system: vi.fn(), activity: vi.fn(), shadow: vi.fn(), researchLive: vi.fn(), intelligence: vi.fn().mockResolvedValue(current),
     signalHistory: vi.fn().mockResolvedValue({ status: "OK", count: 2, total: 2, page: 1, page_size: 50, items: [
       { timestamp: "2026-08-03T09:00:00Z", cycle_id: "1", status: "WATCH", side: "LONG", confidence: 84, quality: "B", score: 23, trend_score: 50, momentum_score: 18, structure_score: 17, risk_score: 14, current_price: 99, signal_fingerprint: "a", blockers: ["WEAK_MOMENTUM"], reasons: [], source: "DECISION_DEBUG" },
       { timestamp: "2026-08-03T10:00:00Z", cycle_id: "2", status: "SETUP", side: "LONG", confidence: 91, quality: "A", score: 27, trend_score: 55, momentum_score: 20, structure_score: 18, risk_score: 15, current_price: 101, signal_fingerprint: "b", blockers: [], reasons: ["trend alignment"], source: "DECISION_DEBUG" },
@@ -116,6 +116,14 @@ test("renders empty history and insufficient similar sample", async () => {
   render(<SignalIntelligencePage api={client} symbol="BTC/USDT" timeframe="1h" view="similar" onBack={vi.fn()} onNavigate={vi.fn()} />);
   expect(await screen.findByText(/Недостаточно похожих сделок/)).toBeInTheDocument();
   expect(screen.queryByText("Winrate")).not.toBeInTheDocument();
+});
+
+test("uses an explicit empty state when the published signal timeline has no items", async () => {
+  const client = api();
+  client.signalHistory = vi.fn().mockResolvedValue({ status: "NO_HISTORY", items: [], count: 0, total: 0, page: 1, page_size: 50 });
+  render(<SignalIntelligencePage api={client} symbol="BTC/USDT" timeframe="1h" view="history" onBack={vi.fn()} onNavigate={vi.fn()} />);
+  expect(await screen.findByText("No signal history published")).toBeInTheDocument();
+  expect(client.signalHistory).toHaveBeenCalledWith("BTC/USDT", "1h");
 });
 
 test("renders safe loading and error states", async () => {

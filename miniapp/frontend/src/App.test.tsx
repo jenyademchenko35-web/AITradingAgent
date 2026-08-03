@@ -20,6 +20,10 @@ function api(overrides: Partial<MiniAppApiClient> = {}): MiniAppApiClient {
     openTrades: vi.fn().mockResolvedValue({ items: [], count: 0 }),
     stats: vi.fn().mockResolvedValue({ closed_trades: 100, winrate: 61, profit_factor: 1.7, net_r: 12 }),
     research: vi.fn().mockResolvedValue({ top_strategies: [] }),
+    system: vi.fn().mockResolvedValue({ server: "ONLINE", agent: "ONLINE", telegram: "ONLINE", research: "ONLINE", news: null, cycle: 6821, interval_seconds: 300, next_cycle_seconds: 143, last_cycle_timestamp: "2026-08-03T10:00:00Z", uptime_seconds: 48293, read_only: true }),
+    activity: vi.fn().mockResolvedValue([{ timestamp: "2026-08-03T10:00:00Z", type: "signal_snapshot", symbol: "BTC/USDT", timeframe: "1h", status: "SETUP" }]),
+    shadow: vi.fn().mockResolvedValue({ active: [], closed: [], strategies: { TREND_CONFIRM: "SHADOW_ENABLED" }, symbols: null, updated: "2026-08-03T10:00:00Z" }),
+    researchLive: vi.fn().mockResolvedValue({ runtime_status: null, best_candidate: null, promotion_probability: null, ranking: [], recommendation: null, top_features: [], worst_features: [] }),
     intelligence: vi.fn(), signalHistory: vi.fn(), signalChanges: vi.fn(), signalRequirements: vi.fn(), similarSetups: vi.fn(),
     ...overrides,
   };
@@ -27,25 +31,29 @@ function api(overrides: Partial<MiniAppApiClient> = {}): MiniAppApiClient {
 
 test("dashboard hero, health, metrics and quick signals use published values", async () => {
   render(<App api={api()} />);
-  expect(await screen.findByText("Read Only")).toBeInTheDocument();
+  expect((await screen.findAllByText("Read Only")).length).toBeGreaterThan(0);
   expect(screen.getByText("Auto Refresh")).toBeInTheDocument();
-  expect(screen.getByText("Health")).toBeInTheDocument();
-  expect(screen.getByText("Backend")).toBeInTheDocument();
-  expect(screen.getByText("API")).toBeInTheDocument();
-  expect(screen.getAllByText("No health field published")).toHaveLength(2);
+  expect(screen.getByText("System")).toBeInTheDocument();
+  expect(screen.getByText("Server")).toBeInTheDocument();
+  expect(screen.getByText("Agent")).toBeInTheDocument();
+  expect(screen.getByText("Telegram")).toBeInTheDocument();
+  expect(screen.getByText("Cycle")).toBeInTheDocument();
+  expect(screen.getByText("Next Scan (sec)")).toBeInTheDocument();
+  expect(screen.getByText("Uptime (sec)")).toBeInTheDocument();
   expect(screen.getByText("Metrics")).toBeInTheDocument();
   expect(screen.getByText("Open Trades")).toBeInTheDocument();
   expect(screen.getByText("Profit Factor")).toBeInTheDocument();
-  expect(screen.getByText("Shadow Trades")).toBeInTheDocument();
+  expect(screen.getByText("Shadow Active")).toBeInTheDocument();
   expect(screen.getAllByText("Not published")).toHaveLength(1);
   expect(screen.getByText("Quick Signals")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /BTC\/USDT/ })).toBeInTheDocument();
-  expect(screen.getAllByText("ONLINE")).toHaveLength(2);
+  expect(screen.getByText("Live Activity")).toBeInTheDocument();
+  expect(screen.getByText("Signal snapshot")).toBeInTheDocument();
 });
 
 test("dashboard shows a skeleton before its read-only data resolves", () => {
   const pending = new Promise<never>(() => undefined);
-  render(<App api={api({ dashboard: vi.fn().mockReturnValue(pending), watchlist: vi.fn().mockReturnValue(pending), openTrades: vi.fn().mockReturnValue(pending), stats: vi.fn().mockReturnValue(pending), research: vi.fn().mockReturnValue(pending) })} />);
+  render(<App api={api({ dashboard: vi.fn().mockReturnValue(pending), watchlist: vi.fn().mockReturnValue(pending), openTrades: vi.fn().mockReturnValue(pending), stats: vi.fn().mockReturnValue(pending) })} />);
   expect(screen.getByLabelText("Загрузка Dashboard")).toBeInTheDocument();
   expect(screen.getAllByLabelText("Загрузка").length).toBeGreaterThan(6);
 });
@@ -92,18 +100,38 @@ test("portfolio uses an honest empty state when the source has no trade items", 
   expect(await screen.findByText("Нет открытых сделок")).toBeInTheDocument();
 });
 
-test("statistics and research present supplied fields without creating values", async () => {
-  render(<App api={api({ research: vi.fn().mockResolvedValue({ runtime_status: { name: "Research Lab", state: "RUNNING", enabled: true, recommendation: "OBSERVE" }, best_candidate: { strategy_id: "TREND_CONFIRM", profit_factor: 1.3, winrate: 58, closed_trades: 120, net_r: 11, status: "RESEARCH" } }) })} />);
+test("shadow monitoring uses the separate runtime ledger and handles an unavailable endpoint", async () => {
+  const client = api();
+  render(<App api={client} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Shadow" }));
+  expect(await screen.findByText("Shadow Monitoring")).toBeInTheDocument();
+  expect(screen.getByText("TREND_CONFIRM")).toBeInTheDocument();
+  expect(screen.getByText("No Research Lab shadow trades")).toBeInTheDocument();
+  expect(client.shadow).toHaveBeenCalledTimes(1);
+});
+
+test("runtime endpoint failures preserve the dashboard and show published-data empty states", async () => {
+  render(<App api={api({ activity: vi.fn().mockRejectedValue(new Error("offline")), shadow: vi.fn().mockRejectedValue(new Error("offline")), researchLive: vi.fn().mockRejectedValue(new Error("offline")) })} />);
+  expect(await screen.findByText("Live Activity")).toBeInTheDocument();
+  expect(screen.getByText("No activity published")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Research" }));
+  expect(await screen.findByText("Research data unavailable")).toBeInTheDocument();
+});
+
+test("statistics and research present supplied live runtime fields without creating values", async () => {
+  render(<App api={api({ researchLive: vi.fn().mockResolvedValue({ runtime_status: { name: "Research Lab", state: "RUNNING", enabled: true, recommendation: "OBSERVE" }, best_candidate: { strategy_id: "TREND_CONFIRM", profit_factor: 1.3, winrate: 58, closed_trades: 120, net_r: 11, status: "RESEARCH" }, promotion_probability: null, ranking: [{ strategy_id: "TREND_CONFIRM" }], recommendation: "OBSERVE", top_features: [{ feature: "ADX" }], worst_features: [] }) })} />);
   fireEvent.click(await screen.findByRole("button", { name: "Statistics" }));
   expect(await screen.findByText("Closed trades")).toBeInTheDocument();
   expect(screen.getByText("100")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "⌂ Главная" }));
   fireEvent.click(await screen.findByRole("button", { name: "Research" }));
   expect(await screen.findByText("Runtime status")).toBeInTheDocument();
-  expect(screen.getByText("TREND_CONFIRM")).toBeInTheDocument();
-  expect(screen.getByText("OBSERVE")).toBeInTheDocument();
+  expect(screen.getAllByText("TREND_CONFIRM")).toHaveLength(2);
+  expect(screen.getAllByText("OBSERVE")).toHaveLength(2);
   expect(screen.getByText("Research Lab")).toBeInTheDocument();
   expect(screen.getByText("120")).toBeInTheDocument();
+  expect(screen.getByText("Ranking")).toBeInTheDocument();
+  expect(screen.getByText("Top Features")).toBeInTheDocument();
   expect(screen.queryByText("[object Object]")).not.toBeInTheDocument();
 });
 
@@ -113,10 +141,28 @@ test("dashboard refreshes on the configured 30 second cadence", async () => {
     const client = api();
     render(<App api={client} />);
     await act(async () => { await Promise.resolve(); });
-    expect(screen.getByText("Read Only")).toBeInTheDocument();
+    expect(screen.getAllByText("Read Only").length).toBeGreaterThan(0);
     expect(client.dashboard).toHaveBeenCalledTimes(1);
+    expect(client.system).toHaveBeenCalledTimes(1);
     await act(async () => { vi.advanceTimersByTime(30_000); await Promise.resolve(); });
     expect(client.dashboard).toHaveBeenCalledTimes(2);
+    expect(client.system).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("live research refreshes on its separate 60 second cadence", async () => {
+  vi.useFakeTimers();
+  try {
+    const client = api();
+    render(<App api={client} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(client.researchLive).toHaveBeenCalledTimes(1);
+    await act(async () => { vi.advanceTimersByTime(30_000); await Promise.resolve(); });
+    expect(client.researchLive).toHaveBeenCalledTimes(1);
+    await act(async () => { vi.advanceTimersByTime(30_000); await Promise.resolve(); });
+    expect(client.researchLive).toHaveBeenCalledTimes(2);
   } finally {
     vi.useRealTimers();
   }

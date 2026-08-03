@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import threading
@@ -206,6 +207,87 @@ class ReadOnlyRepository:
 
     def research(self) -> dict[str, Any]:
         return ResearchDashboardV2(self.base_dir / "research.db").build_report()
+
+    def system(self) -> dict[str, Any]:
+        """Safe projection of already-published runtime status; no process inspection."""
+        dashboard = self.dashboard()
+        runtime = self.research().get("runtime_status", {})
+        return {
+            "server": dashboard.get("status"),
+            "agent": runtime.get("agent"),
+            "telegram": runtime.get("telegram"),
+            "research": dashboard.get("research_status"),
+            "news": runtime.get("news"),
+            "cycle": runtime.get("last_processed_cycle"),
+            "interval_seconds": runtime.get("interval_seconds"),
+            "next_cycle_seconds": runtime.get("next_cycle_seconds"),
+            "last_cycle_timestamp": runtime.get("last_cycle_timestamp"),
+            "uptime_seconds": runtime.get("uptime_seconds"),
+            "read_only": True,
+        }
+
+    def activity(self, *, limit: int = 20) -> list[dict[str, Any]]:
+        """Return only timestamped, saved signal rows; never fabricate history."""
+        events: list[dict[str, Any]] = []
+        for row in self.decision_rows()[-max(1, min(limit, 100)):]:
+            timestamp = row.get("timestamp") or row.get("updated_at")
+            if not timestamp:
+                continue
+            symbol = row.get("symbol")
+            status = row.get("signal") or row.get("decision") or row.get("status")
+            events.append({
+                "timestamp": str(timestamp), "type": "signal_snapshot",
+                "symbol": str(symbol) if symbol else None,
+                "timeframe": str(row.get("timeframe")) if row.get("timeframe") else None,
+                "status": str(status) if status else None,
+            })
+        return events[-max(1, min(limit, 100)):]
+
+    def shadow(self) -> dict[str, Any]:
+        """Expose Research Lab's existing separate shadow ledger without aggregation."""
+        report = self.research()
+        ledger = report.get("shadow_ledger")
+        safe_ledger = ledger if isinstance(ledger, Mapping) else {}
+        runtime = report.get("runtime_status")
+        safe_runtime = runtime if isinstance(runtime, Mapping) else {}
+        return {
+            "active": safe_ledger.get("open", []),
+            "closed": safe_ledger.get("closed", []),
+            "strategies": safe_runtime.get("strategy_modes", []),
+            "symbols": None,
+            "updated": safe_runtime.get("updated_at"),
+        }
+
+    def research_live(self) -> dict[str, Any]:
+        """Read-only subset of the existing ResearchDashboardV2 report."""
+        report = self.research()
+        return {
+            "runtime_status": report.get("runtime_status"),
+            "best_candidate": report.get("best_candidate") or None,
+            "promotion_probability": report.get("promotion_probability"),
+            "ranking": report.get("top_strategies", []),
+            "recommendation": report.get("recommendation"),
+            "top_features": report.get("top_features", []),
+            "worst_features": report.get("worst_features", []),
+        }
+
+    def health_checks(self) -> dict[str, bool]:
+        """Filesystem availability only; paths and payloads are deliberately omitted."""
+        def readable(filename: str) -> bool:
+            path = self.base_dir / filename
+            return path.is_file() and os.access(path, os.R_OK)
+
+        return {
+            "repository": self.base_dir.is_dir() and os.access(self.base_dir, os.R_OK),
+            "signals": any(readable(name) for name in (
+                "decision_snapshot.json", "signals_v3.csv", "signals.csv", "decision_debug.csv",
+            )),
+            "watchlist": any(readable(name) for name in (
+                "decision_snapshot.json", "signals_v3.csv", "signals.csv", "decision_debug.csv",
+            )),
+            "research": readable("research.db"),
+            "snapshot": readable("decision_snapshot.json"),
+        }
 
     def dashboard(self) -> dict[str, Any]:
         metrics = self.stats()

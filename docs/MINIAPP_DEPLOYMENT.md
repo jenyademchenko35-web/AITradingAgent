@@ -105,6 +105,29 @@ the owner-only policy.
 unless the feature is enabled, the data root exists and a saved signal source is
 available. Neither response contains paths, tokens or owner identifiers.
 
+`/healthz` also publishes non-sensitive availability checks for the repository,
+signal/watchlist source, research database and decision snapshot. It never
+includes paths, runtime payloads or credentials.
+
+## Read-only runtime API
+
+All runtime routes require the existing Telegram authentication and owner policy.
+They project saved artifacts only: the Mini App does not inspect processes, create
+trade plans, calculate new signals or write runtime files.
+
+- `GET /api/system` — published agent, Telegram, research and scheduling status;
+  unavailable fields are `null`.
+- `GET /api/activity` — bounded, timestamped signal snapshots already present in
+  the configured runtime source.
+- `GET /api/shadow` — the existing, separate Research Lab shadow ledger and its
+  published strategy modes; it never reads or changes the legacy shadow tracker.
+- `GET /api/research/live` — existing Research Lab runtime status, ranking,
+  promotion output and feature lists without mixing sources.
+- `GET /api/signal/{symbol}/{timeframe}/history` — the existing paginated signal
+  history route. It returns an empty item list when no stored history exists.
+
+All `/api/*` routes are GET-only and return `405` for mutation methods.
+
 ## Owner-only rollout
 
 1. Build and scan frontend assets for secrets.

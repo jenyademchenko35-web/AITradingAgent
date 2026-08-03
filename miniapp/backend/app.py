@@ -113,8 +113,10 @@ def create_app(
         return response
 
     @api.get("/healthz")
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
+    async def health() -> dict:
+        health_checks = getattr(data, "health_checks", None)
+        checks = health_checks() if callable(health_checks) else {}
+        return {"status": "ok", "checks": {"backend": True, **checks}}
 
     @api.get("/readyz")
     async def ready():
@@ -134,6 +136,18 @@ def create_app(
     @api.get("/api/dashboard", response_model=DashboardResponse)
     async def dashboard(_: TelegramUser = Depends(authenticate)) -> dict:
         return data.dashboard()
+
+    @api.get("/api/system")
+    async def system(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.system()
+
+    @api.get("/api/activity")
+    async def activity(_: TelegramUser = Depends(authenticate)) -> list[dict]:
+        return data.activity()
+
+    @api.get("/api/shadow")
+    async def shadow(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.shadow()
 
     @api.get("/api/watchlist", response_model=tuple[WatchlistItem, ...])
     async def watchlist(_: TelegramUser = Depends(authenticate)) -> tuple[dict, ...]:
@@ -227,6 +241,10 @@ def create_app(
     @api.get("/api/research")
     async def research(_: TelegramUser = Depends(authenticate)) -> dict:
         return data.research()
+
+    @api.get("/api/research/live")
+    async def research_live(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.research_live()
 
     @api.get("/api/research/rank")
     async def research_rank(_: TelegramUser = Depends(authenticate)) -> dict:
