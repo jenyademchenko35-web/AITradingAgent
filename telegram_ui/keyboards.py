@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from .callbacks import build_callback
+from .miniapp import miniapp_url_for_user
 
 
 # Recommendation only: BotFather registration remains legacy-controlled during
@@ -18,8 +19,24 @@ RECOMMENDED_BOTFATHER_COMMANDS = (
 )
 
 
-def home_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+def with_miniapp_button(
+    keyboard: InlineKeyboardMarkup,
+    *,
+    user_id: object = None,
+    environ=None,
+) -> InlineKeyboardMarkup:
+    url = miniapp_url_for_user(user_id, environ)
+    if url is None or any(button.web_app for row in keyboard.inline_keyboard for button in row):
+        return keyboard
+    rows = [
+        [InlineKeyboardButton("⚡ Открыть TradeWatcher", web_app=WebAppInfo(url=url))],
+        *[list(row) for row in keyboard.inline_keyboard],
+    ]
+    return InlineKeyboardMarkup(rows)
+
+
+def home_keyboard(*, user_id: object = None, environ=None) -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("📊 Сигналы", callback_data=build_callback("signals")),
             InlineKeyboardButton("📈 Рынок", callback_data=build_callback("market")),
@@ -37,6 +54,7 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("ℹ️ Помощь", callback_data=build_callback("help")),
         ],
     ])
+    return with_miniapp_button(keyboard, user_id=user_id, environ=environ)
 
 
 def symbols_keyboard(symbols: list[str] | tuple[str, ...]) -> InlineKeyboardMarkup:

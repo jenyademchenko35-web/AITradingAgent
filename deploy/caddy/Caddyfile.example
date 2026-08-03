@@ -1,0 +1,27 @@
+miniapp.example.com {
+    encode zstd gzip
+
+    request_body {
+        max_size 64KB
+    }
+
+    @backend path /api/* /healthz /readyz
+    handle @backend {
+        reverse_proxy 127.0.0.1:8081
+    }
+
+    handle {
+        root * /ABSOLUTE/PATH/TO/AITradingAgent/miniapp/frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors https://web.telegram.org https://*.telegram.org"
+        -Server
+    }
+}

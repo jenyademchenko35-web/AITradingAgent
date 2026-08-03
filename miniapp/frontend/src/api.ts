@@ -19,10 +19,20 @@ export interface MiniAppApiClient {
 }
 
 export class MiniAppApi implements MiniAppApiClient {
-  constructor(private readonly initData: string, private readonly baseUrl = "") {}
+  constructor(
+    private readonly initData: string,
+    private readonly baseUrl = import.meta.env.VITE_API_BASE_URL ?? "",
+  ) {}
+
+  private url(path: string): string {
+    const base = this.baseUrl.replace(/\/$/, "");
+    return base.endsWith("/api") && path.startsWith("/api/")
+      ? base + path.slice(4)
+      : base + path;
+  }
 
   private async get<T>(path: string): Promise<T> {
-    const response = await fetch(this.baseUrl + path, {
+    const response = await fetch(this.url(path), {
       method: "GET",
       headers: { "X-Telegram-Init-Data": this.initData },
     });

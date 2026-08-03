@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+import os
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status as http_status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from miniapp.shared.models import (
@@ -22,6 +26,34 @@ from miniapp.shared.models import (
 from .auth import auth_dependency
 from .config import MiniAppSettings
 from .repository import ReadOnlyRepository
+from .rate_limit import InMemoryRateLimiter
+
+
+SECURITY_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self' https://telegram.org; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
+        "frame-ancestors https://web.telegram.org https://*.telegram.org"
+    ),
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+}
+
+
+def _readiness(config: MiniAppSettings) -> tuple[bool, dict[str, bool]]:
+    root_exists = config.data_root.is_dir()
+    source_available = root_exists and any(
+        (config.data_root / name).is_file() and os.access(config.data_root / name, os.R_OK)
+        for name in ("decision_debug.csv", "signals_v3.csv")
+    )
+    checks = {
+        "enabled": config.enabled,
+        "data_root": root_exists,
+        "signal_source": source_available,
+    }
+    return all(checks.values()), checks
 
 
 def create_app(
@@ -37,12 +69,57 @@ def create_app(
         max_source_rows=config.max_source_rows,
         similar_min_sample=config.similar_min_sample,
     )
-    authenticate = auth_dependency(config)
+    limiter = InMemoryRateLimiter(
+        config.rate_limit_requests,
+        config.rate_limit_window_seconds,
+    )
+    authenticate = auth_dependency(config, limiter)
     api = FastAPI(title="TradeWatcher Mini App API", version="1.0.0", docs_url=None, redoc_url=None)
 
+    if config.allowed_origins:
+        api.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(config.allowed_origins),
+            allow_credentials=False,
+            allow_methods=["GET"],
+            allow_headers=["X-Telegram-Init-Data", "Accept", "Content-Type"],
+            max_age=600,
+        )
+
+    @api.middleware("http")
+    async def security_boundary(request: Request, call_next):
+        raw_length = request.headers.get("content-length")
+        try:
+            too_large = (
+                request.headers.get("transfer-encoding", "").lower() == "chunked"
+                or (raw_length is not None and int(raw_length) > config.max_request_body_bytes)
+            )
+        except ValueError:
+            too_large = True
+        if too_large:
+            response = JSONResponse(
+                status_code=http_status.HTTP_413_CONTENT_TOO_LARGE,
+                content={"detail": "Request body too large"},
+            )
+        else:
+            response = await call_next(request)
+        for name, value in SECURITY_HEADERS.items():
+            response.headers[name] = value
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
     @api.get("/healthz")
-    async def health() -> dict[str, object]:
-        return {"status": "ok", "miniapp_enabled": config.enabled}
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @api.get("/readyz")
+    async def ready():
+        is_ready, checks = _readiness(config)
+        payload = {"status": "ready" if is_ready else "not_ready", "checks": checks}
+        if not is_ready:
+            return JSONResponse(status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE, content=payload)
+        return payload
 
     @api.get("/api/status", response_model=StatusResponse)
     async def status(user: TelegramUser = Depends(authenticate)) -> StatusResponse:

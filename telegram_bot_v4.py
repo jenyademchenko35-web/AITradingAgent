@@ -149,6 +149,7 @@ from telegram_ui.keyboards import (
     signal_card_keyboard as v2_signal_card_keyboard,
     symbols_keyboard as v2_symbols_keyboard,
     timeframe_keyboard as v2_timeframe_keyboard,
+    with_miniapp_button as v2_with_miniapp_button,
 )
 from telegram_ui.navigation import navigation_store
 from telegram_ui.permissions import (
@@ -3176,6 +3177,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if should_use_v2(update):
         try:
             text, keyboard = _v2_screen("home")
+            keyboard = v2_with_miniapp_button(
+                keyboard, user_id=getattr(update.effective_user, "id", None),
+            )
             await reply(update, text, keyboard)
             return
         except Exception:
@@ -3188,6 +3192,9 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if should_use_v2(update):
         try:
             text, keyboard = _v2_screen("home")
+            keyboard = v2_with_miniapp_button(
+                keyboard, user_id=getattr(update.effective_user, "id", None),
+            )
             await reply(update, text, keyboard)
             return
         except Exception:
@@ -3983,7 +3990,12 @@ async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         callback = parse_callback(query.data)
     except CallbackParseError:
-        await edit_paginated_text(query, STALE_BUTTON_TEXT, reply_markup=v2_home_keyboard())
+        await edit_paginated_text(
+            query, STALE_BUTTON_TEXT,
+            reply_markup=v2_with_miniapp_button(
+                v2_home_keyboard(), user_id=getattr(update.effective_user, "id", None),
+            ),
+        )
         return
     if callback.action in {"research", "researchlab", "researchlab_trades", "research_rank"} and not is_owner_update(update):
         await edit_paginated_text(query, OWNER_ONLY_TEXT, reply_markup=v2_home_keyboard())
@@ -4014,6 +4026,10 @@ async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
     try:
         text, markup = _v2_screen(screen, arguments)
+        if screen == "home":
+            markup = v2_with_miniapp_button(
+                markup, user_id=getattr(update.effective_user, "id", None),
+            )
         await edit_paginated_text(query, text, reply_markup=markup)
     except LookupError:
         await edit_paginated_text(query, DATA_UNAVAILABLE_TEXT, reply_markup=v2_home_keyboard())

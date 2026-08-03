@@ -9,11 +9,12 @@ import time
 from typing import Callable
 from urllib.parse import parse_qsl
 
-from fastapi import Header, HTTPException, status
+from fastapi import Header, HTTPException, Request, status
 
 from miniapp.shared.models import TelegramUser
 
 from .config import MiniAppSettings
+from .rate_limit import InMemoryRateLimiter
 
 
 class TelegramAuthError(ValueError):
@@ -56,12 +57,17 @@ def validate_init_data(
         raise TelegramAuthError("invalid user") from exc
 
 
-def auth_dependency(settings: MiniAppSettings) -> Callable:
+def auth_dependency(
+    settings: MiniAppSettings,
+    limiter: InMemoryRateLimiter | None = None,
+) -> Callable:
     async def authenticate(
+        request: Request,
         x_telegram_init_data: str = Header(default="", alias="X-Telegram-Init-Data"),
     ) -> TelegramUser:
         if not settings.enabled:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mini App disabled")
+        client_ip = request.client.host if request.client else None
         try:
             user = validate_init_data(
                 x_telegram_init_data,
@@ -69,7 +75,11 @@ def auth_dependency(settings: MiniAppSettings) -> Callable:
                 max_age_seconds=settings.auth_max_age_seconds,
             )
         except TelegramAuthError as exc:
+            if limiter is not None:
+                limiter.require(client_ip=client_ip)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram initData") from exc
+        if limiter is not None:
+            limiter.require(user_id=user.id, client_ip=client_ip)
         if settings.owner_only and (
             settings.owner_user_id is None or user.id != settings.owner_user_id
         ):

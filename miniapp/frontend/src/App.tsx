@@ -3,7 +3,7 @@ import type { DashboardResponse, ListResponse, SignalResponse, WatchlistItem } f
 import { MiniAppApi, type MiniAppApiClient } from "./api";
 import { SignalChart } from "./Chart";
 import { SignalIntelligencePage } from "./SignalIntelligencePage";
-import { parseSignalRoute, signalPath, type SignalRoute, type SignalView } from "./routes";
+import { routeFromLocation, signalPath, type SignalRoute, type SignalView } from "./routes";
 import { initializeTelegram } from "./telegram";
 import "./styles.css";
 
@@ -13,6 +13,7 @@ const labels: Record<Tab, string> = {
   home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio",
   research: "Research", stats: "Statistics", settings: "Settings",
 };
+const appTitle = import.meta.env.VITE_MINIAPP_TITLE || "TradeWatcher";
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
@@ -46,7 +47,7 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
   const [research, setResearch] = useState<Record<string, unknown>>({});
   const [query, setQuery] = useState("");
   const [signal, setSignal] = useState<SignalResponse | null>(null);
-  const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => parseSignalRoute(window.location.pathname));
+  const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => routeFromLocation(window.location));
   const [error, setError] = useState("");
   const api = useMemo(() => injectedApi ?? new MiniAppApi(initializeTelegram()), [injectedApi]);
 
@@ -57,9 +58,13 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
   }, [api]);
 
   useEffect(() => {
-    const sync = () => setSignalRoute(parseSignalRoute(window.location.pathname));
+    const sync = () => setSignalRoute(routeFromLocation(window.location));
     window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
+    window.addEventListener("hashchange", sync);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.removeEventListener("hashchange", sync);
+    };
   }, []);
 
   useEffect(() => {
@@ -86,7 +91,7 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
   if (signal) return <main><SignalDetails signal={signal} onClose={closeSignal} onNavigate={(view, hash) => navigateSignal({ symbol: signal.symbol, timeframe: signal.timeframe, view }, hash)} /></main>;
 
   return <main>
-    <header><div><small>TRADEWATCHER</small><h1>TradeWatcher</h1></div><span className="online">● ONLINE</span></header>
+    <header><div><small>TRADEWATCHER</small><h1>{appTitle}</h1></div><span className="online">● ONLINE</span></header>
     {error && <div className="error">{error}</div>}
     {tab === "home" && <>
       <section className="hero"><span>Последнее обновление</span><strong>{dashboard?.updated_at ? new Date(dashboard.updated_at).toLocaleString("ru-RU") : "—"}</strong></section>

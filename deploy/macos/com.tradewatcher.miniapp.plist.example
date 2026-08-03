@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.tradewatcher.miniapp</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/ABSOLUTE/PATH/TO/AITradingAgent/venv/bin/python</string>
+    <string>-m</string>
+    <string>miniapp.backend.run</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/ABSOLUTE/PATH/TO/AITradingAgent</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/ABSOLUTE/PATH/TO/AITradingAgent/logs/miniapp.log</string>
+  <key>StandardErrorPath</key>
+  <string>/ABSOLUTE/PATH/TO/AITradingAgent/logs/miniapp_error.log</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MINIAPP_HOST</key>
+    <string>127.0.0.1</string>
+    <key>MINIAPP_PORT</key>
+    <string>8081</string>
+  </dict>
+</dict>
+</plist>
