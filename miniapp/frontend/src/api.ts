@@ -54,6 +54,7 @@ export interface MiniAppApiClient {
   system(): Promise<RuntimeSystem>;
   activity(): Promise<ActivityEvent[]>;
   shadow(): Promise<ShadowRuntime>;
+  diagnostics?(): Promise<Record<string, unknown>>;
   researchLive(): Promise<ResearchLiveReport>;
   intelligence(symbol: string, timeframe: string): Promise<SignalIntelligencePayload>;
   signalHistory(symbol: string, timeframe: string, page?: number): Promise<HistoryResponse>;
@@ -95,6 +96,7 @@ export class MiniAppApi implements MiniAppApiClient {
   system = () => this.get<RuntimeSystem>("/api/system");
   activity = () => this.get<ActivityEvent[]>("/api/activity");
   shadow = () => this.get<ShadowRuntime>("/api/shadow");
+  diagnostics = () => this.get<Record<string, unknown>>("/api/diagnostics");
   researchLive = () => this.get<ResearchLiveReport>("/api/research/live");
   intelligence = (symbol: string, timeframe: string) => this.get<SignalIntelligencePayload>(
     `/api/signal/${encodeURIComponent(symbol.replace("/", ""))}/${timeframe}/intelligence`,

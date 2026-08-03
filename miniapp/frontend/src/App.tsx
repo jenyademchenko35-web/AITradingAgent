@@ -20,12 +20,12 @@ import { formatResearchCandidate, formatResearchStatus, researchText } from "./r
 import { EmptyState, FilterBar, MetricCard, SearchBar, SignalCard, SkeletonCard, StatusBadge, type SignalFilter, type SignalSort } from "./ui";
 import "./styles.css";
 
-type Tab = "home" | "signals" | "market" | "portfolio" | "research" | "shadow" | "stats" | "settings";
-const labels: Record<Tab, string> = { home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio", research: "Research", shadow: "Shadow", stats: "Statistics", settings: "Settings" };
+type Tab = "home" | "signals" | "market" | "portfolio" | "research" | "shadow" | "diagnostics" | "stats" | "settings";
+const labels: Record<Tab, string> = { home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio", research: "Research", shadow: "Shadow", diagnostics: "Diagnostics", stats: "Statistics", settings: "Settings" };
 const navigation: Array<{ tab: Exclude<Tab, "home">; icon: string; detail: string }> = [
   { tab: "signals", icon: "⌁", detail: "Published watchlist" }, { tab: "market", icon: "◈", detail: "Saved market snapshots" },
   { tab: "portfolio", icon: "▣", detail: "Open positions" }, { tab: "research", icon: "⌕", detail: "Research Lab report" },
-  { tab: "shadow", icon: "◌", detail: "Research Lab shadow book" }, { tab: "stats", icon: "▤", detail: "Closed-trade metrics" }, { tab: "settings", icon: "⚙", detail: "Read-only application" },
+  { tab: "shadow", icon: "◌", detail: "Research Lab shadow book" }, { tab: "diagnostics", icon: "◫", detail: "Read-only strategy diagnostics" }, { tab: "stats", icon: "▤", detail: "Closed-trade metrics" }, { tab: "settings", icon: "⚙", detail: "Read-only application" },
 ];
 const appTitle = import.meta.env.VITE_MINIAPP_TITLE || "TradeWatcher";
 const display = (value: unknown) => value === null || value === undefined || value === "" ? "—" : String(value);
@@ -95,6 +95,12 @@ function ShadowMonitoring({ shadow }: { shadow: ShadowRuntime | null }) {
   return <section className="panel shadow-monitoring"><div className="section-heading"><div><h2>Shadow Monitoring</h2><p>Отдельный Research Lab shadow book.</p></div><StatusBadge status={shadow.updated ? "PUBLISHED" : "UNKNOWN"} /></div><div className="dashboard-grid"><MetricCard label="Active" value={shadow.active.length} /><MetricCard label="Closed" value={shadow.closed.length} /><MetricCard label="Symbols" value={shadow.symbols?.length ?? null} detail={shadow.symbols === null ? "Not published" : undefined} /><MetricCard label="Updated" value={formatTime(shadow.updated)} /></div>{strategies ? <div className="shadow-strategies"><h3>Strategies</h3><ul>{strategies}</ul></div> : <EmptyState title="Strategies unavailable" detail="Runtime API did not publish shadow strategy modes." />}{shadow.symbols && <div className="shadow-symbols"><h3>Symbols</h3><p>{shadow.symbols.join(", ") || "—"}</p></div>}{!shadow.active.length && !shadow.closed.length && <EmptyState title="No Research Lab shadow trades" detail="The separate shadow ledger did not publish active or closed trades." />}</section>;
 }
 
+function Diagnostics({ report }: { report: Record<string, unknown> | null }) {
+  if (!report || !Object.values(report).some(Boolean)) return <section className="panel"><h2>Diagnostics</h2><EmptyState title="Diagnostics unavailable" detail="Generate the read-only runtime reports first. Mini App never calculates or changes trading data." /></section>;
+  const section = (title: string, key: string) => <div className="diagnostics-section"><h3>{title}</h3><pre>{JSON.stringify(report[key] ?? "—", null, 2)}</pre></div>;
+  return <section className="panel"><div className="section-heading"><div><h2>Diagnostics</h2><p>Published read-only strategy analysis.</p></div><StatusBadge status="READ ONLY" /></div>{section("Signal Episodes", "signal_episode_report")}{section("Blockers", "blocker_statistics")}{section("Symbols", "symbol_statistics")}{section("Feature Importance", "feature_importance")}{section("Trade Quality", "trade_quality_report")}{section("Recommendations", "strategy_recommendations")}</section>;
+}
+
 export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiClient; telegramInitData?: string }) {
   const [tab, setTab] = useState<Tab>("home");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
@@ -105,6 +111,7 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [shadow, setShadow] = useState<ShadowRuntime | null>(null);
   const [research, setResearch] = useState<ResearchLiveReport | null>(null);
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
   const [queryInput, setQueryInput] = useState(""); const [query, setQuery] = useState(""); const [filter, setFilter] = useState<SignalFilter>("ALL"); const [sort, setSort] = useState<SignalSort>("confidence");
   const [signal, setSignal] = useState<SignalResponse | null>(null);
   const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => routeFromLocation(window.location));
@@ -125,8 +132,14 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     .catch(() => { setSystem(null); setActivity([]); setShadow(null); }), [api]);
   const refreshResearch = useCallback(() => api.researchLive()
     .then(setResearch).catch(() => setResearch(null)), [api]);
+  const refreshDiagnostics = useCallback(() => {
+    const legacyApi = api as Partial<MiniAppApiClient>;
+    return typeof legacyApi.diagnostics === "function"
+      ? legacyApi.diagnostics().then(setDiagnostics).catch(() => setDiagnostics(null))
+      : Promise.resolve(setDiagnostics(null));
+  }, [api]);
   useEffect(() => subscribeTelegramAppearance(), []);
-  useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); }, [refreshCore, refreshRuntime, refreshResearch]);
+  useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); void refreshDiagnostics(); }, [refreshCore, refreshRuntime, refreshResearch, refreshDiagnostics]);
   useEffect(() => {
     const timer = window.setInterval(() => { void refreshCore(); void refreshRuntime(); }, 30_000);
     return () => window.clearInterval(timer);
@@ -151,7 +164,7 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     setTab("home");
   }, [signal, signalRoute]);
   useEffect(() => {
-    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "stats";
+    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "diagnostics" || tab === "stats";
     configureTelegramBackButton(visible, visible ? backFromTelegram : null);
     return () => configureTelegramBackButton(false, null);
   }, [backFromTelegram, signal, signalRoute, tab]);
@@ -172,6 +185,7 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     {tab === "stats" && <section className="panel"><h2>Statistics</h2><div className="dashboard-grid"><MetricCard label="Winrate" value={stats.winrate === undefined ? null : `${stats.winrate}%`} /><MetricCard label="PF" value={stats.profit_factor} /><MetricCard label="Net R" value={stats.net_r} /><MetricCard label="Drawdown" value={stats.max_drawdown} /><MetricCard label="Closed trades" value={stats.closed_trades} /><MetricCard label="Average R" value={stats.average_r} /><MetricCard label="Average Hold Time" value={stats.average_hold_time} /><MetricCard label="Updated" value={dashboard?.updated_at ? formatTime(dashboard.updated_at) : null} /></div></section>}
     {tab === "research" && <section className="panel"><h2>Research</h2>{research ? <ResearchSummary report={research} /> : <EmptyState title="Research data unavailable" detail="Runtime API did not publish a live Research Lab report." />}</section>}
     {tab === "shadow" && <ShadowMonitoring shadow={shadow} />}
+    {tab === "diagnostics" && <Diagnostics report={diagnostics} />}
     {tab === "settings" && <section className="panel"><h2>Settings</h2><EmptyState title="Read-only Mini App" detail="Trading controls, configuration and execution intentionally unavailable." /></section>}
     {tab !== "home" && <button className="home-button" onClick={() => { telegramHaptic("selection"); setTab("home"); }}>⌂ Главная</button>}
   </main>;

@@ -149,6 +149,10 @@ def create_app(
     async def shadow(_: TelegramUser = Depends(authenticate)) -> dict:
         return data.shadow()
 
+    @api.get("/api/diagnostics")
+    async def diagnostics(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.diagnostics()
+
     @api.get("/api/watchlist", response_model=tuple[WatchlistItem, ...])
     async def watchlist(_: TelegramUser = Depends(authenticate)) -> tuple[dict, ...]:
         return tuple(data.watchlist())

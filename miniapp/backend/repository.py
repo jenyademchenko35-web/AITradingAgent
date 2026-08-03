@@ -167,6 +167,11 @@ class ReadOnlyRepository:
     def trade_rows(self) -> list[dict[str, str]]:
         return self.read_csv(self.base_dir / "trades.csv")
 
+    def diagnostics(self) -> dict[str, Any]:
+        """Read pre-generated diagnostics only; this API never triggers analysis or writes."""
+        names = ("signal_episode_report.json", "blocker_statistics.json", "trade_quality_report.json", "symbol_statistics.json", "direction_bias.json", "feature_importance.json", "strategy_recommendations.json")
+        return {name.removesuffix(".json"): self._runtime_json(name) for name in names}
+
     def updated_at(self) -> str:
         paths = [
             self.base_dir / "signals.csv", self.base_dir / "decision_snapshot.json",
