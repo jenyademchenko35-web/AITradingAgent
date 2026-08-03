@@ -41,4 +41,27 @@ header h1 { font-size: 27px; }
 .research-row b { color: #21d09a; }
 .error { background: #4c1f2a; color: #ffabb6; padding: 12px; border-radius: 12px; margin-bottom: 12px; }
 .empty { color: #91a0b8; text-align: center; padding: 42px 0; }
+.empty.compact { padding: 16px 0; }
+.intel-actions, .intel-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.intel-actions button, .intel-nav button { border: 1px solid #2b3954; background: #121b2a; border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.intel-nav { margin-bottom: 14px; }
+.intel-nav .active { border-color: var(--tg-theme-button-color, #54a9ff); color: var(--tg-theme-link-color, #54a9ff); }
+.intelligence-page { display: grid; gap: 14px; }
+.intel-header { border-bottom: 1px solid #202c42; padding-bottom: 12px; margin: 0; }
+.intel-header > div { display: grid; gap: 3px; }
+.status-badge { border: 1px solid #2d4668; border-radius: 12px; padding: 8px 10px; }
+.component { display: grid; gap: 7px; }
+.component > div:first-child { display: flex; justify-content: space-between; }
+.progress { height: 8px; background: #0b101a; border-radius: 20px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: linear-gradient(90deg, #54a9ff, #21d09a); }
+.change-grid, .spark-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.change-grid > div, .requirement, .similar-row, .spark-card { background: #121b2a; border-radius: 14px; padding: 12px; display: grid; gap: 4px; }
+.spark-card svg { width: 100%; height: 80px; }
+.spark-card polyline { fill: none; stroke: #54a9ff; stroke-width: 3; vector-effect: non-scaling-stroke; }
+.timeline { display: grid; gap: 0; }
+.timeline > div { position: relative; border-left: 2px solid #2b3954; padding: 0 0 18px 18px; display: grid; gap: 2px; }
+.timeline i { position: absolute; left: -6px; top: 2px; width: 10px; height: 10px; background: #21d09a; border-radius: 50%; }
+.panel select { color: inherit; background: #0b101a; border: 1px solid #2b3954; border-radius: 12px; padding: 10px; }
+.loading { min-height: 140px; place-content: center; text-align: center; }
 @media (min-width: 620px) { .metrics { grid-template-columns: repeat(4, 1fr); } .menu-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 380px) { main { padding-left: 10px; padding-right: 10px; } .change-grid, .spark-grid { grid-template-columns: 1fr; } .intel-header { align-items: flex-start; } }

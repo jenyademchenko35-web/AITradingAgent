@@ -20,6 +20,8 @@ function api(): MiniAppApiClient {
     openTrades: vi.fn().mockResolvedValue({ items: [], count: 2 }),
     stats: vi.fn().mockResolvedValue({ closed_trades: 100, winrate: 61, profit_factor: 1.7, net_r: 12 }),
     research: vi.fn().mockResolvedValue({ top_strategies: [] }),
+    intelligence: vi.fn(), signalHistory: vi.fn(), signalChanges: vi.fn(),
+    signalRequirements: vi.fn(), similarSetups: vi.fn(),
   };
 }
 
@@ -51,4 +53,14 @@ test("signal card shows only supplied targets", async () => {
   expect(screen.getByText("TP1")).toBeInTheDocument();
   expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
   expect(screen.getByText(/trend aligned/)).toBeInTheDocument();
+});
+
+test("signal card links to the intelligence route", async () => {
+  const client = api();
+  render(<App api={client} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Signals" }));
+  fireEvent.click(await screen.findByText("BTC"));
+  fireEvent.click(await screen.findByRole("button", { name: "Почему?" }));
+  expect(window.location.pathname).toBe("/signals/BTCUSDT/1h/intelligence");
+  expect(window.location.hash).toBe("#why");
 });

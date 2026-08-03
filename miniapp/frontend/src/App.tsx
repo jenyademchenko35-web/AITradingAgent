@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { DashboardResponse, ListResponse, SignalResponse, WatchlistItem } from "../../shared/contracts";
 import { MiniAppApi, type MiniAppApiClient } from "./api";
 import { SignalChart } from "./Chart";
+import { SignalIntelligencePage } from "./SignalIntelligencePage";
+import { parseSignalRoute, signalPath, type SignalRoute, type SignalView } from "./routes";
 import { initializeTelegram } from "./telegram";
 import "./styles.css";
 
@@ -16,7 +18,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
   return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
 }
 
-function SignalDetails({ signal, onClose }: { signal: SignalResponse; onClose: () => void }) {
+function SignalDetails({ signal, onClose, onNavigate }: { signal: SignalResponse; onClose: () => void; onNavigate: (view: SignalView, hash?: string) => void }) {
   const p = signal.payload;
   return <section className="panel signal-detail">
     <button className="back" onClick={onClose}>← Signals</button>
@@ -31,6 +33,7 @@ function SignalDetails({ signal, onClose }: { signal: SignalResponse; onClose: (
     </div>
     <div className="levels"><Metric label="Confidence" value={`${p.confidence}%`} /><Metric label="Quality" value={p.quality} /><Metric label="Trend" value={p.trend_1h || "—"} /></div>
     <div className="why"><h3>Почему?</h3>{[...p.reasons, ...p.blockers].map((reason) => <p key={reason}>• {reason}</p>)}{!p.reasons.length && !p.blockers.length && <p>Нет сохранённых объяснений.</p>}</div>
+    <div className="intel-actions"><button onClick={() => onNavigate("intelligence", "why")}>Почему?</button><button onClick={() => onNavigate("history")}>История</button><button onClick={() => onNavigate("intelligence", "changes")}>Что изменилось?</button><button onClick={() => onNavigate("intelligence", "requirements")}>Что нужно?</button><button onClick={() => onNavigate("similar")}>Похожие сделки</button></div>
   </section>;
 }
 
@@ -43,6 +46,7 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
   const [research, setResearch] = useState<Record<string, unknown>>({});
   const [query, setQuery] = useState("");
   const [signal, setSignal] = useState<SignalResponse | null>(null);
+  const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => parseSignalRoute(window.location.pathname));
   const [error, setError] = useState("");
   const api = useMemo(() => injectedApi ?? new MiniAppApi(initializeTelegram()), [injectedApi]);
 
@@ -52,13 +56,34 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
       .catch(() => setError("Не удалось загрузить read-only данные."));
   }, [api]);
 
+  useEffect(() => {
+    const sync = () => setSignalRoute(parseSignalRoute(window.location.pathname));
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!signalRoute || signalRoute.view !== "card" || signal) return;
+    api.signal(signalRoute.symbol, signalRoute.timeframe).then(setSignal).catch(() => setError("Snapshot сигнала недоступен."));
+  }, [api, signal, signalRoute]);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toUpperCase();
     return needle ? watchlist.filter((item) => item.symbol.includes(needle)) : watchlist;
   }, [query, watchlist]);
 
-  const openSignal = (item: WatchlistItem) => api.signal(item.symbol, item.timeframe).then(setSignal).catch(() => setError("Snapshot сигнала недоступен."));
-  if (signal) return <main><SignalDetails signal={signal} onClose={() => setSignal(null)} /></main>;
+  const navigateSignal = (route: SignalRoute | null, hash = "") => {
+    const path = route ? signalPath(route.symbol, route.timeframe, route.view) : "/";
+    window.history.pushState({}, "", `${path}${hash ? `#${hash}` : ""}`);
+    setSignalRoute(route);
+    if (!route) setSignal(null);
+  };
+  const openSignal = (item: WatchlistItem) => api.signal(item.symbol, item.timeframe).then((next) => {
+    setSignal(next); navigateSignal({ symbol: item.symbol, timeframe: item.timeframe, view: "card" });
+  }).catch(() => setError("Snapshot сигнала недоступен."));
+  const closeSignal = () => { navigateSignal(null); setTab("signals"); };
+  if (signalRoute && signalRoute.view !== "card") return <SignalIntelligencePage api={api} {...signalRoute} onBack={closeSignal} onNavigate={(view) => navigateSignal({ ...signalRoute, view })} />;
+  if (signal) return <main><SignalDetails signal={signal} onClose={closeSignal} onNavigate={(view, hash) => navigateSignal({ symbol: signal.symbol, timeframe: signal.timeframe, view }, hash)} /></main>;
 
   return <main>
     <header><div><small>TRADEWATCHER</small><h1>TradeWatcher</h1></div><span className="online">● ONLINE</span></header>

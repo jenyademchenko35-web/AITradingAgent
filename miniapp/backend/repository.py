@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import datetime, timezone
-import csv
-import json
 from pathlib import Path
 import re
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 from research_lab_v2.dashboard import ResearchDashboardV2
 from telegram_ui.data import (
@@ -19,14 +17,7 @@ from telegram_ui.data import (
 )
 from trade_metrics_normalizer import aggregate_trade_metrics, is_closed_trade
 
-
-def _read_csv(path: Path) -> list[dict[str, str]]:
-    try:
-        with path.open("r", encoding="utf-8", newline="") as handle:
-            return [dict(row) for row in csv.DictReader(handle)]
-    except OSError:
-        return []
-
+from .cache import MTimeCSVCache
 
 def _number(value: Any) -> float | None:
     try:
@@ -36,14 +27,26 @@ def _number(value: Any) -> float | None:
 
 
 class ReadOnlyRepository:
-    def __init__(self, base_dir: str | Path) -> None:
+    def __init__(self, base_dir: str | Path, *, cache_ttl_seconds: float = 5,
+                 query_timeout_seconds: float = 2.0, max_source_rows: int = 10_000,
+                 similar_min_sample: int = 20) -> None:
         self.base_dir = Path(base_dir)
+        self.query_timeout_seconds = max(0.1, float(query_timeout_seconds))
+        self.max_source_rows = max(100, int(max_source_rows))
+        self.similar_min_sample = max(1, int(similar_min_sample))
+        self._cache = MTimeCSVCache(
+            ttl_seconds=cache_ttl_seconds, max_rows=self.max_source_rows,
+            timeout_seconds=self.query_timeout_seconds,
+        )
+
+    def read_csv(self, path: str | Path) -> list[dict[str, str]]:
+        return self._cache.read(path)
 
     def decision_rows(self) -> list[dict[str, str]]:
-        return _read_csv(self.base_dir / "decision_debug.csv") or _read_csv(self.base_dir / "signals_v3.csv")
+        return self.read_csv(self.base_dir / "decision_debug.csv") or self.read_csv(self.base_dir / "signals_v3.csv")
 
     def trade_rows(self) -> list[dict[str, str]]:
-        return _read_csv(self.base_dir / "trades.csv")
+        return self.read_csv(self.base_dir / "trades.csv")
 
     def updated_at(self) -> str:
         paths = [
@@ -86,7 +89,7 @@ class ReadOnlyRepository:
     def _candles(self, symbol: str, timeframe: str) -> tuple[dict[str, Any], ...]:
         path = self.base_dir / "ohlcv_cache" / f"{symbol.replace('/', '_')}_{timeframe}.csv"
         candles = []
-        for row in _read_csv(path)[-500:]:
+        for row in self.read_csv(path)[-500:]:
             values = {key: _number(row.get(key)) for key in ("open", "high", "low", "close", "volume")}
             if any(values[key] is None for key in ("open", "high", "low", "close")):
                 continue
@@ -144,3 +147,26 @@ class ReadOnlyRepository:
             "profit_factor": float(metrics.get("profit_factor", 0)),
             "research_status": "ON" if runtime.get("enabled") else "OFF",
         }
+
+    def signal_intelligence(self, symbol: str, timeframe: str):
+        from .intelligence import SignalIntelligenceService
+        return SignalIntelligenceService(self).intelligence(symbol, timeframe)
+
+    def signal_history(self, symbol: str, timeframe: str, *, page: int = 1, page_size: int = 50):
+        from .intelligence import SignalIntelligenceService
+        return SignalIntelligenceService(self).history(symbol, timeframe, page=page, page_size=page_size)
+
+    def signal_changes(self, symbol: str, timeframe: str):
+        from .intelligence import SignalIntelligenceService
+        return SignalIntelligenceService(self).changes(symbol, timeframe)
+
+    def signal_requirements(self, symbol: str, timeframe: str):
+        from .intelligence import SignalIntelligenceService
+        return SignalIntelligenceService(self).requirements(symbol, timeframe)
+
+    def similar_setups(self, symbol: str, timeframe: str, *, source: str = "LIVE",
+                       page: int = 1, page_size: int = 20):
+        from .intelligence import SignalIntelligenceService
+        return SignalIntelligenceService(self).similar(
+            symbol, timeframe, source=source, page=page, page_size=page_size,
+        )
