@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type {
   ChangesResponse, HistoryResponse, RequirementsResponse,
   SignalIntelligencePayload, SimilarResponse, SimilarSource,
@@ -6,6 +6,7 @@ import type {
 import type { MiniAppApiClient } from "./api";
 import { MiniHistoryChart } from "./MiniHistoryChart";
 import type { SignalView } from "./routes";
+import { EmptyState, SkeletonCard } from "./ui";
 
 const emptyHistory: HistoryResponse = { status: "NO_HISTORY", items: [], count: 0, total: 0, page: 1, page_size: 50 };
 const emptyChanges: ChangesResponse = { status: "NO_HISTORY", series: [], current: null, previous: null, three_cycles_ago: null, deltas: {}, transitions: {}, blockers_added: [], blockers_removed: [], confirmations_added: [], confirmations_removed: [] };
@@ -20,7 +21,8 @@ function Component({ label, score, maximum }: { label: string; score: number | n
 }
 
 function EvidenceGroup({ title, items }: { title: string; items: string[] }) {
-  return <div className="evidence-group"><div><h4>{title}</h4><span>{items.length}</span></div>{items.length ? <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul> : <p className="evidence-empty">Нет сохранённых данных</p>}</div>;
+  if (!items.length) return null;
+  return <div className="evidence-group"><div><h4>{title}</h4><span>{items.length}</span></div><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></div>;
 }
 
 function formatMsk(timestamp: string | null) {
@@ -29,16 +31,27 @@ function formatMsk(timestamp: string | null) {
   return Number.isNaN(parsed.getTime()) ? timestamp : parsed.toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
 }
 
-function DecisionTimeline({ payload, hasPlan }: { payload: SignalIntelligencePayload; hasPlan: boolean }) {
-  const steps = [
-    ["Trend", payload.trend_score !== null ? "SAVED" : "NO DATA"],
-    ["Momentum", payload.momentum_score !== null ? "SAVED" : "NO DATA"],
-    ["Structure", payload.structure_score !== null ? "SAVED" : "NO DATA"],
-    ["Risk", payload.risk_score !== null ? "SAVED" : "NO DATA"],
-    ["Execution", hasPlan ? "PLAN SAVED" : "NO PLAN"],
-    ["Final", payload.status ?? "UNKNOWN"],
-  ];
-  return <section className="panel decision-timeline"><div className="section-heading"><div><h2>Decision Timeline</h2><p>Только сохранённые этапы решения; Mini App не оценивает их заново.</p></div></div><div>{steps.map(([label, status]) => <div className="timeline-step" key={label}><b>{label}</b><span>→</span><small>{status}</small></div>)}</div></section>;
+function DecisionFlow({ payload, hasPlan }: { payload: SignalIntelligencePayload; hasPlan: boolean }) {
+  const stages = [
+    ["Trend", payload.trend_score, payload.trend_max_score],
+    ["Momentum", payload.momentum_score, payload.momentum_max_score],
+    ["Structure", payload.structure_score, payload.structure_max_score],
+    ["Risk", payload.risk_score, payload.risk_max_score],
+  ] as const;
+  return <section className="panel decision-flow" data-testid="decision-flow"><div className="section-heading"><div><h2>Decision Flow</h2><p>API не публикует отдельные PASS/FAIL-verdicts по этапам, поэтому Mini App их не выводит.</p></div></div><div className="flow-stages">{stages.map(([label, score, maximum]) => <Fragment key={label}><div className="flow-stage"><b>{label}</b><span className="flow-status unknown">UNKNOWN</span><small>{score === null ? "No score published" : maximum === null ? `Score ${score}` : `Score ${score} / ${maximum}`}</small></div><i className="flow-arrow" aria-hidden="true">↓</i></Fragment>)}<div className="flow-stage"><b>Execution</b><span className={`flow-status ${hasPlan ? "published" : "unknown"}`}>{hasPlan ? "PUBLISHED" : "UNKNOWN"}</span><small>{hasPlan ? "Entry, Stop Loss and Take Profit published" : "No complete trading plan published"}</small></div><i className="flow-arrow" aria-hidden="true">↓</i><div className="flow-stage final"><b>Decision</b><span className="flow-status final">{payload.status ?? "UNKNOWN"}</span><small>Published final status</small></div></div></section>;
+}
+
+function ConfidenceGauge({ confidence }: { confidence: number | null }) {
+  const offset = confidence === null ? 100 : Math.max(0, Math.min(100, 100 - confidence));
+  return <div className="confidence-gauge" data-testid="confidence-gauge"><svg viewBox="0 0 36 36" aria-label={confidence === null ? "Confidence unavailable" : `Confidence ${confidence}%`}><circle className="gauge-track" cx="18" cy="18" r="15.5" /><circle className="gauge-value" cx="18" cy="18" r="15.5" pathLength="100" strokeDasharray="100" strokeDashoffset={offset} /></svg><strong>{value(confidence, "%")}</strong><span>Confidence</span></div>;
+}
+
+function QualityMeter({ quality }: { quality: string | null }) {
+  return <div className="quality-meter" data-testid="quality-meter"><span>Quality</span><strong>{value(quality)}</strong>{quality !== null && <i className={`quality-bar quality-${quality.toLowerCase()}`} aria-label={`Quality ${quality}`} />}</div>;
+}
+
+function SnapshotInformation({ payload }: { payload: SignalIntelligencePayload }) {
+  return <section className="panel snapshot-information" data-testid="snapshot-information"><div className="section-heading"><div><h2>Snapshot</h2><p>Только метаданные, опубликованные API.</p></div></div><div className="levels"><div className="metric"><span>Source</span><strong>—</strong></div><div className="metric"><span>Updated</span><strong>{formatMsk(payload.timestamp)}</strong></div><div className="metric"><span>Strategy</span><strong>{value(payload.strategy_id)}</strong></div><div className="metric"><span>Timeframe</span><strong>{value(payload.timeframe?.toUpperCase())}</strong></div><div className="metric"><span>Snapshot ID</span><strong>{value(payload.snapshot_id)}</strong></div><div className="metric"><span>Cycle ID</span><strong>{value(payload.cycle_id)}</strong></div><div className="metric"><span>Engine</span><strong>—</strong></div></div></section>;
 }
 
 export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, onNavigate }: {
@@ -70,7 +83,7 @@ export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, o
     }).catch(() => setError("Signal Intelligence временно недоступен.")).finally(() => setLoading(false));
   }, [api, symbol, timeframe, source]);
 
-  if (loading) return <main><section className="panel loading">Загрузка Signal Intelligence…</section></main>;
+  if (loading) return <main className="intelligence-page"><section className="intel-loading" aria-label="Загрузка Signal Intelligence"><SkeletonCard lines={3} /><SkeletonCard lines={2} /><SkeletonCard lines={4} /></section></main>;
   if (error || !payload) return <main><section className="panel"><button className="back" onClick={onBack}>← Signals</button><div className="error">{error || "Snapshot не найден."}</div></section></main>;
   const hasPlan = payload.entry !== null && payload.stop_loss !== null && payload.take_profit !== null;
   const noTrade = ["NO TRADE", "WAIT", "WATCH"].includes(payload.status ?? "");
@@ -82,6 +95,10 @@ export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, o
   ].filter((item) => item.maximum !== null && item.maximum > 0);
   const confirmations = payload.confirmations.length ? payload.confirmations : payload.explanation.confirmations;
   const blockers = payload.blockers.length ? payload.blockers : payload.explanation.blockers;
+  const evidenceSections = [
+    ["✅ Confirmations", confirmations], ["⚠ Warnings", payload.warnings], ["⛔ Blockers", blockers],
+    ["❌ Failed Filters", payload.failed_filters], ["🚫 Veto Reasons", payload.veto_reasons], ["⚙ Limitations", payload.explanation.limitations],
+  ] as const;
 
   return <main className="intelligence-page">
     <button className="back" onClick={onBack}>← Signals</button>
@@ -89,15 +106,16 @@ export function SignalIntelligencePage({ api, symbol, timeframe, view, onBack, o
     <nav className="intel-nav">{(["intelligence", "history", "similar"] as SignalView[]).map((item) => <button className={view === item ? "active" : ""} key={item} onClick={() => onNavigate(item)}>{item === "intelligence" ? "Обзор" : item === "history" ? "История" : "Похожие"}</button>)}</nav>
 
     {view === "intelligence" && <>
-      <section className="panel"><h2>Overview</h2><div className="metrics"><div className="metric"><span>Confidence</span><strong>{value(payload.confidence, "%")}</strong></div><div className="metric"><span>Quality</span><strong>{value(payload.quality)}</strong></div><div className="metric"><span>Score</span><strong>{value(payload.score)}</strong></div><div className="metric"><span>Strategy</span><strong>{value(payload.strategy_id)}</strong></div></div></section>
-      <DecisionTimeline payload={payload} hasPlan={hasPlan} />
+      <section className="panel pro-overview"><div><h2>Overview</h2><p>{payload.symbol} · {value(payload.timeframe?.toUpperCase())}</p></div><div className="pro-overview-cards"><ConfidenceGauge confidence={payload.confidence} /><QualityMeter quality={payload.quality} /><div className="direction-card"><span>Direction</span><strong>{payload.side ?? payload.status ?? "—"}</strong><small>Published side or final status</small></div><div className="metric"><span>Score</span><strong>{value(payload.score)}</strong></div></div></section>
+      <DecisionFlow payload={payload} hasPlan={hasPlan} />
+      <SnapshotInformation payload={payload} />
       {scoreComponents.length > 0 && <section className="panel" data-testid="score-dashboard"><div className="section-heading"><div><h2>Score Dashboard</h2><p>Только сохранённые scores с известными максимумами.</p></div></div><div className="score-dashboard">{scoreComponents.map((item) => <Component key={item.label} {...item} />)}</div></section>}
       <section className="panel"><h2>Indicators</h2><div className="levels"><div className="metric"><span>RSI</span><strong>{value(payload.rsi)}</strong></div><div className="metric"><span>ADX</span><strong>{value(payload.adx)}</strong></div><div className="metric"><span>ATR %</span><strong>{value(payload.atr_percent)}</strong></div><div className="metric"><span>Volume Ratio</span><strong>{value(payload.volume_ratio)}</strong></div><div className="metric"><span>Market Regime</span><strong>{value(payload.market_regime)}</strong></div><div className="metric"><span>Session</span><strong>{value(payload.session)}</strong></div></div></section>
       {hasPlan && <section className="panel" data-testid="execution-block"><h2>Execution</h2><div className="levels"><div className="metric"><span>Current Price</span><strong>{value(payload.current_price)}</strong></div><div className="metric"><span>Entry</span><strong>{value(payload.entry)}</strong></div><div className="metric"><span>SL</span><strong>{value(payload.stop_loss)}</strong></div><div className="metric"><span>TP</span><strong>{value(payload.take_profit)}</strong></div><div className="metric"><span>Risk %</span><strong>{value(payload.risk_percent)}</strong></div><div className="metric"><span>Target %</span><strong>{value(payload.target_percent)}</strong></div><div className="metric"><span>RR</span><strong>{value(payload.risk_reward)}</strong></div></div></section>}
-      {!hasPlan && <section className="panel" data-testid="execution-empty"><h2>Execution</h2><div className="plan-empty"><b>Торговый план не сохранён</b><p>Источник не передал полный набор Entry, SL и TP. Mini App не рассчитывает отсутствующие уровни; сохранённые причины показаны в блоке WHY.</p></div></section>}
-      <section className="panel" id="why"><div className="section-heading"><div><h2>WHY</h2><p>{noTrade ? "Почему сейчас нет готовой сделки" : "Какие сохранённые факты сопровождают сигнал"}</p></div></div><div className="why-zones"><div className="why-zone positive"><h3>Подтверждения</h3><EvidenceGroup title="Confirmations" items={confirmations} /></div><div className="why-zone warning"><h3>Проблемы</h3><EvidenceGroup title="Warnings" items={payload.warnings} /><EvidenceGroup title="Ограничения" items={payload.explanation.limitations} /></div><div className="why-zone blocking"><h3>Причины отсутствия сделки</h3><EvidenceGroup title="Blockers" items={blockers} /><EvidenceGroup title="Failed filters" items={payload.failed_filters} /><EvidenceGroup title="Veto reasons" items={payload.veto_reasons} /></div></div></section>
+      {!hasPlan && <section className="panel" data-testid="execution-empty"><h2>Trading Plan unavailable</h2><div className="plan-empty"><b>DecisionEngine did not publish Entry, Stop Loss and Take Profit.</b><p>Mini App never generates them. Сохранённые причины доступны в блоке WHY.</p></div></section>}
+      <section className="panel" id="why"><div className="section-heading"><div><h2>WHY</h2><p>{noTrade ? "Почему сейчас нет готовой сделки" : "Какие сохранённые факты сопровождают сигнал"}</p></div></div>{evidenceSections.some(([, items]) => items.length) ? <div className="why-zones pro"><>{evidenceSections.map(([title, items]) => <EvidenceGroup key={title} title={title} items={items} />)}</></div> : <EmptyState title="No data published" detail="DecisionEngine did not publish evidence. Mini App displays data only." />}</section>
       <section className="panel" id="changes"><h2>Что изменилось за последние циклы</h2>{changes.status === "NO_HISTORY" ? <div className="empty compact">История отсутствует.</div> : <><div className="change-grid">{Object.entries(changes.deltas).filter(([, delta]) => delta !== null).map(([metric, delta]) => <div key={metric}><span>{metric}</span><b>{delta! > 0 ? "+" : ""}{delta}</b></div>)}</div>{changes.blockers_removed.map((item) => <p key={item}>Blocker removed: {item}</p>)}{changes.blockers_added.map((item) => <p key={item}>Blocker added: {item}</p>)}</>}</section>
-      <section className="panel" id="requirements"><div className="section-heading"><div><h2>Requirements</h2><p>Сохранённые условия стратегии без сгенерированных thresholds.</p></div></div>{requirements.items.length ? <div className="requirements-list">{requirements.items.map((item) => <div className="requirement" key={`${item.metric}-${item.required_value}`}><div><small>Metric</small><b>{item.metric}</b></div><div><small>Current</small><b>{value(item.current_value)}</b></div><div><small>Required</small><b>{value(item.required_value)}</b></div><div><small>Comparison</small><b>{item.comparison}</b></div><div><small>Status</small><b className={`requirement-status ${item.status.toLowerCase().replaceAll("_", "-")}`}>{item.status}</b></div><small className="requirement-source">Source: {item.source}</small></div>)}</div> : <div className="empty compact">Точные недостающие thresholds не сохранены.</div>}</section>
+      <section className="panel" id="requirements"><div className="section-heading"><div><h2>Requirements</h2><p>Сохранённые условия стратегии без сгенерированных thresholds.</p></div></div>{requirements.items.length ? <div className="requirements-list">{requirements.items.map((item) => <div className="requirement" key={`${item.metric}-${item.required_value}`}><div><small>Metric</small><b>{item.metric}</b></div><div><small>Current</small><b>{value(item.current_value)}</b></div><div><small>Required</small><b>{value(item.required_value)}</b></div><div><small>Status</small><b className={`requirement-status ${item.status.toLowerCase().replaceAll("_", "-")}`}>{item.status}</b></div><small className="requirement-source">Source: {item.source}</small></div>)}</div> : <EmptyState title="No data published" detail="DecisionEngine did not publish known requirements. Mini App displays data only." />}</section>
       <section className="panel"><h2>История компонентов</h2><div className="spark-grid"><MiniHistoryChart history={history.items} field="confidence" label="Confidence" /><MiniHistoryChart history={history.items} field="score" label="Score" /><MiniHistoryChart history={history.items} field="trend_score" label="Trend" /><MiniHistoryChart history={history.items} field="momentum_score" label="Momentum" /><MiniHistoryChart history={history.items} field="current_price" label="Current price" /></div></section>
     </>}
 

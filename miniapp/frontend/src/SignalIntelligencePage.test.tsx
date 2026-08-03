@@ -51,12 +51,19 @@ test("renders separated evidence, score dashboard, real plan and requirements", 
   });
   render(<SignalIntelligencePage api={api(current)} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
   expect(await screen.findByText("Score Dashboard")).toBeInTheDocument();
-  expect(screen.getByText("Decision Timeline")).toBeInTheDocument();
+  expect(screen.getByTestId("decision-flow")).toBeInTheDocument();
+  expect(screen.getAllByText("UNKNOWN")).toHaveLength(4);
+  expect(screen.getByTestId("confidence-gauge")).toHaveTextContent("91%");
+  expect(screen.getByTestId("quality-meter")).toHaveTextContent("A");
+  expect(screen.getByTestId("snapshot-information")).toHaveTextContent("snapshot-3");
   expect(screen.getByText("55 / 60")).toBeInTheDocument();
   expect(screen.getByTestId("execution-block")).toBeInTheDocument();
-  expect(screen.getByText("Подтверждения")).toBeInTheDocument();
-  expect(screen.getByText("Проблемы")).toBeInTheDocument();
-  expect(screen.getByText("Причины отсутствия сделки")).toBeInTheDocument();
+  expect(screen.getByText("✅ Confirmations")).toBeInTheDocument();
+  expect(screen.getByText("⚠ Warnings")).toBeInTheDocument();
+  expect(screen.getByText("⛔ Blockers")).toBeInTheDocument();
+  expect(screen.getByText("❌ Failed Filters")).toBeInTheDocument();
+  expect(screen.getByText("🚫 Veto Reasons")).toBeInTheDocument();
+  expect(screen.getByText("⚙ Limitations")).toBeInTheDocument();
   expect(screen.getByText("trend alignment")).toBeInTheDocument();
   expect(screen.getByText("spread elevated")).toBeInTheDocument();
   expect(screen.getByText("NO_TRADE_PLAN")).toBeInTheDocument();
@@ -67,7 +74,6 @@ test("renders separated evidence, score dashboard, real plan and requirements", 
   expect(requirements.getByText("ADX")).toBeInTheDocument();
   expect(requirements.getByText("17")).toBeInTheDocument();
   expect(requirements.getByText("20")).toBeInTheDocument();
-  expect(requirements.getByText(">=")).toBeInTheDocument();
   expect(requirements.getByText("NOT_MET")).toBeInTheDocument();
 });
 
@@ -75,8 +81,15 @@ test("explains an incomplete saved plan without inventing levels", async () => {
   render(<SignalIntelligencePage api={api(payload({ entry: null, stop_loss: null, take_profit: null }))} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
   await screen.findByText("Score Dashboard");
   expect(screen.queryByTestId("execution-block")).not.toBeInTheDocument();
-  expect(screen.getByTestId("execution-empty")).toHaveTextContent("Торговый план не сохранён");
-  expect(screen.getByTestId("execution-empty")).toHaveTextContent("не рассчитывает отсутствующие уровни");
+  expect(screen.getByTestId("execution-empty")).toHaveTextContent("Trading Plan unavailable");
+  expect(screen.getByTestId("execution-empty")).toHaveTextContent("Mini App never generates them");
+});
+
+test("hides empty WHY sections and uses the common published-data empty state", async () => {
+  render(<SignalIntelligencePage api={api(payload({ confirmations: [], warnings: [], blockers: [], failed_filters: [], veto_reasons: [], explanation: { confirmations: [], limitations: [], blockers: [] } }))} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
+  expect(await screen.findByText("No data published")).toBeInTheDocument();
+  expect(screen.queryByText("✅ Confirmations")).not.toBeInTheDocument();
+  expect(screen.queryByText("⚠ Warnings")).not.toBeInTheDocument();
 });
 
 test("shows component scores only when a real maximum is saved", async () => {
@@ -109,6 +122,6 @@ test("renders safe loading and error states", async () => {
   const client = api();
   client.intelligence = vi.fn().mockRejectedValue(new Error("offline"));
   render(<SignalIntelligencePage api={client} symbol="BTC/USDT" timeframe="1h" view="intelligence" onBack={vi.fn()} onNavigate={vi.fn()} />);
-  expect(screen.getByText(/Загрузка/)).toBeInTheDocument();
+  expect(screen.getByLabelText("Загрузка Signal Intelligence")).toBeInTheDocument();
   await waitFor(() => expect(screen.getByText(/временно недоступен/)).toBeInTheDocument());
 });
