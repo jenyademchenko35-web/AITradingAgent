@@ -152,6 +152,22 @@ test("dashboard refreshes on the configured 30 second cadence", async () => {
   }
 });
 
+test("Telegram BackButton returns from a supported detail screen without changing data", async () => {
+  const back = { show: vi.fn(), hide: vi.fn(), onClick: vi.fn(), offClick: vi.fn() };
+  window.Telegram = { WebApp: { BackButton: back } } as never;
+  try {
+    render(<App api={api()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Research" }));
+    expect(await screen.findByText("Research")).toBeInTheDocument();
+    expect(back.show).toHaveBeenCalled();
+    const handler = back.onClick.mock.calls.at(-1)?.[0] as (() => void);
+    act(handler);
+    expect(await screen.findByText("System")).toBeInTheDocument();
+  } finally {
+    delete window.Telegram;
+  }
+});
+
 test("live research refreshes on its separate 60 second cadence", async () => {
   vi.useFakeTimers();
   try {

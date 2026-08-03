@@ -99,6 +99,30 @@ The inline `⚡ Открыть TradeWatcher` button is shown only when Telegram 
 Mini App are enabled, the public URL is valid HTTPS, and the current user passes
 the owner-only policy.
 
+## Telegram Production
+
+The frontend loads Telegram's official Mini App SDK before the application bundle.
+Inside Telegram it calls `ready()` and `expand()`, follows the host `themeParams`,
+viewport and safe-area events, and uses the Telegram Main Button only for a
+read-only refresh. The Back Button is shown for Signal Intelligence, Research,
+Shadow and Statistics; haptic feedback is limited to navigation, refresh and
+error acknowledgement. A normal browser has no SDK dependency and continues to
+use the same read-only UI.
+
+For a production Telegram launch, build the frontend, publish it behind the
+verified **HTTPS** Mini App URL, then configure that URL manually in BotFather's
+Menu Button or Main Mini App settings. A production URL is required for Telegram
+to open the WebApp and for the optional in-bot WebApp button; it is not required
+for local browser development.
+
+The frontend sends the SDK's opaque `initData` to the existing backend as the
+authentication credential. The backend remains the sole authority: it validates
+Telegram's HMAC, `auth_date` TTL and owner policy. `initDataUnsafe` is never used
+for authorization; the frontend may display only the optional Telegram first
+name. Keep `MINIAPP_DEV_MODE=false` in production. Existing bot polling/webhook
+delivery is independent of the Mini App URL and must be operated with its current
+deployment configuration; Mini App rollout does not change it.
+
 ## Health and readiness
 
 `GET /healthz` proves only that the process is alive. `GET /readyz` returns 503

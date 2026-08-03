@@ -7,7 +7,15 @@ import {
 import { SignalChart } from "./Chart";
 import { SignalIntelligencePage } from "./SignalIntelligencePage";
 import { routeFromLocation, signalPath, type SignalRoute, type SignalView } from "./routes";
-import { initializeTelegram } from "./telegram";
+import {
+  configureTelegramBackButton,
+  configureTelegramMainButton,
+  initializeTelegram,
+  miniAppEnvironment,
+  subscribeTelegramAppearance,
+  telegramDisplayName,
+  telegramHaptic,
+} from "./telegram";
 import { formatResearchCandidate, formatResearchStatus, researchText } from "./research";
 import { EmptyState, FilterBar, MetricCard, SearchBar, SignalCard, SkeletonCard, StatusBadge, type SignalFilter, type SignalSort } from "./ui";
 import "./styles.css";
@@ -87,7 +95,7 @@ function ShadowMonitoring({ shadow }: { shadow: ShadowRuntime | null }) {
   return <section className="panel shadow-monitoring"><div className="section-heading"><div><h2>Shadow Monitoring</h2><p>Отдельный Research Lab shadow book.</p></div><StatusBadge status={shadow.updated ? "PUBLISHED" : "UNKNOWN"} /></div><div className="dashboard-grid"><MetricCard label="Active" value={shadow.active.length} /><MetricCard label="Closed" value={shadow.closed.length} /><MetricCard label="Symbols" value={shadow.symbols?.length ?? null} detail={shadow.symbols === null ? "Not published" : undefined} /><MetricCard label="Updated" value={formatTime(shadow.updated)} /></div>{strategies ? <div className="shadow-strategies"><h3>Strategies</h3><ul>{strategies}</ul></div> : <EmptyState title="Strategies unavailable" detail="Runtime API did not publish shadow strategy modes." />}{shadow.symbols && <div className="shadow-symbols"><h3>Symbols</h3><p>{shadow.symbols.join(", ") || "—"}</p></div>}{!shadow.active.length && !shadow.closed.length && <EmptyState title="No Research Lab shadow trades" detail="The separate shadow ledger did not publish active or closed trades." />}</section>;
 }
 
-export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
+export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiClient; telegramInitData?: string }) {
   const [tab, setTab] = useState<Tab>("home");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
@@ -101,13 +109,15 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
   const [signal, setSignal] = useState<SignalResponse | null>(null);
   const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => routeFromLocation(window.location));
   const [loading, setLoading] = useState(true); const [error, setError] = useState("");
-  const api = useMemo(() => injectedApi ?? new MiniAppApi(initializeTelegram()), [injectedApi]);
+  const api = useMemo(() => injectedApi ?? new MiniAppApi(telegramInitData ?? initializeTelegram()), [injectedApi, telegramInitData]);
+  const environment = miniAppEnvironment();
+  const displayName = telegramDisplayName();
 
   const refreshCore = useCallback(() => {
     setError("");
     return Promise.all([api.dashboard(), api.watchlist(), api.openTrades(), api.stats()])
       .then(([d, w, t, s]) => { setDashboard(d); setWatchlist(w); setTrades(t); setStats(s); })
-      .catch(() => setError("Не удалось загрузить read-only данные."))
+      .catch(() => { telegramHaptic("error"); setError("Не удалось загрузить read-only данные."); })
       .finally(() => setLoading(false));
   }, [api]);
   const refreshRuntime = useCallback(() => Promise.all([api.system(), api.activity(), api.shadow()])
@@ -115,6 +125,7 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
     .catch(() => { setSystem(null); setActivity([]); setShadow(null); }), [api]);
   const refreshResearch = useCallback(() => api.researchLive()
     .then(setResearch).catch(() => setResearch(null)), [api]);
+  useEffect(() => subscribeTelegramAppearance(), []);
   useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); }, [refreshCore, refreshRuntime, refreshResearch]);
   useEffect(() => {
     const timer = window.setInterval(() => { void refreshCore(); void refreshRuntime(); }, 30_000);
@@ -130,22 +141,39 @@ export function App({ api: injectedApi }: { api?: MiniAppApiClient }) {
 
   const filtered = useMemo(() => watchlist.filter((item) => item.symbol.includes(query.trim().toUpperCase()) && filterStatus(item, filter)).sort((left, right) => sort === "confidence" ? right.confidence - left.confidence : sort === "symbol" ? left.symbol.localeCompare(right.symbol) : sort === "status" ? left.status.localeCompare(right.status) : String(right.updated_at).localeCompare(String(left.updated_at))), [filter, query, sort, watchlist]);
   const navigateSignal = (route: SignalRoute | null, hash = "") => { const path = route ? signalPath(route.symbol, route.timeframe, route.view) : "/"; window.history.pushState({}, "", `${path}${hash ? `#${hash}` : ""}`); setSignalRoute(route); if (!route) setSignal(null); };
-  const openSignal = (item: WatchlistItem) => api.signal(item.symbol, item.timeframe).then((next) => { setSignal(next); navigateSignal({ symbol: item.symbol, timeframe: item.timeframe, view: "card" }); }).catch(() => setError("Snapshot сигнала недоступен."));
-  const closeSignal = () => { navigateSignal(null); setTab("signals"); };
+  const openSignal = (item: WatchlistItem) => { telegramHaptic("selection"); return api.signal(item.symbol, item.timeframe).then((next) => { setSignal(next); navigateSignal({ symbol: item.symbol, timeframe: item.timeframe, view: "card" }); }).catch(() => { telegramHaptic("error"); setError("Snapshot сигнала недоступен."); }); };
+  const closeSignal = () => { telegramHaptic("selection"); navigateSignal(null); setTab("signals"); };
+  const navigateTab = (next: Exclude<Tab, "home">) => { telegramHaptic("selection"); setTab(next); };
+  const refreshFromTelegram = useCallback(() => { telegramHaptic("impact"); void refreshCore(); void refreshRuntime(); }, [refreshCore, refreshRuntime]);
+  const backFromTelegram = useCallback(() => {
+    telegramHaptic("selection");
+    if (signalRoute || signal) { closeSignal(); return; }
+    setTab("home");
+  }, [signal, signalRoute]);
+  useEffect(() => {
+    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "stats";
+    configureTelegramBackButton(visible, visible ? backFromTelegram : null);
+    return () => configureTelegramBackButton(false, null);
+  }, [backFromTelegram, signal, signalRoute, tab]);
+  useEffect(() => {
+    const visible = tab === "home" && !signalRoute && !signal;
+    configureTelegramMainButton(visible ? "Обновить" : null, visible ? refreshFromTelegram : null);
+    return () => configureTelegramMainButton(null, null);
+  }, [refreshFromTelegram, signal, signalRoute, tab]);
   if (signalRoute && signalRoute.view !== "card") return <SignalIntelligencePage api={api} {...signalRoute} onBack={closeSignal} onNavigate={(view) => navigateSignal({ ...signalRoute, view })} />;
   if (signal) return <main><SignalDetails signal={signal} onClose={closeSignal} onNavigate={(view, hash) => navigateSignal({ symbol: signal.symbol, timeframe: signal.timeframe, view }, hash)} /></main>;
 
   const list = <section className="panel"><div className="section-heading"><div><h2>{labels[tab]}</h2><p>{tab === "market" ? "Market Intelligence из сохранённых snapshots" : "Сигналы читаются локально, без запроса на каждый символ"}</p></div><StatusBadge status={`${filtered.length} signals`} /></div><SearchBar value={queryInput} onChange={setQueryInput} onClear={() => setQueryInput("")} /><FilterBar filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} />{loading ? <div className="signal-list">{[1, 2, 3].map((item) => <SkeletonCard key={item} />)}</div> : filtered.length ? <div className="signal-list">{filtered.map((item) => <SignalCard item={item} key={`${item.symbol}-${item.timeframe}`} onOpen={openSignal} />)}</div> : <EmptyState title="Сигналов не найдено" detail="Измените поиск или фильтр. Mini App не создаёт сигналы самостоятельно." advice="Очистите поиск или выберите другой фильтр." />}</section>;
 
-  return <main className="app-shell"><header className="app-header"><div><small>TRADEWATCHER · READ ONLY</small><h1>{appTitle}</h1></div><StatusBadge status={dashboard?.status || "LOADING"} /></header>{error && <div className="error">{error}</div>}
-    {tab === "home" && <DashboardHome dashboard={dashboard} stats={stats} watchlist={watchlist} system={system} activity={activity} shadow={shadow} loading={loading} onNavigate={setTab} onSignal={openSignal} />}
+  return <main className="app-shell" data-telegram={environment.telegram ? "true" : "false"} data-production={environment.production ? "true" : "false"}><header className="app-header"><div><small>TRADEWATCHER · READ ONLY{displayName ? ` · ${displayName}` : ""}</small><h1>{appTitle}</h1></div><StatusBadge status={dashboard?.status || "LOADING"} /></header>{error && <div className="error">{error}</div>}
+    {tab === "home" && <DashboardHome dashboard={dashboard} stats={stats} watchlist={watchlist} system={system} activity={activity} shadow={shadow} loading={loading} onNavigate={navigateTab} onSignal={openSignal} />}
     {(tab === "signals" || tab === "market") && list}
     {tab === "portfolio" && <section className="panel"><h2>Portfolio</h2>{trades.count ? <><div className="dashboard-grid"><MetricCard label="Open trades" value={trades.count} /><MetricCard label="Shadow trades" value="—" detail="Не передано источником" /><MetricCard label="Portfolio risk" value="—" detail="Не передано источником" /><MetricCard label="Total exposure" value="—" detail="Не передано источником" /></div><div className="trade-list">{trades.items.map((trade, index) => <div key={index} className="trade-row"><b>{display(trade.symbol)}</b><span>{display(trade.direction ?? trade.side)}</span><small>{display(trade.status)}</small></div>)}</div></> : <EmptyState title="Нет открытых сделок" detail="Источник не передал открытые live или shadow сделки." />}</section>}
     {tab === "stats" && <section className="panel"><h2>Statistics</h2><div className="dashboard-grid"><MetricCard label="Winrate" value={stats.winrate === undefined ? null : `${stats.winrate}%`} /><MetricCard label="PF" value={stats.profit_factor} /><MetricCard label="Net R" value={stats.net_r} /><MetricCard label="Drawdown" value={stats.max_drawdown} /><MetricCard label="Closed trades" value={stats.closed_trades} /><MetricCard label="Average R" value={stats.average_r} /><MetricCard label="Average Hold Time" value={stats.average_hold_time} /><MetricCard label="Updated" value={dashboard?.updated_at ? formatTime(dashboard.updated_at) : null} /></div></section>}
     {tab === "research" && <section className="panel"><h2>Research</h2>{research ? <ResearchSummary report={research} /> : <EmptyState title="Research data unavailable" detail="Runtime API did not publish a live Research Lab report." />}</section>}
     {tab === "shadow" && <ShadowMonitoring shadow={shadow} />}
     {tab === "settings" && <section className="panel"><h2>Settings</h2><EmptyState title="Read-only Mini App" detail="Trading controls, configuration and execution intentionally unavailable." /></section>}
-    {tab !== "home" && <button className="home-button" onClick={() => setTab("home")}>⌂ Главная</button>}
+    {tab !== "home" && <button className="home-button" onClick={() => { telegramHaptic("selection"); setTab("home"); }}>⌂ Главная</button>}
   </main>;
 }
 
