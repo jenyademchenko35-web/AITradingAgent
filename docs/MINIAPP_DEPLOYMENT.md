@@ -66,7 +66,9 @@ and verifies `miniapp/frontend/dist/index.html`. It does not start a service.
 ## Backend launch
 
 Run `python -m miniapp.backend.run` from the repository root only after providing
-the local environment. The launcher refuses to start when disabled, when the
+the local environment. The launcher reads `miniapp/backend/.env` automatically;
+variables already present in the process environment take priority over that
+file. The launcher refuses to start when disabled, when the
 owner/token/data root is missing, or when the requested bind host is not
 localhost. Uvicorn reload is disabled and shutdown is handled by Uvicorn.
 

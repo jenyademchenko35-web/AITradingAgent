@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 
+import miniapp.backend.config as config_module
 from miniapp.backend.config import MiniAppSettings
 
 
@@ -14,6 +16,50 @@ def test_production_defaults_are_fail_closed_and_localhost():
     assert settings.host == "127.0.0.1"
     assert settings.port == 8081
     assert settings.rate_limit_requests == 60
+
+
+def _isolated_backend_env(monkeypatch, tmp_path, content: str = "") -> Path:
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    monkeypatch.setattr(config_module, "__file__", str(backend / "config.py"))
+    for name in (
+        "MINIAPP_ENABLED", "MINIAPP_DEV_MODE", "MINIAPP_OWNER_ONLY",
+        "MINIAPP_OWNER_USER_ID", "TELEGRAM_OWNER_USER_ID",
+        "TELEGRAM_BOT_TOKEN", "BOT_TOKEN", "MINIAPP_DATA_ROOT",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    if content:
+        (backend / ".env").write_text(content, encoding="utf-8")
+    return backend
+
+
+def test_backend_dotenv_is_loaded_as_fallback(monkeypatch, tmp_path):
+    _isolated_backend_env(
+        monkeypatch,
+        tmp_path,
+        "MINIAPP_ENABLED=true\nMINIAPP_DEV_MODE=true\nMINIAPP_OWNER_ONLY=false\n",
+    )
+    try:
+        settings = MiniAppSettings.from_env(data_dir=tmp_path)
+        assert settings.enabled is True
+        assert settings.dev_mode is True
+        assert settings.owner_only is False
+    finally:
+        for name in ("MINIAPP_ENABLED", "MINIAPP_DEV_MODE", "MINIAPP_OWNER_ONLY"):
+            os.environ.pop(name, None)
+
+
+def test_process_environment_overrides_backend_dotenv(monkeypatch, tmp_path):
+    _isolated_backend_env(monkeypatch, tmp_path, "MINIAPP_ENABLED=false\n")
+    monkeypatch.setenv("MINIAPP_ENABLED", "true")
+    settings = MiniAppSettings.from_env(data_dir=tmp_path)
+    assert settings.enabled is True
+
+
+def test_enabled_default_remains_false_without_environment(monkeypatch, tmp_path):
+    _isolated_backend_env(monkeypatch, tmp_path)
+    settings = MiniAppSettings.from_env(data_dir=tmp_path)
+    assert settings.enabled is False
 
 
 def test_production_environment_is_parsed_without_secret_defaults(tmp_path):

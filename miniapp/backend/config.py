@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Mapping
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
+
 
 def _bool(value: str | None, default: bool) -> bool:
     if value is None:
@@ -67,6 +69,8 @@ class MiniAppSettings:
         *,
         data_dir: Path | None = None,
     ) -> "MiniAppSettings":
+        if environ is None:
+            load_dotenv(Path(__file__).parent / ".env", override=False)
         env = os.environ if environ is None else environ
         return cls(
             enabled=_bool(env.get("MINIAPP_ENABLED"), False),
