@@ -45,6 +45,7 @@ def test_builtin_strategies_are_registered_automatically():
         "TREND_CONFIRM", "TREND_VOLUME", "VOLATILITY_FILTER",
         "STRUCTURE_HEAVY", "ADX_CONFIRM", "EMA_DISTANCE", "ATR_DYNAMIC",
         "RISK_CONSERVATIVE",
+        "TREND_PULLBACK", "CONSERVATIVE",
     } <= ids
     assert registry.get("LIVE_BASELINE").shadow_only is False
     assert all(strategy.shadow_only for strategy in registry.all(shadow_only=True))
@@ -224,7 +225,8 @@ def _snapshot(cycle_id="cycle-1", symbol="BTC/USDT"):
         "structure_score": 60.0, "momentum_score": 25.0,
         "risk_score": 20.0, "signal_score": 60.0, "adx": 30.0,
         "trend_direction": "LONG", "momentum_direction": "LONG",
-        "risk_direction": "LONG",
+        "risk_direction": "LONG", "structure_direction": "LONG",
+        "ema20": 100.0, "ema50": 98.0, "candle_open": 99.5,
         "volume_ratio": 1.2, "atr_percentile": 40.0,
     }
 
@@ -259,14 +261,14 @@ def test_dry_run_persists_evaluations_without_shadow_trades(tmp_path):
                                  shadow_book_path=shadow_path)
     result = runtime.process_cycle(cycle_id="cycle-1", snapshots=[_snapshot()],
                                    settings=_runtime_settings(tmp_path))
-    assert result["runs_this_cycle"] == 3
-    assert result["would_open"] == 3
+    assert result["runs_this_cycle"] == 5
+    assert result["would_open"] == 5
     assert result["opened_shadow"] == 0
     assert not shadow_path.exists()
-    assert result["blocked"]["BLOCKED_GLOBAL_DRY_RUN"] == 3
+    assert result["blocked"]["BLOCKED_GLOBAL_DRY_RUN"] == 5
     with sqlite3.connect(tmp_path / "research.db") as db:
-        assert db.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 3
-        assert db.execute("SELECT SUM(would_open_trade) FROM strategy_runs").fetchone()[0] == 3
+        assert db.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 5
+        assert db.execute("SELECT SUM(would_open_trade) FROM strategy_runs").fetchone()[0] == 5
 
 
 def test_live_shadow_mode_uses_separate_bounded_book(tmp_path):
@@ -278,7 +280,10 @@ def test_live_shadow_mode_uses_separate_bounded_book(tmp_path):
                                    settings=settings)
     rows = json.loads(shadow_path.read_text(encoding="utf-8"))
     assert result["opened_shadow"] == 2
-    assert result["blocked"] == {"BLOCKED_STRATEGY_EVALUATE_ONLY": 1}
+    assert result["blocked"] == {
+        "BLOCKED_STRATEGY_EVALUATE_ONLY": 1,
+        "BLOCKED_SYMBOL_LIMIT": 2,
+    }
     assert len(rows) == 2
     assert {row["strategy_id"] for row in rows} == {"TREND_CONFIRM", "RISK_CONSERVATIVE"}
     assert all(row["status"] == "OPEN" for row in rows)
@@ -287,7 +292,7 @@ def test_live_shadow_mode_uses_separate_bounded_book(tmp_path):
 
 def test_allowlist_is_exact_and_bounded(tmp_path):
     settings = _runtime_settings(tmp_path)
-    assert settings.allowlist == ("MOMENTUM_STRICT", "TREND_CONFIRM", "RISK_CONSERVATIVE")
+    assert settings.allowlist == ("MOMENTUM_STRICT", "TREND_CONFIRM", "RISK_CONSERVATIVE", "TREND_PULLBACK", "CONSERVATIVE")
     assert ResearchLabRuntime.validate(settings, [_snapshot()]) == []
     unsafe = replace(
         settings,

@@ -206,6 +206,9 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
         "timeframe": timeframe, "current_price": close,
         "high": _number(getattr(tf, "high", close), close),
         "low": _number(getattr(tf, "low", close), close),
+        "candle_open": _number(getattr(tf, "open", close), close),
+        "ema20": _number(getattr(tf, "ema20", 0)),
+        "ema50": _number(getattr(tf, "ema50", 0)),
         "atr": _number(getattr(tf, "atr", 0)), "adx": _number(getattr(tf, "adx", 0)),
         "volume_ratio": _number(getattr(tf, "volume_ratio", 0)),
         "atr_percentile": _number(getattr(tf, "atr_percentile", 0)),
@@ -226,6 +229,7 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
         "trend_direction": None,
         "momentum_direction": None,
         "risk_direction": None,
+        "structure_direction": None,
     }
     observer = getattr(decision, "research_feature_snapshot", {})
     if isinstance(observer, Mapping):
@@ -236,6 +240,9 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
         "current_price": close,
         "high": _number(getattr(tf, "high", close), close),
         "low": _number(getattr(tf, "low", close), close),
+        "candle_open": _number(getattr(tf, "open", close), close),
+        "ema20": _number(getattr(tf, "ema20", 0)),
+        "ema50": _number(getattr(tf, "ema50", 0)),
         "direction": direction, "signal": str(getattr(decision, "signal", "")),
         "decision": str(getattr(decision, "signal", "")),
     })
@@ -428,18 +435,18 @@ class ShadowResearchBook:
         return trade_id, None
 
 
-def _trade_plan(snapshot: Mapping[str, Any]) -> dict[str, Any]:
+def _trade_plan(snapshot: Mapping[str, Any], *, minimum_rr: float = 2.0) -> dict[str, Any]:
     entry, atr = _number(snapshot.get("current_price")), _number(snapshot.get("atr"))
     direction = str(snapshot.get("direction", "")).upper()
     direction = "LONG" if direction in {"LONG", "BUY"} else "SHORT" if direction in {"SHORT", "SELL"} else ""
     if direction == "LONG":
-        stop, target = entry - atr, entry + 2 * atr
+        stop, target = entry - atr, entry + minimum_rr * atr
     elif direction == "SHORT":
-        stop, target = entry + atr, entry - 2 * atr
+        stop, target = entry + atr, entry - minimum_rr * atr
     else:
         stop = target = 0.0
     return {"direction": direction, "entry": entry, "stop_loss": stop,
-            "take_profit": target, "rr": 2.0 if entry > 0 and atr > 0 else 0.0}
+            "take_profit": target, "rr": minimum_rr if entry > 0 and atr > 0 else 0.0}
 
 
 class ResearchLabRuntime:
@@ -575,7 +582,7 @@ class ResearchLabRuntime:
                         previous=signal_states.get(key),
                         cooldown_minutes=settings.signal_cooldown_minutes,
                     )
-                    plan = _trade_plan(snapshot)
+                    plan = _trade_plan(snapshot, minimum_rr=max(2.0, _number(result.get("minimum_rr"), 2.0)))
                     reason = str(event.get("blocked_reason") or "") or None
                     trade_id = None
                     actual_shadow_opened = False

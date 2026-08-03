@@ -1152,6 +1152,9 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 "trend_long_score": float(trend.long),
                 "trend_short_score": float(trend.short),
                 "trend_direction": component_direction(trend),
+                "structure_long_score": float(structure.long),
+                "structure_short_score": float(structure.short),
+                "structure_direction": component_direction(structure),
                 "momentum_long_score": float(momentum.long),
                 "momentum_short_score": float(momentum.short),
                 "momentum_direction": component_direction(momentum),
@@ -1233,6 +1236,17 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
         nonlocal reports_logged
         if reports_logged:
             return
+        # Logging-only telemetry. It observes the already-final decision and is
+        # intentionally isolated from all LIVE gates and execution paths.
+        try:
+            from decision_telemetry import append_telemetry, telemetry_row
+            append_telemetry(telemetry_row(
+                timestamp=decision_timestamp, cycle_id=decision.cycle_id, symbol=symbol,
+                decision=decision, trend=trend, structure=structure, momentum=momentum,
+                risk=risk, market=market,
+            ))
+        except Exception as exc:
+            LOGGER.timestamped(f"[{symbol}] Decision telemetry error: {exc}", minimum="NORMAL")
         diagnostics.sync_report_status(diagnostics_report, decision)
         for key in (
             "raw_signal_status",

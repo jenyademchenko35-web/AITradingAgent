@@ -29,9 +29,13 @@ DEFAULT_STRATEGY_MODES = {
     "MOMENTUM_STRICT": EVALUATE_ONLY,
     "TREND_CONFIRM": SHADOW_ENABLED,
     "RISK_CONSERVATIVE": SHADOW_ENABLED,
+    # New hypotheses begin observation-only. They never reach the shadow book
+    # until explicitly enabled through the existing safe runtime configuration.
+    "TREND_PULLBACK": EVALUATE_ONLY,
+    "CONSERVATIVE": EVALUATE_ONLY,
 }
 
-SAFE_STRATEGY_ALLOWLIST = ("MOMENTUM_STRICT", "TREND_CONFIRM", "RISK_CONSERVATIVE")
+SAFE_STRATEGY_ALLOWLIST = ("MOMENTUM_STRICT", "TREND_CONFIRM", "RISK_CONSERVATIVE", "TREND_PULLBACK", "CONSERVATIVE")
 RUNTIME_OVERRIDE_FILE = Path(__file__).resolve().parent.parent / "research_lab_v2_runtime_override.json"
 
 
