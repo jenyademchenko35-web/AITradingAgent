@@ -42,6 +42,7 @@ def _origins(value: str | None) -> tuple[str, ...]:
 @dataclass(frozen=True)
 class MiniAppSettings:
     enabled: bool = False
+    dev_mode: bool = False
     owner_only: bool = True
     owner_user_id: int | None = None
     bot_token: str = ""
@@ -69,6 +70,7 @@ class MiniAppSettings:
         env = os.environ if environ is None else environ
         return cls(
             enabled=_bool(env.get("MINIAPP_ENABLED"), False),
+            dev_mode=_bool(env.get("MINIAPP_DEV_MODE"), False),
             owner_only=_bool(env.get("MINIAPP_OWNER_ONLY"), True),
             owner_user_id=_int(env.get("MINIAPP_OWNER_USER_ID") or env.get("TELEGRAM_OWNER_USER_ID")),
             bot_token=str(env.get("TELEGRAM_BOT_TOKEN") or env.get("BOT_TOKEN") or ""),
@@ -98,7 +100,7 @@ class MiniAppSettings:
             errors.append("MINIAPP_ENABLED is false")
         if self.host not in {"127.0.0.1", "::1", "localhost"}:
             errors.append("MINIAPP_HOST must be localhost")
-        if self.owner_only:
+        if self.owner_only and not self.dev_mode:
             if not self.bot_token:
                 errors.append("TELEGRAM_BOT_TOKEN is required in owner-only mode")
             if self.owner_user_id is None:

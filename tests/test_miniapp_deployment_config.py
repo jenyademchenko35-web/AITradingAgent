@@ -9,6 +9,7 @@ ROOT = Path(__file__).parents[1]
 def test_production_defaults_are_fail_closed_and_localhost():
     settings = MiniAppSettings.from_env({})
     assert settings.enabled is False
+    assert settings.dev_mode is False
     assert settings.owner_only is True
     assert settings.host == "127.0.0.1"
     assert settings.port == 8081
@@ -72,11 +73,22 @@ def test_non_owner_local_mode_can_start_without_telegram_credentials(tmp_path):
     assert settings.startup_errors() == ()
 
 
+def test_explicit_dev_mode_can_start_locally_without_telegram_credentials(tmp_path):
+    settings = MiniAppSettings.from_env({
+        "MINIAPP_ENABLED": "true",
+        "MINIAPP_DEV_MODE": "true",
+        "MINIAPP_DATA_ROOT": str(tmp_path),
+    })
+    assert settings.dev_mode is True
+    assert settings.startup_errors() == ()
+
+
 def test_examples_contain_no_real_values_and_plist_binds_localhost():
     backend = (ROOT / "miniapp/backend/.env.example").read_text(encoding="utf-8")
     frontend = (ROOT / "miniapp/frontend/.env.example").read_text(encoding="utf-8")
     plist = (ROOT / "deploy/macos/com.tradewatcher.miniapp.plist.example").read_text(encoding="utf-8")
     assert "MINIAPP_ENABLED=false" in backend
+    assert "MINIAPP_DEV_MODE=false" in backend
     assert "TELEGRAM_BOT_TOKEN=\n" in backend
     assert "MINIAPP_HOST=127.0.0.1" in backend
     assert "VITE_API_BASE_URL=/api" in frontend

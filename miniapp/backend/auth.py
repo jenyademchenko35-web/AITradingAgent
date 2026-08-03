@@ -21,6 +21,9 @@ class TelegramAuthError(ValueError):
     pass
 
 
+_LOCAL_DEV_CLIENTS = frozenset({"127.0.0.1", "::1"})
+
+
 def validate_init_data(
     init_data: str,
     bot_token: str,
@@ -68,19 +71,23 @@ def auth_dependency(
         if not settings.enabled:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mini App disabled")
         client_ip = request.client.host if request.client else None
-        try:
-            user = validate_init_data(
-                x_telegram_init_data,
-                settings.bot_token,
-                max_age_seconds=settings.auth_max_age_seconds,
-            )
-        except TelegramAuthError as exc:
-            if limiter is not None:
-                limiter.require(client_ip=client_ip)
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram initData") from exc
+        local_dev = settings.dev_mode and client_ip in _LOCAL_DEV_CLIENTS
+        if local_dev:
+            user = TelegramUser(id=0, username="local_dev")
+        else:
+            try:
+                user = validate_init_data(
+                    x_telegram_init_data,
+                    settings.bot_token,
+                    max_age_seconds=settings.auth_max_age_seconds,
+                )
+            except TelegramAuthError as exc:
+                if limiter is not None:
+                    limiter.require(client_ip=client_ip)
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram initData") from exc
         if limiter is not None:
             limiter.require(user_id=user.id, client_ip=client_ip)
-        if settings.owner_only and (
+        if not local_dev and settings.owner_only and (
             settings.owner_user_id is None or user.id != settings.owner_user_id
         ):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner access required")

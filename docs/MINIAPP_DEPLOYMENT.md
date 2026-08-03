@@ -27,6 +27,7 @@ service and HTTPS endpoint have been checked:
 
 ```text
 MINIAPP_ENABLED=false
+MINIAPP_DEV_MODE=false
 MINIAPP_OWNER_ONLY=true
 MINIAPP_HOST=127.0.0.1
 MINIAPP_PORT=8081
@@ -35,6 +36,27 @@ MINIAPP_PORT=8081
 `MINIAPP_ALLOWED_ORIGINS` is a comma-separated HTTPS allowlist.
 `MINIAPP_DATA_ROOT` points at the existing runtime data directory. The Telegram
 bot token is backend-only and must never use a `VITE_` prefix.
+
+## Local Development
+
+Local API development can be enabled explicitly without weakening Telegram
+authentication for non-local clients:
+
+```text
+MINIAPP_ENABLED=true
+MINIAPP_DEV_MODE=true
+MINIAPP_HOST=127.0.0.1
+```
+
+With this mode enabled, requests whose direct socket peer is exactly
+`127.0.0.1` or `::1` receive the isolated user `local_dev` with ID `0`.
+Requests from every other address still require valid Telegram initData, its
+HMAC, a fresh `auth_date`, and the configured owner policy. Forwarded headers
+such as `X-Forwarded-For` never grant local access.
+
+Keep `MINIAPP_DEV_MODE=false` in deployed environments. Do not expose the local
+development server through Caddy, a tunnel, port forwarding, or another reverse
+proxy while dev mode is active.
 
 ## Build
 
