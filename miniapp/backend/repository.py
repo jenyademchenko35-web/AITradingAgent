@@ -106,16 +106,14 @@ class ReadOnlyRepository:
         return [dict(row) for row in frozen]
 
     def decision_rows(self) -> list[dict[str, Any]]:
-        current = self.read_csv(self.base_dir / "signals.csv")
-        if current:
-            return self._adapt_signal_rows(current)
         snapshots = self._snapshot_rows()
         if snapshots:
             return snapshots
-        return (
-            self.read_csv(self.base_dir / "decision_debug.csv")
-            or self.read_csv(self.base_dir / "signals_v3.csv")
-        )
+        for filename in ("signals_v3.csv", "signals.csv"):
+            rows = self.read_csv(self.base_dir / filename)
+            if rows:
+                return self._adapt_signal_rows(rows)
+        return self.read_csv(self.base_dir / "decision_debug.csv")
 
     def trade_rows(self) -> list[dict[str, str]]:
         return self.read_csv(self.base_dir / "trades.csv")

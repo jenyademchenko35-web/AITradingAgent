@@ -87,6 +87,41 @@ def test_repository_falls_back_to_current_decision_snapshot(tmp_path):
     assert intelligence.trend_score == 55.0
 
 
+@pytest.mark.parametrize(
+    ("available", "expected_symbol"),
+    [
+        (("snapshot", "signals_v3", "signals", "decision_debug"), "SNAPSHOT/USDT"),
+        (("signals_v3", "signals", "decision_debug"), "V3/USDT"),
+        (("signals", "decision_debug"), "SIGNALS/USDT"),
+        (("decision_debug",), "DEBUG/USDT"),
+    ],
+)
+def test_repository_uses_current_source_priority_with_legacy_fallback(
+    tmp_path, available, expected_symbol,
+):
+    rows = {
+        "signals_v3": {"timestamp": "2026-08-03T03:00:00Z", "symbol": "V3/USDT"},
+        "signals": {"timestamp": "2026-08-03T02:00:00Z", "symbol": "SIGNALS/USDT"},
+        "decision_debug": {"timestamp": "2026-06-25T00:00:00Z", "symbol": "DEBUG/USDT"},
+    }
+    for source in available:
+        if source == "snapshot":
+            (tmp_path / "decision_snapshot.json").write_text(
+                json.dumps({
+                    "latest": {
+                        "timestamp": "2026-08-03T04:00:00Z",
+                        "symbol": "SNAPSHOT/USDT",
+                    },
+                }),
+                encoding="utf-8",
+            )
+        else:
+            write_csv(tmp_path / f"{source}.csv", [rows[source]])
+
+    selected = ReadOnlyRepository(tmp_path).decision_rows()
+    assert selected[0]["symbol"] == expected_symbol
+
+
 def test_repository_reads_immutable_ohlcv_cache(tmp_path):
     write_csv(tmp_path / "decision_debug.csv", [{"timestamp": "now", "symbol": "BTC/USDT", "signal": "WAIT"}])
     cache = tmp_path / "ohlcv_cache"
