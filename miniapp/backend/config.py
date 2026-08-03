@@ -98,10 +98,11 @@ class MiniAppSettings:
             errors.append("MINIAPP_ENABLED is false")
         if self.host not in {"127.0.0.1", "::1", "localhost"}:
             errors.append("MINIAPP_HOST must be localhost")
-        if not self.bot_token:
-            errors.append("TELEGRAM_BOT_TOKEN is required")
-        if self.owner_only and self.owner_user_id is None:
-            errors.append("MINIAPP_OWNER_USER_ID is required in owner-only mode")
+        if self.owner_only:
+            if not self.bot_token:
+                errors.append("TELEGRAM_BOT_TOKEN is required in owner-only mode")
+            if self.owner_user_id is None:
+                errors.append("MINIAPP_OWNER_USER_ID is required in owner-only mode")
         if not self.data_root.is_dir():
             errors.append("MINIAPP_DATA_ROOT must be an existing directory")
         return tuple(errors)

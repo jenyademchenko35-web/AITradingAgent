@@ -43,6 +43,35 @@ def test_launcher_rejects_disabled_or_non_local_bind(tmp_path):
     assert "MINIAPP_HOST must be localhost" in exposed.startup_errors()
 
 
+def test_startup_disabled_is_always_fail_closed(tmp_path):
+    settings = MiniAppSettings(
+        enabled=False, owner_only=False, data_dir=tmp_path,
+    )
+    assert "MINIAPP_ENABLED is false" in settings.startup_errors()
+
+
+def test_owner_mode_requires_telegram_token(tmp_path):
+    settings = MiniAppSettings(
+        enabled=True, owner_only=True, owner_user_id=42, data_dir=tmp_path,
+    )
+    assert "TELEGRAM_BOT_TOKEN is required in owner-only mode" in settings.startup_errors()
+
+
+def test_owner_mode_requires_owner_user_id(tmp_path):
+    settings = MiniAppSettings(
+        enabled=True, owner_only=True, bot_token="test-token", data_dir=tmp_path,
+    )
+    assert "MINIAPP_OWNER_USER_ID is required in owner-only mode" in settings.startup_errors()
+
+
+def test_non_owner_local_mode_can_start_without_telegram_credentials(tmp_path):
+    settings = MiniAppSettings(
+        enabled=True, owner_only=False, bot_token="", owner_user_id=None,
+        host="127.0.0.1", data_dir=tmp_path,
+    )
+    assert settings.startup_errors() == ()
+
+
 def test_examples_contain_no_real_values_and_plist_binds_localhost():
     backend = (ROOT / "miniapp/backend/.env.example").read_text(encoding="utf-8")
     frontend = (ROOT / "miniapp/frontend/.env.example").read_text(encoding="utf-8")
