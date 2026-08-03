@@ -46,7 +46,10 @@ def _readiness(config: MiniAppSettings) -> tuple[bool, dict[str, bool]]:
     root_exists = config.data_root.is_dir()
     source_available = root_exists and any(
         (config.data_root / name).is_file() and os.access(config.data_root / name, os.R_OK)
-        for name in ("decision_debug.csv", "signals_v3.csv")
+        for name in (
+            "signals.csv", "decision_snapshot.json",
+            "decision_debug.csv", "signals_v3.csv",
+        )
     )
     checks = {
         "enabled": config.enabled,

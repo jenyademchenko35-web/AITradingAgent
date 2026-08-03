@@ -34,6 +34,45 @@ _CHANGE_METRICS = (
 )
 
 
+def decision_snapshot_rows(
+    payload: Mapping[str, Any],
+    *,
+    max_rows: int = 10_000,
+) -> list[dict[str, Any]]:
+    """Flatten persisted decision snapshots into existing read-only row contracts."""
+    candidates: list[Mapping[str, Any]] = []
+    history = payload.get("history")
+    if isinstance(history, list):
+        candidates.extend(item for item in history if isinstance(item, Mapping))
+    latest = payload.get("latest")
+    if isinstance(latest, Mapping) and (not candidates or dict(latest) != dict(candidates[-1])):
+        candidates.append(latest)
+    elif not candidates and payload.get("symbol"):
+        candidates.append(payload)
+
+    rows: list[dict[str, Any]] = []
+    for source in candidates[-max(1, int(max_rows)):]:
+        row = dict(source)
+        if row.get("score") in (None, ""):
+            row["score"] = _first(row, "final_score", "raw_score")
+        if row.get("summary") in (None, ""):
+            row["summary"] = row.get("reason")
+        if row.get("blockers") in (None, ""):
+            row["blockers"] = row.get("primary_blocker")
+        if row.get("volatility_regime") in (None, ""):
+            row["volatility_regime"] = row.get("volatility")
+        for component in _COMPONENTS:
+            values = row.get(component)
+            if not isinstance(values, Mapping):
+                continue
+            for field in ("long", "short", "reason"):
+                target = f"{component}_{field}"
+                if row.get(target) in (None, ""):
+                    row[target] = values.get(field)
+        rows.append(row)
+    return rows
+
+
 class IntelligenceRepository(Protocol):
     base_dir: Path
     query_timeout_seconds: float

@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,55 @@ def test_repository_reads_existing_snapshot_without_fake_levels(tmp_path):
     assert result is not None
     assert result["payload"]["entry"] is None
     assert result["targets"] == {"tp1": None, "tp2": None, "tp3": None}
+
+
+def test_repository_reads_current_signals_csv_via_bounded_csv_layer(tmp_path):
+    write_csv(tmp_path / "signals.csv", [{
+        "timestamp": "2026-08-03T00:00:00Z", "symbol": "BTC/USDT",
+        "direction": "LONG", "signal": "SETUP", "confidence": "90",
+        "quality": "A", "score": "27", "timeframe": "multi",
+        "entry": "100", "stop_loss": "98", "take_profit": "104",
+    }])
+    result = ReadOnlyRepository(tmp_path, max_source_rows=20).signal("BTCUSDT", "1h")
+    assert result is not None
+    assert result["payload"]["side"] == "LONG"
+    assert result["payload"]["score"] == 27.0
+    assert result["payload"]["entry"] == 100.0
+    assert result["payload"]["stop_loss"] == 98.0
+    assert result["targets"]["tp1"] == 104.0
+
+
+def test_repository_falls_back_to_current_decision_snapshot(tmp_path):
+    snapshot = {
+        "schema_version": 1,
+        "latest": {
+            "timestamp": "2026-08-03T00:00:00Z",
+            "symbol": "BTC/USDT",
+            "direction": "LONG",
+            "final_score": 27,
+            "confidence": "HIGH",
+            "quality": "A",
+            "primary_blocker": "NONE",
+            "reason": "Trend and structure agree",
+            "timeframe": "1h",
+            "trend": {"long": 55, "short": 5, "reason": "uptrend"},
+            "structure": {"long": 30, "short": 0, "reason": "breakout"},
+        },
+        "history": [],
+    }
+    (tmp_path / "decision_snapshot.json").write_text(json.dumps(snapshot), encoding="utf-8")
+
+    repository = ReadOnlyRepository(tmp_path, max_source_rows=20)
+    result = repository.signal("BTCUSDT", "1h")
+    intelligence = repository.signal_intelligence("BTCUSDT", "1h")
+
+    assert result is not None
+    assert result["payload"]["score"] == 27.0
+    assert result["payload"]["reasons"] == ("Trend and structure agree",)
+    assert result["payload"]["entry"] is None
+    assert result["targets"] == {"tp1": None, "tp2": None, "tp3": None}
+    assert intelligence is not None
+    assert intelligence.trend_score == 55.0
 
 
 def test_repository_reads_immutable_ohlcv_cache(tmp_path):

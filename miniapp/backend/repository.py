@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import re
+import threading
+import time
 from typing import Any, Mapping
 
 from research_lab_v2.dashboard import ResearchDashboardV2
@@ -18,6 +21,13 @@ from telegram_ui.data import (
 from trade_metrics_normalizer import aggregate_trade_metrics, is_closed_trade
 
 from .cache import MTimeCSVCache
+
+
+@dataclass(frozen=True)
+class _SnapshotCacheEntry:
+    signature: tuple[int, int] | None
+    expires_at: float
+    rows: tuple[dict[str, Any], ...]
 
 def _number(value: Any) -> float | None:
     try:
@@ -32,24 +42,87 @@ class ReadOnlyRepository:
                  similar_min_sample: int = 20) -> None:
         self.base_dir = Path(base_dir)
         self.query_timeout_seconds = max(0.1, float(query_timeout_seconds))
+        self.cache_ttl_seconds = max(0.1, float(cache_ttl_seconds))
         self.max_source_rows = max(100, int(max_source_rows))
         self.similar_min_sample = max(1, int(similar_min_sample))
         self._cache = MTimeCSVCache(
             ttl_seconds=cache_ttl_seconds, max_rows=self.max_source_rows,
             timeout_seconds=self.query_timeout_seconds,
         )
+        self._snapshot_cache: _SnapshotCacheEntry | None = None
+        self._snapshot_lock = threading.RLock()
+        self._max_snapshot_bytes = max(
+            1_048_576, min(33_554_432, self.max_source_rows * 4096),
+        )
 
     def read_csv(self, path: str | Path) -> list[dict[str, str]]:
         return self._cache.read(path)
 
-    def decision_rows(self) -> list[dict[str, str]]:
-        return self.read_csv(self.base_dir / "decision_debug.csv") or self.read_csv(self.base_dir / "signals_v3.csv")
+    @staticmethod
+    def _adapt_signal_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+        adapted: list[dict[str, Any]] = []
+        for source in rows:
+            row: dict[str, Any] = dict(source)
+            timeframe = str(row.get("timeframe") or "1h").lower()
+            if timeframe == "multi":
+                row["source_timeframe"] = timeframe
+                row["timeframe"] = "1h"
+            adapted.append(row)
+        return adapted
+
+    def _snapshot_rows(self) -> list[dict[str, Any]]:
+        path = self.base_dir / "decision_snapshot.json"
+        try:
+            stat = path.stat()
+            signature: tuple[int, int] | None = (stat.st_mtime_ns, stat.st_size)
+        except OSError:
+            signature = None
+        now = time.monotonic()
+        with self._snapshot_lock:
+            cached = self._snapshot_cache
+            if cached and cached.signature == signature and now < cached.expires_at:
+                return [dict(row) for row in cached.rows]
+
+        rows: list[dict[str, Any]] = []
+        deadline = now + self.query_timeout_seconds
+        if signature is not None and signature[1] <= self._max_snapshot_bytes:
+            try:
+                with path.open("r", encoding="utf-8") as handle:
+                    raw = handle.read(self._max_snapshot_bytes + 1)
+                if len(raw.encode("utf-8")) <= self._max_snapshot_bytes and time.monotonic() <= deadline:
+                    payload = json.loads(raw)
+                    if isinstance(payload, Mapping):
+                        from .intelligence import decision_snapshot_rows
+                        rows = decision_snapshot_rows(payload, max_rows=self.max_source_rows)
+            except (OSError, UnicodeError, ValueError, TypeError, json.JSONDecodeError):
+                rows = []
+        frozen = tuple(dict(row) for row in rows)
+        with self._snapshot_lock:
+            self._snapshot_cache = _SnapshotCacheEntry(
+                signature=signature,
+                expires_at=now + self.cache_ttl_seconds,
+                rows=frozen,
+            )
+        return [dict(row) for row in frozen]
+
+    def decision_rows(self) -> list[dict[str, Any]]:
+        current = self.read_csv(self.base_dir / "signals.csv")
+        if current:
+            return self._adapt_signal_rows(current)
+        snapshots = self._snapshot_rows()
+        if snapshots:
+            return snapshots
+        return (
+            self.read_csv(self.base_dir / "decision_debug.csv")
+            or self.read_csv(self.base_dir / "signals_v3.csv")
+        )
 
     def trade_rows(self) -> list[dict[str, str]]:
         return self.read_csv(self.base_dir / "trades.csv")
 
     def updated_at(self) -> str:
         paths = [
+            self.base_dir / "signals.csv", self.base_dir / "decision_snapshot.json",
             self.base_dir / "decision_debug.csv", self.base_dir / "signals_v3.csv",
             self.base_dir / "trades.csv", self.base_dir / "research.db",
         ]
