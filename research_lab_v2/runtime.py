@@ -530,10 +530,16 @@ class ResearchLabRuntime:
         started = time.perf_counter()
         settings = settings or get_settings()
         rows = [dict(row) for row in snapshots]
+        _write_log("info", {"event": "process_cycle_entered", "cycle_id": cycle_id,
+            "snapshot_count": len(rows), "enabled": settings.enabled,
+            "strategy_modes": dict(settings.strategy_modes)})
         if not settings.enabled:
+            _write_log("info", {"event": "process_cycle_disabled", "cycle_id": cycle_id})
             return self._status(settings, database_status="DISABLED")
         self.cycle_number += 1
         if self.cycle_number % settings.process_every_n_cycles:
+            _write_log("info", {"event": "process_cycle_skipped", "cycle_id": cycle_id,
+                "reason": "PROCESS_INTERVAL"})
             return self._status(settings, database_status="SKIPPED_INTERVAL",
                                 last_processed_cycle=cycle_id)
         errors = self.validate(settings, rows)
@@ -716,6 +722,8 @@ class ResearchLabRuntime:
                 "new_entry_triggers": new_entry_triggers,
                 "blocked": dict(blocked), "duration_ms": duration, "errors": [],
                 "dry_run_diagnostics": diagnostics}, self.log_path)
+            _write_log("info", {"event": "process_cycle_exited", "cycle_id": cycle_id,
+                "strategies_evaluated": len(active_strategies), "readiness_file": str(READINESS_FILE)}, self.log_path)
             return status
         except ResearchDatabaseBusy as exc:
             _write_log("error", {"event": "research_lab_cycle", "cycle_id": cycle_id,
@@ -726,7 +734,7 @@ class ResearchLabRuntime:
             status = self._status(settings, database_status="ERROR", last_error=str(exc),
                                   last_processed_cycle=cycle_id)
             _write_log("error", {"event": "research_lab_cycle_error", "cycle_id": cycle_id,
-                                  "error": str(exc)}, self.log_path)
+                                  "error": str(exc), "traceback": __import__("traceback").format_exc()}, self.log_path)
             return status
 
 

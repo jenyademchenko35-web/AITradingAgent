@@ -48,6 +48,8 @@ BOT_COMMANDS_V5 = [
     BotCommand("walkforward", "📈 Walk Forward"),
     BotCommand("researchlab", "🧬 Research Lab v2"),
     BotCommand("researchlab_trades", "🧬 Research Lab shadow trades"),
+    BotCommand("impulse", "⚡ Top impulse probability"),
+    BotCommand("impulse_learning", "🧠 Impulse learning status"),
     BotCommand("candidates", "🧪 Candidate Laboratory"),
     BotCommand("candidate", "🧪 Candidate detail"),
     BotCommand("shadowstatus", "👤 Shadow validation status"),

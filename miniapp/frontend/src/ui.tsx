@@ -7,6 +7,9 @@ export type SignalSort = "confidence" | "symbol" | "status" | "updated";
 const toneFor = (status: string) => {
   const value = status.toUpperCase();
   if (value.includes("BLOCK") || value === "INVALID") return "blocked";
+  if (value === "EXTREME" || value === "HIGH") return "live";
+  if (value === "MEDIUM") return "setup";
+  if (value === "LOW") return "watch";
   if (value === "SETUP") return "setup";
   if (value === "WATCH") return "watch";
   if (value === "LIVE" || value === "HIGH PRIORITY") return "live";

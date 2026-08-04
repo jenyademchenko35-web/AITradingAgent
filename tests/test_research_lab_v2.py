@@ -390,7 +390,8 @@ def test_research_error_does_not_escape_main_loop_observer(monkeypatch):
     messages = []
     monkeypatch.setattr(agent.LOGGER, "timestamped", messages.append)
     assert agent._run_research_lab_observer("cycle-1", []) is None
-    assert "research_lab_v2_error" in messages[0]
+    # Observer lifecycle telemetry may be emitted before the fail-open error.
+    assert any("research_lab_v2_error" in message for message in messages)
 
 
 def test_default_off_does_not_call_research_cycle(monkeypatch):

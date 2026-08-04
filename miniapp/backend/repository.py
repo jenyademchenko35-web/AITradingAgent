@@ -172,6 +172,22 @@ class ReadOnlyRepository:
         names = ("signal_episode_report.json", "blocker_statistics.json", "trade_quality_report.json", "symbol_statistics.json", "direction_bias.json", "feature_importance.json", "strategy_recommendations.json")
         return {name.removesuffix(".json"): self._runtime_json(name) for name in names}
 
+    def impulse_radar(self) -> list[dict[str, Any]]:
+        path = self.base_dir / "impulse_probability.json"
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return []
+        return [dict(row) for row in payload[:self.max_source_rows] if isinstance(row, Mapping)] if isinstance(payload, list) else []
+    def impulse_report(self, filename: str) -> Any:
+        path=self.base_dir/filename
+        try: return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError,ValueError,TypeError): return {} if filename.endswith(".json") else []
+
+    def impulse_learning(self) -> dict[str, Any]:
+        payload = self.impulse_report("impulse_learning_report.json")
+        return payload if isinstance(payload, dict) else {}
+
     def updated_at(self) -> str:
         paths = [
             self.base_dir / "signals.csv", self.base_dir / "decision_snapshot.json",

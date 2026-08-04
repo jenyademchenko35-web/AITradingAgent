@@ -55,6 +55,12 @@ export interface MiniAppApiClient {
   activity(): Promise<ActivityEvent[]>;
   shadow(): Promise<ShadowRuntime>;
   diagnostics?(): Promise<Record<string, unknown>>;
+  impulseRadar?(): Promise<Record<string, unknown>[]>;
+  impulseChanges?(): Promise<Record<string, unknown>>;
+  impulseAccuracy?(): Promise<Record<string, unknown>>;
+  impulseLearning?(): Promise<Record<string, unknown>>;
+  impulseCalibration?(): Promise<Record<string, unknown>>;
+  impulseLearningRecommendations?(): Promise<Record<string, unknown>>;
   researchLive(): Promise<ResearchLiveReport>;
   intelligence(symbol: string, timeframe: string): Promise<SignalIntelligencePayload>;
   signalHistory(symbol: string, timeframe: string, page?: number): Promise<HistoryResponse>;
@@ -97,6 +103,12 @@ export class MiniAppApi implements MiniAppApiClient {
   activity = () => this.get<ActivityEvent[]>("/api/activity");
   shadow = () => this.get<ShadowRuntime>("/api/shadow");
   diagnostics = () => this.get<Record<string, unknown>>("/api/diagnostics");
+  impulseRadar = () => this.get<Record<string, unknown>[]>("/api/impulse-radar");
+  impulseChanges = () => this.get<Record<string, unknown>>("/api/impulse-changes");
+  impulseAccuracy = () => this.get<Record<string, unknown>>("/api/impulse-accuracy");
+  impulseLearning = () => this.get<Record<string, unknown>>("/api/impulse-learning");
+  impulseCalibration = () => this.get<Record<string, unknown>>("/api/impulse-calibration");
+  impulseLearningRecommendations = () => this.get<Record<string, unknown>>("/api/impulse-learning-recommendations");
   researchLive = () => this.get<ResearchLiveReport>("/api/research/live");
   intelligence = (symbol: string, timeframe: string) => this.get<SignalIntelligencePayload>(
     `/api/signal/${encodeURIComponent(symbol.replace("/", ""))}/${timeframe}/intelligence`,

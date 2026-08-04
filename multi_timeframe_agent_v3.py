@@ -2,6 +2,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 import argparse
+import traceback
 import os
 import json
 from config import (
@@ -1506,23 +1507,36 @@ def update_open_trades(current_prices):
 def _research_lab_is_enabled():
     try:
         from research_lab_v2.config import get_settings
-        return bool(get_settings().enabled)
-    except Exception:
+        settings = get_settings()
+        return bool(settings.enabled)
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({
+            "event": "research_lab_observer_config_error", "error": str(exc),
+            "traceback": traceback.format_exc(), "fail_open": True,
+        }, sort_keys=True))
         return False
 
 
 def _run_research_lab_observer(cycle_id, snapshots):
     """Run the isolated observer after the normal cycle; always fail open."""
+    LOGGER.timestamped(json.dumps({"event": "research_lab_observer_enter", "cycle_id": cycle_id,
+        "snapshot_count": len(snapshots)}, sort_keys=True))
     try:
         if not _research_lab_is_enabled():
+            LOGGER.timestamped(json.dumps({"event": "research_lab_observer_disabled", "cycle_id": cycle_id}, sort_keys=True))
             return None
         from research_lab_v2.runtime import process_agent_cycle
-        return process_agent_cycle(cycle_id=cycle_id, snapshots=snapshots)
+        LOGGER.timestamped(json.dumps({"event": "research_lab_runtime_imported", "cycle_id": cycle_id}, sort_keys=True))
+        result = process_agent_cycle(cycle_id=cycle_id, snapshots=snapshots)
+        LOGGER.timestamped(json.dumps({"event": "research_lab_observer_exit", "cycle_id": cycle_id,
+            "database_status": (result or {}).get("database_status")}, sort_keys=True))
+        return result
     except Exception as exc:
         LOGGER.timestamped(json.dumps({
             "event": "research_lab_v2_error",
             "cycle_id": cycle_id,
             "error": str(exc),
+            "traceback": traceback.format_exc(),
             "fail_open": True,
         }, sort_keys=True))
         return None
@@ -1596,6 +1610,27 @@ def run_once():
         else:
             counts[dec.signal] = 1
     LOGGER.signal_counts(counts)
+
+    # IPE is a post-analysis observer: it consumes existing values only and
+    # cannot change a decision, risk setting, order or shadow strategy.
+    try:
+        from impulse_probability_engine import publish
+        contexts = [{"symbol": symbol, "timestamp": cycle_id, "score": decision.score,
+            "confidence": decision.confidence, "edge": abs(decision.long_total-decision.short_total),
+            "trend_score": max(getattr(decision, "trend_long_score", 0), getattr(decision, "trend_short_score", 0)),
+            "momentum_score": 0, "adx": 0, "volume_ratio": 0,
+            "market_regime": "UNKNOWN", "failed_filters": getattr(decision, "failed_filters", [])}
+            for symbol, decision in decisions]
+        publish(contexts)
+        from impulse_accuracy import build as build_impulse_accuracy
+        from impulse_probability_engine import HISTORY, BASE_DIR
+        build_impulse_accuracy(HISTORY, BASE_DIR / "impulse_accuracy.json")
+        # Learning is a fail-open observer over already published IPE files.
+        # It has no reference to a decision, order, risk or portfolio object.
+        from impulse_learning_engine import run_once as run_impulse_learning
+        run_impulse_learning(BASE_DIR)
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({"event":"impulse_probability_error","error":str(exc),"fail_open":True}))
 
     update_open_trades(current_prices)
     _run_research_lab_observer(cycle_id, research_snapshots)

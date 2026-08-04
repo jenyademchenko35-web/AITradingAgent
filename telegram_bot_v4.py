@@ -3799,6 +3799,32 @@ async def researchlab_trades_command(update: Update, context: ContextTypes.DEFAU
     """Show only the isolated Research Lab ledger; never legacy or live trades."""
     await reply(update, format_research_lab_v2("researchlab_trades"))
 
+async def impulse_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        from impulse_probability_engine import OUTPUT
+        rows = json.loads(OUTPUT.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        rows = []
+    lines = ["⚡ TOP IMPULSE"] + [f"{row.get('symbol', '—')} — {row.get('impulse_probability', '—')}%" for row in rows[:5]]
+    await reply(update, "\n".join(lines + ([] if rows else ["No published impulse data."])))
+
+
+async def impulse_learning_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show published observer learning evidence; never trigger learning or trading."""
+    try:
+        from impulse_learning_engine import REPORT, RECOMMENDATIONS
+        report = json.loads(REPORT.read_text(encoding="utf-8"))
+        recommendations = json.loads(RECOMMENDATIONS.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        report, recommendations = {}, {}
+    symbols = report.get("symbol_learning") if isinstance(report, dict) else {}
+    ranked = sorted((symbols or {}).items(), key=lambda item: (item[1].get("success_rate") is not None, item[1].get("success_rate") or -1), reverse=True)
+    best = ranked[0][0] if ranked else "—"; worst = ranked[-1][0] if ranked else "—"
+    calibration = report.get("calibration", {}) if isinstance(report, dict) else {}
+    lines = ["🧠 IMPULSE LEARNING", f"Status: {report.get('status', 'INSUFFICIENT_DATA')}", f"Training samples: {report.get('training_samples', '—')}", f"Overall accuracy: {report.get('successful_predictions', '—')} / {report.get('training_samples', '—')}", f"Best symbol: {best}", f"Worst symbol: {worst}", f"Calibration buckets: {len(calibration) if isinstance(calibration, dict) else '—'}"]
+    if isinstance(recommendations, dict) and recommendations.get("status") == "INSUFFICIENT_DATA": lines.append("Learning status: INSUFFICIENT_DATA")
+    await reply(update, "\n".join(lines))
+
 
 def is_researchlab_owner(update: Update) -> bool:
     """Compatibility name backed by the canonical Telegram user-id policy."""
@@ -4194,6 +4220,8 @@ def build_app():
     app.add_handler(CommandHandler("top", top_command))
     app.add_handler(CommandHandler("researchlab", researchlab_command))
     app.add_handler(CommandHandler("researchlab_trades", researchlab_trades_command))
+    app.add_handler(CommandHandler("impulse", impulse_command))
+    app.add_handler(CommandHandler("impulse_learning", impulse_learning_command))
     app.add_handler(CommandHandler("researchlab_on", researchlab_on_command))
     app.add_handler(CommandHandler("researchlab_off", researchlab_off_command))
     app.add_handler(CommandHandler("researchlab_dry_on", researchlab_dry_on_command))

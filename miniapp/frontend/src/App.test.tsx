@@ -23,6 +23,9 @@ function api(overrides: Partial<MiniAppApiClient> = {}): MiniAppApiClient {
     system: vi.fn().mockResolvedValue({ server: "ONLINE", agent: "ONLINE", telegram: "ONLINE", research: "ONLINE", news: null, cycle: 6821, interval_seconds: 300, next_cycle_seconds: 143, last_cycle_timestamp: "2026-08-03T10:00:00Z", uptime_seconds: 48293, read_only: true }),
     activity: vi.fn().mockResolvedValue([{ timestamp: "2026-08-03T10:00:00Z", type: "signal_snapshot", symbol: "BTC/USDT", timeframe: "1h", status: "SETUP" }]),
     shadow: vi.fn().mockResolvedValue({ active: [], closed: [], strategies: { TREND_CONFIRM: "SHADOW_ENABLED" }, symbols: null, updated: "2026-08-03T10:00:00Z" }),
+    impulseRadar: vi.fn().mockResolvedValue([{ symbol: "SOL/USDT", impulse_probability: 92, class: "EXTREME", side: "LONG" }, { symbol: "BTC/USDT", impulse_probability: 84, class: "HIGH", side: "LONG" }]),
+    impulseChanges: vi.fn().mockResolvedValue({ items: [{ symbol: "BTC/USDT", direction: "UP", delta: 18 }] }),
+    impulseAccuracy: vi.fn().mockResolvedValue({ status: "INSUFFICIENT_DATA", evaluated_predictions: 0, pending_predictions: 2, precision: null }),
     researchLive: vi.fn().mockResolvedValue({ runtime_status: null, best_candidate: null, promotion_probability: null, ranking: [], recommendation: null, top_features: [], worst_features: [] }),
     intelligence: vi.fn(), signalHistory: vi.fn(), signalChanges: vi.fn(), signalRequirements: vi.fn(), similarSetups: vi.fn(),
     ...overrides,
@@ -108,6 +111,53 @@ test("shadow monitoring uses the separate runtime ledger and handles an unavaila
   expect(screen.getByText("TREND_CONFIRM")).toBeInTheDocument();
   expect(screen.getByText("No Research Lab shadow trades")).toBeInTheDocument();
   expect(client.shadow).toHaveBeenCalledTimes(1);
+});
+
+test("Impulse Radar renders only published probability, change and accuracy fields", async () => {
+  render(<App api={api()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Impulse Radar" }));
+  expect(await screen.findByText("Top 5")).toBeInTheDocument();
+  expect(screen.getAllByText("SOL/USDT")).toHaveLength(2);
+  expect(screen.getAllByText("92%")).toHaveLength(2);
+  expect(screen.getAllByText("EXTREME")).toHaveLength(2);
+  expect(screen.getByText("Biggest Changes")).toBeInTheDocument();
+  expect(screen.getByText("BTC/USDT · UP")).toBeInTheDocument();
+  expect(screen.getByText("Accuracy")).toBeInTheDocument();
+  expect(screen.getByText("INSUFFICIENT_DATA")).toBeInTheDocument();
+});
+
+test("Impulse Radar uses honest empty states when published endpoints have no rows", async () => {
+  render(<App api={api({ impulseRadar: vi.fn().mockResolvedValue([]) })} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Impulse Radar" }));
+  expect(await screen.findByText("Impulse data unavailable")).toBeInTheDocument();
+});
+
+test("Impulse Learning renders published learning sections and an honest empty recommendation state", async () => {
+  const client = api({
+    impulseLearning: vi.fn().mockResolvedValue({ status: "INSUFFICIENT_DATA", training_samples: 0, successful_predictions: 0, failed_predictions: 0, pending_samples: 3, feature_learning: {}, symbol_learning: {}, regime_learning: {}, learning_drift: { status: "INSUFFICIENT_DATA" } }),
+    impulseCalibration: vi.fn().mockResolvedValue({ "80-100": { predictions: 0, confirmed: 0, confirmation_rate: null } }),
+    impulseLearningRecommendations: vi.fn().mockResolvedValue({ status: "INSUFFICIENT_DATA", recommendations: [] }),
+  });
+  render(<App api={client} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Impulse Learning" }));
+  expect(await screen.findByText("Training Samples")).toBeInTheDocument();
+  expect(screen.getByText("Calibration")).toBeInTheDocument();
+  expect(screen.getByText("Learning Drift")).toBeInTheDocument();
+  expect(screen.getByText("No evidence-based recommendations")).toBeInTheDocument();
+});
+
+test("Impulse Radar refreshes published data on its 30 second cadence", async () => {
+  vi.useFakeTimers();
+  try {
+    const client = api();
+    render(<App api={client} />);
+    await act(async () => { await Promise.resolve(); });
+    expect(client.impulseRadar).toHaveBeenCalledTimes(1);
+    await act(async () => { vi.advanceTimersByTime(30_000); await Promise.resolve(); });
+    expect(client.impulseRadar).toHaveBeenCalledTimes(2);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("runtime endpoint failures preserve the dashboard and show published-data empty states", async () => {

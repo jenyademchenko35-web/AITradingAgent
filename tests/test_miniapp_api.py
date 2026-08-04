@@ -30,6 +30,8 @@ class Repository:
     def system(self): return {"server": "ONLINE", "agent": None, "telegram": None, "research": "ON", "news": None, "cycle": None, "interval_seconds": None, "next_cycle_seconds": None, "last_cycle_timestamp": None, "uptime_seconds": None, "read_only": True}
     def activity(self): return []
     def shadow(self): return {"active": [], "closed": [], "strategies": [], "symbols": None, "updated": None}
+    def impulse_learning(self): return {"status": "INSUFFICIENT_DATA", "calibration": {}}
+    def impulse_report(self, filename): return {"status": "INSUFFICIENT_DATA", "filename": filename}
     def research_live(self): return {"runtime_status": None, "best_candidate": None, "promotion_probability": None, "ranking": [], "recommendation": None, "top_features": [], "worst_features": []}
     def health_checks(self): return {"repository": True, "signals": True, "watchlist": True, "research": False, "snapshot": False}
 
@@ -55,6 +57,7 @@ def test_all_required_get_endpoints_are_read_only_and_authenticated():
         "/api/signal/BTCUSDT/1h", "/api/trades/open", "/api/trades/history",
         "/api/stats", "/api/system", "/api/activity", "/api/shadow", "/api/research",
         "/api/research/live", "/api/research/rank", "/api/research/trades",
+        "/api/impulse-learning", "/api/impulse-calibration", "/api/impulse-learning-recommendations",
     ]
     assert all(api.get(path, headers=headers()).status_code == 200 for path in paths)
     for method in (api.post, api.put, api.patch, api.delete):

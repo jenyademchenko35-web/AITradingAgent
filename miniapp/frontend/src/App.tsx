@@ -20,12 +20,12 @@ import { formatResearchCandidate, formatResearchStatus, researchText } from "./r
 import { EmptyState, FilterBar, MetricCard, SearchBar, SignalCard, SkeletonCard, StatusBadge, type SignalFilter, type SignalSort } from "./ui";
 import "./styles.css";
 
-type Tab = "home" | "signals" | "market" | "portfolio" | "research" | "shadow" | "diagnostics" | "stats" | "settings";
-const labels: Record<Tab, string> = { home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio", research: "Research", shadow: "Shadow", diagnostics: "Diagnostics", stats: "Statistics", settings: "Settings" };
+type Tab = "home" | "signals" | "market" | "portfolio" | "research" | "shadow" | "impulse" | "impulse-learning" | "diagnostics" | "stats" | "settings";
+const labels: Record<Tab, string> = { home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio", research: "Research", shadow: "Shadow", impulse: "Impulse Radar", "impulse-learning": "Impulse Learning", diagnostics: "Diagnostics", stats: "Statistics", settings: "Settings" };
 const navigation: Array<{ tab: Exclude<Tab, "home">; icon: string; detail: string }> = [
   { tab: "signals", icon: "⌁", detail: "Published watchlist" }, { tab: "market", icon: "◈", detail: "Saved market snapshots" },
   { tab: "portfolio", icon: "▣", detail: "Open positions" }, { tab: "research", icon: "⌕", detail: "Research Lab report" },
-  { tab: "shadow", icon: "◌", detail: "Research Lab shadow book" }, { tab: "diagnostics", icon: "◫", detail: "Read-only strategy diagnostics" }, { tab: "stats", icon: "▤", detail: "Closed-trade metrics" }, { tab: "settings", icon: "⚙", detail: "Read-only application" },
+  { tab: "shadow", icon: "◌", detail: "Research Lab shadow book" }, { tab: "impulse", icon: "⚡", detail: "Published impulse probability" }, { tab: "impulse-learning", icon: "🧠", detail: "Observer learning evidence" }, { tab: "diagnostics", icon: "◫", detail: "Read-only strategy diagnostics" }, { tab: "stats", icon: "▤", detail: "Closed-trade metrics" }, { tab: "settings", icon: "⚙", detail: "Read-only application" },
 ];
 const appTitle = import.meta.env.VITE_MINIAPP_TITLE || "TradeWatcher";
 const display = (value: unknown) => value === null || value === undefined || value === "" ? "—" : String(value);
@@ -102,6 +102,32 @@ function Diagnostics({ report }: { report: Record<string, unknown> | null }) {
   return <section className="panel"><div className="section-heading"><div><h2>Diagnostics</h2><p>Published read-only strategy analysis.</p></div><StatusBadge status="READ ONLY" /></div>{metadata?.metadata && <div className="dashboard-grid"><MetricCard label="Data Quality" value={display(metadata.metadata.status)} /><MetricCard label="Telemetry" value={display((metadata.metadata.source_row_counts as Record<string, unknown> | undefined)?.telemetry)} detail="Published rows" /><MetricCard label="Metric Basis" value="R / Money / Unavailable" /><MetricCard label="Invalid Rows" value={display((metadata.metadata.data_quality as Record<string, unknown> | undefined)?.invalid_time_order)} /></div>}{section("Signal Episodes", "signal_episode_report")}{section("Blockers", "blocker_statistics")}{section("Symbols", "symbol_statistics")}{section("Feature Importance", "feature_importance")}{section("Trade Quality", "trade_quality_report")}{section("Recommendations", "strategy_recommendations")}</section>;
 }
 
+function ImpulseRadar({ rows, changes, accuracy, loading }: { rows: Record<string, unknown>[] | null; changes: Record<string, unknown> | null; accuracy: Record<string, unknown> | null; loading: boolean }) {
+  if (loading) return <section className="panel"><h2>Impulse Radar</h2><SkeletonCard lines={5} /></section>;
+  if (!rows?.length) return <section className="panel"><h2>Impulse Radar</h2><EmptyState title="Impulse data unavailable" detail="The observer has not published impulse probabilities yet." /></section>;
+  const badge = (value: unknown) => <StatusBadge status={display(value)} />;
+  const changeRows = Array.isArray(changes?.items) ? changes.items as Record<string, unknown>[] : [];
+  return <section className="panel impulse-radar">
+    <div className="section-heading"><div><h2>⚡ Impulse Radar</h2><p>Read-only probability published by the observer.</p></div><StatusBadge status="READ ONLY" /></div>
+    <h3>Top 5</h3>
+    <div className="quick-signal-list">{rows.slice(0, 5).map((row) => <div className="quick-signal" key={display(row.symbol)}><b>{display(row.symbol)}</b>{badge(row.class)}<strong>{display(row.impulse_probability)}%</strong><small>{display(row.side)}</small></div>)}</div>
+    <h3>Heatmap</h3>
+    <div className="dashboard-grid">{rows.map((row) => <div className="health-card" key={`heat-${display(row.symbol)}`}><b>{display(row.symbol)}</b><strong>{display(row.impulse_probability)}%</strong>{badge(row.class)}</div>)}</div>
+    <h3>Biggest Changes</h3>
+    {changeRows.length ? <div className="activity-feed">{changeRows.map((row, index) => <div className="activity-row" key={index}><span>{display(row.symbol)} · {display(row.direction)}</span><b>{display(row.delta)}</b></div>)}</div> : <EmptyState title="No material changes" detail="No published probability change exceeded the configured threshold." />}
+    <h3>Accuracy</h3>
+    {accuracy ? <div className="dashboard-grid"><MetricCard label="Status" value={display(accuracy.status)} /><MetricCard label="Evaluated" value={display(accuracy.evaluated_predictions)} /><MetricCard label="Pending" value={display(accuracy.pending_predictions)} /><MetricCard label="Precision" value={display(accuracy.precision)} /></div> : <EmptyState title="Accuracy pending" detail="Accuracy requires future price snapshots and is not inferred by Mini App." />}
+  </section>;
+}
+
+function ImpulseLearning({ report, calibration, recommendations, loading }: { report: Record<string, unknown> | null; calibration: Record<string, unknown> | null; recommendations: Record<string, unknown> | null; loading: boolean }) {
+  if (loading) return <section className="panel"><h2>Impulse Learning</h2><SkeletonCard lines={6} /></section>;
+  if (!report || !Object.keys(report).length) return <section className="panel"><h2>Impulse Learning</h2><EmptyState title="Learning data unavailable" detail="The observer has not published a learning report yet." /></section>;
+  const section = (title: string, value: unknown) => value && typeof value === "object" && Object.keys(value as object).length ? <><h3>{title}</h3><pre>{JSON.stringify(value, null, 2)}</pre></> : null;
+  const recs = Array.isArray(recommendations?.recommendations) ? recommendations.recommendations as Record<string, unknown>[] : [];
+  return <section className="panel"><div className="section-heading"><div><h2>🧠 Impulse Learning</h2><p>Observer-only evidence from published outcomes.</p></div><StatusBadge status={display(report.status)} /></div><div className="dashboard-grid"><MetricCard label="Training Samples" value={display(report.training_samples)} /><MetricCard label="Successful" value={display(report.successful_predictions)} /><MetricCard label="Failed" value={display(report.failed_predictions)} /><MetricCard label="Pending" value={display(report.pending_samples)} /></div>{section("Calibration", calibration)}{section("Feature Learning", report.feature_learning)}{section("Symbol Learning", report.symbol_learning)}{section("Regime Learning", report.regime_learning)}{section("Learning Drift", report.learning_drift)}<h3>Recommendations</h3>{recs.length ? <div className="activity-feed">{recs.map((item, index) => <div className="activity-row" key={index}><span>{display(item.type)}</span><b>{display(item.evidence)}</b></div>)}</div> : <EmptyState title="No evidence-based recommendations" detail="The observer did not publish a supported recommendation." />}</section>;
+}
+
 export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiClient; telegramInitData?: string }) {
   const [tab, setTab] = useState<Tab>("home");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
@@ -113,6 +139,14 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
   const [shadow, setShadow] = useState<ShadowRuntime | null>(null);
   const [research, setResearch] = useState<ResearchLiveReport | null>(null);
   const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
+  const [impulseRows, setImpulseRows] = useState<Record<string, unknown>[] | null>(null);
+  const [impulseChanges, setImpulseChanges] = useState<Record<string, unknown> | null>(null);
+  const [impulseAccuracy, setImpulseAccuracy] = useState<Record<string, unknown> | null>(null);
+  const [impulseLoading, setImpulseLoading] = useState(false);
+  const [impulseLearning, setImpulseLearning] = useState<Record<string, unknown> | null>(null);
+  const [impulseCalibration, setImpulseCalibration] = useState<Record<string, unknown> | null>(null);
+  const [impulseRecommendations, setImpulseRecommendations] = useState<Record<string, unknown> | null>(null);
+  const [impulseLearningLoading, setImpulseLearningLoading] = useState(false);
   const [queryInput, setQueryInput] = useState(""); const [query, setQuery] = useState(""); const [filter, setFilter] = useState<SignalFilter>("ALL"); const [sort, setSort] = useState<SignalSort>("confidence");
   const [signal, setSignal] = useState<SignalResponse | null>(null);
   const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => routeFromLocation(window.location));
@@ -139,8 +173,40 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
       ? legacyApi.diagnostics().then(setDiagnostics).catch(() => setDiagnostics(null))
       : Promise.resolve(setDiagnostics(null));
   }, [api]);
+  const refreshImpulse = useCallback(() => {
+    const legacyApi = api as Partial<MiniAppApiClient>;
+    if (typeof legacyApi.impulseRadar !== "function") return Promise.resolve();
+    setImpulseLoading(true);
+    return Promise.all([
+      legacyApi.impulseRadar(),
+      legacyApi.impulseChanges?.() ?? Promise.resolve(null),
+      legacyApi.impulseAccuracy?.() ?? Promise.resolve(null),
+    ])
+      .then(([rows, changes, accuracy]) => {
+        setImpulseRows(rows);
+        setImpulseChanges(changes);
+        setImpulseAccuracy(accuracy);
+      })
+      .catch(() => {
+        setImpulseRows(null);
+        setImpulseChanges(null);
+        setImpulseAccuracy(null);
+      })
+      .finally(() => setImpulseLoading(false));
+  }, [api]);
+  const refreshImpulseLearning = useCallback(() => {
+    const legacyApi = api as Partial<MiniAppApiClient>;
+    if (typeof legacyApi.impulseLearning !== "function") return Promise.resolve();
+    setImpulseLearningLoading(true);
+    return Promise.all([legacyApi.impulseLearning(), legacyApi.impulseCalibration?.() ?? Promise.resolve(null), legacyApi.impulseLearningRecommendations?.() ?? Promise.resolve(null)])
+      .then(([report, calibration, recommendations]) => { setImpulseLearning(report); setImpulseCalibration(calibration); setImpulseRecommendations(recommendations); })
+      .catch(() => { setImpulseLearning(null); setImpulseCalibration(null); setImpulseRecommendations(null); })
+      .finally(() => setImpulseLearningLoading(false));
+  }, [api]);
   useEffect(() => subscribeTelegramAppearance(), []);
-  useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); void refreshDiagnostics(); }, [refreshCore, refreshRuntime, refreshResearch, refreshDiagnostics]);
+  useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); void refreshDiagnostics(); void refreshImpulse(); void refreshImpulseLearning(); }, [refreshCore, refreshRuntime, refreshResearch, refreshDiagnostics, refreshImpulse, refreshImpulseLearning]);
+  useEffect(() => { const timer=window.setInterval(() => { void refreshImpulse(); }, 30_000); return () => window.clearInterval(timer); }, [refreshImpulse]);
+  useEffect(() => { const timer=window.setInterval(() => { void refreshImpulseLearning(); }, 60_000); return () => window.clearInterval(timer); }, [refreshImpulseLearning]);
   useEffect(() => {
     const timer = window.setInterval(() => { void refreshCore(); void refreshRuntime(); }, 30_000);
     return () => window.clearInterval(timer);
@@ -165,7 +231,7 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     setTab("home");
   }, [signal, signalRoute]);
   useEffect(() => {
-    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "diagnostics" || tab === "stats";
+    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "impulse" || tab === "impulse-learning" || tab === "diagnostics" || tab === "stats";
     configureTelegramBackButton(visible, visible ? backFromTelegram : null);
     return () => configureTelegramBackButton(false, null);
   }, [backFromTelegram, signal, signalRoute, tab]);
@@ -186,6 +252,8 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     {tab === "stats" && <section className="panel"><h2>Statistics</h2><div className="dashboard-grid"><MetricCard label="Winrate" value={stats.winrate === undefined ? null : `${stats.winrate}%`} /><MetricCard label="PF" value={stats.profit_factor} /><MetricCard label="Net R" value={stats.net_r} /><MetricCard label="Drawdown" value={stats.max_drawdown} /><MetricCard label="Closed trades" value={stats.closed_trades} /><MetricCard label="Average R" value={stats.average_r} /><MetricCard label="Average Hold Time" value={stats.average_hold_time} /><MetricCard label="Updated" value={dashboard?.updated_at ? formatTime(dashboard.updated_at) : null} /></div></section>}
     {tab === "research" && <section className="panel"><h2>Research</h2>{research ? <ResearchSummary report={research} /> : <EmptyState title="Research data unavailable" detail="Runtime API did not publish a live Research Lab report." />}</section>}
     {tab === "shadow" && <ShadowMonitoring shadow={shadow} />}
+    {tab === "impulse" && <ImpulseRadar rows={impulseRows} changes={impulseChanges} accuracy={impulseAccuracy} loading={impulseLoading} />}
+    {tab === "impulse-learning" && <ImpulseLearning report={impulseLearning} calibration={impulseCalibration} recommendations={impulseRecommendations} loading={impulseLearningLoading} />}
     {tab === "diagnostics" && <Diagnostics report={diagnostics} />}
     {tab === "settings" && <section className="panel"><h2>Settings</h2><EmptyState title="Read-only Mini App" detail="Trading controls, configuration and execution intentionally unavailable." /></section>}
     {tab !== "home" && <button className="home-button" onClick={() => { telegramHaptic("selection"); setTab("home"); }}>⌂ Главная</button>}

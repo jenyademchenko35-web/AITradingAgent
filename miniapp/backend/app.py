@@ -153,6 +153,25 @@ def create_app(
     async def diagnostics(_: TelegramUser = Depends(authenticate)) -> dict:
         return data.diagnostics()
 
+    @api.get("/api/impulse-radar")
+    async def impulse_radar(_: TelegramUser = Depends(authenticate)) -> list[dict]:
+        return data.impulse_radar()
+    @api.get("/api/impulse-changes")
+    async def impulse_changes(_: TelegramUser = Depends(authenticate)) -> dict: return data.impulse_report("impulse_changes.json")
+    @api.get("/api/impulse-accuracy")
+    async def impulse_accuracy(_: TelegramUser = Depends(authenticate)) -> dict: return data.impulse_report("impulse_accuracy.json")
+
+    @api.get("/api/impulse-learning")
+    async def impulse_learning(_: TelegramUser = Depends(authenticate)) -> dict: return data.impulse_learning()
+
+    @api.get("/api/impulse-calibration")
+    async def impulse_calibration(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.impulse_learning().get("calibration", {})
+
+    @api.get("/api/impulse-learning-recommendations")
+    async def impulse_learning_recommendations(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.impulse_report("impulse_learning_recommendations.json")
+
     @api.get("/api/watchlist", response_model=tuple[WatchlistItem, ...])
     async def watchlist(_: TelegramUser = Depends(authenticate)) -> tuple[dict, ...]:
         return tuple(data.watchlist())
