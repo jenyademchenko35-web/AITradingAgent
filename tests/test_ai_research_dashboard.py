@@ -96,7 +96,7 @@ class AIResearchDashboardTest(unittest.TestCase):
             }
         })
         report = AIResearchDashboard(self.root).build_report()
-        self.assertEqual(report["candidate"]["name"], "Momentum Relaxed")
+        self.assertEqual(report["candidate"]["name"], "Live Baseline")
 
     def test_legacy_candidate_list_and_fields(self):
         self.write_json("candidate_laboratory.json", {

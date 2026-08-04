@@ -70,6 +70,10 @@ def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LI
 
 
 def promotion_decision(candidate: Mapping[str, Any], baseline: Mapping[str, Any]) -> dict[str, Any]:
+    from .candidate_policy import rejected_decision
+    rejected = rejected_decision(str(candidate.get("strategy_id", "")))
+    if rejected:
+        return {**rejected, "eligible": False, "reasons": [rejected["reason"]], "promotion_probability": 0.0, "automatic_live_promotion": False}
     checks = {
         "PF > LIVE": _finite(candidate.get("profit_factor"), 1e6) > _finite(baseline.get("profit_factor"), 1e6),
         "NetR > LIVE": _finite(candidate.get("net_r")) > _finite(baseline.get("net_r")),

@@ -30,6 +30,7 @@ from .service import ResearchLab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATUS_FILE = BASE_DIR / "research_lab_v2_status.json"
+READINESS_FILE = BASE_DIR / "candidate_readiness.json"
 SHADOW_BOOK_FILE = BASE_DIR / "research_lab_v2_shadow_open.json"
 SHADOW_HISTORY_FILE = BASE_DIR / "research_lab_shadow_history.csv"
 LOG_FILE = BASE_DIR / "logs" / "research_lab_v2.log"
@@ -690,6 +691,13 @@ class ResearchLabRuntime:
                 closed = []
             duration = round((time.perf_counter() - started) * 1000, 2)
             diagnostics = lab.database.dry_run_diagnostics()
+            # Readiness is observational. It cannot change a strategy mode or
+            # open a shadow trade; SHADOW_ENABLED remains an explicit setting.
+            try:
+                from .candidate_readiness import write_readiness
+                write_readiness(READINESS_FILE, decisions)
+            except OSError:
+                pass
             status = self._status(
                 settings, runs_this_cycle=len(decisions), would_open=would_open,
                 opened_shadow=opened, blocked=dict(blocked), database_status="OK",

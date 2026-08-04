@@ -71,6 +71,18 @@ class ResearchDashboardV2:
         """)
         for index, row in enumerate(top, 1):
             row["rank"] = index
+        from .candidate_policy import rejected_decision
+        for row in top:
+            rejected = rejected_decision(row["strategy_id"])
+            if rejected:
+                row.update(rejected)
+        if top and not any(row["strategy_id"] == "MOMENTUM_RELAXED" for row in top):
+            rejected = rejected_decision("MOMENTUM_RELAXED")
+            if rejected:
+                top.append({"strategy_id": "MOMENTUM_RELAXED", "name": "Momentum Relaxed",
+                            "rank": None, "walk_forward": "REJECTED", "confidence": "HIGH",
+                            "winrate": None, "max_drawdown": None, "closed_trades": None,
+                            **rejected})
         features = _rows(self.path, """
             WITH latest AS (SELECT strategy_id, MAX(calculated_at) stamp FROM feature_statistics GROUP BY strategy_id)
             SELECT f.* FROM feature_statistics f JOIN latest l
@@ -79,7 +91,7 @@ class ResearchDashboardV2:
         """)
         positive = [row for row in features if row["importance"] > 0][:5]
         negative = [row for row in features if row["importance"] < 0][:5]
-        best = top[0] if top else {}
+        best = next((row for row in top if row.get("status") != "REJECTED"), {})
         strategies = _rows(self.path, "SELECT id, name, version, enabled, risk_profile, shadow_only FROM strategies ORDER BY id")
         run_count = _rows(self.path, "SELECT COUNT(*) count FROM strategy_runs")
         return {
@@ -107,7 +119,7 @@ class ResearchDashboardV2:
             for row in report["top_strategies"][:10]:
                 lines.append(
                     f"{row['rank']}. {row['strategy_id']} | PF {row['profit_factor']} | "
-                    f"WR {row['winrate']:.1f}% | NetR {row['net_r']:.2f} | "
+                    f"WR {row['winrate'] if row.get('winrate') is not None else 'N/A'} | NetR {row.get('net_r', 'N/A')} | "
                     f"WF {row['walk_forward']} | {row['confidence']} | {row['status']}"
                 )
             return "\n".join(lines + (["No ranked strategies."] if len(lines) == 1 else []))

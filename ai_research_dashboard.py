@@ -102,7 +102,7 @@ def _candidate_leader(payload: Mapping[str, Any]) -> dict[str, Any]:
     rows = _candidate_rows(payload)
     if not rows:
         return {}
-    non_live = [row for row in rows if row[0].upper() != "LIVE_BASELINE"]
+    non_live = [row for row in rows if row[0].upper() not in {"LIVE_BASELINE", "MOMENTUM_RELAXED"} and str(row[1].get("status", "")).upper() != "REJECTED"]
     if non_live:
         rows = non_live
     eligible = []
