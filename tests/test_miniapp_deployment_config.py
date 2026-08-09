@@ -164,13 +164,11 @@ def test_production_templates_are_https_only_and_use_safe_placeholders():
     assert "TELEGRAM_BOT_TOKEN=\n" in backend
 
 
-def test_nixpacks_declares_node_and_python_for_the_nested_frontend_build():
-    config = (ROOT / "nixpacks.toml").read_text(encoding="utf-8")
-    assert 'nodejs_20' in config
-    assert 'python312' in config
-    assert 'scripts/build_miniapp.sh' in config
-    assert 'python -m pip install -r miniapp/backend/requirements.txt' in config
-    assert 'python -m miniapp.backend.run' in config
+def test_railpack_reads_mise_tools_for_the_nested_frontend_build():
+    config = (ROOT / "mise.toml").read_text(encoding="utf-8")
+    assert 'node = "20"' in config
+    assert 'python = "3.13"' in config
+    assert not (ROOT / "nixpacks.toml").exists()
 
 
 def test_backend_serves_an_existing_production_frontend_build(tmp_path):

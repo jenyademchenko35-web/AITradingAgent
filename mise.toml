@@ -1,0 +1,5 @@
+# Railpack reads mise tool declarations before build phases.
+# The nested frontend package cannot be auto-detected from the repository root.
+[tools]
+node = "20"
+python = "3.13"
