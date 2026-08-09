@@ -188,6 +188,16 @@ class ReadOnlyRepository:
         payload = self.impulse_report("impulse_learning_report.json")
         return payload if isinstance(payload, dict) else {}
 
+    def scenarios(self) -> list[dict[str, Any]]:
+        payload = self.impulse_report("scenario_report.json")
+        return [dict(row) for row in payload if isinstance(row, Mapping)] if isinstance(payload, list) else []
+
+    def scenario(self, symbol: str) -> dict[str, Any]:
+        normalized = symbol.replace("/", "").upper()
+        for row in self.scenarios():
+            if str(row.get("symbol", "")).replace("/", "").upper() == normalized: return row
+        return {"symbol": symbol, "status": "EMPTY", "data_quality": "INSUFFICIENT_DATA"}
+
     def updated_at(self) -> str:
         paths = [
             self.base_dir / "signals.csv", self.base_dir / "decision_snapshot.json",

@@ -50,6 +50,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("researchlab_trades", "🧬 Research Lab shadow trades"),
     BotCommand("impulse", "⚡ Top impulse probability"),
     BotCommand("impulse_learning", "🧠 Impulse learning status"),
+    BotCommand("scenarios", "🧭 Published market scenarios"),
     BotCommand("candidates", "🧪 Candidate Laboratory"),
     BotCommand("candidate", "🧪 Candidate detail"),
     BotCommand("shadowstatus", "👤 Shadow validation status"),

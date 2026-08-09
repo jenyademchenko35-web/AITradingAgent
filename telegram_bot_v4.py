@@ -3826,6 +3826,17 @@ async def impulse_learning_command(update: Update, context: ContextTypes.DEFAULT
     await reply(update, "\n".join(lines))
 
 
+async def scenarios_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        from scenario_engine import REPORT
+        rows = json.loads(REPORT.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        rows = []
+    lines = ["🧭 AI SCENARIOS"]
+    for row in rows[:5]: lines.extend([f"\n{row.get('symbol', '—')}", f"{row.get('scenario_type', 'NO_SCENARIO')} — {row.get('probability', '—')}%", f"Waiting: {row.get('activation_condition', '—')}"])
+    await reply(update, "\n".join(lines + ([] if rows else ["No published scenarios."])))
+
+
 def is_researchlab_owner(update: Update) -> bool:
     """Compatibility name backed by the canonical Telegram user-id policy."""
     return is_owner_update(update)
@@ -4222,6 +4233,7 @@ def build_app():
     app.add_handler(CommandHandler("researchlab_trades", researchlab_trades_command))
     app.add_handler(CommandHandler("impulse", impulse_command))
     app.add_handler(CommandHandler("impulse_learning", impulse_learning_command))
+    app.add_handler(CommandHandler("scenarios", scenarios_command))
     app.add_handler(CommandHandler("researchlab_on", researchlab_on_command))
     app.add_handler(CommandHandler("researchlab_off", researchlab_off_command))
     app.add_handler(CommandHandler("researchlab_dry_on", researchlab_dry_on_command))

@@ -1615,13 +1615,20 @@ def run_once():
     # cannot change a decision, risk setting, order or shadow strategy.
     try:
         from impulse_probability_engine import publish
-        contexts = [{"symbol": symbol, "timestamp": cycle_id, "score": decision.score,
+        contexts = [{"symbol": symbol, "timestamp": cycle_id, "cycle_id": cycle_id,
+            "status": decision.signal, "side": decision.direction, "score": decision.score,
             "confidence": decision.confidence, "edge": abs(decision.long_total-decision.short_total),
             "trend_score": max(getattr(decision, "trend_long_score", 0), getattr(decision, "trend_short_score", 0)),
             "momentum_score": 0, "adx": 0, "volume_ratio": 0,
             "market_regime": "UNKNOWN", "failed_filters": getattr(decision, "failed_filters", [])}
             for symbol, decision in decisions]
-        publish(contexts)
+        impulse_rows = publish(contexts)
+        # Scenario publishing is downstream of IPE and cannot influence the cycle.
+        try:
+            from scenario_engine import publish as publish_scenarios
+            publish_scenarios(contexts, impulse_rows)
+        except Exception as scenario_exc:
+            LOGGER.timestamped(json.dumps({"event": "scenario_engine_error", "error": str(scenario_exc), "fail_open": True}))
         from impulse_accuracy import build as build_impulse_accuracy
         from impulse_probability_engine import HISTORY, BASE_DIR
         build_impulse_accuracy(HISTORY, BASE_DIR / "impulse_accuracy.json")

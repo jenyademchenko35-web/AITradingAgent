@@ -32,6 +32,8 @@ class Repository:
     def shadow(self): return {"active": [], "closed": [], "strategies": [], "symbols": None, "updated": None}
     def impulse_learning(self): return {"status": "INSUFFICIENT_DATA", "calibration": {}}
     def impulse_report(self, filename): return {"status": "INSUFFICIENT_DATA", "filename": filename}
+    def scenarios(self): return [{"symbol": "BTC/USDT", "primary_scenario": "BULLISH_CONTINUATION"}]
+    def scenario(self, symbol): return {"symbol": symbol, "status": "EMPTY"}
     def research_live(self): return {"runtime_status": None, "best_candidate": None, "promotion_probability": None, "ranking": [], "recommendation": None, "top_features": [], "worst_features": []}
     def health_checks(self): return {"repository": True, "signals": True, "watchlist": True, "research": False, "snapshot": False}
 
@@ -58,6 +60,8 @@ def test_all_required_get_endpoints_are_read_only_and_authenticated():
         "/api/stats", "/api/system", "/api/activity", "/api/shadow", "/api/research",
         "/api/research/live", "/api/research/rank", "/api/research/trades",
         "/api/impulse-learning", "/api/impulse-calibration", "/api/impulse-learning-recommendations",
+        "/api/scenarios", "/api/scenario-changes",
+        "/api/scenarios/BTCUSDT",
     ]
     assert all(api.get(path, headers=headers()).status_code == 200 for path in paths)
     for method in (api.post, api.put, api.patch, api.delete):

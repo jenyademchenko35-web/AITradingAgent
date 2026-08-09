@@ -172,6 +172,15 @@ def create_app(
     async def impulse_learning_recommendations(_: TelegramUser = Depends(authenticate)) -> dict:
         return data.impulse_report("impulse_learning_recommendations.json")
 
+    @api.get("/api/scenarios")
+    async def scenarios(_: TelegramUser = Depends(authenticate)) -> list[dict]: return data.scenarios()
+
+    @api.get("/api/scenarios/{symbol}")
+    async def scenario(symbol: str, _: TelegramUser = Depends(authenticate)) -> dict: return data.scenario(symbol)
+
+    @api.get("/api/scenario-changes")
+    async def scenario_changes(_: TelegramUser = Depends(authenticate)) -> dict: return data.impulse_report("scenario_changes.json")
+
     @api.get("/api/watchlist", response_model=tuple[WatchlistItem, ...])
     async def watchlist(_: TelegramUser = Depends(authenticate)) -> tuple[dict, ...]:
         return tuple(data.watchlist())

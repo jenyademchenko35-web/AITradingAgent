@@ -20,12 +20,12 @@ import { formatResearchCandidate, formatResearchStatus, researchText } from "./r
 import { EmptyState, FilterBar, MetricCard, SearchBar, SignalCard, SkeletonCard, StatusBadge, type SignalFilter, type SignalSort } from "./ui";
 import "./styles.css";
 
-type Tab = "home" | "signals" | "market" | "portfolio" | "research" | "shadow" | "impulse" | "impulse-learning" | "diagnostics" | "stats" | "settings";
-const labels: Record<Tab, string> = { home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio", research: "Research", shadow: "Shadow", impulse: "Impulse Radar", "impulse-learning": "Impulse Learning", diagnostics: "Diagnostics", stats: "Statistics", settings: "Settings" };
+type Tab = "home" | "signals" | "market" | "portfolio" | "research" | "shadow" | "impulse" | "impulse-learning" | "scenarios" | "diagnostics" | "stats" | "settings";
+const labels: Record<Tab, string> = { home: "Главная", signals: "Signals", market: "Market", portfolio: "Portfolio", research: "Research", shadow: "Shadow", impulse: "Impulse Radar", "impulse-learning": "Impulse Learning", scenarios: "Scenario Radar", diagnostics: "Diagnostics", stats: "Statistics", settings: "Settings" };
 const navigation: Array<{ tab: Exclude<Tab, "home">; icon: string; detail: string }> = [
   { tab: "signals", icon: "⌁", detail: "Published watchlist" }, { tab: "market", icon: "◈", detail: "Saved market snapshots" },
   { tab: "portfolio", icon: "▣", detail: "Open positions" }, { tab: "research", icon: "⌕", detail: "Research Lab report" },
-  { tab: "shadow", icon: "◌", detail: "Research Lab shadow book" }, { tab: "impulse", icon: "⚡", detail: "Published impulse probability" }, { tab: "impulse-learning", icon: "🧠", detail: "Observer learning evidence" }, { tab: "diagnostics", icon: "◫", detail: "Read-only strategy diagnostics" }, { tab: "stats", icon: "▤", detail: "Closed-trade metrics" }, { tab: "settings", icon: "⚙", detail: "Read-only application" },
+  { tab: "shadow", icon: "◌", detail: "Research Lab shadow book" }, { tab: "impulse", icon: "⚡", detail: "Published impulse probability" }, { tab: "impulse-learning", icon: "🧠", detail: "Observer learning evidence" }, { tab: "scenarios", icon: "🧭", detail: "Published market scenarios" }, { tab: "diagnostics", icon: "◫", detail: "Read-only strategy diagnostics" }, { tab: "stats", icon: "▤", detail: "Closed-trade metrics" }, { tab: "settings", icon: "⚙", detail: "Read-only application" },
 ];
 const appTitle = import.meta.env.VITE_MINIAPP_TITLE || "TradeWatcher";
 const display = (value: unknown) => value === null || value === undefined || value === "" ? "—" : String(value);
@@ -128,6 +128,13 @@ function ImpulseLearning({ report, calibration, recommendations, loading }: { re
   return <section className="panel"><div className="section-heading"><div><h2>🧠 Impulse Learning</h2><p>Observer-only evidence from published outcomes.</p></div><StatusBadge status={display(report.status)} /></div><div className="dashboard-grid"><MetricCard label="Training Samples" value={display(report.training_samples)} /><MetricCard label="Successful" value={display(report.successful_predictions)} /><MetricCard label="Failed" value={display(report.failed_predictions)} /><MetricCard label="Pending" value={display(report.pending_samples)} /></div>{section("Calibration", calibration)}{section("Feature Learning", report.feature_learning)}{section("Symbol Learning", report.symbol_learning)}{section("Regime Learning", report.regime_learning)}{section("Learning Drift", report.learning_drift)}<h3>Recommendations</h3>{recs.length ? <div className="activity-feed">{recs.map((item, index) => <div className="activity-row" key={index}><span>{display(item.type)}</span><b>{display(item.evidence)}</b></div>)}</div> : <EmptyState title="No evidence-based recommendations" detail="The observer did not publish a supported recommendation." />}</section>;
 }
 
+function ScenarioRadar({ rows, changes, loading }: { rows: Record<string, unknown>[] | null; changes: Record<string, unknown> | null; loading: boolean }) {
+  if (loading) return <section className="panel"><h2>Scenario Radar</h2><SkeletonCard lines={6} /></section>;
+  if (!rows?.length) return <section className="panel"><h2>Scenario Radar</h2><EmptyState title="No scenarios published" detail="The observer has not published structured market scenarios yet." /></section>;
+  const changeRows = Array.isArray(changes?.items) ? changes.items as Record<string, unknown>[] : [];
+  return <section className="panel"><div className="section-heading"><div><h2>🧭 Scenario Radar</h2><p>Read-only scenarios published after Impulse Probability.</p></div><StatusBadge status="READ ONLY" /></div><h3>Top Scenarios</h3><div className="quick-signal-list">{rows.slice(0, 5).map((row) => <div className="quick-signal" key={display(row.symbol)}><b>{display(row.symbol)}</b><StatusBadge status={display(row.primary_scenario)} /><strong>{display(row.primary_probability)}%</strong><small>{display(row.confidence)} · {display(row.market_regime)}</small></div>)}</div><h3>Active Scenarios</h3><div className="activity-feed">{rows.map((row) => <div className="activity-row" key={`scenario-${display(row.symbol)}`}><div><span>{display(row.symbol)} · {display(row.primary_scenario)}</span><small>{display((Array.isArray(row.confirmation_conditions) && row.confirmation_conditions[0]) || row.data_quality)}</small></div><b>{display(row.primary_probability)}%</b></div>)}</div><h3>Reasons & Invalidation</h3>{rows.some((row) => (Array.isArray(row.reasons) && row.reasons.length) || (Array.isArray(row.invalidation_conditions) && row.invalidation_conditions.length)) ? <div className="activity-feed">{rows.flatMap((row) => [...(Array.isArray(row.reasons) ? row.reasons : []), ...(Array.isArray(row.invalidation_conditions) ? row.invalidation_conditions : [])].map((reason, index) => <div className="activity-row" key={`${display(row.symbol)}-${index}`}><span>{display(row.symbol)}</span><b>{display(reason)}</b></div>))}</div> : <EmptyState title="No scenario context published" detail="The observer did not publish reasons or invalidation conditions." />}<h3>Changes</h3>{changeRows.length ? <div className="activity-feed">{changeRows.map((row, index) => <div className="activity-row" key={index}><span>{display(row.symbol)} · {display((row.current as Record<string, unknown> | undefined)?.primary_scenario)}</span><b>{display((row.current as Record<string, unknown> | undefined)?.primary_probability)}%</b></div>)}</div> : <EmptyState title="No scenario changes" detail="No scenario type or probability change met the published threshold." />}</section>;
+}
+
 export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiClient; telegramInitData?: string }) {
   const [tab, setTab] = useState<Tab>("home");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
@@ -147,6 +154,9 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
   const [impulseCalibration, setImpulseCalibration] = useState<Record<string, unknown> | null>(null);
   const [impulseRecommendations, setImpulseRecommendations] = useState<Record<string, unknown> | null>(null);
   const [impulseLearningLoading, setImpulseLearningLoading] = useState(false);
+  const [scenarios, setScenarios] = useState<Record<string, unknown>[] | null>(null);
+  const [scenarioChanges, setScenarioChanges] = useState<Record<string, unknown> | null>(null);
+  const [scenariosLoading, setScenariosLoading] = useState(false);
   const [queryInput, setQueryInput] = useState(""); const [query, setQuery] = useState(""); const [filter, setFilter] = useState<SignalFilter>("ALL"); const [sort, setSort] = useState<SignalSort>("confidence");
   const [signal, setSignal] = useState<SignalResponse | null>(null);
   const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => routeFromLocation(window.location));
@@ -203,10 +213,20 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
       .catch(() => { setImpulseLearning(null); setImpulseCalibration(null); setImpulseRecommendations(null); })
       .finally(() => setImpulseLearningLoading(false));
   }, [api]);
+  const refreshScenarios = useCallback(() => {
+    const legacyApi = api as Partial<MiniAppApiClient>;
+    if (typeof legacyApi.scenarios !== "function") return Promise.resolve();
+    setScenariosLoading(true);
+    return Promise.all([legacyApi.scenarios(), legacyApi.scenarioChanges?.() ?? Promise.resolve(null)])
+      .then(([rows, changes]) => { setScenarios(rows); setScenarioChanges(changes); })
+      .catch(() => { setScenarios(null); setScenarioChanges(null); })
+      .finally(() => setScenariosLoading(false));
+  }, [api]);
   useEffect(() => subscribeTelegramAppearance(), []);
-  useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); void refreshDiagnostics(); void refreshImpulse(); void refreshImpulseLearning(); }, [refreshCore, refreshRuntime, refreshResearch, refreshDiagnostics, refreshImpulse, refreshImpulseLearning]);
+  useEffect(() => { void refreshCore(); void refreshRuntime(); void refreshResearch(); void refreshDiagnostics(); void refreshImpulse(); void refreshImpulseLearning(); void refreshScenarios(); }, [refreshCore, refreshRuntime, refreshResearch, refreshDiagnostics, refreshImpulse, refreshImpulseLearning, refreshScenarios]);
   useEffect(() => { const timer=window.setInterval(() => { void refreshImpulse(); }, 30_000); return () => window.clearInterval(timer); }, [refreshImpulse]);
   useEffect(() => { const timer=window.setInterval(() => { void refreshImpulseLearning(); }, 60_000); return () => window.clearInterval(timer); }, [refreshImpulseLearning]);
+  useEffect(() => { const timer=window.setInterval(() => { void refreshScenarios(); }, 30_000); return () => window.clearInterval(timer); }, [refreshScenarios]);
   useEffect(() => {
     const timer = window.setInterval(() => { void refreshCore(); void refreshRuntime(); }, 30_000);
     return () => window.clearInterval(timer);
@@ -231,7 +251,7 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     setTab("home");
   }, [signal, signalRoute]);
   useEffect(() => {
-    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "impulse" || tab === "impulse-learning" || tab === "diagnostics" || tab === "stats";
+    const visible = Boolean(signalRoute || signal) || tab === "research" || tab === "shadow" || tab === "impulse" || tab === "impulse-learning" || tab === "scenarios" || tab === "diagnostics" || tab === "stats";
     configureTelegramBackButton(visible, visible ? backFromTelegram : null);
     return () => configureTelegramBackButton(false, null);
   }, [backFromTelegram, signal, signalRoute, tab]);
@@ -254,6 +274,7 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
     {tab === "shadow" && <ShadowMonitoring shadow={shadow} />}
     {tab === "impulse" && <ImpulseRadar rows={impulseRows} changes={impulseChanges} accuracy={impulseAccuracy} loading={impulseLoading} />}
     {tab === "impulse-learning" && <ImpulseLearning report={impulseLearning} calibration={impulseCalibration} recommendations={impulseRecommendations} loading={impulseLearningLoading} />}
+    {tab === "scenarios" && <ScenarioRadar rows={scenarios} changes={scenarioChanges} loading={scenariosLoading} />}
     {tab === "diagnostics" && <Diagnostics report={diagnostics} />}
     {tab === "settings" && <section className="panel"><h2>Settings</h2><EmptyState title="Read-only Mini App" detail="Trading controls, configuration and execution intentionally unavailable." /></section>}
     {tab !== "home" && <button className="home-button" onClick={() => { telegramHaptic("selection"); setTab("home"); }}>⌂ Главная</button>}

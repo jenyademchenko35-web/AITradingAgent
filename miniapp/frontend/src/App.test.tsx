@@ -146,6 +146,19 @@ test("Impulse Learning renders published learning sections and an honest empty r
   expect(screen.getByText("No evidence-based recommendations")).toBeInTheDocument();
 });
 
+test("Scenario Radar displays published scenarios and supports an honest empty state", async () => {
+  const client = api({
+    scenarios: vi.fn().mockResolvedValue([{ symbol: "BTC/USDT", primary_scenario: "BULLISH_CONTINUATION", primary_probability: 78, confidence: "MEDIUM", market_regime: "TREND", reasons: ["Trend aligned"], invalidation_conditions: ["Break below published support"] }]),
+    scenarioChanges: vi.fn().mockResolvedValue({ items: [] }),
+  });
+  render(<App api={client} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Scenario Radar" }));
+  expect(await screen.findByText("Top Scenarios")).toBeInTheDocument();
+  expect(screen.getByText("BULLISH_CONTINUATION")).toBeInTheDocument();
+  expect(screen.getByText("Trend aligned")).toBeInTheDocument();
+  expect(screen.getByText("No scenario changes")).toBeInTheDocument();
+});
+
 test("Impulse Radar refreshes published data on its 30 second cadence", async () => {
   vi.useFakeTimers();
   try {
