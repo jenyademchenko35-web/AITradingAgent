@@ -1542,6 +1542,40 @@ def _run_research_lab_observer(cycle_id, snapshots):
         return None
 
 
+def _publish_runtime_snapshot_observer(cycle_id, decisions, *, research_result=None, impulse_rows=None):
+    """Publish a compact read-only runtime projection after a completed cycle.
+
+    It consumes existing decision values only. Errors are isolated so this file
+    can never become a dependency of the live decision or execution path.
+    """
+    try:
+        from runtime_contract import build_runtime_snapshot, write_runtime_snapshot
+        rows = []
+        for symbol, decision in decisions:
+            rows.append({
+                "symbol": symbol, "timeframe": "1h", "timestamp": cycle_id, "cycle_id": cycle_id,
+                "signal": getattr(decision, "signal", None), "direction": getattr(decision, "direction", None),
+                "score": getattr(decision, "score", None), "confidence": getattr(decision, "confidence", None),
+                "quality": getattr(decision, "quality", None),
+                "failed_filters": list(getattr(decision, "failed_filters", []) or []),
+                "trend_score": max(getattr(decision, "trend_long_score", 0), getattr(decision, "trend_short_score", 0)),
+            })
+        snapshot = build_runtime_snapshot(
+            agent_version="multi_timeframe_agent_v3", cycle_id=cycle_id,
+            source={"component": "multi_timeframe_agent_v3", "instance": "agent", "environment": os.getenv("RUNTIME_ENVIRONMENT", "unknown")},
+            market={"symbols_analyzed": len(rows)}, signals=rows, portfolio={},
+            decision_telemetry={"count": len(rows)}, research=dict(research_result or {}), scenario={},
+            impulse={"rows": list(impulse_rows or ())}, source_updated_at=cycle_id,
+            stale_after_seconds=int(os.getenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "900")),
+        )
+        write_runtime_snapshot(os.path.join(BASE_DIR, "runtime_snapshot.json"), snapshot)
+        LOGGER.timestamped(json.dumps({"event": "runtime_snapshot_published", "snapshot_id": snapshot["snapshot_id"], "cycle_id": cycle_id}, sort_keys=True))
+        return snapshot
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({"event": "runtime_snapshot_error", "cycle_id": cycle_id, "error": str(exc), "fail_open": True}, sort_keys=True))
+        return None
+
+
 def run_once():
     decisions = []
     api_errors = 0
@@ -1640,7 +1674,10 @@ def run_once():
         LOGGER.timestamped(json.dumps({"event":"impulse_probability_error","error":str(exc),"fail_open":True}))
 
     update_open_trades(current_prices)
-    _run_research_lab_observer(cycle_id, research_snapshots)
+    research_result = _run_research_lab_observer(cycle_id, research_snapshots)
+    _publish_runtime_snapshot_observer(
+        cycle_id, decisions, research_result=research_result, impulse_rows=locals().get("impulse_rows"),
+    )
 
 
 # Continuous scheduler

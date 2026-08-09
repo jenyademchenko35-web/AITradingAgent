@@ -20,6 +20,7 @@ from telegram_ui.data import (
     signal_payload_from_rows,
 )
 from trade_metrics_normalizer import aggregate_trade_metrics, is_closed_trade
+from runtime_contract import DEFAULT_STALE_AFTER_SECONDS, read_runtime_snapshot
 
 from .cache import MTimeCSVCache
 
@@ -100,6 +101,17 @@ class ReadOnlyRepository:
             )
         return dict(frozen)
 
+    def _canonical_snapshot(self) -> dict[str, Any] | None:
+        """Read only a validated v1 snapshot; future schemas intentionally fail closed."""
+        stale_after = os.getenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", str(DEFAULT_STALE_AFTER_SECONDS))
+        try:
+            threshold = int(stale_after)
+        except (TypeError, ValueError):
+            threshold = DEFAULT_STALE_AFTER_SECONDS
+        return read_runtime_snapshot(
+            self.base_dir / "runtime_snapshot.json", stale_after_seconds=max(0, threshold),
+        )
+
     @staticmethod
     def _published_value(*values: Any) -> Any:
         for value in values:
@@ -155,6 +167,13 @@ class ReadOnlyRepository:
         return [dict(row) for row in frozen]
 
     def decision_rows(self) -> list[dict[str, Any]]:
+        canonical = self._canonical_snapshot()
+        if canonical is not None:
+            rows = canonical.get("signals")
+            if isinstance(rows, list):
+                canonical_rows = [dict(row) for row in rows if isinstance(row, Mapping)]
+                if canonical_rows:
+                    return canonical_rows
         snapshots = self._snapshot_rows()
         if snapshots:
             return snapshots
@@ -199,6 +218,9 @@ class ReadOnlyRepository:
         return {"symbol": symbol, "status": "EMPTY", "data_quality": "INSUFFICIENT_DATA"}
 
     def updated_at(self) -> str:
+        canonical = self._canonical_snapshot()
+        if canonical and isinstance(canonical.get("generated_at"), str):
+            return canonical["generated_at"]
         paths = [
             self.base_dir / "signals.csv", self.base_dir / "decision_snapshot.json",
             self.base_dir / "decision_debug.csv", self.base_dir / "signals_v3.csv",
@@ -289,6 +311,7 @@ class ReadOnlyRepository:
 
     def system(self) -> dict[str, Any]:
         """Safe projection of already-published runtime status; no process inspection."""
+        canonical = self._canonical_snapshot()
         dashboard_state = self._runtime_json("dashboard_state.json")
         live_monitor = self._runtime_json("live_monitor_state.json")
         agent_stats = self._runtime_json("agent_v3_stats.json")
@@ -305,7 +328,7 @@ class ReadOnlyRepository:
         safe_dashboard_research = dashboard_research if isinstance(dashboard_research, Mapping) else {}
         safe_telegram = telegram if isinstance(telegram, Mapping) else {}
         safe_news = news if isinstance(news, Mapping) else {}
-        has_agent_runtime = any((dashboard_state, live_monitor, agent_stats))
+        has_agent_runtime = bool(canonical) or any((dashboard_state, live_monitor, agent_stats))
         research = self._published_value(
             research_status.get("status"),
             "ONLINE" if research_status.get("enabled") is True else None,
@@ -313,12 +336,13 @@ class ReadOnlyRepository:
             safe_dashboard_research.get("status"),
         ) or "UNKNOWN"
         return {
-            "server": self._published_value(safe_system.get("status"), live_monitor.get("status")),
+            "server": self._published_value(safe_system.get("status"), live_monitor.get("status"), "ONLINE" if canonical else None),
             "agent": "ONLINE" if has_agent_runtime else None,
             "telegram": self._published_value(safe_telegram.get("status")),
             "research": research,
             "news": self._published_value(safe_news.get("status")),
             "cycle": self._published_value(
+                (canonical or {}).get("cycle_id"),
                 safe_trading.get("last_cycle"), safe_trading.get("cycle"),
                 live_monitor.get("cycle"), live_monitor.get("current_cycle"),
                 live_monitor.get("last_cycle"), agent_stats.get("runs"),
@@ -332,6 +356,7 @@ class ReadOnlyRepository:
                 agent_stats.get("next_cycle_seconds"),
             ),
             "last_cycle_timestamp": self._published_value(
+                (canonical or {}).get("generated_at"),
                 safe_trading.get("last_cycle"), live_monitor.get("generated_at"),
                 dashboard_state.get("generated_at"),
             ),
@@ -340,6 +365,14 @@ class ReadOnlyRepository:
                 live_monitor.get("uptime_seconds"), agent_stats.get("uptime_seconds"),
             ),
             "read_only": True,
+            "source_mode": "canonical_v1" if canonical else "legacy",
+            "runtime_contract": {
+                "schema_version": (canonical or {}).get("schema_version"),
+                "generated_at": (canonical or {}).get("generated_at"),
+                "age_seconds": ((canonical or {}).get("freshness") or {}).get("age_seconds"),
+                "freshness": ((canonical or {}).get("freshness") or {}).get("status", "UNKNOWN"),
+                "data_quality": ((canonical or {}).get("data_quality") or {}).get("status", "INSUFFICIENT"),
+            },
         }
 
     def activity(self, *, limit: int = 20) -> list[dict[str, Any]]:
@@ -403,6 +436,7 @@ class ReadOnlyRepository:
             )),
             "research": readable("research.db"),
             "snapshot": readable("decision_snapshot.json"),
+            "runtime_contract": readable("runtime_snapshot.json"),
         }
 
     def dashboard(self) -> dict[str, Any]:

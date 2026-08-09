@@ -74,6 +74,7 @@ research_lab_v2_status.json
 research_lab_v2_shadow_open.json
 research_lab_shadow_history.csv
 research_lab_v2_runtime_override.json
+runtime_snapshot.json
 shadow_replay_trades.csv
 trade_metrics_audit.json
 trade_metrics_audit_summary.txt
