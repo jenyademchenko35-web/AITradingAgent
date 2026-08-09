@@ -10,6 +10,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 import hashlib
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -26,6 +27,20 @@ REPORT = "signal_evaluation_report.json"
 HORIZONS_HOURS = (1, 4, 12, 24)
 ACTIVE_STATUSES = {"WATCH", "SETUP", "HIGH PRIORITY"}
 MINIMUM_SAMPLE = 20
+DEFAULT_HORIZON_TOLERANCE_SECONDS = 300
+STATUS_PRIORITY = {"WATCH": 1, "SETUP": 2, "HIGH PRIORITY": 3}
+LOGGER = logging.getLogger(__name__)
+
+
+def _horizon_tolerance_seconds() -> int:
+    """Return a bounded observer-only grace period for delayed snapshots."""
+    try:
+        return max(0, int(os.getenv(
+            "SIGNAL_OUTCOME_HORIZON_TOLERANCE_SECONDS",
+            str(DEFAULT_HORIZON_TOLERANCE_SECONDS),
+        )))
+    except (TypeError, ValueError):
+        return DEFAULT_HORIZON_TOLERANCE_SECONDS
 
 
 def _number(value: Any) -> float | None:
@@ -120,6 +135,8 @@ def _new_episode(row: Mapping[str, Any], timestamp: str) -> dict[str, Any]:
     episode = {
         "episode_id": "", "symbol": str(row.get("symbol") or "UNKNOWN"), "timeframe": str(row.get("timeframe") or "1h"),
         "side": side, "signal_timestamp": timestamp, "signal_status": status,
+        "initial_signal_status": status, "highest_signal_status": status,
+        "current_signal_status": status,
         "confidence": _number(row.get("confidence")), "score": _number(row.get("score")),
         "market_regime": str(row.get("market_regime") or "UNKNOWN"), "trend_context": row.get("trend_context") or row.get("trend_score"),
         "momentum_context": row.get("momentum_context") or row.get("momentum_score"),
@@ -132,11 +149,12 @@ def _new_episode(row: Mapping[str, Any], timestamp: str) -> dict[str, Any]:
     return episode
 
 
-def _outcome(episode: Mapping[str, Any], price: Any, horizon: int, observed_at: str, *, high: Any = None, low: Any = None) -> dict[str, Any]:
+def _outcome(episode: Mapping[str, Any], price: Any, horizon: int, observed_at: str, *, target_at: str,
+             horizon_delay_seconds: int, high: Any = None, low: Any = None) -> dict[str, Any]:
     entry, future = _number(episode.get("entry_price")), _number(price)
     side = str(episode.get("side") or "UNKNOWN").upper()
     outcome_id = f"{episode.get('episode_id')}:{horizon}H"
-    base = {"outcome_id": outcome_id, "episode_id": episode.get("episode_id"), "symbol": episode.get("symbol"), "timeframe": episode.get("timeframe"), "horizon": f"{horizon}H", "source_timestamp": episode.get("signal_timestamp"), "evaluated_at": observed_at, "future_price": future,
+    base = {"outcome_id": outcome_id, "episode_id": episode.get("episode_id"), "symbol": episode.get("symbol"), "timeframe": episode.get("timeframe"), "horizon": f"{horizon}H", "source_timestamp": episode.get("signal_timestamp"), "observed_at": observed_at, "target_at": target_at, "horizon_delay_seconds": horizon_delay_seconds, "evaluated_at": observed_at, "future_price": future,
             "return_pct": None, "return_r": None, "mfe": None, "mae": None, "tp_hit": None, "sl_hit": None,
             "direction_correct": "UNKNOWN", "outcome_status": "PENDING", "label": "PENDING"}
     if entry is None or future is None or side not in {"LONG", "SHORT"}:
@@ -161,6 +179,22 @@ def _outcome(episode: Mapping[str, Any], price: Any, horizon: int, observed_at: 
                  "mfe": round(mfe, 6), "mae": round(mae, 6), "tp_hit": tp_hit, "sl_hit": sl_hit,
                  "direction_correct": direction, "outcome_status": "EVALUATED", "label": label})
     return base
+
+
+def _missed_horizon_outcome(episode: Mapping[str, Any], horizon: int, observed_at: str, *,
+                            target_at: str, horizon_delay_seconds: int) -> dict[str, Any]:
+    """Record unavailable evidence without treating a late price as an outcome."""
+    return {
+        "outcome_id": f"{episode.get('episode_id')}:{horizon}H",
+        "episode_id": episode.get("episode_id"), "symbol": episode.get("symbol"),
+        "timeframe": episode.get("timeframe"), "horizon": f"{horizon}H",
+        "source_timestamp": episode.get("signal_timestamp"), "observed_at": observed_at,
+        "target_at": target_at, "horizon_delay_seconds": horizon_delay_seconds,
+        "evaluated_at": None, "future_price": None, "return_pct": None,
+        "return_r": None, "mfe": None, "mae": None, "tp_hit": None,
+        "sl_hit": None, "direction_correct": "UNKNOWN",
+        "outcome_status": "MISSED_HORIZON", "label": "MISSED_HORIZON",
+    }
 
 
 def _metrics(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
@@ -215,10 +249,26 @@ def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) 
     signals = snapshot.get("signals") if isinstance(snapshot.get("signals"), list) else []
     if generated_at is None:
         return {"status": "INVALID", "episodes_total": 0, "episodes_evaluated": 0, "episodes_pending": 0, "accuracy": None, "expectancy": None, "calibration_status": "INSUFFICIENT_DATA", "generated_at": None}
-    state = _read_json(base_dir / STATE, {"active": {}, "extrema": {}})
+    state = _read_json(base_dir / STATE, {"active": {}, "extrema": {}, "episodes": {}})
+    last_generated_at = _time(state.get("last_processed_generated_at"))
+    snapshot_id = str(snapshot.get("snapshot_id") or "")
+    last_snapshot_id = str(state.get("last_processed_snapshot_id") or "")
+    current_generated_at = _time(generated_at)
+    if ((last_generated_at is not None and current_generated_at is not None and current_generated_at <= last_generated_at)
+            or (snapshot_id and snapshot_id == last_snapshot_id)):
+        LOGGER.warning("OUT_OF_ORDER_SNAPSHOT snapshot_id=%s generated_at=%s", snapshot_id, generated_at)
+        return {
+            "status": "OUT_OF_ORDER_SNAPSHOT", "evaluated": 0, "pending": None,
+            "accuracy": None, "expectancy": None, "calibration_status": "INSUFFICIENT_DATA",
+            "generated_at": generated_at,
+        }
     active = state.get("active") if isinstance(state.get("active"), dict) else {}
     extrema = state.get("extrema") if isinstance(state.get("extrema"), dict) else {}
-    existing_episodes = {str(row.get("episode_id")): row for row in _read_jsonl(base_dir / EPISODES)}
+    episode_state = state.get("episodes") if isinstance(state.get("episodes"), dict) else {}
+    existing_episodes = {
+        str(row.get("episode_id")): {**row, **(episode_state.get(str(row.get("episode_id")), {}) if isinstance(episode_state.get(str(row.get("episode_id")), {}), Mapping) else {})}
+        for row in _read_jsonl(base_dir / EPISODES)
+    }
     created: list[dict[str, Any]] = []
     seen_keys = set()
     prices: dict[str, tuple[float, float, float]] = {}
@@ -232,17 +282,44 @@ def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) 
         current_id = active.get(key)
         current = existing_episodes.get(str(current_id))
         if status in ACTIVE_STATUSES and side in {"LONG", "SHORT"}:
-            if current is None or current.get("side") != side or current.get("signal_status") != status:
+            if current is None or current.get("side") != side:
                 episode = _new_episode({**raw, "timestamp": generated_at, "snapshot_id": snapshot.get("snapshot_id"), "agent_version": snapshot.get("agent_version")}, generated_at)
                 created.append(episode); existing_episodes[episode["episode_id"]] = episode; active[key] = episode["episode_id"]
+                episode_state[episode["episode_id"]] = {
+                    "initial_signal_status": status, "highest_signal_status": status,
+                    "current_signal_status": status, "lifecycle_status": "ACTIVE",
+                }
+            else:
+                current_id = str(current.get("episode_id"))
+                prior_highest = str(current.get("highest_signal_status") or current.get("signal_status") or "WATCH").upper()
+                episode_state[current_id] = {
+                    "initial_signal_status": current.get("initial_signal_status") or current.get("signal_status"),
+                    "highest_signal_status": status if STATUS_PRIORITY.get(status, 0) > STATUS_PRIORITY.get(prior_highest, 0) else prior_highest,
+                    "current_signal_status": status, "lifecycle_status": "ACTIVE",
+                }
+                current.update(episode_state[current_id])
             current_id = active.get(key)
             if current_id and price is not None:
                 old = extrema.get(current_id, {}) if isinstance(extrema.get(current_id), Mapping) else {}
                 extrema[current_id] = {"high": max(_number(old.get("high")) or price, prices[key][1]), "low": min(_number(old.get("low")) or price, prices[key][2])}
         else:
+            if current_id:
+                prior = episode_state.get(str(current_id), {})
+                episode_state[str(current_id)] = {
+                    **(prior if isinstance(prior, Mapping) else {}),
+                    "current_signal_status": status, "lifecycle_status": "CLOSED",
+                }
             active.pop(key, None)
     for key in list(active):
-        if key not in seen_keys: active.pop(key, None)
+        if key not in seen_keys:
+            current_id = active.get(key)
+            if current_id:
+                prior = episode_state.get(str(current_id), {})
+                episode_state[str(current_id)] = {
+                    **(prior if isinstance(prior, Mapping) else {}),
+                    "current_signal_status": "DISAPPEARED", "lifecycle_status": "CLOSED",
+                }
+            active.pop(key, None)
     _append_unique(base_dir / EPISODES, created, "episode_id")
     outcomes = _read_jsonl(base_dir / OUTCOMES)
     known = {str(row.get("outcome_id")) for row in outcomes}
@@ -253,9 +330,22 @@ def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) 
         if started is None or now is None or price_data is None: continue
         for horizon in HORIZONS_HOURS:
             identity = f"{episode.get('episode_id')}:{horizon}H"
-            if identity in known or now < started + timedelta(hours=horizon): continue
+            target = started + timedelta(hours=horizon)
+            if identity in known or now < target: continue
+            delay = int((now - target).total_seconds())
+            target_at = target.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+            if delay > _horizon_tolerance_seconds():
+                new_outcomes.append(_missed_horizon_outcome(
+                    episode, horizon, generated_at, target_at=target_at,
+                    horizon_delay_seconds=delay,
+                ))
+                continue
             bounds = extrema.get(str(episode.get("episode_id")), {})
-            new_outcomes.append(_outcome(episode, price_data[0], horizon, generated_at, high=bounds.get("high", price_data[1]), low=bounds.get("low", price_data[2])))
+            new_outcomes.append(_outcome(
+                episode, price_data[0], horizon, generated_at, target_at=target_at,
+                horizon_delay_seconds=delay, high=bounds.get("high", price_data[1]),
+                low=bounds.get("low", price_data[2]),
+            ))
     _append_unique(base_dir / OUTCOMES, new_outcomes, "outcome_id")
     all_outcomes = outcomes + new_outcomes
     overall = _metrics(all_outcomes)
@@ -263,5 +353,9 @@ def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) 
     evaluated = [row for row in all_outcomes if row.get("outcome_status") == "EVALUATED"]
     report = {"schema_version": "signal-evaluation-v1", "generated_at": generated_at, "evaluation_status": overall["status"], "episodes_total": len(existing_episodes), "episodes_evaluated": len({row.get("episode_id") for row in evaluated}), "episodes_pending": max(0, len(existing_episodes) - len({row.get("episode_id") for row in evaluated})), "latest_evaluated_at": generated_at if evaluated else None, "label_distribution": dict(Counter(str(row.get("label")) for row in all_outcomes)), "minimum_sample_status": overall["status"], "metrics": overall, "by_symbol": _grouped(all_outcomes, "symbol"), "by_regime": _grouped([{**row, "market_regime": (existing_episodes.get(str(row.get("episode_id"))) or {}).get("market_regime")} for row in all_outcomes], "market_regime"), "by_direction": _grouped([{**row, "direction": (existing_episodes.get(str(row.get("episode_id"))) or {}).get("side")} for row in all_outcomes], "direction"), "by_confidence_bucket": _grouped([{**row, "confidence_bucket": _confidence_bucket((existing_episodes.get(str(row.get("episode_id"))) or {}).get("confidence"))} for row in all_outcomes], "confidence_bucket"), "by_score_bucket": _grouped([{**row, "score_bucket": _score_bucket((existing_episodes.get(str(row.get("episode_id"))) or {}).get("score"))} for row in all_outcomes], "score_bucket"), "by_timeframe": _grouped([{**row, "timeframe": (existing_episodes.get(str(row.get("episode_id"))) or {}).get("timeframe")} for row in all_outcomes], "timeframe"), "calibration": calibration, "oos_inputs": sorted([{**row, "episode_id": row.get("episode_id"), "source_timestamp": row.get("source_timestamp")} for row in evaluated], key=lambda row: str(row.get("source_timestamp")))}
     _atomic_json(base_dir / REPORT, report)
-    _atomic_json(base_dir / STATE, {"active": active, "extrema": extrema})
+    _atomic_json(base_dir / STATE, {
+        "active": active, "extrema": extrema, "episodes": episode_state,
+        "last_processed_snapshot_id": snapshot_id,
+        "last_processed_generated_at": generated_at,
+    })
     return {"status": report["evaluation_status"], "evaluated": len(evaluated), "pending": report["episodes_pending"], "accuracy": overall["direction_accuracy"], "expectancy": overall["expectancy"], "calibration_status": calibration["status"], "generated_at": generated_at}

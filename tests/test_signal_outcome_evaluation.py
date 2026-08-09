@@ -4,7 +4,7 @@ import json
 
 from runtime_contract import build_runtime_snapshot
 from signal_outcome_evaluation import (
-    EPISODES, OUTCOMES, REPORT, build_oos_windows, episode_id, process_snapshot,
+    EPISODES, OUTCOMES, REPORT, STATE, build_oos_windows, episode_id, process_snapshot,
 )
 
 
@@ -37,8 +37,73 @@ def test_future_outcomes_are_pending_then_directional_without_lookahead(tmp_path
     assert outcome["label"] == "WIN" and outcome["direction_correct"] == "CORRECT"
     assert outcome["tp_hit"] is True and outcome["sl_hit"] is False
     assert outcome["mfe"] > 0 and outcome["mae"] < 0
+    assert outcome["target_at"] == "2026-08-01T01:00:00Z"
+    assert outcome["observed_at"] == "2026-08-01T01:00:00Z"
+    assert outcome["horizon_delay_seconds"] == 0
     process_snapshot(_snapshot("2026-08-01T01:00:00Z", 110), base_dir=tmp_path)
     assert len((tmp_path / OUTCOMES).read_text().splitlines()) == len(rows)
+
+
+def test_horizon_tolerance_evaluates_only_snapshots_within_the_window(monkeypatch, tmp_path):
+    monkeypatch.setenv("SIGNAL_OUTCOME_HORIZON_TOLERANCE_SECONDS", "300")
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100), base_dir=tmp_path)
+    process_snapshot(_snapshot("2026-08-01T01:04:00Z", 102), base_dir=tmp_path)
+    rows = [json.loads(line) for line in (tmp_path / OUTCOMES).read_text().splitlines()]
+    one_hour = next(row for row in rows if row["horizon"] == "1H")
+    assert one_hour["outcome_status"] == "EVALUATED"
+    assert one_hour["horizon_delay_seconds"] == 240
+
+
+def test_late_snapshot_is_missed_and_never_counted_as_one_hour_outcome(monkeypatch, tmp_path):
+    monkeypatch.setenv("SIGNAL_OUTCOME_HORIZON_TOLERANCE_SECONDS", "300")
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100), base_dir=tmp_path)
+    report = process_snapshot(_snapshot("2026-08-01T01:06:00Z", 110), base_dir=tmp_path)
+    rows = [json.loads(line) for line in (tmp_path / OUTCOMES).read_text().splitlines()]
+    one_hour = next(row for row in rows if row["horizon"] == "1H")
+    assert one_hour["outcome_status"] == "MISSED_HORIZON"
+    assert one_hour["future_price"] is None and one_hour["horizon_delay_seconds"] == 360
+    assert report["evaluated"] == 0
+
+
+def test_directional_lifecycle_keeps_one_episode_across_active_status_changes(tmp_path):
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100, status="WATCH"), base_dir=tmp_path)
+    process_snapshot(_snapshot("2026-08-01T00:05:00Z", 101, status="SETUP"), base_dir=tmp_path)
+    process_snapshot(_snapshot("2026-08-01T00:10:00Z", 102, status="HIGH PRIORITY"), base_dir=tmp_path)
+    rows = [json.loads(line) for line in (tmp_path / EPISODES).read_text().splitlines()]
+    state = json.loads((tmp_path / STATE).read_text())
+    assert len(rows) == 1
+    lifecycle = state["episodes"][rows[0]["episode_id"]]
+    assert lifecycle == {
+        "initial_signal_status": "WATCH", "highest_signal_status": "HIGH PRIORITY",
+        "current_signal_status": "HIGH PRIORITY", "lifecycle_status": "ACTIVE",
+    }
+
+
+def test_side_change_and_disappearance_close_a_lifecycle_before_next_episode(tmp_path):
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100, side="LONG", status="WATCH"), base_dir=tmp_path)
+    process_snapshot(_snapshot("2026-08-01T00:05:00Z", 99, side="SHORT", status="SETUP"), base_dir=tmp_path)
+    process_snapshot(build_runtime_snapshot(agent_version="agent-v3", cycle_id="gone", generated_at="2026-08-01T00:10:00Z", signals=[]), base_dir=tmp_path)
+    process_snapshot(_snapshot("2026-08-01T00:15:00Z", 101, side="SHORT", status="WATCH"), base_dir=tmp_path)
+    rows = [json.loads(line) for line in (tmp_path / EPISODES).read_text().splitlines()]
+    assert len(rows) == 3
+    assert rows[0]["side"] == "LONG"
+    assert rows[1]["side"] == rows[2]["side"] == "SHORT"
+
+
+def test_out_of_order_or_duplicate_snapshots_do_not_mutate_persisted_state(tmp_path):
+    first = _snapshot("2026-08-01T00:00:00Z", 100)
+    second = _snapshot("2026-08-01T00:10:00Z", 101)
+    process_snapshot(first, base_dir=tmp_path)
+    process_snapshot(second, base_dir=tmp_path)
+    saved = (tmp_path / STATE).read_text()
+    assert process_snapshot(_snapshot("2026-08-01T00:05:00Z", 99), base_dir=tmp_path)["status"] == "OUT_OF_ORDER_SNAPSHOT"
+    assert (tmp_path / STATE).read_text() == saved
+    assert process_snapshot(_snapshot("2026-08-01T00:10:00Z", 103), base_dir=tmp_path)["status"] == "OUT_OF_ORDER_SNAPSHOT"
+    assert (tmp_path / STATE).read_text() == saved
+    duplicate_id = _snapshot("2026-08-01T00:20:00Z", 102)
+    duplicate_id["snapshot_id"] = second["snapshot_id"]
+    assert process_snapshot(duplicate_id, base_dir=tmp_path)["status"] == "OUT_OF_ORDER_SNAPSHOT"
+    assert json.loads((tmp_path / STATE).read_text())["last_processed_generated_at"] == "2026-08-01T00:10:00Z"
 
 
 def test_bearish_wrong_and_neutral_labels_are_deterministic(tmp_path):

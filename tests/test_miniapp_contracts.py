@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from runtime_contract import build_runtime_snapshot
 from miniapp.backend.repository import ReadOnlyRepository
 from miniapp.shared.models import SignalResponse, StatusResponse
 
@@ -120,6 +121,49 @@ def test_repository_uses_current_source_priority_with_legacy_fallback(
 
     selected = ReadOnlyRepository(tmp_path).decision_rows()
     assert selected[0]["symbol"] == expected_symbol
+
+
+def test_repository_uses_fresh_canonical_but_falls_back_when_it_is_stale(monkeypatch, tmp_path):
+    monkeypatch.setenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "99999999")
+    fresh = build_runtime_snapshot(
+        agent_version="agent", cycle_id="fresh", generated_at="2026-08-03T00:00:00Z",
+        signals=[{"symbol": "CANONICAL/USDT", "timeframe": "1h", "signal": "WATCH"}],
+    )
+    (tmp_path / "runtime_snapshot.json").write_text(json.dumps(fresh), encoding="utf-8")
+    write_csv(tmp_path / "signals_v3.csv", [{"timestamp": "2026-08-03T01:00:00Z", "symbol": "LEGACY/USDT"}])
+    repository = ReadOnlyRepository(tmp_path)
+    assert repository.decision_rows()[0]["symbol"] == "CANONICAL/USDT"
+
+    monkeypatch.setenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "1")
+    stale = build_runtime_snapshot(
+        agent_version="agent", cycle_id="stale", generated_at="2000-01-01T00:00:00Z",
+        signals=[{"symbol": "STALE/USDT", "timeframe": "1h", "signal": "WATCH"}],
+    )
+    (tmp_path / "runtime_snapshot.json").write_text(json.dumps(stale), encoding="utf-8")
+    repository = ReadOnlyRepository(tmp_path, cache_ttl_seconds=0.1)
+    assert repository.decision_rows()[0]["symbol"] == "LEGACY/USDT"
+    system = repository.system()
+    assert system["source_mode"] == "legacy"
+    assert system["canonical_freshness"] == "STALE"
+    assert system["fallback_reason"] == "canonical_stale_legacy_available"
+
+
+def test_repository_labels_unavailable_or_malformed_canonical_sources(tmp_path):
+    stale = build_runtime_snapshot(
+        agent_version="agent", cycle_id="stale", generated_at="2000-01-01T00:00:00Z",
+        signals=[{"symbol": "STALE/USDT", "timeframe": "1h", "signal": "WATCH"}],
+    )
+    (tmp_path / "runtime_snapshot.json").write_text(json.dumps(stale), encoding="utf-8")
+    repository = ReadOnlyRepository(tmp_path)
+    assert repository.decision_rows()[0]["symbol"] == "STALE/USDT"
+    assert repository.system()["source_mode"] == "canonical_stale"
+    assert repository.system()["fallback_reason"] == "legacy_unavailable"
+
+    (tmp_path / "runtime_snapshot.json").write_text("{malformed", encoding="utf-8")
+    write_csv(tmp_path / "signals.csv", [{"timestamp": "now", "symbol": "LEGACY/USDT"}])
+    repository = ReadOnlyRepository(tmp_path)
+    assert repository.decision_rows()[0]["symbol"] == "LEGACY/USDT"
+    assert repository.system()["fallback_reason"] == "canonical_missing_or_invalid"
 
 
 def test_repository_reads_immutable_ohlcv_cache(tmp_path):

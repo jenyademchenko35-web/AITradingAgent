@@ -67,7 +67,8 @@ def test_atomic_write_and_malformed_json_are_safe(tmp_path):
     assert contract.read_runtime_snapshot(destination) is None
 
 
-def test_repository_prefers_valid_canonical_then_falls_back_to_legacy(tmp_path):
+def test_repository_prefers_valid_canonical_then_falls_back_to_legacy(monkeypatch, tmp_path):
+    monkeypatch.setenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "99999999")
     legacy = tmp_path / "signals.csv"
     legacy.write_text("timestamp,symbol,signal,timeframe\n2026-08-09T10:00:00Z,LEGACY/USDT,WATCH,1h\n", encoding="utf-8")
     contract.write_runtime_snapshot(tmp_path / "runtime_snapshot.json", _snapshot(signals=[{

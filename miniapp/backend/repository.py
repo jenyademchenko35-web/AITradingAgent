@@ -166,14 +166,7 @@ class ReadOnlyRepository:
             )
         return [dict(row) for row in frozen]
 
-    def decision_rows(self) -> list[dict[str, Any]]:
-        canonical = self._canonical_snapshot()
-        if canonical is not None:
-            rows = canonical.get("signals")
-            if isinstance(rows, list):
-                canonical_rows = [dict(row) for row in rows if isinstance(row, Mapping)]
-                if canonical_rows:
-                    return canonical_rows
+    def _legacy_decision_rows(self) -> list[dict[str, Any]]:
         snapshots = self._snapshot_rows()
         if snapshots:
             return snapshots
@@ -182,6 +175,30 @@ class ReadOnlyRepository:
             if rows:
                 return self._adapt_signal_rows(rows)
         return self.read_csv(self.base_dir / "decision_debug.csv")
+
+    def _decision_source(self) -> tuple[list[dict[str, Any]], str, str, str | None]:
+        """Resolve fresh canonical data first, without presenting stale data as current."""
+        canonical = self._canonical_snapshot()
+        freshness = str(((canonical or {}).get("freshness") or {}).get("status") or "UNKNOWN").upper()
+        rows = (canonical or {}).get("signals")
+        canonical_rows = [dict(row) for row in rows if isinstance(row, Mapping)] if isinstance(rows, list) else []
+        if canonical_rows and freshness == "FRESH":
+            return canonical_rows, "canonical_v1", freshness, None
+
+        legacy_rows = self._legacy_decision_rows()
+        if canonical_rows and freshness == "STALE":
+            if legacy_rows:
+                return legacy_rows, "legacy", freshness, "canonical_stale_legacy_available"
+            return canonical_rows, "canonical_stale", freshness, "legacy_unavailable"
+        if legacy_rows:
+            reason = "canonical_missing_or_invalid" if canonical is None else "canonical_not_fresh"
+            return legacy_rows, "legacy", freshness, reason
+        if canonical_rows:
+            return canonical_rows, "canonical_stale", freshness, "legacy_unavailable"
+        return [], "legacy", freshness, "no_valid_signal_source"
+
+    def decision_rows(self) -> list[dict[str, Any]]:
+        return self._decision_source()[0]
 
     def trade_rows(self) -> list[dict[str, str]]:
         return self.read_csv(self.base_dir / "trades.csv")
@@ -227,7 +244,8 @@ class ReadOnlyRepository:
 
     def updated_at(self) -> str:
         canonical = self._canonical_snapshot()
-        if canonical and isinstance(canonical.get("generated_at"), str):
+        _, source_mode, _, _ = self._decision_source()
+        if source_mode in {"canonical_v1", "canonical_stale"} and canonical and isinstance(canonical.get("generated_at"), str):
             return canonical["generated_at"]
         paths = [
             self.base_dir / "signals.csv", self.base_dir / "decision_snapshot.json",
@@ -320,6 +338,7 @@ class ReadOnlyRepository:
     def system(self) -> dict[str, Any]:
         """Safe projection of already-published runtime status; no process inspection."""
         canonical = self._canonical_snapshot()
+        _, source_mode, canonical_freshness, fallback_reason = self._decision_source()
         dashboard_state = self._runtime_json("dashboard_state.json")
         live_monitor = self._runtime_json("live_monitor_state.json")
         agent_stats = self._runtime_json("agent_v3_stats.json")
@@ -373,12 +392,14 @@ class ReadOnlyRepository:
                 live_monitor.get("uptime_seconds"), agent_stats.get("uptime_seconds"),
             ),
             "read_only": True,
-            "source_mode": "canonical_v1" if canonical else "legacy",
+            "source_mode": source_mode,
+            "canonical_freshness": canonical_freshness,
+            "fallback_reason": fallback_reason,
             "runtime_contract": {
                 "schema_version": (canonical or {}).get("schema_version"),
                 "generated_at": (canonical or {}).get("generated_at"),
                 "age_seconds": ((canonical or {}).get("freshness") or {}).get("age_seconds"),
-                "freshness": ((canonical or {}).get("freshness") or {}).get("status", "UNKNOWN"),
+                "freshness": canonical_freshness,
                 "data_quality": ((canonical or {}).get("data_quality") or {}).get("status", "INSUFFICIENT"),
             },
         }
