@@ -70,7 +70,7 @@ def test_production_environment_is_parsed_without_secret_defaults(tmp_path):
         "MINIAPP_ENABLED": "true",
         "MINIAPP_OWNER_ONLY": "true",
         "MINIAPP_OWNER_USER_ID": "42",
-        "TELEGRAM_BOT_TOKEN": "test-token",
+        "BOT_TOKEN": "test-token",
         "MINIAPP_HOST": "127.0.0.1",
         "MINIAPP_PORT": "9090",
         "MINIAPP_PUBLIC_URL": "https://mini.example",
@@ -104,7 +104,7 @@ def test_owner_mode_requires_telegram_token(tmp_path):
     settings = MiniAppSettings(
         enabled=True, owner_only=True, owner_user_id=42, data_dir=tmp_path,
     )
-    assert "TELEGRAM_BOT_TOKEN is required in owner-only mode" in settings.startup_errors()
+    assert "BOT_TOKEN is required in owner-only mode" in settings.startup_errors()
 
 
 def test_owner_mode_requires_owner_user_id(tmp_path):
@@ -138,7 +138,7 @@ def test_examples_contain_no_real_values_and_plist_binds_localhost():
     plist = (ROOT / "deploy/macos/com.tradewatcher.miniapp.plist.example").read_text(encoding="utf-8")
     assert "MINIAPP_ENABLED=false" in backend
     assert "MINIAPP_DEV_MODE=false" in backend
-    assert "TELEGRAM_BOT_TOKEN=\n" in backend
+    assert "BOT_TOKEN=\n" in backend
     assert "MINIAPP_HOST=127.0.0.1" in backend
     assert "VITE_API_BASE_URL=/api" in frontend
     assert "BOT_TOKEN" not in frontend
@@ -161,7 +161,18 @@ def test_production_templates_are_https_only_and_use_safe_placeholders():
     assert "/ABSOLUTE/PATH/TO" not in plist
     assert "ThrottleInterval" in plist
     assert "https://example.com" in backend
-    assert "TELEGRAM_BOT_TOKEN=\n" in backend
+    assert "BOT_TOKEN=\n" in backend
+
+
+def test_miniapp_uses_the_same_bot_token_source_as_the_telegram_bot():
+    settings = MiniAppSettings.from_env({
+        "BOT_TOKEN": "current-bot-token", "TELEGRAM_BOT_TOKEN": "legacy-token",
+    })
+    assert settings.bot_token == "current-bot-token"
+    assert settings.bot_token_source == "BOT_TOKEN"
+    legacy_only = MiniAppSettings.from_env({"TELEGRAM_BOT_TOKEN": "legacy-token"})
+    assert legacy_only.bot_token == ""
+    assert legacy_only.bot_token_source == "UNSET"
 
 
 def test_railpack_reads_mise_tools_for_the_nested_frontend_build():

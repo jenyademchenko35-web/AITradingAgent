@@ -39,6 +39,15 @@ def test_valid_telegram_init_data_returns_immutable_user():
         user.id = 7
 
 
+def test_official_webapp_hmac_algorithm_rejects_changed_data_or_wrong_token():
+    init_data = signed_init_data(token="official-token")
+    assert validate_init_data(init_data, "official-token", now=1_800_000_001).id == 42
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data(init_data.replace("query-1", "query-2"), "official-token", now=1_800_000_001)
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data(init_data, "wrong-token", now=1_800_000_001)
+
+
 def test_invalid_hash_and_expired_data_are_rejected():
     with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
         validate_init_data(signed_init_data() + "x", "token", now=1_800_000_001)
@@ -51,6 +60,10 @@ def test_missing_init_data_and_bot_token_have_safe_diagnostic_reasons():
         validate_init_data("", "token")
     with pytest.raises(TelegramAuthError, match="MISSING_BOT_TOKEN"):
         validate_init_data("auth_date=1", "")
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data("auth_date=1&user=%7B%7D", "token")
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data("not-a-query", "token")
 
 
 class _StatusRepository:
@@ -110,14 +123,20 @@ def test_owner_mismatch_is_forbidden_and_logs_reason_without_secrets(caplog):
     response = client.get("/api/status", headers={"X-Telegram-Init-Data": init_data})
     assert response.status_code == 403
     assert "reason=OWNER_MISMATCH" in caplog.text
-    assert init_data not in caplog.text and "token" not in caplog.text
+    assert init_data not in caplog.text
 
 
 def test_invalid_hmac_returns_401_and_logs_only_safe_metadata(caplog):
     caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
-    settings = MiniAppSettings(enabled=True, owner_only=True, owner_user_id=42, bot_token="private-token")
+    settings = MiniAppSettings(
+        enabled=True, owner_only=True, owner_user_id=42, bot_token="private-token",
+        bot_token_source="BOT_TOKEN",
+    )
     client = TestClient(create_app(settings=settings, repository=_StatusRepository()))
     response = client.get("/api/status", headers={"X-Telegram-Init-Data": "bad-init-data"})
     assert response.status_code == 401
     assert "reason=INVALID_HASH" in caplog.text
+    assert "token_source=BOT_TOKEN" in caplog.text
+    assert "token_present=True" in caplog.text
+    assert "parsed_field_names=" in caplog.text
     assert "private-token" not in caplog.text and "bad-init-data" not in caplog.text
