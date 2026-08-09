@@ -1,0 +1,14 @@
+# Railway/Nixpacks build contract for the read-only Mini App.
+# The frontend package.json is nested, so Node must be declared explicitly.
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "python312"]
+
+[phases.build]
+cmds = [
+  "scripts/build_miniapp.sh",
+  "python -m pip install -r miniapp/backend/requirements.txt",
+]
+
+[start]
+cmd = "python -m miniapp.backend.run"
