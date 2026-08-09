@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import logging
 import time
 from urllib.parse import urlencode
 
@@ -39,10 +40,17 @@ def test_valid_telegram_init_data_returns_immutable_user():
 
 
 def test_invalid_hash_and_expired_data_are_rejected():
-    with pytest.raises(TelegramAuthError, match="invalid hash"):
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
         validate_init_data(signed_init_data() + "x", "token", now=1_800_000_001)
-    with pytest.raises(TelegramAuthError, match="expired"):
+    with pytest.raises(TelegramAuthError, match="EXPIRED_INIT_DATA"):
         validate_init_data(signed_init_data(auth_date=1), "token", now=1_800_000_001)
+
+
+def test_missing_init_data_and_bot_token_have_safe_diagnostic_reasons():
+    with pytest.raises(TelegramAuthError, match="MISSING_INIT_DATA"):
+        validate_init_data("", "token")
+    with pytest.raises(TelegramAuthError, match="MISSING_BOT_TOKEN"):
+        validate_init_data("auth_date=1", "")
 
 
 class _StatusRepository:
@@ -65,9 +73,11 @@ def _api_client(*, dev_mode: bool, client_host: str, owner_only: bool = True):
     )
 
 
-def test_dev_mode_off_without_init_data_is_unauthorized():
+def test_dev_mode_off_without_init_data_is_unauthorized(caplog):
+    caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
     response = _api_client(dev_mode=False, client_host="127.0.0.1").get("/api/status")
     assert response.status_code == 401
+    assert "reason=MISSING_INIT_DATA" in caplog.text
 
 
 @pytest.mark.parametrize("client_host", ["127.0.0.1", "::1"])
@@ -91,3 +101,23 @@ def test_production_hmac_and_owner_flow_is_unchanged():
     external_dev = _api_client(dev_mode=True, client_host="203.0.113.10")
     assert production.get("/api/status", headers=headers).status_code == 200
     assert external_dev.get("/api/status", headers=headers).status_code == 200
+
+
+def test_owner_mismatch_is_forbidden_and_logs_reason_without_secrets(caplog):
+    caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
+    client = _api_client(dev_mode=False, client_host="127.0.0.1")
+    init_data = signed_init_data(user_id=7, auth_date=int(time.time()))
+    response = client.get("/api/status", headers={"X-Telegram-Init-Data": init_data})
+    assert response.status_code == 403
+    assert "reason=OWNER_MISMATCH" in caplog.text
+    assert init_data not in caplog.text and "token" not in caplog.text
+
+
+def test_invalid_hmac_returns_401_and_logs_only_safe_metadata(caplog):
+    caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
+    settings = MiniAppSettings(enabled=True, owner_only=True, owner_user_id=42, bot_token="private-token")
+    client = TestClient(create_app(settings=settings, repository=_StatusRepository()))
+    response = client.get("/api/status", headers={"X-Telegram-Init-Data": "bad-init-data"})
+    assert response.status_code == 401
+    assert "reason=INVALID_HASH" in caplog.text
+    assert "private-token" not in caplog.text and "bad-init-data" not in caplog.text

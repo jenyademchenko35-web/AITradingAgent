@@ -7,6 +7,8 @@ import {
   isTelegramMiniApp,
   miniAppEnvironment,
   subscribeTelegramAppearance,
+  telegramAuthDiagnostics,
+  telegramInitData,
   telegramDisplayName,
   telegramHaptic,
 } from "./telegram";
@@ -24,6 +26,16 @@ test("uses Telegram theme and initializes WebApp", () => {
   expect(initializeTelegram()).toBe("signed");
   expect(document.documentElement.dataset.theme).toBe("light");
   expect(ready).toHaveBeenCalledOnce(); expect(expand).toHaveBeenCalledOnce();
+});
+
+test("reads current Telegram initData and exposes only safe lifecycle diagnostics", () => {
+  window.Telegram = { WebApp: { initData: "" } };
+  expect(telegramInitData()).toBe("");
+  window.Telegram.WebApp!.initData = "fresh-signed-data";
+  expect(telegramInitData()).toBe("fresh-signed-data");
+  expect(telegramAuthDiagnostics()).toEqual({
+    telegram_webapp_present: true, init_data_present: true, init_data_length: 17,
+  });
 });
 
 test("falls back safely in a regular browser without Telegram SDK", () => {

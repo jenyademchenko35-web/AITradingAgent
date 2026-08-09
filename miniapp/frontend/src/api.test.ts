@@ -13,6 +13,26 @@ test("api uses authenticated GET requests only", async () => {
   });
 });
 
+test("api reads initData when Telegram becomes ready after client creation", async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+  vi.stubGlobal("fetch", fetchMock);
+  let initData = "";
+  const api = new MiniAppApi(() => initData);
+  initData = "fresh-signed-init-data";
+  await api.watchlist();
+  expect(fetchMock).toHaveBeenCalledWith("/api/watchlist", {
+    method: "GET", headers: { "X-Telegram-Init-Data": "fresh-signed-init-data" },
+  });
+});
+
+test("api never sends an empty initData header", async () => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  const api = new MiniAppApi(() => undefined);
+  await expect(api.watchlist()).rejects.toThrow("Telegram initData unavailable");
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
 test("signal path is encoded and does not issue search requests", async () => {
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
   vi.stubGlobal("fetch", fetchMock);

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import time
 from typing import Callable
 from urllib.parse import parse_qsl
@@ -18,10 +19,21 @@ from .rate_limit import InMemoryRateLimiter
 
 
 class TelegramAuthError(ValueError):
-    pass
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
 
 
 _LOCAL_DEV_CLIENTS = frozenset({"127.0.0.1", "::1"})
+LOGGER = logging.getLogger(__name__)
+
+
+def _auth_diagnostic(reason: str, init_data: str) -> None:
+    """Log only lifecycle metadata; signed Telegram data and secrets never reach logs."""
+    LOGGER.warning(
+        "miniapp_auth_denied reason=%s init_data_present=%s init_data_length=%d",
+        reason, bool(init_data), len(init_data),
+    )
 
 
 def validate_init_data(
@@ -32,32 +44,34 @@ def validate_init_data(
     now: int | None = None,
 ) -> TelegramUser:
     """Validate Telegram WebApp HMAC and return the immutable user."""
-    if not init_data or not bot_token:
-        raise TelegramAuthError("missing initData or bot token")
+    if not init_data:
+        raise TelegramAuthError("MISSING_INIT_DATA")
+    if not bot_token:
+        raise TelegramAuthError("MISSING_BOT_TOKEN")
     try:
         pairs = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
     except ValueError as exc:
-        raise TelegramAuthError("malformed initData") from exc
+        raise TelegramAuthError("INVALID_HASH") from exc
     supplied_hash = pairs.pop("hash", "")
     if not supplied_hash:
-        raise TelegramAuthError("missing hash")
+        raise TelegramAuthError("INVALID_HASH")
     check_string = "\n".join(f"{key}={pairs[key]}" for key in sorted(pairs))
     secret = hmac.new(b"WebAppData", bot_token.encode("utf-8"), hashlib.sha256).digest()
     expected = hmac.new(secret, check_string.encode("utf-8"), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, supplied_hash):
-        raise TelegramAuthError("invalid hash")
+        raise TelegramAuthError("INVALID_HASH")
     try:
         auth_date = int(pairs["auth_date"])
     except (KeyError, TypeError, ValueError) as exc:
-        raise TelegramAuthError("invalid auth_date") from exc
+        raise TelegramAuthError("EXPIRED_INIT_DATA") from exc
     current = int(time.time()) if now is None else int(now)
     if auth_date > current + 30 or current - auth_date > max_age_seconds:
-        raise TelegramAuthError("expired initData")
+        raise TelegramAuthError("EXPIRED_INIT_DATA")
     try:
         raw_user = json.loads(pairs["user"])
         return TelegramUser.model_validate(raw_user)
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        raise TelegramAuthError("invalid user") from exc
+        raise TelegramAuthError("INVALID_HASH") from exc
 
 
 def auth_dependency(
@@ -82,6 +96,7 @@ def auth_dependency(
                     max_age_seconds=settings.auth_max_age_seconds,
                 )
             except TelegramAuthError as exc:
+                _auth_diagnostic(exc.reason, x_telegram_init_data)
                 if limiter is not None:
                     limiter.require(client_ip=client_ip)
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram initData") from exc
@@ -90,6 +105,7 @@ def auth_dependency(
         if not local_dev and settings.owner_only and (
             settings.owner_user_id is None or user.id != settings.owner_user_id
         ):
+            _auth_diagnostic("OWNER_MISMATCH", x_telegram_init_data)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner access required")
         return user
 

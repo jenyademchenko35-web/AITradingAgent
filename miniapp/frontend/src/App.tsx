@@ -13,6 +13,7 @@ import {
   initializeTelegram,
   miniAppEnvironment,
   subscribeTelegramAppearance,
+  telegramInitData,
   telegramDisplayName,
   telegramHaptic,
 } from "./telegram";
@@ -135,7 +136,7 @@ function ScenarioRadar({ rows, changes, loading }: { rows: Record<string, unknow
   return <section className="panel"><div className="section-heading"><div><h2>🧭 Scenario Radar</h2><p>Read-only scenarios published after Impulse Probability.</p></div><StatusBadge status="READ ONLY" /></div><h3>Top Scenarios</h3><div className="quick-signal-list">{rows.slice(0, 5).map((row) => <div className="quick-signal" key={display(row.symbol)}><b>{display(row.symbol)}</b><StatusBadge status={display(row.primary_scenario)} /><strong>{display(row.primary_probability)}%</strong><small>{display(row.confidence)} · {display(row.market_regime)}</small></div>)}</div><h3>Active Scenarios</h3><div className="activity-feed">{rows.map((row) => <div className="activity-row" key={`scenario-${display(row.symbol)}`}><div><span>{display(row.symbol)} · {display(row.primary_scenario)}</span><small>{display((Array.isArray(row.confirmation_conditions) && row.confirmation_conditions[0]) || row.data_quality)}</small></div><b>{display(row.primary_probability)}%</b></div>)}</div><h3>Reasons & Invalidation</h3>{rows.some((row) => (Array.isArray(row.reasons) && row.reasons.length) || (Array.isArray(row.invalidation_conditions) && row.invalidation_conditions.length)) ? <div className="activity-feed">{rows.flatMap((row) => [...(Array.isArray(row.reasons) ? row.reasons : []), ...(Array.isArray(row.invalidation_conditions) ? row.invalidation_conditions : [])].map((reason, index) => <div className="activity-row" key={`${display(row.symbol)}-${index}`}><span>{display(row.symbol)}</span><b>{display(reason)}</b></div>))}</div> : <EmptyState title="No scenario context published" detail="The observer did not publish reasons or invalidation conditions." />}<h3>Changes</h3>{changeRows.length ? <div className="activity-feed">{changeRows.map((row, index) => <div className="activity-row" key={index}><span>{display(row.symbol)} · {display((row.current as Record<string, unknown> | undefined)?.primary_scenario)}</span><b>{display((row.current as Record<string, unknown> | undefined)?.primary_probability)}%</b></div>)}</div> : <EmptyState title="No scenario changes" detail="No scenario type or probability change met the published threshold." />}</section>;
 }
 
-export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiClient; telegramInitData?: string }) {
+export function App({ api: injectedApi, telegramInitData: initialInitData }: { api?: MiniAppApiClient; telegramInitData?: string }) {
   const [tab, setTab] = useState<Tab>("home");
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
@@ -161,7 +162,10 @@ export function App({ api: injectedApi, telegramInitData }: { api?: MiniAppApiCl
   const [signal, setSignal] = useState<SignalResponse | null>(null);
   const [signalRoute, setSignalRoute] = useState<SignalRoute | null>(() => routeFromLocation(window.location));
   const [loading, setLoading] = useState(true); const [error, setError] = useState("");
-  const api = useMemo(() => injectedApi ?? new MiniAppApi(telegramInitData ?? initializeTelegram()), [injectedApi, telegramInitData]);
+  const api = useMemo(() => {
+    initializeTelegram();
+    return injectedApi ?? new MiniAppApi(() => telegramInitData() || initialInitData || "");
+  }, [injectedApi, initialInitData]);
   const environment = miniAppEnvironment();
   const displayName = telegramDisplayName();
 

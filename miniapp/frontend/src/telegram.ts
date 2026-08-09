@@ -87,7 +87,22 @@ export function initializeTelegram(): string {
   app?.ready?.();
   app?.expand?.();
   applyTelegramAppearance();
-  return app?.initData ?? "";
+  return telegramInitData();
+}
+
+/** Read initData at request time: Telegram may populate it after the first render. */
+export function telegramInitData(): string {
+  return webApp()?.initData?.trim() ?? "";
+}
+
+/** Safe lifecycle diagnostics only; the signed initData is never exposed or logged. */
+export function telegramAuthDiagnostics() {
+  const initData = telegramInitData();
+  return {
+    telegram_webapp_present: Boolean(webApp()),
+    init_data_present: Boolean(initData),
+    init_data_length: initData.length,
+  };
 }
 
 export function isTelegramMiniApp() { return Boolean(webApp()); }

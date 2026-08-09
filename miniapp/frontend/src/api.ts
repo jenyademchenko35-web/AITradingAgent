@@ -71,9 +71,11 @@ export interface MiniAppApiClient {
   similarSetups(symbol: string, timeframe: string, source?: SimilarSource, page?: number): Promise<SimilarResponse>;
 }
 
+export type TelegramInitDataProvider = () => string | undefined;
+
 export class MiniAppApi implements MiniAppApiClient {
   constructor(
-    private readonly initData: string,
+    private readonly initData: string | TelegramInitDataProvider,
     private readonly baseUrl = import.meta.env.VITE_API_BASE_URL ?? "",
   ) {}
 
@@ -85,9 +87,11 @@ export class MiniAppApi implements MiniAppApiClient {
   }
 
   private async get<T>(path: string): Promise<T> {
+    const initData = (typeof this.initData === "function" ? this.initData() : this.initData)?.trim() ?? "";
+    if (!initData) throw new Error("Telegram initData unavailable");
     const response = await fetch(this.url(path), {
       method: "GET",
-      headers: { "X-Telegram-Init-Data": this.initData },
+      headers: { "X-Telegram-Init-Data": initData },
     });
     if (!response.ok) throw new Error(`API ${response.status}`);
     return response.json() as Promise<T>;
