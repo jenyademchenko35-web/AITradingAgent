@@ -96,7 +96,7 @@ def test_system_uses_live_monitor_and_agent_stats_fallbacks_when_dashboard_is_ab
 def test_runtime_endpoints_are_get_only_and_health_is_safe(tmp_path):
     client = _client(tmp_path)
     headers = {"X-Telegram-Init-Data": _signed()}
-    paths = ["/api/system", "/api/activity", "/api/shadow", "/api/research/live"]
+    paths = ["/api/system", "/api/activity", "/api/shadow", "/api/research/live", "/api/evaluation"]
     assert all(client.get(path, headers=headers).status_code == 200 for path in paths)
     for method in (client.post, client.put, client.patch, client.delete):
         assert all(method(path, headers=headers).status_code == 405 for path in paths)
@@ -104,6 +104,17 @@ def test_runtime_endpoints_are_get_only_and_health_is_safe(tmp_path):
     assert health.status_code == 200
     assert health.json()["checks"]["backend"] is True
     assert str(tmp_path) not in health.text
+
+
+def test_evaluation_endpoint_reads_saved_report_only(tmp_path):
+    client = _client(tmp_path)
+    (tmp_path / "signal_evaluation_report.json").write_text(json.dumps({
+        "evaluation_status": "INSUFFICIENT_DATA", "episodes_total": 2,
+        "episodes_evaluated": 0, "episodes_pending": 2,
+    }), encoding="utf-8")
+    response = client.get("/api/evaluation", headers={"X-Telegram-Init-Data": _signed()})
+    assert response.status_code == 200
+    assert response.json()["episodes_pending"] == 2
 
 
 def test_activity_empty_and_repository_health_use_cache_without_writes(tmp_path):

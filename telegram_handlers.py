@@ -51,6 +51,7 @@ BOT_COMMANDS_V5 = [
     BotCommand("impulse", "⚡ Top impulse probability"),
     BotCommand("impulse_learning", "🧠 Impulse learning status"),
     BotCommand("scenarios", "🧭 Published market scenarios"),
+    BotCommand("evaluation", "📊 Signal outcome evaluation"),
     BotCommand("candidates", "🧪 Candidate Laboratory"),
     BotCommand("candidate", "🧪 Candidate detail"),
     BotCommand("shadowstatus", "👤 Shadow validation status"),

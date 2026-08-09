@@ -207,6 +207,14 @@ class ReadOnlyRepository:
         payload = self.impulse_report("impulse_learning_report.json")
         return payload if isinstance(payload, dict) else {}
 
+    def evaluation(self) -> dict[str, Any]:
+        """Read a generated observer report only; this method never evaluates signals."""
+        payload = self.impulse_report("signal_evaluation_report.json")
+        return payload if isinstance(payload, dict) else {
+            "evaluation_status": "INSUFFICIENT_DATA", "episodes_total": 0,
+            "episodes_evaluated": 0, "episodes_pending": 0,
+        }
+
     def scenarios(self) -> list[dict[str, Any]]:
         payload = self.impulse_report("scenario_report.json")
         return [dict(row) for row in payload if isinstance(row, Mapping)] if isinstance(payload, list) else []

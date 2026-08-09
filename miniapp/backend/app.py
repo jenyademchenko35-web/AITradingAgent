@@ -153,6 +153,10 @@ def create_app(
     async def diagnostics(_: TelegramUser = Depends(authenticate)) -> dict:
         return data.diagnostics()
 
+    @api.get("/api/evaluation")
+    async def evaluation(_: TelegramUser = Depends(authenticate)) -> dict:
+        return data.evaluation()
+
     @api.get("/api/impulse-radar")
     async def impulse_radar(_: TelegramUser = Depends(authenticate)) -> list[dict]:
         return data.impulse_radar()

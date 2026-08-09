@@ -94,6 +94,7 @@ def build_runtime_snapshot(
     research: Mapping[str, Any] | None = None,
     scenario: Mapping[str, Any] | None = None,
     impulse: Mapping[str, Any] | None = None,
+    signal_evaluation: Mapping[str, Any] | None = None,
     source_updated_at: Any = None,
     generated_at: Any = None,
     stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
@@ -127,6 +128,8 @@ def build_runtime_snapshot(
         "research": dict(research or {}),
         "scenario": dict(scenario or {}),
         "impulse": dict(impulse or {}),
+        # v1 extension: consumers that do not know this section safely ignore it.
+        "signal_evaluation": dict(signal_evaluation or {}),
     }
 
 
@@ -160,7 +163,7 @@ def validate_runtime_snapshot(snapshot: Any) -> dict[str, Any]:
     freshness = snapshot.get("freshness")
     if isinstance(freshness, Mapping) and freshness.get("status") not in {"FRESH", "STALE", "UNKNOWN"}:
         errors.append("freshness.status is invalid")
-    for section in ("market", "portfolio", "decision_telemetry", "research", "scenario", "impulse"):
+    for section in ("market", "portfolio", "decision_telemetry", "research", "scenario", "impulse", "signal_evaluation"):
         if section in snapshot and snapshot.get(section) is not None and not isinstance(snapshot.get(section), Mapping):
             warnings.append(f"optional section ignored: {section}")
     return {"valid": not errors, "status": "OK" if not errors else "INVALID", "errors": errors, "warnings": warnings}

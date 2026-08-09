@@ -5,6 +5,7 @@ import argparse
 import traceback
 import os
 import json
+from pathlib import Path
 from config import (
     MIN_CONFIDENCE,
     MIN_EDGE,
@@ -1542,7 +1543,7 @@ def _run_research_lab_observer(cycle_id, snapshots):
         return None
 
 
-def _publish_runtime_snapshot_observer(cycle_id, decisions, *, research_result=None, impulse_rows=None):
+def _publish_runtime_snapshot_observer(cycle_id, decisions, *, current_prices=None, research_result=None, impulse_rows=None):
     """Publish a compact read-only runtime projection after a completed cycle.
 
     It consumes existing decision values only. Errors are isolated so this file
@@ -1554,9 +1555,14 @@ def _publish_runtime_snapshot_observer(cycle_id, decisions, *, research_result=N
         for symbol, decision in decisions:
             rows.append({
                 "symbol": symbol, "timeframe": "1h", "timestamp": cycle_id, "cycle_id": cycle_id,
+                "current_price": (current_prices or {}).get(symbol),
                 "signal": getattr(decision, "signal", None), "direction": getattr(decision, "direction", None),
                 "score": getattr(decision, "score", None), "confidence": getattr(decision, "confidence", None),
                 "quality": getattr(decision, "quality", None),
+                "entry": getattr(decision, "entry", None), "stop_loss": getattr(decision, "stop_loss", None),
+                "take_profit": getattr(decision, "take_profit", None),
+                "market_regime": getattr(decision, "market_regime", None),
+                "signal_fingerprint": getattr(decision, "signal_fingerprint", None),
                 "failed_filters": list(getattr(decision, "failed_filters", []) or []),
                 "trend_score": max(getattr(decision, "trend_long_score", 0), getattr(decision, "trend_short_score", 0)),
             })
@@ -1569,6 +1575,15 @@ def _publish_runtime_snapshot_observer(cycle_id, decisions, *, research_result=N
             stale_after_seconds=int(os.getenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "900")),
         )
         write_runtime_snapshot(os.path.join(BASE_DIR, "runtime_snapshot.json"), snapshot)
+        # Evaluation only observes the just-published snapshot. A missing
+        # future price remains PENDING; it never feeds back into a decision.
+        try:
+            from signal_outcome_evaluation import process_snapshot
+            evaluation = process_snapshot(snapshot, base_dir=Path(BASE_DIR))
+            snapshot["signal_evaluation"] = evaluation
+            write_runtime_snapshot(os.path.join(BASE_DIR, "runtime_snapshot.json"), snapshot)
+        except Exception as evaluation_exc:
+            LOGGER.timestamped(json.dumps({"event": "signal_evaluation_error", "cycle_id": cycle_id, "error": str(evaluation_exc), "fail_open": True}, sort_keys=True))
         LOGGER.timestamped(json.dumps({"event": "runtime_snapshot_published", "snapshot_id": snapshot["snapshot_id"], "cycle_id": cycle_id}, sort_keys=True))
         return snapshot
     except Exception as exc:
@@ -1676,7 +1691,7 @@ def run_once():
     update_open_trades(current_prices)
     research_result = _run_research_lab_observer(cycle_id, research_snapshots)
     _publish_runtime_snapshot_observer(
-        cycle_id, decisions, research_result=research_result, impulse_rows=locals().get("impulse_rows"),
+        cycle_id, decisions, current_prices=current_prices, research_result=research_result, impulse_rows=locals().get("impulse_rows"),
     )
 
 

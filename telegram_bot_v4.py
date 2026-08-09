@@ -3837,6 +3837,27 @@ async def scenarios_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await reply(update, "\n".join(lines + ([] if rows else ["No published scenarios."])))
 
 
+async def evaluation_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show saved observer evidence only; never runs evaluation or trading."""
+    if not is_owner_update(update):
+        await reply(update, OWNER_ONLY_TEXT)
+        return
+    try:
+        from signal_outcome_evaluation import BASE_DIR, REPORT
+        report = json.loads((BASE_DIR / REPORT).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        report = {}
+    metrics = report.get("metrics") if isinstance(report.get("metrics"), dict) else {}
+    by_regime = report.get("by_regime") if isinstance(report.get("by_regime"), dict) else {}
+    ready = [(name, row) for name, row in by_regime.items() if isinstance(row, dict) and row.get("expectancy") is not None]
+    best = max(ready, key=lambda item: item[1]["expectancy"])[0] if ready else "—"
+    worst = min(ready, key=lambda item: item[1]["expectancy"])[0] if ready else "—"
+    accuracy = metrics.get("direction_accuracy")
+    expectation = metrics.get("expectancy")
+    lines = ["📊 Signal Evaluation", f"Evaluated: {report.get('episodes_evaluated', 0)}", f"Pending: {report.get('episodes_pending', 0)}", f"Direction accuracy: {f'{accuracy}%' if accuracy is not None else '—'}", f"Expectancy: {f'{expectation}R' if expectation is not None else '—'}", f"Best regime: {best}", f"Worst regime: {worst}", f"Calibration: {(report.get('calibration') or {}).get('status', 'INSUFFICIENT_DATA')}"]
+    await reply(update, "\n".join(lines))
+
+
 def is_researchlab_owner(update: Update) -> bool:
     """Compatibility name backed by the canonical Telegram user-id policy."""
     return is_owner_update(update)
@@ -4234,6 +4255,7 @@ def build_app():
     app.add_handler(CommandHandler("impulse", impulse_command))
     app.add_handler(CommandHandler("impulse_learning", impulse_learning_command))
     app.add_handler(CommandHandler("scenarios", scenarios_command))
+    app.add_handler(CommandHandler("evaluation", evaluation_command))
     app.add_handler(CommandHandler("researchlab_on", researchlab_on_command))
     app.add_handler(CommandHandler("researchlab_off", researchlab_off_command))
     app.add_handler(CommandHandler("researchlab_dry_on", researchlab_dry_on_command))
