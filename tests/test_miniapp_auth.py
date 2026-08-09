@@ -48,6 +48,19 @@ def test_official_webapp_hmac_algorithm_rejects_changed_data_or_wrong_token():
         validate_init_data(init_data, "wrong-token", now=1_800_000_001)
 
 
+def test_official_webapp_hmac_accepts_signature_as_a_signed_field():
+    token = "123456:TEST_BOT_TOKEN"
+    init_data = (
+        "auth_date=1800000000&query_id=AAEAAQ&"
+        "user=%7B%22id%22%3A42%2C%22first_name%22%3A%22Test+User%22%2C"
+        "%22username%22%3A%22tester%22%7D&signature=ed25519-signature&"
+        "hash=dc8dfaed70052bc5fd6f95cdd009e2342b43a4b6143e13cc3c48de13f603c9e4"
+    )
+    assert validate_init_data(init_data, token, now=1_800_000_001).id == 42
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data(init_data.replace("Test+User", "Other+User"), token, now=1_800_000_001)
+
+
 def test_invalid_hash_and_expired_data_are_rejected():
     with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
         validate_init_data(signed_init_data() + "x", "token", now=1_800_000_001)
@@ -138,5 +151,8 @@ def test_invalid_hmac_returns_401_and_logs_only_safe_metadata(caplog):
     assert "reason=INVALID_HASH" in caplog.text
     assert "token_source=BOT_TOKEN" in caplog.text
     assert "token_present=True" in caplog.text
+    assert "algorithm=TELEGRAM_WEBAPP_HMAC_SHA256_V1" in caplog.text
     assert "parsed_field_names=" in caplog.text
+    assert "signature_present=False" in caplog.text
+    assert "data_check_string_length=" in caplog.text
     assert "private-token" not in caplog.text and "bad-init-data" not in caplog.text

@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import time
 from typing import Callable
 from urllib.parse import parse_qsl
@@ -26,6 +27,28 @@ class TelegramAuthError(ValueError):
 
 _LOCAL_DEV_CLIENTS = frozenset({"127.0.0.1", "::1"})
 LOGGER = logging.getLogger(__name__)
+HMAC_ALGORITHM = "TELEGRAM_WEBAPP_HMAC_SHA256_V1"
+_SAFE_FIELD_NAME = re.compile(r"^[A-Za-z0-9_]{1,64}$")
+
+
+def _data_check_string(fields: dict[str, str]) -> str:
+    """Telegram HMAC covers every received field except hash, including signature."""
+    return "\n".join(
+        f"{key}={fields[key]}" for key in sorted(fields) if key != "hash"
+    )
+
+
+def _safe_field_names(fields: dict[str, str]) -> str:
+    """Return parse metadata without allowing untrusted field names into logs."""
+    return ",".join(key for key in sorted(fields) if _SAFE_FIELD_NAME.fullmatch(key))
+
+
+def _safe_auth_date(fields: dict[str, str]) -> str | None:
+    """Return the numeric auth date only; preserve diagnostics without log injection."""
+    auth_date = fields.get("auth_date")
+    if auth_date is None:
+        return None
+    return auth_date if auth_date.isascii() and auth_date.isdecimal() else "INVALID"
 
 
 def _auth_diagnostic(reason: str, init_data: str, settings: MiniAppSettings) -> None:
@@ -34,11 +57,14 @@ def _auth_diagnostic(reason: str, init_data: str, settings: MiniAppSettings) -> 
         fields = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
     except ValueError:
         fields = {}
+    data_check = _data_check_string(fields) if fields else ""
     LOGGER.warning(
-        "miniapp_auth_denied reason=%s token_source=%s token_present=%s "
-        "init_data_present=%s init_data_length=%d parsed_field_names=%s auth_date=%s",
-        reason, settings.bot_token_source, bool(settings.bot_token), bool(init_data),
-        len(init_data), ",".join(sorted(fields)), fields.get("auth_date"),
+        "miniapp_auth_denied reason=%s algorithm=%s token_source=%s token_present=%s "
+        "init_data_present=%s init_data_length=%d parsed_field_names=%s signature_present=%s "
+        "auth_date=%s data_check_string_length=%d",
+        reason, HMAC_ALGORITHM, settings.bot_token_source, bool(settings.bot_token),
+        bool(init_data), len(init_data), _safe_field_names(fields), "signature" in fields,
+        _safe_auth_date(fields), len(data_check),
     )
 
 
@@ -61,7 +87,7 @@ def validate_init_data(
     supplied_hash = pairs.pop("hash", "")
     if not supplied_hash:
         raise TelegramAuthError("INVALID_HASH")
-    check_string = "\n".join(f"{key}={pairs[key]}" for key in sorted(pairs))
+    check_string = _data_check_string(pairs)
     secret = hmac.new(
         key=b"WebAppData", msg=bot_token.encode("utf-8"), digestmod=hashlib.sha256,
     ).digest()
