@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import logging
 from pathlib import Path
+from io import BytesIO
 from urllib import error
 
 from fastapi.testclient import TestClient
@@ -125,8 +126,11 @@ def test_repository_prefers_ingest_and_explicitly_reports_stale_ingest(tmp_path)
 
 
 class _Response:
-    status = 200
-    def getcode(self): return 200
+    def __init__(self, status=200, body=b""):
+        self.status = status
+        self._body = body
+    def getcode(self): return self.status
+    def read(self, _limit=-1): return self._body if _limit < 0 else self._body[:_limit]
     def __enter__(self): return self
     def __exit__(self, *_): return False
 
@@ -169,3 +173,45 @@ def test_publisher_treats_duplicate_response_as_idempotent_success(tmp_path):
     def opener(*_args, **_kwargs):
         raise error.HTTPError("https://example.invalid", 409, "duplicate", {}, None)
     assert publish_once(_publisher_settings(tmp_path), opener=opener) is True
+
+
+@pytest.mark.parametrize(
+    ("status", "body", "expected"),
+    [
+        (422, b'{"detail":"INVALID_RUNTIME_SNAPSHOT"}', "detail=INVALID_RUNTIME_SNAPSHOT"),
+        (401, b'{"reason":"UNAUTHORIZED_INGEST"}', "reason=UNAUTHORIZED_INGEST"),
+    ],
+)
+def test_publisher_logs_safe_json_ingest_rejection(tmp_path, caplog, status, body, expected):
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", _bundle()["runtime_snapshot"])
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    def opener(*_args, **_kwargs):
+        raise error.HTTPError("https://example.invalid", status, "failed", {}, BytesIO(body))
+    assert publish_once(_publisher_settings(tmp_path), opener=opener) is False
+    assert f"http_status={status}" in caplog.text and expected in caplog.text
+    assert "publisher-secret" not in caplog.text
+
+
+def test_publisher_logs_bounded_non_json_error_without_secrets_or_payload(tmp_path, caplog):
+    snapshot = _bundle()["runtime_snapshot"]
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    body = ("upstream failure " + ("x" * 400)).encode()
+    def opener(*_args, **_kwargs): return _Response(500, body)
+    assert publish_once(_publisher_settings(tmp_path), opener=opener) is False
+    assert "http_status=500" in caplog.text
+    assert "x" * 301 not in caplog.text
+    assert "publisher-secret" not in caplog.text
+    assert json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")) not in caplog.text
+
+
+def test_publisher_omits_payload_like_error_echo(tmp_path, caplog):
+    snapshot = _bundle()["runtime_snapshot"]
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    body = json.dumps({"runtime_snapshot": snapshot}).encode()
+    def opener(*_args, **_kwargs): return _Response(500, body)
+    assert publish_once(_publisher_settings(tmp_path), opener=opener) is False
+    assert "payload_like_response_omitted" in caplog.text
+    assert snapshot["snapshot_id"] in caplog.text  # allowed as the dedicated diagnostic field
+    assert '"runtime_snapshot"' not in caplog.text

@@ -23,6 +23,9 @@ from runtime_contract import read_runtime_snapshot
 
 LOGGER = logging.getLogger("runtime_publisher")
 MAX_REPORT_BYTES = 1_048_576
+MAX_ERROR_RESPONSE_CHARS = 300
+MAX_ERROR_RESPONSE_BYTES = 8_192
+_SAFE_ERROR_FIELDS = ("error", "detail", "code", "reason")
 
 
 @dataclass(frozen=True)
@@ -94,6 +97,43 @@ def _log(event: str, **fields: Any) -> None:
     LOGGER.info("runtime_publish event=%s %s", event, " ".join(f"{key}={value}" for key, value in fields.items()))
 
 
+def _safe_response_text(value: Any, *, secrets: tuple[str, ...]) -> str:
+    """Bound an untrusted response and remove known credentials/payloads."""
+    text = " ".join(str(value or "").split())
+    for secret in secrets:
+        if secret:
+            text = text.replace(secret, "[REDACTED]")
+    return text[:MAX_ERROR_RESPONSE_CHARS]
+
+
+def _ingest_error_diagnostics(response: Any, *, secret: str, payload_text: str) -> dict[str, str]:
+    """Extract a minimal, non-sensitive error explanation from a failed response."""
+    try:
+        raw = response.read(MAX_ERROR_RESPONSE_BYTES)
+        text = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw or "")
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {"response_body": "unavailable"}
+    try:
+        parsed = json.loads(text)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        # Never emit an apparent request echo, even in a non-JSON error page.
+        if "runtime_snapshot" in text or payload_text in text:
+            return {"response_body": "payload_like_response_omitted"}
+        return {"response_body": _safe_response_text(text, secrets=(secret, payload_text)) or "unavailable"}
+    if not isinstance(parsed, Mapping):
+        return {"response_body": "json_non_object"}
+    details: dict[str, str] = {}
+    for field in _SAFE_ERROR_FIELDS:
+        value = parsed.get(field)
+        if isinstance(value, (str, int, float, bool)) and not isinstance(value, bytes):
+            details[field] = _safe_response_text(value, secrets=(secret, payload_text)) or "unavailable"
+    if details:
+        return details
+    if any(field in parsed for field in ("runtime_snapshot", "scenario_report", "signal_evaluation_report")):
+        return {"response_body": "payload_like_response_omitted"}
+    return {"response_body": "json_without_safe_error_fields"}
+
+
 def publish_once(
     settings: RuntimePublisherSettings,
     *,
@@ -108,16 +148,25 @@ def publish_once(
         _log("skipped", snapshot_id=snapshot_id, reason="publisher_not_configured")
         return False
     encoded = json.dumps(bundle, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    payload_text = encoded.decode("utf-8")
     outgoing = request.Request(
         settings.url, data=encoded, method="POST",
         headers={"Authorization": f"Bearer {settings.secret}", "Content-Type": "application/json"},
     )
     started = time.monotonic()
+    diagnostics: dict[str, str] = {}
     try:
         with opener(outgoing, timeout=settings.timeout_seconds) as response:
             status = int(getattr(response, "status", response.getcode()))
+            if status >= 400:
+                diagnostics = _ingest_error_diagnostics(
+                    response, secret=settings.secret, payload_text=payload_text,
+                )
     except error.HTTPError as exc:
         status = int(exc.code)
+        diagnostics = _ingest_error_diagnostics(
+            exc, secret=settings.secret, payload_text=payload_text,
+        )
     except (OSError, ValueError) as exc:
         _log("failed", snapshot_id=snapshot_id, error_type=type(exc).__name__, latency_ms=int((time.monotonic() - started) * 1000))
         return False
@@ -125,7 +174,7 @@ def publish_once(
     if 200 <= status < 300 or status == 409:
         _log("success", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms)
         return True
-    _log("failed", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms)
+    _log("failed", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms, **diagnostics)
     return False
 
 
