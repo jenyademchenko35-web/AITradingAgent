@@ -13,12 +13,19 @@ from miniapp.backend.auth import TelegramAuthError, validate_init_data
 from miniapp.backend.config import MiniAppSettings
 
 
-def signed_init_data(*, token="token", user_id=42, auth_date=1_800_000_000):
+def signed_init_data(
+    *,
+    token="token",
+    user_id=42,
+    auth_date=1_800_000_000,
+    extras: dict[str, str] | None = None,
+):
     values = {
         "auth_date": str(auth_date),
         "query_id": "query-1",
         "user": json.dumps({"id": user_id, "first_name": "Owner"}, separators=(",", ":")),
     }
+    values.update(extras or {})
     check = "\n".join(f"{key}={values[key]}" for key in sorted(values))
     secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
     values["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
@@ -59,6 +66,35 @@ def test_official_webapp_hmac_accepts_signature_as_a_signed_field():
     assert validate_init_data(init_data, token, now=1_800_000_001).id == 42
     with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
         validate_init_data(init_data.replace("Test+User", "Other+User"), token, now=1_800_000_001)
+
+
+def test_telegram_like_init_data_preserves_signature_encoded_user_and_field_order():
+    token = "123456:TEST_BOT_TOKEN"
+    signed = signed_init_data(
+        token=token,
+        extras={"signature": "base64url_signature-._", "start_param": "with spaces"},
+    )
+    fields = signed.split("&")
+    reordered = "&".join(reversed(fields))
+    assert validate_init_data(reordered, token, now=1_800_000_001).id == 42
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data(
+            reordered.replace("auth_date=1800000000", "auth_date=1800000001"),
+            token,
+            now=1_800_000_001,
+        )
+
+
+@pytest.mark.parametrize(
+    "init_data",
+    [
+        "auth_date=1800000000&auth_date=1800000001&user=%7B%22id%22%3A42%7D&hash=value",
+        "auth_date=1800000000&user=%7B%22id%22%3A42%7D&hash=value&",
+    ],
+)
+def test_duplicate_or_malformed_fields_are_rejected(init_data):
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data(init_data, "token", now=1_800_000_001)
 
 
 def test_invalid_hash_and_expired_data_are_rejected():
@@ -152,6 +188,8 @@ def test_invalid_hmac_returns_401_and_logs_only_safe_metadata(caplog):
     assert "token_source=BOT_TOKEN" in caplog.text
     assert "token_present=True" in caplog.text
     assert "algorithm=TELEGRAM_WEBAPP_HMAC_SHA256_V1" in caplog.text
+    assert "hmac_data_check_profile=ALL_FIELDS_EXCEPT_HASH" in caplog.text
+    assert "token_fingerprint=" in caplog.text
     assert "parsed_field_names=" in caplog.text
     assert "signature_present=False" in caplog.text
     assert "data_check_string_length=" in caplog.text

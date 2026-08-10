@@ -28,6 +28,7 @@ class TelegramAuthError(ValueError):
 _LOCAL_DEV_CLIENTS = frozenset({"127.0.0.1", "::1"})
 LOGGER = logging.getLogger(__name__)
 HMAC_ALGORITHM = "TELEGRAM_WEBAPP_HMAC_SHA256_V1"
+HMAC_DATA_CHECK_PROFILE = "ALL_FIELDS_EXCEPT_HASH"
 _SAFE_FIELD_NAME = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 
 
@@ -36,6 +37,25 @@ def _data_check_string(fields: dict[str, str]) -> str:
     return "\n".join(
         f"{key}={fields[key]}" for key in sorted(fields) if key != "hash"
     )
+
+
+def _parse_init_data(init_data: str) -> dict[str, str]:
+    """Decode Telegram's query string exactly once and reject ambiguous keys."""
+    try:
+        pairs = parse_qsl(init_data, keep_blank_values=True, strict_parsing=True)
+    except ValueError as exc:
+        raise TelegramAuthError("INVALID_HASH") from exc
+    field_names = [key for key, _value in pairs]
+    if len(field_names) != len(set(field_names)):
+        raise TelegramAuthError("INVALID_HASH")
+    return dict(pairs)
+
+
+def _token_fingerprint(token: str) -> str:
+    """Return a non-reversible identifier for comparing configured environments."""
+    if not token:
+        return "NONE"
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()[:12]
 
 
 def _safe_field_names(fields: dict[str, str]) -> str:
@@ -54,15 +74,17 @@ def _safe_auth_date(fields: dict[str, str]) -> str | None:
 def _auth_diagnostic(reason: str, init_data: str, settings: MiniAppSettings) -> None:
     """Log only field names and lifecycle metadata, never signed values or secrets."""
     try:
-        fields = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
-    except ValueError:
+        fields = _parse_init_data(init_data)
+    except TelegramAuthError:
         fields = {}
     data_check = _data_check_string(fields) if fields else ""
     LOGGER.warning(
-        "miniapp_auth_denied reason=%s algorithm=%s token_source=%s token_present=%s "
+        "miniapp_auth_denied reason=%s algorithm=%s hmac_data_check_profile=%s "
+        "token_source=%s token_present=%s token_fingerprint=%s "
         "init_data_present=%s init_data_length=%d parsed_field_names=%s signature_present=%s "
         "auth_date=%s data_check_string_length=%d",
-        reason, HMAC_ALGORITHM, settings.bot_token_source, bool(settings.bot_token),
+        reason, HMAC_ALGORITHM, HMAC_DATA_CHECK_PROFILE,
+        settings.bot_token_source, bool(settings.bot_token), _token_fingerprint(settings.bot_token),
         bool(init_data), len(init_data), _safe_field_names(fields), "signature" in fields,
         _safe_auth_date(fields), len(data_check),
     )
@@ -80,10 +102,7 @@ def validate_init_data(
         raise TelegramAuthError("MISSING_INIT_DATA")
     if not bot_token:
         raise TelegramAuthError("MISSING_BOT_TOKEN")
-    try:
-        pairs = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
-    except ValueError as exc:
-        raise TelegramAuthError("INVALID_HASH") from exc
+    pairs = _parse_init_data(init_data)
     supplied_hash = pairs.pop("hash", "")
     if not supplied_hash:
         raise TelegramAuthError("INVALID_HASH")
