@@ -32,6 +32,7 @@ HMAC_DATA_CHECK_PROFILE = "ALL_FIELDS_EXCEPT_HASH"
 _SAFE_FIELD_NAME = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 _FINGERPRINT = re.compile(r"^[0-9a-f]{12}$")
 _BUILD_MARKER = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
+_HEX_HASH = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _data_check_string(fields: dict[str, str]) -> str:
@@ -111,6 +112,20 @@ def _hmac_diagnostics(init_data: str, bot_token: str) -> dict[str, str]:
         "calculated_hash_fingerprint": _value_fingerprint(calculated_hash),
         "received_hash_fingerprint": _value_fingerprint(supplied_hash) if supplied_hash else "MISSING",
     }
+
+
+def _compare_telegram_hash(calculated_hash: str, received_hash: str) -> bool:
+    """Compare Telegram's lowercase hexadecimal HMAC strings and log only metadata."""
+    received_is_hex = bool(_HEX_HASH.fullmatch(received_hash))
+    compare_result = received_is_hex and hmac.compare_digest(calculated_hash, received_hash)
+    LOGGER.info(
+        "miniapp_auth_hash_compare received_hash_type=%s calculated_hash_type=%s "
+        "received_hash_length=%d calculated_hash_length=%d compare_result=%s "
+        "comparison_representation=HEX_TO_HEX",
+        type(received_hash).__name__, type(calculated_hash).__name__,
+        len(received_hash), len(calculated_hash), compare_result,
+    )
+    return compare_result
 
 
 def _safe_field_names(fields: dict[str, str]) -> str:
@@ -208,7 +223,7 @@ def validate_init_data(
     expected = hmac.new(
         key=secret, msg=check_string.encode("utf-8"), digestmod=hashlib.sha256,
     ).hexdigest()
-    if not hmac.compare_digest(expected, supplied_hash):
+    if not _compare_telegram_hash(expected, supplied_hash):
         raise TelegramAuthError("INVALID_HASH")
     try:
         auth_date = int(pairs["auth_date"])
@@ -221,7 +236,8 @@ def validate_init_data(
         raw_user = json.loads(pairs["user"])
         return TelegramUser.model_validate(raw_user)
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        raise TelegramAuthError("INVALID_HASH") from exc
+        # HMAC already passed; keep malformed user JSON distinct from hash failure.
+        raise TelegramAuthError("INVALID_USER_PAYLOAD") from exc
 
 
 def auth_dependency(

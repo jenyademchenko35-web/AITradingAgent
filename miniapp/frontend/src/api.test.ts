@@ -69,8 +69,8 @@ test("runtime API methods use their dedicated read-only endpoints once", async (
   vi.stubGlobal("fetch", fetchMock);
   const api = new MiniAppApi("data");
   await Promise.all([api.system(), api.activity(), api.shadow(), api.researchLive()]);
-  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-    "/api/system", "/api/activity", "/api/shadow", "/api/research/live",
+  expect(fetchMock.mock.calls.map(([url]) => url).sort()).toEqual([
+    "/api/activity", "/api/research/live", "/api/shadow", "/api/system",
   ]);
   expect(fetchMock.mock.calls.every(([, options]) => options.method === "GET")).toBe(true);
   expect(fetchMock.mock.calls.every(([, options]) => (

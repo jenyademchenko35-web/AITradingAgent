@@ -55,6 +55,27 @@ def test_official_webapp_hmac_algorithm_rejects_changed_data_or_wrong_token():
         validate_init_data(init_data, "wrong-token", now=1_800_000_001)
 
 
+def test_final_hash_comparison_uses_lowercase_hex_to_hex_and_cannot_fall_through(caplog):
+    caplog.set_level(logging.INFO, logger="miniapp.backend.auth")
+    init_data = signed_init_data(token="comparison-token")
+    assert validate_init_data(init_data, "comparison-token", now=1_800_000_001).id == 42
+    assert "compare_result=True" in caplog.text
+    assert "comparison_representation=HEX_TO_HEX" in caplog.text
+
+    uppercase_hash = init_data.rsplit("hash=", 1)[0] + "hash=" + init_data.rsplit("hash=", 1)[1].upper()
+    with pytest.raises(TelegramAuthError, match="INVALID_HASH"):
+        validate_init_data(uppercase_hash, "comparison-token", now=1_800_000_001)
+    assert "compare_result=False" in caplog.text
+
+
+def test_hmac_success_with_invalid_user_payload_is_not_misreported_as_invalid_hash(caplog):
+    caplog.set_level(logging.INFO, logger="miniapp.backend.auth")
+    init_data = signed_init_data(token="comparison-token", extras={"user": "not-json"})
+    with pytest.raises(TelegramAuthError, match="INVALID_USER_PAYLOAD"):
+        validate_init_data(init_data, "comparison-token", now=1_800_000_001)
+    assert "compare_result=True" in caplog.text
+
+
 def test_official_webapp_hmac_accepts_signature_as_a_signed_field():
     token = "123456:TEST_BOT_TOKEN"
     init_data = (
