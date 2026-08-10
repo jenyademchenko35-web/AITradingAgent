@@ -5,7 +5,9 @@ import argparse
 import traceback
 import os
 import json
+import math
 from pathlib import Path
+from typing import Callable
 from config import (
     MIN_CONFIDENCE,
     MIN_EDGE,
@@ -15,11 +17,13 @@ from config import (
     PRICE_ZONE_LOW,
     PRICE_ZONE_HIGH,
     SETUP_COOLDOWN_HOURS,
-    RUN_INTERVAL,
     RISK_PER_TRADE,
     RISK_REWARD,
 )
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_LOOP_INTERVAL_SECONDS = 300
+MIN_LOOP_INTERVAL_SECONDS = 1
+MAX_LOOP_INTERVAL_SECONDS = 86_400
 
 WEIGHTS_FILE = os.path.join(BASE_DIR, "strategy_weights.json")
 
@@ -1696,7 +1700,49 @@ def run_once():
 
 
 # Continuous scheduler
-def run_loop(interval_seconds: int):
+def validate_loop_interval(interval_seconds: int | float) -> int:
+    """Return a bounded whole-second loop interval without guessing units."""
+    if isinstance(interval_seconds, bool):
+        raise ValueError("interval must be a finite whole number of seconds")
+    try:
+        seconds = float(interval_seconds)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("interval must be a finite whole number of seconds") from exc
+    if not math.isfinite(seconds) or not seconds.is_integer():
+        raise ValueError("interval must be a finite whole number of seconds")
+    normalized = int(seconds)
+    if not MIN_LOOP_INTERVAL_SECONDS <= normalized <= MAX_LOOP_INTERVAL_SECONDS:
+        raise ValueError(
+            f"interval must be between {MIN_LOOP_INTERVAL_SECONDS} and {MAX_LOOP_INTERVAL_SECONDS} seconds",
+        )
+    return normalized
+
+
+def _cli_loop_interval(value: str) -> int:
+    try:
+        return validate_loop_interval(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
+def build_cli_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Multi-Timeframe Trading Agent v3")
+    parser.add_argument("--loop", action="store_true", help="Run the agent in a loop")
+    parser.add_argument(
+        "--interval", type=_cli_loop_interval, default=DEFAULT_LOOP_INTERVAL_SECONDS,
+        help="Interval between runs in whole seconds when looping (default: 300)",
+    )
+    return parser
+
+
+def run_loop(
+    interval_seconds: int | float,
+    *,
+    sleep_fn: Callable[[float], None] = time.sleep,
+    monotonic_fn: Callable[[], float] = time.monotonic,
+    wall_clock_fn: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+):
+    interval = validate_loop_interval(interval_seconds)
     try:
         while True:
             cycle_start = time.time()
@@ -1708,24 +1754,36 @@ def run_loop(interval_seconds: int):
             cycle_end = time.time()
             duration = cycle_end - cycle_start
             LOGGER.cycle_finished(duration)
-            LOGGER.sleeping(interval_seconds)
+            LOGGER.sleeping(interval)
+            sleep_started_monotonic = monotonic_fn()
+            sleep_wall_clock = wall_clock_fn().astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+            LOGGER.timestamped(json.dumps({
+                "event": "agent_loop_sleep_start",
+                "requested_interval_seconds": interval,
+                "monotonic": sleep_started_monotonic,
+                "wall_clock": sleep_wall_clock,
+            }, sort_keys=True))
             try:
-                for _ in range(interval_seconds):
-                    time.sleep(1)
+                sleep_fn(interval)
             except KeyboardInterrupt:
+                LOGGER.timestamped(json.dumps({
+                    "event": "agent_loop_sleep_end",
+                    "actual_sleep_seconds": max(0.0, monotonic_fn() - sleep_started_monotonic),
+                    "interrupted": True,
+                }, sort_keys=True))
                 LOGGER.stopping()
                 break
+            LOGGER.timestamped(json.dumps({
+                "event": "agent_loop_sleep_end",
+                "actual_sleep_seconds": max(0.0, monotonic_fn() - sleep_started_monotonic),
+                "interrupted": False,
+            }, sort_keys=True))
     except KeyboardInterrupt:
         LOGGER.stopping()
 
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Multi-Timeframe Trading Agent v3")
-    parser.add_argument("--loop", action="store_true", help="Run the agent in a loop")
-    parser.add_argument("--interval", type=int, default=RUN_INTERVAL, help="Interval between runs in seconds when looping")
-
-    args = parser.parse_args()
+    args = build_cli_parser().parse_args()
     # Telegram runtime overrides are intentionally ephemeral. A production
     # agent restart restores env/default configuration before the first cycle.
     from research_lab_v2.config import clear_runtime_override
