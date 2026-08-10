@@ -2,21 +2,30 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 
 
 class ImmutableModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
-class TelegramUser(ImmutableModel):
-    id: int
-    first_name: str = ""
-    last_name: str = ""
-    username: str = ""
-    language_code: str = ""
+class TelegramUser(BaseModel):
+    """Telegram's signed WebAppUser payload; unknown future optional fields are ignored."""
+
+    model_config = ConfigDict(frozen=True, extra="ignore", strict=True)
+
+    id: Annotated[StrictInt, Field(gt=0)]
+    is_bot: StrictBool = False
+    first_name: StrictStr = ""
+    last_name: StrictStr = ""
+    username: StrictStr = ""
+    language_code: StrictStr = ""
+    is_premium: StrictBool = False
+    added_to_attachment_menu: StrictBool = False
+    allows_write_to_pm: StrictBool = False
+    photo_url: StrictStr = ""
 
 
 class StatusResponse(ImmutableModel):

@@ -8,10 +8,11 @@ import json
 import logging
 import re
 import time
-from typing import Callable
+from typing import Callable, Mapping
 from urllib.parse import parse_qsl
 
 from fastapi import Header, HTTPException, Request, status
+from pydantic import ValidationError
 
 from miniapp.shared.models import TelegramUser
 
@@ -20,9 +21,10 @@ from .rate_limit import InMemoryRateLimiter
 
 
 class TelegramAuthError(ValueError):
-    def __init__(self, reason: str) -> None:
+    def __init__(self, reason: str, *, diagnostics: Mapping[str, str] | None = None) -> None:
         super().__init__(reason)
         self.reason = reason
+        self.diagnostics = dict(diagnostics or {})
 
 
 _LOCAL_DEV_CLIENTS = frozenset({"127.0.0.1", "::1"})
@@ -141,6 +143,45 @@ def _safe_auth_date(fields: dict[str, str]) -> str | None:
     return auth_date if auth_date.isascii() and auth_date.isdecimal() else "INVALID"
 
 
+def _safe_user_field_names(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return "NON_OBJECT"
+    return ",".join(
+        key for key in sorted(payload)
+        if isinstance(key, str) and _SAFE_FIELD_NAME.fullmatch(key)
+    )
+
+
+def _safe_validation_details(error: Exception, payload: object) -> dict[str, str]:
+    """Expose only Pydantic field paths/types, never a user value or identifier."""
+    details = {
+        "user_payload_exception": type(error).__name__,
+        "user_json_field_names": _safe_user_field_names(payload),
+        "required_identity_fields_present": str(
+            isinstance(payload, dict) and "id" in payload,
+        ).lower(),
+        "user_validation_fields": "",
+        "user_validation_types": "",
+    }
+    if isinstance(error, ValidationError):
+        fields: list[str] = []
+        error_types: list[str] = []
+        for item in error.errors():
+            location = item.get("loc", ())
+            field = ".".join(
+                str(part) for part in location
+                if isinstance(part, (str, int)) and _SAFE_FIELD_NAME.fullmatch(str(part))
+            )
+            if field:
+                fields.append(field)
+            error_type = item.get("type")
+            if isinstance(error_type, str) and _SAFE_FIELD_NAME.fullmatch(error_type):
+                error_types.append(error_type)
+        details["user_validation_fields"] = ",".join(sorted(set(fields)))
+        details["user_validation_types"] = ",".join(sorted(set(error_types)))
+    return details
+
+
 def _auth_diagnostic(
     reason: str,
     init_data: str,
@@ -148,6 +189,7 @@ def _auth_diagnostic(
     *,
     transport_fingerprints: tuple[str, str, bool],
     frontend_build: str,
+    user_diagnostics: Mapping[str, str] | None = None,
 ) -> None:
     """Log only field names and lifecycle metadata, never signed values or secrets."""
     try:
@@ -157,13 +199,16 @@ def _auth_diagnostic(
     data_check = _data_check_string(fields) if fields else ""
     safe_frontend_fingerprint, backend_fingerprint, fingerprint_match = transport_fingerprints
     hmac_inputs = _hmac_diagnostics(init_data, settings.bot_token) if fingerprint_match else {}
+    user_details = dict(user_diagnostics or {})
     LOGGER.warning(
         "miniapp_auth_denied reason=%s algorithm=%s hmac_data_check_profile=%s "
         "token_source=%s token_present=%s token_fingerprint=%s "
         "frontend_build=%s frontend_init_fingerprint=%s backend_init_fingerprint=%s fingerprint_match=%s "
         "init_data_present=%s init_data_length=%d parsed_field_names=%s signature_present=%s "
         "auth_date=%s data_check_string_length=%d data_check_fingerprint=%s "
-        "secret_key_fingerprint=%s calculated_hash_fingerprint=%s received_hash_fingerprint=%s",
+        "secret_key_fingerprint=%s calculated_hash_fingerprint=%s received_hash_fingerprint=%s "
+        "user_payload_exception=%s user_json_field_names=%s required_identity_fields_present=%s "
+        "user_validation_fields=%s user_validation_types=%s",
         reason, HMAC_ALGORITHM, HMAC_DATA_CHECK_PROFILE,
         settings.bot_token_source, bool(settings.bot_token), _token_fingerprint(settings.bot_token),
         _safe_build_marker(frontend_build), safe_frontend_fingerprint, backend_fingerprint, fingerprint_match,
@@ -173,6 +218,11 @@ def _auth_diagnostic(
         hmac_inputs.get("secret_key_fingerprint", "NOT_COMPARED"),
         hmac_inputs.get("calculated_hash_fingerprint", "NOT_COMPARED"),
         hmac_inputs.get("received_hash_fingerprint", "NOT_COMPARED"),
+        user_details.get("user_payload_exception", "NOT_APPLICABLE"),
+        user_details.get("user_json_field_names", "NOT_APPLICABLE"),
+        user_details.get("required_identity_fields_present", "NOT_APPLICABLE"),
+        user_details.get("user_validation_fields", "NOT_APPLICABLE"),
+        user_details.get("user_validation_types", "NOT_APPLICABLE"),
     )
 
 
@@ -234,10 +284,19 @@ def validate_init_data(
         raise TelegramAuthError("EXPIRED_INIT_DATA")
     try:
         raw_user = json.loads(pairs["user"])
-        return TelegramUser.model_validate(raw_user)
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-        # HMAC already passed; keep malformed user JSON distinct from hash failure.
-        raise TelegramAuthError("INVALID_USER_PAYLOAD") from exc
+        raise TelegramAuthError(
+            "INVALID_USER_PAYLOAD",
+            diagnostics=_safe_validation_details(exc, None),
+        ) from exc
+    try:
+        return TelegramUser.model_validate(raw_user)
+    except ValidationError as exc:
+        # HMAC already passed; keep malformed/invalid user payload distinct from hash failure.
+        raise TelegramAuthError(
+            "INVALID_USER_PAYLOAD",
+            diagnostics=_safe_validation_details(exc, raw_user),
+        ) from exc
 
 
 def auth_dependency(
@@ -259,7 +318,8 @@ def auth_dependency(
         client_ip = request.client.host if request.client else None
         local_dev = settings.dev_mode and client_ip in _LOCAL_DEV_CLIENTS
         if local_dev:
-            user = TelegramUser(id=0, username="local_dev")
+            # Sentinel user exists only for the existing localhost-only dev flow.
+            user = TelegramUser.model_construct(id=0, username="local_dev")
         else:
             transport_fingerprints = _transport_fingerprints(
                 x_telegram_init_data,
@@ -278,6 +338,7 @@ def auth_dependency(
                     settings,
                     transport_fingerprints=transport_fingerprints,
                     frontend_build=x_tradewatcher_frontend_build,
+                    user_diagnostics=exc.diagnostics,
                 )
                 if limiter is not None:
                     limiter.require(client_ip=client_ip)

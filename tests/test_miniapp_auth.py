@@ -76,6 +76,57 @@ def test_hmac_success_with_invalid_user_payload_is_not_misreported_as_invalid_ha
     assert "compare_result=True" in caplog.text
 
 
+def test_telegram_webapp_user_accepts_documented_optional_fields_and_unicode():
+    user = {
+        "id": 42,
+        "is_bot": False,
+        "first_name": "Ирина",
+        "last_name": "李",
+        "username": "viewer",
+        "language_code": "ru",
+        "is_premium": True,
+        "added_to_attachment_menu": False,
+        "allows_write_to_pm": True,
+        "photo_url": "https://t.me/i/userpic/320/example.jpg",
+        "future_telegram_optional_field": "ignored",
+    }
+    init_data = signed_init_data(
+        token="webapp-token",
+        extras={"user": json.dumps(user, ensure_ascii=False, separators=(",", ":"))},
+    )
+    parsed = validate_init_data(init_data, "webapp-token", now=1_800_000_001)
+    assert parsed.id == 42
+    assert parsed.is_premium is True
+    assert parsed.allows_write_to_pm is True
+
+
+@pytest.mark.parametrize("user", [{}, {"id": "42"}, {"id": True}, {"id": 0}, {"id": 42, "is_bot": "false"}])
+def test_invalid_or_missing_required_telegram_identity_is_rejected(user):
+    init_data = signed_init_data(
+        token="webapp-token",
+        extras={"user": json.dumps(user, separators=(",", ":"))},
+    )
+    with pytest.raises(TelegramAuthError, match="INVALID_USER_PAYLOAD"):
+        validate_init_data(init_data, "webapp-token", now=1_800_000_001)
+
+
+def test_invalid_user_diagnostics_expose_only_schema_metadata(caplog):
+    caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
+    settings = MiniAppSettings(enabled=True, owner_only=True, owner_user_id=42, bot_token="token")
+    client = TestClient(create_app(settings=settings, repository=_StatusRepository()))
+    init_data = signed_init_data(
+        token="token",
+        auth_date=int(time.time()),
+        extras={"user": json.dumps({"id": "not-an-id", "first_name": "Private Name"})},
+    )
+    response = client.get("/api/status", headers={"X-Telegram-Init-Data": init_data})
+    assert response.status_code == 401
+    assert "reason=INVALID_USER_PAYLOAD" in caplog.text
+    assert "user_validation_fields=id" in caplog.text
+    assert "user_validation_types=int_type" in caplog.text
+    assert "Private Name" not in caplog.text and "not-an-id" not in caplog.text
+
+
 def test_official_webapp_hmac_accepts_signature_as_a_signed_field():
     token = "123456:TEST_BOT_TOKEN"
     init_data = (
