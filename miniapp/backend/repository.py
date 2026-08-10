@@ -20,7 +20,9 @@ from telegram_ui.data import (
     signal_payload_from_rows,
 )
 from trade_metrics_normalizer import aggregate_trade_metrics, is_closed_trade
-from runtime_contract import DEFAULT_STALE_AFTER_SECONDS, read_runtime_snapshot
+from runtime_contract import DEFAULT_STALE_AFTER_SECONDS, evaluate_freshness, read_runtime_snapshot
+
+from .runtime_ingest import validate_stored_bundle
 
 from .cache import MTimeCSVCache
 
@@ -48,12 +50,15 @@ def _number(value: Any) -> float | None:
 class ReadOnlyRepository:
     def __init__(self, base_dir: str | Path, *, cache_ttl_seconds: float = 5,
                  query_timeout_seconds: float = 2.0, max_source_rows: int = 10_000,
-                 similar_min_sample: int = 20) -> None:
+                 similar_min_sample: int = 20, ingest_dir: str | Path | None = None,
+                 ingest_stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS) -> None:
         self.base_dir = Path(base_dir)
         self.query_timeout_seconds = max(0.1, float(query_timeout_seconds))
         self.cache_ttl_seconds = max(0.1, float(cache_ttl_seconds))
         self.max_source_rows = max(100, int(max_source_rows))
         self.similar_min_sample = max(1, int(similar_min_sample))
+        self.ingest_dir = Path(ingest_dir) if ingest_dir is not None else self.base_dir / "runtime_ingest"
+        self.ingest_stale_after_seconds = max(0, int(ingest_stale_after_seconds))
         self._cache = MTimeCSVCache(
             ttl_seconds=cache_ttl_seconds, max_rows=self.max_source_rows,
             timeout_seconds=self.query_timeout_seconds,
@@ -69,9 +74,8 @@ class ReadOnlyRepository:
     def read_csv(self, path: str | Path) -> list[dict[str, str]]:
         return self._cache.read(path)
 
-    def _runtime_json(self, filename: str) -> dict[str, Any]:
+    def _runtime_json_at(self, path: Path, cache_key: str) -> dict[str, Any]:
         """Read one bounded, published runtime object without writing or importing runtime code."""
-        path = self.base_dir / filename
         try:
             stat = path.stat()
             signature: tuple[int, int] | None = (stat.st_mtime_ns, stat.st_size)
@@ -79,7 +83,7 @@ class ReadOnlyRepository:
             signature = None
         now = time.monotonic()
         with self._runtime_json_lock:
-            cached = self._runtime_json_cache.get(filename)
+            cached = self._runtime_json_cache.get(cache_key)
             if cached and cached.signature == signature and now < cached.expires_at:
                 return dict(cached.payload)
 
@@ -96,10 +100,30 @@ class ReadOnlyRepository:
                 payload = {}
         frozen = dict(payload)
         with self._runtime_json_lock:
-            self._runtime_json_cache[filename] = _RuntimeJsonCacheEntry(
+            self._runtime_json_cache[cache_key] = _RuntimeJsonCacheEntry(
                 signature=signature, expires_at=now + self.cache_ttl_seconds, payload=frozen,
             )
         return dict(frozen)
+
+    def _runtime_json(self, filename: str) -> dict[str, Any]:
+        """Read a bounded runtime object under the configured data root."""
+        return self._runtime_json_at(self.base_dir / filename, filename)
+
+    def _ingested_bundle(self) -> dict[str, Any] | None:
+        """Read a validated bundle only; this repository never writes ingest storage."""
+        document = validate_stored_bundle(
+            self._runtime_json_at(self.ingest_dir / "current.json", "__runtime_ingest_current__"),
+        )
+        if document is None:
+            return None
+        payload = document["payload"]
+        snapshot = dict(payload["runtime_snapshot"])
+        snapshot["freshness"] = evaluate_freshness(
+            snapshot.get("generated_at"),
+            source_updated_at=(snapshot.get("freshness") or {}).get("source_updated_at"),
+            stale_after_seconds=self.ingest_stale_after_seconds,
+        )
+        return {"metadata": document["metadata"], "payload": {**payload, "runtime_snapshot": snapshot}}
 
     def _canonical_snapshot(self) -> dict[str, Any] | None:
         """Read only a validated v1 snapshot; future schemas intentionally fail closed."""
@@ -111,6 +135,12 @@ class ReadOnlyRepository:
         return read_runtime_snapshot(
             self.base_dir / "runtime_snapshot.json", stale_after_seconds=max(0, threshold),
         )
+
+    def _primary_snapshot(self) -> dict[str, Any] | None:
+        ingested = self._ingested_bundle()
+        if ingested is not None:
+            return dict(ingested["payload"]["runtime_snapshot"])
+        return self._canonical_snapshot()
 
     @staticmethod
     def _published_value(*values: Any) -> Any:
@@ -178,6 +208,13 @@ class ReadOnlyRepository:
 
     def _decision_source(self) -> tuple[list[dict[str, Any]], str, str, str | None]:
         """Resolve fresh canonical data first, without presenting stale data as current."""
+        ingested = self._ingested_bundle()
+        if ingested is not None:
+            snapshot = ingested["payload"]["runtime_snapshot"]
+            freshness = str((snapshot.get("freshness") or {}).get("status") or "UNKNOWN").upper()
+            rows = snapshot.get("signals")
+            ingest_rows = [dict(row) for row in rows if isinstance(row, Mapping)] if isinstance(rows, list) else []
+            return ingest_rows, "runtime_ingest_v1" if freshness == "FRESH" else "runtime_ingest_stale", freshness, None
         canonical = self._canonical_snapshot()
         freshness = str(((canonical or {}).get("freshness") or {}).get("status") or "UNKNOWN").upper()
         rows = (canonical or {}).get("signals")
@@ -226,6 +263,10 @@ class ReadOnlyRepository:
 
     def evaluation(self) -> dict[str, Any]:
         """Read a generated observer report only; this method never evaluates signals."""
+        ingested = self._ingested_bundle()
+        report = ((ingested or {}).get("payload") or {}).get("signal_evaluation_report")
+        if isinstance(report, Mapping):
+            return dict(report)
         payload = self.impulse_report("signal_evaluation_report.json")
         return payload if isinstance(payload, dict) else {
             "evaluation_status": "INSUFFICIENT_DATA", "episodes_total": 0,
@@ -233,6 +274,10 @@ class ReadOnlyRepository:
         }
 
     def scenarios(self) -> list[dict[str, Any]]:
+        ingested = self._ingested_bundle()
+        report = ((ingested or {}).get("payload") or {}).get("scenario_report")
+        if isinstance(report, list):
+            return [dict(row) for row in report if isinstance(row, Mapping)]
         payload = self.impulse_report("scenario_report.json")
         return [dict(row) for row in payload if isinstance(row, Mapping)] if isinstance(payload, list) else []
 
@@ -243,7 +288,7 @@ class ReadOnlyRepository:
         return {"symbol": symbol, "status": "EMPTY", "data_quality": "INSUFFICIENT_DATA"}
 
     def updated_at(self) -> str:
-        canonical = self._canonical_snapshot()
+        canonical = self._primary_snapshot()
         _, source_mode, _, _ = self._decision_source()
         if source_mode in {"canonical_v1", "canonical_stale"} and canonical and isinstance(canonical.get("generated_at"), str):
             return canonical["generated_at"]
@@ -337,12 +382,15 @@ class ReadOnlyRepository:
 
     def system(self) -> dict[str, Any]:
         """Safe projection of already-published runtime status; no process inspection."""
-        canonical = self._canonical_snapshot()
+        canonical = self._primary_snapshot()
         _, source_mode, canonical_freshness, fallback_reason = self._decision_source()
         dashboard_state = self._runtime_json("dashboard_state.json")
         live_monitor = self._runtime_json("live_monitor_state.json")
         agent_stats = self._runtime_json("agent_v3_stats.json")
-        research_status = self._runtime_json("research_lab_v2_status.json")
+        ingested = self._ingested_bundle()
+        research_status = ((ingested or {}).get("payload") or {}).get("research_summary")
+        if not isinstance(research_status, Mapping):
+            research_status = self._runtime_json("research_lab_v2_status.json")
         system_status = dashboard_state.get("system")
         trading = dashboard_state.get("trading")
         dashboard_live = dashboard_state.get("live_monitor")
@@ -402,6 +450,7 @@ class ReadOnlyRepository:
                 "freshness": canonical_freshness,
                 "data_quality": ((canonical or {}).get("data_quality") or {}).get("status", "INSUFFICIENT"),
             },
+            "runtime_ingest": dict((ingested or {}).get("metadata") or {}),
         }
 
     def activity(self, *, limit: int = 20) -> list[dict[str, Any]]:
@@ -466,6 +515,7 @@ class ReadOnlyRepository:
             "research": readable("research.db"),
             "snapshot": readable("decision_snapshot.json"),
             "runtime_contract": readable("runtime_snapshot.json"),
+            "runtime_ingest": (self.ingest_dir / "current.json").is_file(),
         }
 
     def dashboard(self) -> dict[str, Any]:

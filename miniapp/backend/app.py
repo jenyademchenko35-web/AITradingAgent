@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status as http_status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status as http_status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,6 +27,7 @@ from .auth import auth_dependency
 from .config import MiniAppSettings
 from .repository import ReadOnlyRepository
 from .rate_limit import InMemoryRateLimiter
+from .runtime_ingest import RuntimeIngestError, RuntimeIngestStore
 
 
 SECURITY_HEADERS = {
@@ -50,7 +51,7 @@ def _readiness(config: MiniAppSettings) -> tuple[bool, dict[str, bool]]:
             "signals.csv", "decision_snapshot.json",
             "decision_debug.csv", "signals_v3.csv",
         )
-    )
+    ) or (config.runtime_ingest_dir / "current.json").is_file()
     checks = {
         "enabled": config.enabled,
         "data_root": root_exists,
@@ -71,12 +72,19 @@ def create_app(
         query_timeout_seconds=config.query_timeout_seconds,
         max_source_rows=config.max_source_rows,
         similar_min_sample=config.similar_min_sample,
+        ingest_dir=config.runtime_ingest_dir,
+        ingest_stale_after_seconds=config.runtime_ingest_stale_after_seconds,
     )
     limiter = InMemoryRateLimiter(
         config.rate_limit_requests,
         config.rate_limit_window_seconds,
     )
     authenticate = auth_dependency(config, limiter)
+    ingest_store = RuntimeIngestStore(
+        config.runtime_ingest_dir,
+        max_payload_bytes=config.runtime_ingest_max_payload_bytes,
+        max_snapshot_age_seconds=config.runtime_ingest_max_snapshot_age_seconds,
+    )
     api = FastAPI(title="TradeWatcher Mini App API", version="1.0.0", docs_url=None, redoc_url=None)
 
     if config.allowed_origins:
@@ -93,9 +101,13 @@ def create_app(
     async def security_boundary(request: Request, call_next):
         raw_length = request.headers.get("content-length")
         try:
+            max_body = (
+                config.runtime_ingest_max_payload_bytes
+                if request.url.path == "/api/runtime/ingest" else config.max_request_body_bytes
+            )
             too_large = (
                 request.headers.get("transfer-encoding", "").lower() == "chunked"
-                or (raw_length is not None and int(raw_length) > config.max_request_body_bytes)
+                or (raw_length is not None and int(raw_length) > max_body)
             )
         except ValueError:
             too_large = True
@@ -125,6 +137,26 @@ def create_app(
         if not is_ready:
             return JSONResponse(status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE, content=payload)
         return payload
+
+    @api.post("/api/runtime/ingest", include_in_schema=False)
+    async def runtime_ingest(
+        request: Request,
+        authorization: str = Header(default=""),
+        x_runtime_ingest_token: str = Header(default=""),
+    ) -> dict:
+        """Receive only the Mac publisher's signed runtime bundle, never Telegram auth."""
+        expected = config.runtime_ingest_secret
+        provided = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else x_runtime_ingest_token
+        if not expected or not provided:
+            raise HTTPException(status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Runtime ingest unauthorized")
+        import hmac
+        if not hmac.compare_digest(provided, expected):
+            raise HTTPException(status_code=http_status.HTTP_401_UNAUTHORIZED, detail="Runtime ingest unauthorized")
+        try:
+            metadata = ingest_store.ingest(await request.body())
+        except RuntimeIngestError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.reason) from exc
+        return {"status": "accepted", "snapshot_id": metadata["snapshot_id"], "received_at": metadata["received_at"]}
 
     @api.get("/api/status", response_model=StatusResponse)
     async def status(user: TelegramUser = Depends(authenticate)) -> StatusResponse:

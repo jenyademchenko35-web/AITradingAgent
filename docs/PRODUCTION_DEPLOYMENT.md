@@ -18,6 +18,49 @@ FastAPI serves `miniapp/frontend/dist` when that directory is present. Caddy is
 the production entry point: it terminates HTTPS, serves SPA deep links and
 proxies only `/api/*`, `/healthz` and `/readyz` to the private loopback backend.
 
+## Server Mac to Railway runtime bridge
+
+When the agent runs on a private Server Mac and the Mini App runs on Railway,
+do not expose the Mac or open an incoming port. Run the separate publisher on
+the Mac instead:
+
+```text
+Server Mac generated runtime JSON
+  -> runtime_publisher.py (outbound HTTPS only)
+  -> POST /api/runtime/ingest on Railway
+  -> atomic runtime_ingest/current.json cache
+  -> authenticated Mini App GET APIs
+```
+
+Set a newly generated, dedicated `RUNTIME_INGEST_SECRET` in Railway and the
+same secret in the Server Mac's ignored `.env`. This is not a Telegram bot token
+and must never be used for any Telegram endpoint. Configure the Mac only with:
+
+```text
+RUNTIME_INGEST_URL=https://example.com/api/runtime/ingest
+RUNTIME_INGEST_SECRET=<random secret>
+RUNTIME_PUBLISH_INTERVAL_SECONDS=30
+```
+
+Start `python runtime_publisher.py` as a separate supervised process after the
+agent has begun publishing `runtime_snapshot.json`. It reads only the canonical
+snapshot and generated scenario/evaluation summaries. A network failure retries
+with bounded backoff and never blocks, imports, starts, or changes the trading
+agent.
+
+Railway accepts `POST /api/runtime/ingest` only with
+`Authorization: Bearer <RUNTIME_INGEST_SECRET>` (or the dedicated
+`X-Runtime-Ingest-Token` header). It validates the v1 schema, timestamps,
+ordering and payload bounds before atomically replacing its cache. Existing
+Mini App endpoints retain Telegram initData authentication; the two mechanisms
+are deliberately separate.
+
+The ingest snapshot is primary while present. Its status appears as
+`runtime_ingest_v1` or `runtime_ingest_stale`; it is stale after
+`RUNTIME_INGEST_STALE_AFTER_SECONDS` (default 900). A stale ingest is never
+silently presented as fresh data. Local legacy sources are used only if no valid
+ingest cache exists.
+
 ## Build
 
 From the repository root, run:

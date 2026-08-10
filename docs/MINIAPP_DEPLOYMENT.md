@@ -150,7 +150,10 @@ trade plans, calculate new signals or write runtime files.
 - `GET /api/signal/{symbol}/{timeframe}/history` — the existing paginated signal
   history route. It returns an empty item list when no stored history exists.
 
-All `/api/*` routes are GET-only and return `405` for mutation methods.
+All user-facing `/api/*` routes are GET-only and return `405` for mutation
+methods. The only POST route is `/api/runtime/ingest`: a separately authenticated
+Server Mac publisher endpoint. It never accepts Telegram credentials and cannot
+perform trading, configuration or runtime-agent actions.
 
 ## Owner-only rollout
 

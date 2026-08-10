@@ -62,6 +62,11 @@ class MiniAppSettings:
     max_source_rows: int = 10_000
     similar_min_sample: int = 20
     data_dir: Path = Path(".")
+    runtime_ingest_secret: str = ""
+    runtime_ingest_dir: Path = Path("runtime_ingest")
+    runtime_ingest_stale_after_seconds: int = 900
+    runtime_ingest_max_payload_bytes: int = 1_048_576
+    runtime_ingest_max_snapshot_age_seconds: int = 3_600
 
     @classmethod
     def from_env(
@@ -73,6 +78,8 @@ class MiniAppSettings:
         if environ is None:
             load_dotenv(Path(__file__).parent / ".env", override=False)
         env = os.environ if environ is None else environ
+        root = data_dir or Path(env.get("MINIAPP_DATA_ROOT") or Path(__file__).resolve().parents[2])
+        ingest_dir = Path(env.get("RUNTIME_INGEST_DIR") or root / "runtime_ingest")
         return cls(
             enabled=_bool(env.get("MINIAPP_ENABLED"), False),
             dev_mode=_bool(env.get("MINIAPP_DEV_MODE"), False),
@@ -94,7 +101,12 @@ class MiniAppSettings:
             query_timeout_seconds=max(0.1, _float(env.get("MINIAPP_QUERY_TIMEOUT_SECONDS"), 2.0)),
             max_source_rows=max(100, _int(env.get("MINIAPP_MAX_SOURCE_ROWS")) or 10_000),
             similar_min_sample=max(1, _int(env.get("MINIAPP_SIMILAR_MIN_SAMPLE")) or 20),
-            data_dir=(data_dir or Path(env.get("MINIAPP_DATA_ROOT") or Path(__file__).resolve().parents[2])),
+            data_dir=Path(root),
+            runtime_ingest_secret=str(env.get("RUNTIME_INGEST_SECRET") or ""),
+            runtime_ingest_dir=ingest_dir,
+            runtime_ingest_stale_after_seconds=max(1, _int(env.get("RUNTIME_INGEST_STALE_AFTER_SECONDS")) or 900),
+            runtime_ingest_max_payload_bytes=max(65_536, _int(env.get("RUNTIME_INGEST_MAX_PAYLOAD_BYTES")) or 1_048_576),
+            runtime_ingest_max_snapshot_age_seconds=max(60, _int(env.get("RUNTIME_INGEST_MAX_SNAPSHOT_AGE_SECONDS")) or 3_600),
         )
 
     @property
