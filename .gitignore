@@ -78,6 +78,7 @@ runtime_snapshot.json
 runtime_ingest/
 signal_episodes.jsonl
 signal_outcomes.jsonl
+signal_outcome_recoveries.jsonl
 signal_evaluation_state.json
 signal_evaluation_report.json
 shadow_replay_trades.csv

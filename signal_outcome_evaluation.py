@@ -7,6 +7,8 @@ future evidence.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+import argparse
+import csv
 from datetime import datetime, timezone, timedelta
 import hashlib
 import json
@@ -24,6 +26,8 @@ EPISODES = "signal_episodes.jsonl"
 OUTCOMES = "signal_outcomes.jsonl"
 STATE = "signal_evaluation_state.json"
 REPORT = "signal_evaluation_report.json"
+PRICE_HISTORY = "live_price_history.csv"
+RECOVERIES = "signal_outcome_recoveries.jsonl"
 HORIZONS_HOURS = (1, 4, 12, 24)
 ACTIVE_STATUSES = {"WATCH", "SETUP", "HIGH PRIORITY"}
 MINIMUM_SAMPLE = 20
@@ -88,6 +92,51 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
         return []
 
 
+def _symbol_key(value: Any) -> str:
+    """Normalize only for matching saved price observations, never for display."""
+    return "".join(char for char in str(value or "").upper() if char.isalnum())
+
+
+def _price_history(path: Path) -> dict[str, list[dict[str, Any]]]:
+    """Read the existing Live Monitor schema defensively and without modifying it."""
+    rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    try:
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                if not isinstance(row, Mapping):
+                    continue
+                observed_at = normalize_runtime_timestamp(row.get("timestamp"))
+                price = _number(row.get("price"))
+                symbol = _symbol_key(row.get("symbol"))
+                if observed_at is None or price is None or not symbol:
+                    continue
+                rows[symbol].append({"price": price, "observed_at": observed_at})
+    except (OSError, UnicodeError, csv.Error):
+        return {}
+    for observations in rows.values():
+        observations.sort(key=lambda item: item["observed_at"])
+    return dict(rows)
+
+
+def _nearest_historical_price(
+    history: Mapping[str, list[Mapping[str, Any]]], symbol: Any, target: datetime, tolerance_seconds: int,
+) -> dict[str, Any] | None:
+    """Return the closest real observation in the strict symmetric target window."""
+    candidates: list[tuple[float, str, float]] = []
+    for item in history.get(_symbol_key(symbol), []):
+        observed = _time(item.get("observed_at"))
+        price = _number(item.get("price"))
+        if observed is None or price is None:
+            continue
+        delta = abs((observed - target).total_seconds())
+        if delta <= tolerance_seconds:
+            candidates.append((delta, normalize_runtime_timestamp(item.get("observed_at")) or "", price))
+    if not candidates:
+        return None
+    delta, observed_at, price = min(candidates, key=lambda candidate: (candidate[0], candidate[1]))
+    return {"price": price, "price_observed_at": observed_at, "horizon_delay_seconds": int(delta)}
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     handle = tempfile.NamedTemporaryFile(mode="w", dir=path.parent, encoding="utf-8", delete=False)
@@ -150,33 +199,36 @@ def _new_episode(row: Mapping[str, Any], timestamp: str) -> dict[str, Any]:
 
 
 def _outcome(episode: Mapping[str, Any], price: Any, horizon: int, observed_at: str, *, target_at: str,
-             horizon_delay_seconds: int, high: Any = None, low: Any = None) -> dict[str, Any]:
+             horizon_delay_seconds: int, high: Any = None, low: Any = None,
+             price_source: str = "RUNTIME_SNAPSHOT") -> dict[str, Any]:
     entry, future = _number(episode.get("entry_price")), _number(price)
     side = str(episode.get("side") or "UNKNOWN").upper()
     outcome_id = f"{episode.get('episode_id')}:{horizon}H"
-    base = {"outcome_id": outcome_id, "episode_id": episode.get("episode_id"), "symbol": episode.get("symbol"), "timeframe": episode.get("timeframe"), "horizon": f"{horizon}H", "source_timestamp": episode.get("signal_timestamp"), "observed_at": observed_at, "target_at": target_at, "horizon_delay_seconds": horizon_delay_seconds, "evaluated_at": observed_at, "future_price": future,
+    base = {"outcome_id": outcome_id, "episode_id": episode.get("episode_id"), "symbol": episode.get("symbol"), "timeframe": episode.get("timeframe"), "horizon": f"{horizon}H", "source_timestamp": episode.get("signal_timestamp"), "observed_at": observed_at, "price_observed_at": observed_at, "price_source": price_source, "target_at": target_at, "horizon_delay_seconds": horizon_delay_seconds, "evaluated_at": observed_at, "future_price": future,
             "return_pct": None, "return_r": None, "mfe": None, "mae": None, "tp_hit": None, "sl_hit": None,
             "direction_correct": "UNKNOWN", "outcome_status": "PENDING", "label": "PENDING"}
     if entry is None or future is None or side not in {"LONG", "SHORT"}:
         base.update({"outcome_status": "INVALID", "label": "INVALID"})
         return base
     signed = (future - entry) / entry * 100 * (1 if side == "LONG" else -1)
-    high_value, low_value = _number(high), _number(low)
-    if high_value is None or low_value is None:
-        high_value = low_value = future
-    if side == "LONG":
-        mfe, mae = (high_value - entry) / entry * 100, (low_value - entry) / entry * 100
-        tp_hit = _number(episode.get("take_profit")) is not None and high_value >= _number(episode.get("take_profit"))
-        sl_hit = _number(episode.get("stop_loss")) is not None and low_value <= _number(episode.get("stop_loss"))
-    else:
-        mfe, mae = (entry - low_value) / entry * 100, (entry - high_value) / entry * 100
-        tp_hit = _number(episode.get("take_profit")) is not None and low_value <= _number(episode.get("take_profit"))
-        sl_hit = _number(episode.get("stop_loss")) is not None and high_value >= _number(episode.get("stop_loss"))
+    mfe = mae = tp_hit = sl_hit = None
+    if price_source == "RUNTIME_SNAPSHOT":
+        high_value, low_value = _number(high), _number(low)
+        if high_value is None or low_value is None:
+            high_value = low_value = future
+        if side == "LONG":
+            mfe, mae = (high_value - entry) / entry * 100, (low_value - entry) / entry * 100
+            tp_hit = _number(episode.get("take_profit")) is not None and high_value >= _number(episode.get("take_profit"))
+            sl_hit = _number(episode.get("stop_loss")) is not None and low_value <= _number(episode.get("stop_loss"))
+        else:
+            mfe, mae = (entry - low_value) / entry * 100, (entry - high_value) / entry * 100
+            tp_hit = _number(episode.get("take_profit")) is not None and low_value <= _number(episode.get("take_profit"))
+            sl_hit = _number(episode.get("stop_loss")) is not None and high_value >= _number(episode.get("stop_loss"))
     stop = _number(episode.get("stop_loss")); risk = abs(entry - stop) if stop is not None else None
     label = "WIN" if signed > 0 else "LOSS" if signed < 0 else "NEUTRAL"
     direction = "CORRECT" if signed > 0 else "WRONG" if signed < 0 else "FLAT"
     base.update({"return_pct": round(signed, 6), "return_r": round((future - entry) * (1 if side == "LONG" else -1) / risk, 6) if risk else None,
-                 "mfe": round(mfe, 6), "mae": round(mae, 6), "tp_hit": tp_hit, "sl_hit": sl_hit,
+                 "mfe": round(mfe, 6) if mfe is not None else None, "mae": round(mae, 6) if mae is not None else None, "tp_hit": tp_hit, "sl_hit": sl_hit,
                  "direction_correct": direction, "outcome_status": "EVALUATED", "label": label})
     return base
 
@@ -189,7 +241,7 @@ def _missed_horizon_outcome(episode: Mapping[str, Any], horizon: int, observed_a
         "episode_id": episode.get("episode_id"), "symbol": episode.get("symbol"),
         "timeframe": episode.get("timeframe"), "horizon": f"{horizon}H",
         "source_timestamp": episode.get("signal_timestamp"), "observed_at": observed_at,
-        "target_at": target_at, "horizon_delay_seconds": horizon_delay_seconds,
+        "price_observed_at": None, "price_source": None, "target_at": target_at, "horizon_delay_seconds": horizon_delay_seconds,
         "evaluated_at": None, "future_price": None, "return_pct": None,
         "return_r": None, "mfe": None, "mae": None, "tp_hit": None,
         "sl_hit": None, "direction_correct": "UNKNOWN",
@@ -241,6 +293,51 @@ def _calibration(episodes: Mapping[str, Mapping[str, Any]], outcomes: list[Mappi
     statuses = [item["status"] for item in items.values()]
     overall = "INSUFFICIENT_DATA" if not statuses or all(status == "INSUFFICIENT_DATA" for status in statuses) else next((status for status in statuses if status in {"OVERCONFIDENT", "UNDERCONFIDENT"}), "CALIBRATED")
     return {"status": overall, "buckets": items}
+
+
+def _effective_outcomes(
+    outcomes: list[Mapping[str, Any]], recoveries: list[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Keep original missed audit rows, but replace them only in derived metrics."""
+    replacements = {
+        str(row.get("replaces_outcome_id")): dict(row)
+        for row in recoveries
+        if row.get("recovery_status") == "RECOVERED_MISSED_HORIZON" and row.get("replaces_outcome_id")
+    }
+    effective = []
+    for row in outcomes:
+        replacement = replacements.get(str(row.get("outcome_id")))
+        effective.append(replacement if replacement is not None else dict(row))
+    return effective
+
+
+def _coverage(outcomes: list[Mapping[str, Any]], recoveries: list[Mapping[str, Any]]) -> dict[str, Any]:
+    evaluated = [row for row in outcomes if row.get("outcome_status") == "EVALUATED"]
+    historical = sum(row.get("price_source") == "LIVE_PRICE_HISTORY" for row in evaluated)
+    # v1 rows predate provenance; their only possible source was a runtime snapshot.
+    snapshot = sum(row.get("price_source") in {None, "RUNTIME_SNAPSHOT"} for row in evaluated)
+    missed = sum(row.get("outcome_status") == "MISSED_HORIZON" for row in outcomes)
+    denominator = historical + snapshot + missed
+    percent = lambda count: round(100 * count / denominator, 2) if denominator else 0.0
+    return {
+        "historical_price_coverage": percent(historical),
+        "snapshot_price_coverage": percent(snapshot),
+        "recovered_missed_horizons": len(recoveries),
+        "still_missed_horizons": missed,
+    }
+
+
+def _write_report(
+    base_dir: Path, generated_at: str, episodes: Mapping[str, Mapping[str, Any]],
+    outcomes: list[Mapping[str, Any]], recoveries: list[Mapping[str, Any]],
+) -> dict[str, Any]:
+    effective = _effective_outcomes(outcomes, recoveries)
+    overall = _metrics(effective)
+    calibration = _calibration(episodes, effective)
+    evaluated = [row for row in effective if row.get("outcome_status") == "EVALUATED"]
+    report = {"schema_version": "signal-evaluation-v1", "generated_at": generated_at, "evaluation_status": overall["status"], "episodes_total": len(episodes), "episodes_evaluated": len({row.get("episode_id") for row in evaluated}), "episodes_pending": max(0, len(episodes) - len({row.get("episode_id") for row in evaluated})), "latest_evaluated_at": generated_at if evaluated else None, "label_distribution": dict(Counter(str(row.get("label")) for row in effective)), "minimum_sample_status": overall["status"], "metrics": overall, "by_symbol": _grouped(effective, "symbol"), "by_regime": _grouped([{**row, "market_regime": (episodes.get(str(row.get("episode_id"))) or {}).get("market_regime")} for row in effective], "market_regime"), "by_direction": _grouped([{**row, "direction": (episodes.get(str(row.get("episode_id"))) or {}).get("side")} for row in effective], "direction"), "by_confidence_bucket": _grouped([{**row, "confidence_bucket": _confidence_bucket((episodes.get(str(row.get("episode_id"))) or {}).get("confidence"))} for row in effective], "confidence_bucket"), "by_score_bucket": _grouped([{**row, "score_bucket": _score_bucket((episodes.get(str(row.get("episode_id"))) or {}).get("score"))} for row in effective], "score_bucket"), "by_timeframe": _grouped([{**row, "timeframe": (episodes.get(str(row.get("episode_id"))) or {}).get("timeframe")} for row in effective], "timeframe"), "calibration": calibration, "oos_inputs": sorted([{**row, "episode_id": row.get("episode_id"), "source_timestamp": row.get("source_timestamp")} for row in evaluated], key=lambda row: str(row.get("source_timestamp"))), **_coverage(effective, recoveries)}
+    _atomic_json(base_dir / REPORT, report)
+    return report
 
 
 def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) -> dict[str, Any]:
@@ -322,19 +419,32 @@ def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) 
             active.pop(key, None)
     _append_unique(base_dir / EPISODES, created, "episode_id")
     outcomes = _read_jsonl(base_dir / OUTCOMES)
+    recoveries = _read_jsonl(base_dir / RECOVERIES)
     known = {str(row.get("outcome_id")) for row in outcomes}
     new_outcomes = []
     now = _time(generated_at)
+    history = _price_history(base_dir / PRICE_HISTORY)
     for episode in existing_episodes.values():
         started = _time(episode.get("signal_timestamp")); price_data = prices.get(_key(episode))
-        if started is None or now is None or price_data is None: continue
+        if started is None or now is None: continue
         for horizon in HORIZONS_HOURS:
             identity = f"{episode.get('episode_id')}:{horizon}H"
             target = started + timedelta(hours=horizon)
             if identity in known or now < target: continue
             delay = int((now - target).total_seconds())
             target_at = target.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-            if delay > _horizon_tolerance_seconds():
+            needs_historical = delay > _horizon_tolerance_seconds() or price_data is None
+            historical = _nearest_historical_price(
+                history, episode.get("symbol"), target, _horizon_tolerance_seconds(),
+            ) if needs_historical else None
+            if historical is not None:
+                new_outcomes.append(_outcome(
+                    episode, historical["price"], horizon, historical["price_observed_at"],
+                    target_at=target_at, horizon_delay_seconds=historical["horizon_delay_seconds"],
+                    price_source="LIVE_PRICE_HISTORY",
+                ))
+                continue
+            if needs_historical:
                 new_outcomes.append(_missed_horizon_outcome(
                     episode, horizon, generated_at, target_at=target_at,
                     horizon_delay_seconds=delay,
@@ -348,14 +458,84 @@ def process_snapshot(snapshot: Mapping[str, Any], *, base_dir: Path = BASE_DIR) 
             ))
     _append_unique(base_dir / OUTCOMES, new_outcomes, "outcome_id")
     all_outcomes = outcomes + new_outcomes
-    overall = _metrics(all_outcomes)
-    calibration = _calibration(existing_episodes, all_outcomes)
-    evaluated = [row for row in all_outcomes if row.get("outcome_status") == "EVALUATED"]
-    report = {"schema_version": "signal-evaluation-v1", "generated_at": generated_at, "evaluation_status": overall["status"], "episodes_total": len(existing_episodes), "episodes_evaluated": len({row.get("episode_id") for row in evaluated}), "episodes_pending": max(0, len(existing_episodes) - len({row.get("episode_id") for row in evaluated})), "latest_evaluated_at": generated_at if evaluated else None, "label_distribution": dict(Counter(str(row.get("label")) for row in all_outcomes)), "minimum_sample_status": overall["status"], "metrics": overall, "by_symbol": _grouped(all_outcomes, "symbol"), "by_regime": _grouped([{**row, "market_regime": (existing_episodes.get(str(row.get("episode_id"))) or {}).get("market_regime")} for row in all_outcomes], "market_regime"), "by_direction": _grouped([{**row, "direction": (existing_episodes.get(str(row.get("episode_id"))) or {}).get("side")} for row in all_outcomes], "direction"), "by_confidence_bucket": _grouped([{**row, "confidence_bucket": _confidence_bucket((existing_episodes.get(str(row.get("episode_id"))) or {}).get("confidence"))} for row in all_outcomes], "confidence_bucket"), "by_score_bucket": _grouped([{**row, "score_bucket": _score_bucket((existing_episodes.get(str(row.get("episode_id"))) or {}).get("score"))} for row in all_outcomes], "score_bucket"), "by_timeframe": _grouped([{**row, "timeframe": (existing_episodes.get(str(row.get("episode_id"))) or {}).get("timeframe")} for row in all_outcomes], "timeframe"), "calibration": calibration, "oos_inputs": sorted([{**row, "episode_id": row.get("episode_id"), "source_timestamp": row.get("source_timestamp")} for row in evaluated], key=lambda row: str(row.get("source_timestamp")))}
-    _atomic_json(base_dir / REPORT, report)
+    report = _write_report(base_dir, generated_at, existing_episodes, all_outcomes, recoveries)
     _atomic_json(base_dir / STATE, {
         "active": active, "extrema": extrema, "episodes": episode_state,
         "last_processed_snapshot_id": snapshot_id,
         "last_processed_generated_at": generated_at,
     })
-    return {"status": report["evaluation_status"], "evaluated": len(evaluated), "pending": report["episodes_pending"], "accuracy": overall["direction_accuracy"], "expectancy": overall["expectancy"], "calibration_status": calibration["status"], "generated_at": generated_at}
+    return {"status": report["evaluation_status"], "evaluated": report["episodes_evaluated"], "pending": report["episodes_pending"], "accuracy": report["metrics"]["direction_accuracy"], "expectancy": report["metrics"]["expectancy"], "calibration_status": report["calibration"]["status"], "generated_at": generated_at}
+
+
+def backfill_missed_horizons(*, base_dir: Path = BASE_DIR) -> dict[str, Any]:
+    """Create provenance-preserving replacements for missed outcomes when history exists.
+
+    The original ``MISSED_HORIZON`` rows are intentionally immutable audit
+    records. A recovered row has its own ID and names the original row it
+    replaces for derived metrics. Re-running this function is idempotent.
+    """
+    outcomes = _read_jsonl(base_dir / OUTCOMES)
+    episodes = {str(row.get("episode_id")): row for row in _read_jsonl(base_dir / EPISODES)}
+    state = _read_json(base_dir / STATE, {})
+    state_episodes = state.get("episodes") if isinstance(state, Mapping) else {}
+    merged_episodes = {
+        key: {**row, **(state_episodes.get(key, {}) if isinstance(state_episodes, Mapping) and isinstance(state_episodes.get(key), Mapping) else {})}
+        for key, row in episodes.items()
+    }
+    recoveries = _read_jsonl(base_dir / RECOVERIES)
+    replaced = {str(row.get("replaces_outcome_id")) for row in recoveries if row.get("replaces_outcome_id")}
+    history = _price_history(base_dir / PRICE_HISTORY)
+    tolerance = _horizon_tolerance_seconds()
+    recovered: list[dict[str, Any]] = []
+    generated_at = normalize_runtime_timestamp(datetime.now(timezone.utc))
+    assert generated_at is not None
+    for missed in outcomes:
+        original_id = str(missed.get("outcome_id") or "")
+        if missed.get("outcome_status") != "MISSED_HORIZON" or not original_id or original_id in replaced:
+            continue
+        episode = merged_episodes.get(str(missed.get("episode_id")))
+        target = _time(missed.get("target_at"))
+        try:
+            horizon = int(str(missed.get("horizon") or "").removesuffix("H"))
+        except ValueError:
+            continue
+        if episode is None or target is None:
+            continue
+        historical = _nearest_historical_price(history, episode.get("symbol"), target, tolerance)
+        if historical is None:
+            continue
+        replacement = _outcome(
+            episode, historical["price"], horizon, historical["price_observed_at"],
+            target_at=normalize_runtime_timestamp(target) or str(missed.get("target_at")),
+            horizon_delay_seconds=historical["horizon_delay_seconds"],
+            price_source="LIVE_PRICE_HISTORY",
+        )
+        replacement["outcome_id"] = f"{original_id}:recovered"
+        replacement["replaces_outcome_id"] = original_id
+        replacement["recovery_status"] = "RECOVERED_MISSED_HORIZON"
+        replacement["recovered_at"] = generated_at
+        recovered.append(replacement)
+    _append_unique(base_dir / RECOVERIES, recovered, "outcome_id")
+    all_recoveries = recoveries + recovered
+    report = _write_report(base_dir, generated_at, merged_episodes, outcomes, all_recoveries)
+    return {
+        "status": report["evaluation_status"], "recovered": len(recovered),
+        "still_missed_horizons": report["still_missed_horizons"],
+        "generated_at": generated_at,
+    }
+
+
+def _main() -> int:
+    parser = argparse.ArgumentParser(description="Observer-only signal outcome maintenance")
+    parser.add_argument("--backfill-missed", action="store_true", help="recover missed horizons from saved price history")
+    parser.add_argument("--base-dir", default=str(BASE_DIR), help="runtime artifact directory")
+    args = parser.parse_args()
+    if not args.backfill_missed:
+        parser.error("--backfill-missed is required; normal evaluation runs from the observer")
+    result = backfill_missed_horizons(base_dir=Path(args.base_dir))
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - command entrypoint
+    raise SystemExit(_main())

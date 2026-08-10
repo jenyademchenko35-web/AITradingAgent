@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import csv
 
 from runtime_contract import build_runtime_snapshot
 from signal_outcome_evaluation import (
-    EPISODES, OUTCOMES, REPORT, STATE, build_oos_windows, episode_id, process_snapshot,
+    EPISODES, OUTCOMES, PRICE_HISTORY, RECOVERIES, REPORT, STATE, backfill_missed_horizons,
+    build_oos_windows, episode_id, process_snapshot,
 )
 
 
@@ -15,6 +17,12 @@ def _snapshot(at: str, price: float, *, side: str = "LONG", status: str = "SETUP
                   "low": low, "direction": side, "signal": status, "confidence": confidence,
                   "score": 25, "market_regime": "TREND_UP", "stop_loss": 95, "take_profit": 110}],
     )
+
+
+def _history(path, rows):
+    with (path / PRICE_HISTORY).open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["timestamp", "symbol", "price"])
+        writer.writeheader(); writer.writerows(rows)
 
 
 def test_episode_id_is_deterministic_and_repeated_signals_do_not_duplicate(tmp_path):
@@ -63,6 +71,63 @@ def test_late_snapshot_is_missed_and_never_counted_as_one_hour_outcome(monkeypat
     assert one_hour["outcome_status"] == "MISSED_HORIZON"
     assert one_hour["future_price"] is None and one_hour["horizon_delay_seconds"] == 360
     assert report["evaluated"] == 0
+
+
+def test_historical_price_at_exact_target_recovers_current_late_evaluation(monkeypatch, tmp_path):
+    monkeypatch.setenv("SIGNAL_OUTCOME_HORIZON_TOLERANCE_SECONDS", "300")
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100), base_dir=tmp_path)
+    _history(tmp_path, [{"timestamp": "2026-08-01T01:00:00Z", "symbol": "BTCUSDT", "price": "105"}])
+    process_snapshot(_snapshot("2026-08-01T01:30:00Z", 200), base_dir=tmp_path)
+    outcome = next(json.loads(line) for line in (tmp_path / OUTCOMES).read_text().splitlines() if '"1H"' in line)
+    assert outcome["outcome_status"] == "EVALUATED"
+    assert outcome["price_source"] == "LIVE_PRICE_HISTORY"
+    assert outcome["price_observed_at"] == "2026-08-01T01:00:00Z"
+    assert outcome["future_price"] == 105 and outcome["mfe"] is outcome["mae"] is None
+
+
+def test_historical_nearest_observation_is_strict_and_never_uses_late_current_price(monkeypatch, tmp_path):
+    monkeypatch.setenv("SIGNAL_OUTCOME_HORIZON_TOLERANCE_SECONDS", "120")
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100), base_dir=tmp_path)
+    _history(tmp_path, [
+        {"timestamp": "2026-08-01T01:01:00Z", "symbol": "BTC/USDT", "price": "110"},
+        {"timestamp": "2026-08-01T00:59:30Z", "symbol": "BTC/USDT", "price": "104"},
+        {"timestamp": "2026-08-01T01:00:30Z", "symbol": "BTC/USDT", "price": "106"},
+        {"timestamp": "2026-08-01T01:00:30Z", "symbol": "BTC/USDT", "price": "107"},
+        {"timestamp": "2026-08-01T01:10:00Z", "symbol": "BTC/USDT", "price": "999"},
+    ])
+    process_snapshot(_snapshot("2026-08-01T01:30:00Z", 500), base_dir=tmp_path)
+    outcome = next(json.loads(line) for line in (tmp_path / OUTCOMES).read_text().splitlines() if '"1H"' in line)
+    assert outcome["future_price"] == 104  # equal-distance tie deterministically prefers earlier observation
+    assert outcome["horizon_delay_seconds"] == 30
+    clean = tmp_path / "outside"; clean.mkdir()
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100), base_dir=clean)
+    _history(clean, [{"timestamp": "2026-08-01T01:03:00Z", "symbol": "ETH/USDT", "price": "999"}])
+    process_snapshot(_snapshot("2026-08-01T01:30:00Z", 900), base_dir=clean)
+    missed = next(json.loads(line) for line in (clean / OUTCOMES).read_text().splitlines() if '"1H"' in line)
+    assert missed["outcome_status"] == "MISSED_HORIZON" and missed["future_price"] is None
+
+
+def test_backfill_preserves_missed_audit_row_is_idempotent_and_updates_coverage(monkeypatch, tmp_path):
+    monkeypatch.setenv("SIGNAL_OUTCOME_HORIZON_TOLERANCE_SECONDS", "300")
+    process_snapshot(_snapshot("2026-08-01T00:00:00Z", 100), base_dir=tmp_path)
+    process_snapshot(_snapshot("2026-08-01T01:30:00Z", 120), base_dir=tmp_path)
+    original = [json.loads(line) for line in (tmp_path / OUTCOMES).read_text().splitlines()]
+    assert original[0]["outcome_status"] == "MISSED_HORIZON"
+    _history(tmp_path, [
+        {"timestamp": "bad", "symbol": "BTC/USDT", "price": "100"},
+        {"timestamp": "2026-08-01T01:00:00Z", "symbol": "BTC/USDT", "price": "108"},
+        {"timestamp": "2026-08-01T01:00:00Z", "symbol": "", "price": "109"},
+    ])
+    first = backfill_missed_horizons(base_dir=tmp_path)
+    second = backfill_missed_horizons(base_dir=tmp_path)
+    recovered = [json.loads(line) for line in (tmp_path / RECOVERIES).read_text().splitlines()]
+    report = json.loads((tmp_path / REPORT).read_text())
+    assert first["recovered"] == 1 and second["recovered"] == 0
+    assert len(recovered) == 1 and recovered[0]["outcome_id"].endswith(":recovered")
+    assert recovered[0]["replaces_outcome_id"] == original[0]["outcome_id"]
+    assert len((tmp_path / OUTCOMES).read_text().splitlines()) == len(original)
+    assert report["recovered_missed_horizons"] == 1
+    assert report["still_missed_horizons"] == 0
 
 
 def test_directional_lifecycle_keeps_one_episode_across_active_status_changes(tmp_path):
