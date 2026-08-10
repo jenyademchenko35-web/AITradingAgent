@@ -155,6 +155,7 @@ def test_production_templates_are_https_only_and_use_safe_placeholders():
     assert "max-age=31536000; includeSubDomains" in caddy
     assert "Content-Security-Policy" in caddy
     assert "Cache-Control \"public, max-age=31536000, immutable\"" in caddy
+    assert "Cache-Control \"no-cache, max-age=0, must-revalidate\"" in caddy
     assert "__PROJECT_ROOT__" in caddy
     assert "/ABSOLUTE/PATH/TO" not in caddy
     assert "__PROJECT_ROOT__" in plist

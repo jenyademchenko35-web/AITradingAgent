@@ -93,7 +93,13 @@ def create_app(
             allow_origins=list(config.allowed_origins),
             allow_credentials=False,
             allow_methods=["GET"],
-            allow_headers=["X-Telegram-Init-Data", "Accept", "Content-Type"],
+            allow_headers=[
+                "X-Telegram-Init-Data",
+                "X-Telegram-Init-Data-Fingerprint",
+                "X-TradeWatcher-Frontend-Build",
+                "Accept",
+                "Content-Type",
+            ],
             max_age=600,
         )
 
@@ -122,6 +128,11 @@ def create_app(
             response.headers[name] = value
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
+        elif request.url.path in {"/", "/index.html"}:
+            # The HTML entry point must revalidate so Telegram receives new hashed bundles.
+            response.headers["Cache-Control"] = "no-cache, max-age=0, must-revalidate"
+        elif request.url.path.startswith("/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
     @api.get("/healthz")

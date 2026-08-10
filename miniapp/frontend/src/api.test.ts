@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { MiniAppApi } from "./api";
+import { FRONTEND_BUILD, MiniAppApi } from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -28,11 +28,12 @@ test("api reads initData when Telegram becomes ready after client creation", asy
 test("api sends a fingerprint of the exact raw initData without changing authentication", async () => {
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
   vi.stubGlobal("fetch", fetchMock);
-  const api = new MiniAppApi("raw%2Bencoded+init-data");
+  const api = new MiniAppApi(" raw%2Bencoded+init-data ");
   await api.watchlist();
   const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
-  expect(headers["X-Telegram-Init-Data"]).toBe("raw%2Bencoded+init-data");
+  expect(headers["X-Telegram-Init-Data"]).toBe(" raw%2Bencoded+init-data ");
   expect(headers["X-Telegram-Init-Data-Fingerprint"]).toMatch(/^[0-9a-f]{12}$/);
+  expect(headers["X-TradeWatcher-Frontend-Build"]).toBe(FRONTEND_BUILD);
 });
 
 test("api never sends an empty initData header", async () => {
@@ -41,6 +42,17 @@ test("api never sends an empty initData header", async () => {
   const api = new MiniAppApi(() => undefined);
   await expect(api.watchlist()).rejects.toThrow("Telegram initData unavailable");
   expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test("api marks fingerprint diagnostics unavailable without changing the raw initData", async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal("crypto", undefined);
+  await new MiniAppApi("opaque-init-data").watchlist();
+  const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+  expect(headers["X-Telegram-Init-Data"]).toBe("opaque-init-data");
+  expect(headers["X-Telegram-Init-Data-Fingerprint"]).toBe("UNAVAILABLE");
+  expect(headers["X-TradeWatcher-Frontend-Build"]).toBe(FRONTEND_BUILD);
 });
 
 test("signal path is encoded and does not issue search requests", async () => {
@@ -61,4 +73,9 @@ test("runtime API methods use their dedicated read-only endpoints once", async (
     "/api/system", "/api/activity", "/api/shadow", "/api/research/live",
   ]);
   expect(fetchMock.mock.calls.every(([, options]) => options.method === "GET")).toBe(true);
+  expect(fetchMock.mock.calls.every(([, options]) => (
+    options.headers["X-Telegram-Init-Data"] === "data"
+    && options.headers["X-Telegram-Init-Data-Fingerprint"]
+    && options.headers["X-TradeWatcher-Frontend-Build"] === FRONTEND_BUILD
+  ))).toBe(true);
 });

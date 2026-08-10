@@ -31,6 +31,7 @@ HMAC_ALGORITHM = "TELEGRAM_WEBAPP_HMAC_SHA256_V1"
 HMAC_DATA_CHECK_PROFILE = "ALL_FIELDS_EXCEPT_HASH"
 _SAFE_FIELD_NAME = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 _FINGERPRINT = re.compile(r"^[0-9a-f]{12}$")
+_BUILD_MARKER = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 
 def _data_check_string(fields: dict[str, str]) -> str:
@@ -67,7 +68,15 @@ def _value_fingerprint(value: str) -> str:
 def _safe_client_fingerprint(value: str) -> str:
     if not value:
         return "MISSING"
+    if value == "UNAVAILABLE":
+        return value
     return value if _FINGERPRINT.fullmatch(value) else "INVALID"
+
+
+def _safe_build_marker(value: str) -> str:
+    if not value:
+        return "MISSING"
+    return value if _BUILD_MARKER.fullmatch(value) else "INVALID"
 
 
 def _transport_fingerprints(init_data: str, frontend_fingerprint: str) -> tuple[str, str, bool]:
@@ -123,6 +132,7 @@ def _auth_diagnostic(
     settings: MiniAppSettings,
     *,
     transport_fingerprints: tuple[str, str, bool],
+    frontend_build: str,
 ) -> None:
     """Log only field names and lifecycle metadata, never signed values or secrets."""
     try:
@@ -135,13 +145,13 @@ def _auth_diagnostic(
     LOGGER.warning(
         "miniapp_auth_denied reason=%s algorithm=%s hmac_data_check_profile=%s "
         "token_source=%s token_present=%s token_fingerprint=%s "
-        "frontend_init_fingerprint=%s backend_init_fingerprint=%s fingerprint_match=%s "
+        "frontend_build=%s frontend_init_fingerprint=%s backend_init_fingerprint=%s fingerprint_match=%s "
         "init_data_present=%s init_data_length=%d parsed_field_names=%s signature_present=%s "
         "auth_date=%s data_check_string_length=%d data_check_fingerprint=%s "
         "secret_key_fingerprint=%s calculated_hash_fingerprint=%s received_hash_fingerprint=%s",
         reason, HMAC_ALGORITHM, HMAC_DATA_CHECK_PROFILE,
         settings.bot_token_source, bool(settings.bot_token), _token_fingerprint(settings.bot_token),
-        safe_frontend_fingerprint, backend_fingerprint, fingerprint_match,
+        _safe_build_marker(frontend_build), safe_frontend_fingerprint, backend_fingerprint, fingerprint_match,
         bool(init_data), len(init_data), _safe_field_names(fields), "signature" in fields,
         _safe_auth_date(fields), len(data_check),
         hmac_inputs.get("data_check_fingerprint", "NOT_COMPARED"),
@@ -156,17 +166,18 @@ def _auth_success_diagnostic(
     settings: MiniAppSettings,
     *,
     transport_fingerprints: tuple[str, str, bool],
+    frontend_build: str,
 ) -> None:
     """Log the same safe transport integrity metadata for accepted requests."""
     safe_frontend_fingerprint, backend_fingerprint, fingerprint_match = transport_fingerprints
     hmac_inputs = _hmac_diagnostics(init_data, settings.bot_token) if fingerprint_match else {}
     LOGGER.info(
         "miniapp_auth_accepted algorithm=%s token_source=%s token_fingerprint=%s "
-        "frontend_init_fingerprint=%s backend_init_fingerprint=%s fingerprint_match=%s "
+        "frontend_build=%s frontend_init_fingerprint=%s backend_init_fingerprint=%s fingerprint_match=%s "
         "data_check_fingerprint=%s secret_key_fingerprint=%s "
         "calculated_hash_fingerprint=%s received_hash_fingerprint=%s",
         HMAC_ALGORITHM, settings.bot_token_source, _token_fingerprint(settings.bot_token),
-        safe_frontend_fingerprint, backend_fingerprint, fingerprint_match,
+        _safe_build_marker(frontend_build), safe_frontend_fingerprint, backend_fingerprint, fingerprint_match,
         hmac_inputs.get("data_check_fingerprint", "NOT_COMPARED"),
         hmac_inputs.get("secret_key_fingerprint", "NOT_COMPARED"),
         hmac_inputs.get("calculated_hash_fingerprint", "NOT_COMPARED"),
@@ -223,6 +234,9 @@ def auth_dependency(
         x_telegram_init_data_fingerprint: str = Header(
             default="", alias="X-Telegram-Init-Data-Fingerprint",
         ),
+        x_tradewatcher_frontend_build: str = Header(
+            default="", alias="X-TradeWatcher-Frontend-Build",
+        ),
     ) -> TelegramUser:
         if not settings.enabled:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mini App disabled")
@@ -247,6 +261,7 @@ def auth_dependency(
                     x_telegram_init_data,
                     settings,
                     transport_fingerprints=transport_fingerprints,
+                    frontend_build=x_tradewatcher_frontend_build,
                 )
                 if limiter is not None:
                     limiter.require(client_ip=client_ip)
@@ -255,6 +270,7 @@ def auth_dependency(
                 x_telegram_init_data,
                 settings,
                 transport_fingerprints=transport_fingerprints,
+                frontend_build=x_tradewatcher_frontend_build,
             )
         if limiter is not None:
             limiter.require(user_id=user.id, client_ip=client_ip)
@@ -266,6 +282,7 @@ def auth_dependency(
                 x_telegram_init_data,
                 settings,
                 transport_fingerprints=transport_fingerprints,
+                frontend_build=x_tradewatcher_frontend_build,
             )
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner access required")
         return user

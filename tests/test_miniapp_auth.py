@@ -240,8 +240,10 @@ def test_diagnostic_fingerprint_header_does_not_change_valid_auth_result(caplog)
     response = client.get("/api/status", headers={
         "X-Telegram-Init-Data": init_data,
         "X-Telegram-Init-Data-Fingerprint": hashlib.sha256(init_data.encode("utf-8")).hexdigest()[:12],
+        "X-TradeWatcher-Frontend-Build": "4979c68",
     })
     assert response.status_code == 200
     assert "miniapp_auth_accepted" in caplog.text
     assert "fingerprint_match=True" in caplog.text
+    assert "frontend_build=4979c68" in caplog.text
     assert init_data not in caplog.text

@@ -5,6 +5,8 @@ import type {
 } from "../../shared/contracts";
 import { telegramInitDataFingerprint } from "./telegram";
 
+export const FRONTEND_BUILD = import.meta.env.VITE_TRADEWATCHER_FRONTEND_BUILD || "unknown";
+
 export interface RuntimeSystem {
   server: string | null;
   agent: string | null;
@@ -91,8 +93,12 @@ export class MiniAppApi implements MiniAppApiClient {
     const initData = (typeof this.initData === "function" ? this.initData() : this.initData) ?? "";
     if (!initData) throw new Error("Telegram initData unavailable");
     const fingerprint = await telegramInitDataFingerprint(initData);
-    const headers: Record<string, string> = { "X-Telegram-Init-Data": initData };
-    if (fingerprint) headers["X-Telegram-Init-Data-Fingerprint"] = fingerprint;
+    const headers: Record<string, string> = {
+      "X-Telegram-Init-Data": initData,
+      "X-TradeWatcher-Frontend-Build": FRONTEND_BUILD,
+    };
+    // Preserve an explicit diagnostic signal even on an unusual WebView without Web Crypto.
+    headers["X-Telegram-Init-Data-Fingerprint"] = fingerprint || "UNAVAILABLE";
     const response = await fetch(this.url(path), {
       method: "GET",
       headers,
