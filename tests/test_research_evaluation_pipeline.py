@@ -89,13 +89,21 @@ def test_empty_feature_analysis_is_explicitly_insufficient(tmp_path: Path):
 def test_closed_feature_outcomes_produce_analysis_after_evidence_floor(tmp_path: Path):
     lab = ResearchLab(tmp_path / "research.db", ranking_interval=1)
     snapshot = {"timestamp": "2026-08-10T00:00:00+00:00", "symbol": "BTC/USDT"}
+    lab.register_strategies()
     closed = []
     for index in range(20):
+        trade_id = f"trade-{index}"
+        features = {"adx": 30.0 if index % 2 else 10.0, "volume_ratio": 1.2}
+        lab.database.record_run(
+            cycle_id=f"open-{index}", strategy_id="ADX_CONFIRM", timestamp=snapshot["timestamp"],
+            symbol="BTC/USDT", decision="SETUP", status="OPENED_SHADOW",
+            features=features, shadow_trade_id=trade_id, actual_shadow_opened=True,
+        )
         closed.append({
-            "shadow_trade_id": f"trade-{index}", "candidate_id": "ADX_CONFIRM",
+            "shadow_trade_id": trade_id, "candidate_id": "ADX_CONFIRM",
             "symbol": "BTC/USDT", "closed_at": f"2026-08-10T{index:02d}:00:00+00:00",
             "status": "CLOSED", "pnl_r": 1 if index % 2 else -1,
-            "feature_snapshot": {"adx": 30.0 if index % 2 else 10.0, "volume_ratio": 1.2},
+            "feature_snapshot": features,
         })
     lab.process_cycle(cycle_id="c1", snapshot=snapshot, decisions=[], closed_trades=closed)
     report = ResearchDashboardV2(tmp_path / "research.db").build_report()

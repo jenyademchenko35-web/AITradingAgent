@@ -552,7 +552,8 @@ class ResearchLabRuntime:
         if not database_path.is_absolute():
             database_path = BASE_DIR / database_path
         lab = ResearchLab(database_path, ranking_interval=settings.rank_every_n_cycles,
-                          feature_interval=settings.feature_analysis_every_n_closed)
+                          feature_interval=settings.feature_analysis_every_n_closed,
+                          ledger_path=self.shadow_book.history_path)
         decisions: list[dict[str, Any]] = []
         blocked: Counter[str] = Counter()
         would_open = opened = signals = new_entry_triggers = 0

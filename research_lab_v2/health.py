@@ -42,6 +42,7 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
                           feature_coverage: Mapping[str, Any],
                           runtime_status: Mapping[str, Any],
                           database_path: Path,
+                          outcome_sync: Mapping[str, Any] | None = None,
                           feature_updated_at: str | None = None,
                           candidate_updated_at: str | None = None,
                           walk_forward_updated_at: str | None = None) -> dict[str, Any]:
@@ -60,6 +61,11 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
         stale.append("research_runtime_disabled")
     if int(feature_coverage.get("joined_outcomes", 0) or 0) < 20:
         stale.append("feature_evidence_insufficient")
+    outcome_sync = dict(outcome_sync or {})
+    if int(outcome_sync.get("outcome_sync_gap", 0) or 0) > 0:
+        stale.append("outcome_sync_gap")
+    if int(outcome_sync.get("unresolved_outcome_joins", 0) or 0) > 0:
+        stale.append("outcome_evidence_incomplete")
     for label, value in {
         "feature_analysis": feature_updated_at,
         "candidate_ranking": candidate_updated_at,
@@ -74,6 +80,13 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
         "data_pipeline": "OK" if not stale else "DEGRADED",
         "research_db": {"exists": database_path.exists(), "path_name": database_path.name},
         "feature_coverage": dict(feature_coverage),
+        "outcome_sync": {
+            "ledger_closed_total": int(outcome_sync.get("ledger_closed_total", 0) or 0),
+            "db_closed_total": int(outcome_sync.get("db_closed_total", 0) or 0),
+            "outcome_sync_gap": int(outcome_sync.get("outcome_sync_gap", 0) or 0),
+            "unresolved_outcome_joins": int(outcome_sync.get("unresolved_outcome_joins", 0) or 0),
+            "duplicate_shadow_trade_ids": int(outcome_sync.get("duplicate_shadow_trade_ids", 0) or 0),
+        },
         "strategy_counts": {
             "registered": len(evidence), "evaluated": len(evaluated),
             "with_closed_evidence": len(closed),

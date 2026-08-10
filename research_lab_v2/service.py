@@ -19,10 +19,11 @@ from .database import ResearchDatabase
 
 class ResearchLab:
     def __init__(self, database_path: str | Path = "research.db", *, ranking_interval: int = 10,
-                 feature_interval: int = 100) -> None:
+                 feature_interval: int = 100, ledger_path: str | Path | None = None) -> None:
         self.database = ResearchDatabase(database_path)
         self.ranking_interval = max(1, int(ranking_interval))
         self.feature_interval = max(1, int(feature_interval))
+        self.ledger_path = Path(ledger_path) if ledger_path is not None else None
 
     def register_strategies(self) -> None:
         for strategy in registry.all():
@@ -62,26 +63,18 @@ class ResearchLab:
                 shadow_mode_started_at=decision.get("shadow_mode_started_at"),
             )
         for trade in closed:
-            strategy_id = str(trade.get("candidate_id", "")).upper()
-            if registry.get(strategy_id) is None:
-                continue
-            features = trade.get("feature_snapshot")
-            features = features if isinstance(features, Mapping) else {}
-            trade_id = str(trade.get("shadow_trade_id", ""))
-            self.database.record_run(
-                cycle_id=f"{cycle_id}:closed:{trade_id}", strategy_id=strategy_id,
-                timestamp=str(trade.get("closed_at", timestamp)),
-                symbol=str(trade.get("symbol", symbol)),
-                timeframe=str(trade.get("timeframe", snapshot.get("timeframe", "1h"))),
-                decision="CLOSED",
-                status=str(trade.get("status", "CLOSED")), features=features,
-                result_r=float(trade.get("pnl_r", 0) or 0), shadow_trade_id=trade_id,
-                strategy_mode="SHADOW_ENABLED", actual_shadow_opened=True,
-                shadow_mode_started_at=trade.get("shadow_mode_started_at"),
+            # Ledger rows are canonicalized by `strategy_id`; `candidate_id` is
+            # an in-memory compatibility alias and is intentionally not required.
+            self.database.persist_closed_outcome(
+                trade, source="LIVE_RESEARCH_RUNTIME"
             )
         if not closed:
             return {"runs": len(decisions), "closed": 0, "ranked": False}
 
+        return {"runs": len(decisions), "closed": len(closed), **self.rebuild_outcome_metrics()}
+
+    def rebuild_outcome_metrics(self) -> dict[str, Any]:
+        """Rebuild projections exclusively from canonical closed outcomes."""
         grouped = self.database.completed_runs()
         metrics_rows = []
         walk_forward = self.database.latest_walk_forward()
@@ -100,22 +93,34 @@ class ResearchLab:
             # the first closure count was not 100.  A feature report is still
             # only produced from real, closed shadow outcomes and only once the
             # explicit evidence floor is reached.
-            if metrics["closed_trades"] >= MIN_FEATURE_OUTCOMES:
+            feature_trades = self.database.feature_completed_runs().get(strategy_id, [])
+            if len(feature_trades) >= MIN_FEATURE_OUTCOMES:
                 stats = feature_importance([
                     {**dict(row.get("feature_snapshot", {})), "pnl_r": row.get("pnl_r", 0)}
-                    for row in trades
+                    for row in feature_trades
                 ])
                 if stats:
                     self.database.record_feature_statistics(strategy_id, stats)
+        if self.ledger_path is not None:
+            try:
+                import csv
+                with self.ledger_path.open("r", encoding="utf-8", newline="") as handle:
+                    reconciliation = self.database.outcome_reconciliation(csv.DictReader(handle))
+            except OSError:
+                reconciliation = {"outcome_sync_gap": 0}
+            if (int(reconciliation.get("outcome_sync_gap", 0) or 0) > 0 or
+                    int(reconciliation.get("unresolved_outcome_joins", 0) or 0) > 0):
+                return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": False,
+                        "ranking_blocked": "OUTCOME_EVIDENCE_INCOMPLETE", "reconciliation": reconciliation}
         if self.database.cycle_count() % self.ranking_interval:
-            return {"runs": len(decisions), "closed": len(closed), "ranked": False}
+            return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": False}
         ranking = rank_strategies(metrics_rows)
         baseline = next((row for row in ranking if row["strategy_id"] == "LIVE_BASELINE"), {})
         for row in ranking:
             if row["strategy_id"] == "LIVE_BASELINE":
                 continue
             self.database.record_candidate(row["strategy_id"], promotion_decision(row, baseline))
-        return {"runs": len(decisions), "closed": len(closed), "ranked": True, "ranking": ranking}
+        return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": True, "ranking": ranking}
 
     def record_walk_forward_report(self, report: Mapping[str, Any]) -> None:
         configuration = report.get("configuration", {})

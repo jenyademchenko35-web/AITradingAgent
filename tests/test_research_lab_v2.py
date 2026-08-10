@@ -739,6 +739,12 @@ def test_research_shadow_tp_and_sl_lifecycle(tmp_path, exit_high, exit_low, reas
     assert trade["signal_fingerprint"]
     assert trade["shadow_mode_started_at"] == opened["timestamp"]
     assert json.loads(trade["feature_snapshot_json"])["cycle_id"] == "open"
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        outcome = db.execute("""
+            SELECT shadow_trade_id, strategy_id, pnl_r, source, join_status
+            FROM shadow_trade_outcomes
+        """).fetchone()
+    assert outcome[1:] == ("TREND_CONFIRM", pnl_r, "LIVE_RESEARCH_RUNTIME", "RESOLVED")
 
 
 def test_research_shadow_book_survives_runtime_restart(tmp_path):

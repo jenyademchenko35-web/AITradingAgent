@@ -70,6 +70,8 @@ class ResearchDashboardV2:
             }
         database = ResearchDatabase(self.path)
         evidence = database.strategy_evidence()
+        ledger = self._shadow_ledger()
+        reconciliation = database.outcome_reconciliation(ledger["closed"])
         top = _rows(self.path, """
             WITH latest AS (
               SELECT strategy_id, MAX(id) id FROM strategy_metrics GROUP BY strategy_id
@@ -105,6 +107,10 @@ class ResearchDashboardV2:
                 **row, "walk_forward_status": row.get("walk_forward"),
                 "confidence": row.get("confidence"),
             })
+            if reconciliation["outcome_sync_gap"] or reconciliation["unresolved_outcome_joins"]:
+                row["ranking_eligible"] = False
+                if row["evidence_state"] in {"READY_FOR_COMPARISON", "VALIDATED"}:
+                    row["evidence_state"] = "COLLECTING"
             rejected = rejected_decision(row["strategy_id"])
             if rejected:
                 row.update(rejected)
@@ -113,6 +119,10 @@ class ResearchDashboardV2:
             for row in top
         ])
         for row in top:
+            if reconciliation["outcome_sync_gap"] or reconciliation["unresolved_outcome_joins"]:
+                row["ranking_eligible"] = False
+                if row.get("evidence_state") in {"READY_FOR_COMPARISON", "VALIDATED"}:
+                    row["evidence_state"] = "COLLECTING"
             rejected = rejected_decision(row["strategy_id"])
             if rejected:
                 row.update(rejected, evidence_state="REJECTED", ranking_eligible=False)
@@ -137,7 +147,12 @@ class ResearchDashboardV2:
                      row.get("strategy_id") != "LIVE_BASELINE" and
                      row.get("evidence_state") != "REJECTED"), {})
         strategies = _rows(self.path, "SELECT id, name, version, enabled, risk_profile, shadow_only FROM strategies ORDER BY id")
-        run_count = _rows(self.path, "SELECT COUNT(*) count FROM strategy_runs")
+        # Preserve the historical progress meaning: evaluations plus closed
+        # outcomes.  Outcomes moved to their own canonical table in v2.
+        run_count = _rows(self.path, """
+            SELECT (SELECT COUNT(*) FROM strategy_runs)
+                 + (SELECT COUNT(*) FROM shadow_trade_outcomes) count
+        """)
         timestamps = _rows(self.path, """
             SELECT (SELECT MAX(calculated_at) FROM feature_statistics) feature_updated_at,
                    (SELECT MAX(timestamp) FROM candidate_history) candidate_updated_at,
@@ -147,7 +162,7 @@ class ResearchDashboardV2:
         health = build_research_health(
             evidence={row["strategy_id"]: row for row in top},
             feature_coverage=feature_coverage, runtime_status=runtime_status,
-            database_path=self.path, **artifact_times,
+            database_path=self.path, outcome_sync=reconciliation, **artifact_times,
         )
         return {
             "top_strategies": top, "top_features": positive, "worst_features": negative,
@@ -160,7 +175,7 @@ class ResearchDashboardV2:
             "promotion_probability": best.get("promotion_probability", 0),
             "strategies": strategies,
             "runtime_status": runtime_status,
-            "shadow_ledger": self._shadow_ledger(),
+            "shadow_ledger": ledger,
             "feature_analysis": feature_analysis,
             "research_health": health,
         }
@@ -280,10 +295,16 @@ class ResearchDashboardV2:
             health = report["research_health"]
             coverage = health["feature_coverage"]
             counts = health["strategy_counts"]
+            sync = health["outcome_sync"]
             return "\n".join([
                 "Research Lab v2 - HEALTH",
                 f"Pipeline: {health['data_pipeline']}",
                 f"Research DB: {'OK' if health['research_db']['exists'] else 'MISSING'}",
+                f"Ledger closed: {sync['ledger_closed_total']}",
+                f"Canonical DB closed: {sync['db_closed_total']}",
+                f"Outcome sync gap: {sync['outcome_sync_gap']}",
+                f"Unresolved outcome joins: {sync['unresolved_outcome_joins']}",
+                f"Duplicate shadow trade IDs: {sync['duplicate_shadow_trade_ids']}",
                 f"Feature joins: {coverage.get('joined_outcomes', 0)}/{coverage.get('closed_outcomes', 0)} ({coverage.get('join_coverage_percent', 0)}%)",
                 f"Strategies evaluated: {counts['evaluated']}/{counts['registered']}",
                 f"Closed evidence: {counts['with_closed_evidence']}",
