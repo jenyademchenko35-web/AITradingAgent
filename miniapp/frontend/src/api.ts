@@ -3,6 +3,7 @@ import type {
   RequirementsResponse, SignalIntelligencePayload, SignalResponse,
   SimilarResponse, SimilarSource, WatchlistItem,
 } from "../../shared/contracts";
+import { telegramInitDataFingerprint } from "./telegram";
 
 export interface RuntimeSystem {
   server: string | null;
@@ -87,11 +88,14 @@ export class MiniAppApi implements MiniAppApiClient {
   }
 
   private async get<T>(path: string): Promise<T> {
-    const initData = (typeof this.initData === "function" ? this.initData() : this.initData)?.trim() ?? "";
+    const initData = (typeof this.initData === "function" ? this.initData() : this.initData) ?? "";
     if (!initData) throw new Error("Telegram initData unavailable");
+    const fingerprint = await telegramInitDataFingerprint(initData);
+    const headers: Record<string, string> = { "X-Telegram-Init-Data": initData };
+    if (fingerprint) headers["X-Telegram-Init-Data-Fingerprint"] = fingerprint;
     const response = await fetch(this.url(path), {
       method: "GET",
-      headers: { "X-Telegram-Init-Data": initData },
+      headers,
     });
     if (!response.ok) throw new Error(`API ${response.status}`);
     return response.json() as Promise<T>;

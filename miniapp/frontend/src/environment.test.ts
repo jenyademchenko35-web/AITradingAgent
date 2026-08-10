@@ -28,13 +28,14 @@ test("uses Telegram theme and initializes WebApp", () => {
   expect(ready).toHaveBeenCalledOnce(); expect(expand).toHaveBeenCalledOnce();
 });
 
-test("reads current Telegram initData and exposes only safe lifecycle diagnostics", () => {
+test("reads current Telegram initData and exposes only safe lifecycle diagnostics", async () => {
   window.Telegram = { WebApp: { initData: "" } };
   expect(telegramInitData()).toBe("");
   window.Telegram.WebApp!.initData = "fresh-signed-data";
   expect(telegramInitData()).toBe("fresh-signed-data");
-  expect(telegramAuthDiagnostics()).toEqual({
+  await expect(telegramAuthDiagnostics()).resolves.toEqual({
     telegram_webapp_present: true, init_data_present: true, init_data_length: 17,
+    init_data_fingerprint: expect.stringMatching(/^[0-9a-f]{12}$/),
   });
 });
 

@@ -190,7 +190,58 @@ def test_invalid_hmac_returns_401_and_logs_only_safe_metadata(caplog):
     assert "algorithm=TELEGRAM_WEBAPP_HMAC_SHA256_V1" in caplog.text
     assert "hmac_data_check_profile=ALL_FIELDS_EXCEPT_HASH" in caplog.text
     assert "token_fingerprint=" in caplog.text
+    assert "frontend_init_fingerprint=MISSING" in caplog.text
+    assert "backend_init_fingerprint=" in caplog.text
+    assert "fingerprint_match=False" in caplog.text
     assert "parsed_field_names=" in caplog.text
     assert "signature_present=False" in caplog.text
     assert "data_check_string_length=" in caplog.text
     assert "private-token" not in caplog.text and "bad-init-data" not in caplog.text
+
+
+def test_matching_transport_fingerprints_enable_safe_hmac_input_diagnostics(caplog):
+    caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
+    settings = MiniAppSettings(
+        enabled=True, owner_only=True, owner_user_id=42, bot_token="private-token",
+    )
+    client = TestClient(create_app(settings=settings, repository=_StatusRepository()))
+    init_data = "malformed-init-data"
+    fingerprint = hashlib.sha256(init_data.encode("utf-8")).hexdigest()[:12]
+    response = client.get("/api/status", headers={
+        "X-Telegram-Init-Data": init_data,
+        "X-Telegram-Init-Data-Fingerprint": fingerprint,
+    })
+    assert response.status_code == 401
+    assert "fingerprint_match=True" in caplog.text
+    assert "data_check_fingerprint=UNAVAILABLE" in caplog.text
+    assert init_data not in caplog.text and "private-token" not in caplog.text
+
+
+def test_transport_mutation_does_not_change_auth_result_and_is_logged_safely(caplog):
+    caplog.set_level(logging.WARNING, logger="miniapp.backend.auth")
+    settings = MiniAppSettings(
+        enabled=True, owner_only=True, owner_user_id=42, bot_token="private-token",
+    )
+    client = TestClient(create_app(settings=settings, repository=_StatusRepository()))
+    response = client.get("/api/status", headers={
+        "X-Telegram-Init-Data": "changed-data",
+        "X-Telegram-Init-Data-Fingerprint": hashlib.sha256(b"original-data").hexdigest()[:12],
+    })
+    assert response.status_code == 401
+    assert "fingerprint_match=False" in caplog.text
+    assert "data_check_fingerprint=NOT_COMPARED" in caplog.text
+    assert "changed-data" not in caplog.text and "original-data" not in caplog.text
+
+
+def test_diagnostic_fingerprint_header_does_not_change_valid_auth_result(caplog):
+    caplog.set_level(logging.INFO, logger="miniapp.backend.auth")
+    client = _api_client(dev_mode=False, client_host="127.0.0.1")
+    init_data = signed_init_data(auth_date=int(time.time()))
+    response = client.get("/api/status", headers={
+        "X-Telegram-Init-Data": init_data,
+        "X-Telegram-Init-Data-Fingerprint": hashlib.sha256(init_data.encode("utf-8")).hexdigest()[:12],
+    })
+    assert response.status_code == 200
+    assert "miniapp_auth_accepted" in caplog.text
+    assert "fingerprint_match=True" in caplog.text
+    assert init_data not in caplog.text

@@ -92,16 +92,27 @@ export function initializeTelegram(): string {
 
 /** Read initData at request time: Telegram may populate it after the first render. */
 export function telegramInitData(): string {
-  return webApp()?.initData?.trim() ?? "";
+  // initData is a signed query string: preserve its exact UTF-8 bytes for the backend.
+  return webApp()?.initData ?? "";
 }
 
 /** Safe lifecycle diagnostics only; the signed initData is never exposed or logged. */
-export function telegramAuthDiagnostics() {
+export async function telegramInitDataFingerprint(rawInitData = telegramInitData()): Promise<string> {
+  if (!rawInitData || !globalThis.crypto?.subtle) return "";
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256", new TextEncoder().encode(rawInitData),
+  );
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0"))
+    .join("").slice(0, 12);
+}
+
+export async function telegramAuthDiagnostics() {
   const initData = telegramInitData();
   return {
     telegram_webapp_present: Boolean(webApp()),
     init_data_present: Boolean(initData),
     init_data_length: initData.length,
+    init_data_fingerprint: await telegramInitDataFingerprint(initData),
   };
 }
 
