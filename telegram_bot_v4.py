@@ -3240,7 +3240,7 @@ async def help_trading_command(update: Update, context: ContextTypes.DEFAULT_TYP
 async def help_research_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply(update, "\n".join([
         "🔬 Исследования", "", "/research", "/researchlab", "/researchlab_trades",
-        "/research_rank", "/features", "/strategies", "/promotions", "/walkforward",
+        "/research_rank", "/features", "/strategies", "/promotions", "/research_health", "/walkforward",
     ]))
 
 
@@ -3787,6 +3787,11 @@ async def promotions_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await reply(update, format_research_lab_v2("promotions"))
 
 
+async def research_health_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Read-only evidence, joins and freshness summary for the research pipeline."""
+    await reply(update, format_research_lab_v2("research_health"))
+
+
 async def top_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply(update, format_research_lab_v2("top"))
 
@@ -4249,6 +4254,7 @@ def build_app():
     app.add_handler(CommandHandler("features", features_command))
     app.add_handler(CommandHandler("strategies", strategies_command))
     app.add_handler(CommandHandler("promotions", promotions_command))
+    app.add_handler(CommandHandler("research_health", research_health_command))
     app.add_handler(CommandHandler("top", top_command))
     app.add_handler(CommandHandler("researchlab", researchlab_command))
     app.add_handler(CommandHandler("researchlab_trades", researchlab_trades_command))

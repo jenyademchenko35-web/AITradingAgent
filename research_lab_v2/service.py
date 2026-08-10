@@ -7,7 +7,13 @@ from typing import Any, Iterable, Mapping
 
 from strategies import registry
 
-from .analytics import calculate_metrics, feature_importance, promotion_decision, rank_strategies
+from .analytics import (
+    MIN_FEATURE_OUTCOMES,
+    calculate_metrics,
+    feature_importance,
+    promotion_decision,
+    rank_strategies,
+)
 from .database import ResearchDatabase
 
 
@@ -90,12 +96,17 @@ class ResearchLab:
                 "confidence": wf.get("confidence", "LOW"),
             })
             self.database.record_metrics(strategy_id, metrics)
-            if metrics["closed_trades"] % self.feature_interval == 0:
+            # The old exact-modulo scheduler skipped analysis indefinitely when
+            # the first closure count was not 100.  A feature report is still
+            # only produced from real, closed shadow outcomes and only once the
+            # explicit evidence floor is reached.
+            if metrics["closed_trades"] >= MIN_FEATURE_OUTCOMES:
                 stats = feature_importance([
                     {**dict(row.get("feature_snapshot", {})), "pnl_r": row.get("pnl_r", 0)}
                     for row in trades
                 ])
-                self.database.record_feature_statistics(strategy_id, stats)
+                if stats:
+                    self.database.record_feature_statistics(strategy_id, stats)
         if self.database.cycle_count() % self.ranking_interval:
             return {"runs": len(decisions), "closed": len(closed), "ranked": False}
         ranking = rank_strategies(metrics_rows)

@@ -8,6 +8,9 @@ import csv
 from pathlib import Path
 from typing import Any
 
+from .analytics import evidence_state, rank_strategies
+from .database import ResearchDatabase
+from .health import build_research_health
 from .runtime import SHADOW_BOOK_FILE, SHADOW_HISTORY_FILE, load_runtime_status
 
 
@@ -48,6 +51,25 @@ class ResearchDashboardV2:
         return {"open": open_rows, "closed": closed_rows}
 
     def build_report(self) -> dict[str, Any]:
+        runtime_status = (
+            load_runtime_status(self.status_path)
+            if self.status_path is not None else load_runtime_status()
+        )
+        if not self.path.exists():
+            return {
+                "top_strategies": [], "top_features": [], "worst_features": [],
+                "research_progress": {"registered_strategies": 0, "strategy_runs": 0, "ranked_strategies": 0},
+                "best_candidate": {}, "promotion_probability": 0,
+                "strategies": [], "runtime_status": runtime_status,
+                "shadow_ledger": self._shadow_ledger(),
+                "feature_analysis": {"status": "INSUFFICIENT_DATA", "closed_outcomes": 0, "joined_outcomes": 0},
+                "research_health": build_research_health(
+                    evidence={}, feature_coverage={"closed_outcomes": 0, "joined_outcomes": 0},
+                    runtime_status=runtime_status, database_path=self.path,
+                ),
+            }
+        database = ResearchDatabase(self.path)
+        evidence = database.strategy_evidence()
         top = _rows(self.path, """
             WITH latest AS (
               SELECT strategy_id, MAX(id) id FROM strategy_metrics GROUP BY strategy_id
@@ -56,33 +78,44 @@ class ResearchDashboardV2:
             ), history AS (
               SELECT strategy_id, MAX(id) id FROM candidate_history GROUP BY strategy_id
             )
-            SELECT m.strategy_id, s.name, m.profit_factor, m.winrate, m.net_r,
+            SELECT s.id strategy_id, s.name, s.version, s.enabled registry_enabled,
+                   s.risk_profile, s.shadow_only, m.profit_factor, m.winrate, m.net_r,
                    m.max_drawdown, m.sharpe, m.sortino, m.expectancy, m.final_score,
                    COALESCE(w.status, 'NOT_RUN') walk_forward,
                    COALESCE(w.confidence, 'LOW') confidence,
                    COALESCE(h.status, 'RESEARCH') status,
                    COALESCE(h.promotion_probability, 0) promotion_probability,
-                   m.closed_trades
-            FROM latest l JOIN strategy_metrics m ON m.id=l.id
-            JOIN strategies s ON s.id=m.strategy_id
-            LEFT JOIN wf x ON x.strategy_id=m.strategy_id LEFT JOIN walk_forward_results w ON w.id=x.id
-            LEFT JOIN history y ON y.strategy_id=m.strategy_id LEFT JOIN candidate_history h ON h.id=y.id
-            ORDER BY m.final_score DESC, m.strategy_id LIMIT 20
+                   COALESCE(m.closed_trades, 0) closed_trades
+            FROM strategies s
+            LEFT JOIN latest l ON l.strategy_id=s.id
+            LEFT JOIN strategy_metrics m ON m.id=l.id
+            LEFT JOIN wf x ON x.strategy_id=s.id LEFT JOIN walk_forward_results w ON w.id=x.id
+            LEFT JOIN history y ON y.strategy_id=s.id LEFT JOIN candidate_history h ON h.id=y.id
+            ORDER BY s.id LIMIT 50
         """)
-        for index, row in enumerate(top, 1):
-            row["rank"] = index
         from .candidate_policy import rejected_decision
         for row in top:
+            row.update(evidence.get(row["strategy_id"], {}))
+            row["closed_trades"] = int(row.get("closed_trades") or row.get("complete_outcomes") or 0)
+            row["runtime_mode"] = str(runtime_status.get("strategy_modes", {}).get(
+                row["strategy_id"], "NOT_CONFIGURED"
+            )).upper()
+            row["runtime_evaluated"] = row["strategy_id"] in set(runtime_status.get("strategies_enabled", []))
+            row["evidence_state"] = evidence_state({
+                **row, "walk_forward_status": row.get("walk_forward"),
+                "confidence": row.get("confidence"),
+            })
             rejected = rejected_decision(row["strategy_id"])
             if rejected:
                 row.update(rejected)
-        if top and not any(row["strategy_id"] == "MOMENTUM_RELAXED" for row in top):
-            rejected = rejected_decision("MOMENTUM_RELAXED")
+        top = rank_strategies([
+            {**row, "walk_forward_status": row.get("walk_forward", "NOT_RUN")}
+            for row in top
+        ])
+        for row in top:
+            rejected = rejected_decision(row["strategy_id"])
             if rejected:
-                top.append({"strategy_id": "MOMENTUM_RELAXED", "name": "Momentum Relaxed",
-                            "rank": None, "walk_forward": "REJECTED", "confidence": "HIGH",
-                            "winrate": None, "max_drawdown": None, "closed_trades": None,
-                            **rejected})
+                row.update(rejected, evidence_state="REJECTED", ranking_eligible=False)
         features = _rows(self.path, """
             WITH latest AS (SELECT strategy_id, MAX(calculated_at) stamp FROM feature_statistics GROUP BY strategy_id)
             SELECT f.* FROM feature_statistics f JOIN latest l
@@ -91,9 +124,31 @@ class ResearchDashboardV2:
         """)
         positive = [row for row in features if row["importance"] > 0][:5]
         negative = [row for row in features if row["importance"] < 0][:5]
-        best = next((row for row in top if row.get("status") != "REJECTED"), {})
+        feature_coverage = database.feature_join_coverage()
+        feature_analysis = {
+            **feature_coverage,
+            "status": "READY" if positive or negative else "INSUFFICIENT_DATA",
+            "reason": (
+                "Feature analysis requires at least 20 closed outcomes with numeric feature snapshots."
+                if not (positive or negative) else ""
+            ),
+        }
+        best = next((row for row in top if row.get("ranking_eligible") and
+                     row.get("strategy_id") != "LIVE_BASELINE" and
+                     row.get("evidence_state") != "REJECTED"), {})
         strategies = _rows(self.path, "SELECT id, name, version, enabled, risk_profile, shadow_only FROM strategies ORDER BY id")
         run_count = _rows(self.path, "SELECT COUNT(*) count FROM strategy_runs")
+        timestamps = _rows(self.path, """
+            SELECT (SELECT MAX(calculated_at) FROM feature_statistics) feature_updated_at,
+                   (SELECT MAX(timestamp) FROM candidate_history) candidate_updated_at,
+                   (SELECT MAX(calculated_at) FROM walk_forward_results) walk_forward_updated_at
+        """)
+        artifact_times = timestamps[0] if timestamps else {}
+        health = build_research_health(
+            evidence={row["strategy_id"]: row for row in top},
+            feature_coverage=feature_coverage, runtime_status=runtime_status,
+            database_path=self.path, **artifact_times,
+        )
         return {
             "top_strategies": top, "top_features": positive, "worst_features": negative,
             "research_progress": {
@@ -104,11 +159,10 @@ class ResearchDashboardV2:
             "best_candidate": best,
             "promotion_probability": best.get("promotion_probability", 0),
             "strategies": strategies,
-            "runtime_status": (
-                load_runtime_status(self.status_path)
-                if self.status_path is not None else load_runtime_status()
-            ),
+            "runtime_status": runtime_status,
             "shadow_ledger": self._shadow_ledger(),
+            "feature_analysis": feature_analysis,
+            "research_health": health,
         }
 
     def format(self, section: str = "top") -> str:
@@ -118,22 +172,33 @@ class ResearchDashboardV2:
             lines = ["Research Lab v2 - TOP STRATEGIES"]
             for row in report["top_strategies"][:10]:
                 lines.append(
-                    f"{row['rank']}. {row['strategy_id']} | PF {row['profit_factor']} | "
+                    f"{row['rank']}. {row['strategy_id']} | Evidence {row.get('evidence_state', 'INSUFFICIENT')} | PF {row['profit_factor']} | "
                     f"WR {row['winrate'] if row.get('winrate') is not None else 'N/A'} | NetR {row.get('net_r', 'N/A')} | "
                     f"WF {row['walk_forward']} | {row['confidence']} | {row['status']}"
                 )
             return "\n".join(lines + (["No ranked strategies."] if len(lines) == 1 else []))
         if section == "features":
+            analysis = report["feature_analysis"]
+            if analysis.get("status") != "READY":
+                return "\n".join([
+                    "Research Lab v2 - FEATURES",
+                    "Status: INSUFFICIENT_DATA",
+                    f"Closed outcomes: {analysis.get('closed_outcomes', 0)}",
+                    f"Feature→outcome joins: {analysis.get('joined_outcomes', 0)} ({analysis.get('join_coverage_percent', 0)}%)",
+                    analysis.get("reason", "Feature analysis has insufficient valid evidence."),
+                ])
             return "\n".join([
                 "Research Lab v2 - FEATURES",
                 "Top: " + ", ".join(row["feature_name"] for row in report["top_features"]) or "Top: N/A",
                 "Worst: " + ", ".join(row["feature_name"] for row in report["worst_features"]) or "Worst: N/A",
             ])
         if section == "strategies":
-            return "\n".join(["Research Lab v2 - STRATEGIES"] + [
-                f"{row['id']} v{row['version']} | {'ON' if row['enabled'] else 'OFF'} | "
-                f"{row['risk_profile']} | {'SHADOW' if row['shadow_only'] else 'LIVE METADATA'}"
-                for row in report["strategies"]
+            rows = {row["strategy_id"]: row for row in report["top_strategies"]}
+            return "\n".join(["Research Lab v2 - STRATEGIES (registry vs runtime)"] + [
+                f"{item['id']} v{item['version']} | Registry {'ON' if item['enabled'] else 'OFF'} | "
+                f"Runtime {rows.get(item['id'], {}).get('runtime_mode', 'NOT_CONFIGURED')} | "
+                f"Evidence {rows.get(item['id'], {}).get('evidence_state', 'INSUFFICIENT')}"
+                for item in report["strategies"]
             ])
         if section == "researchlab":
             runtime = report["runtime_status"]
@@ -208,8 +273,23 @@ class ResearchDashboardV2:
             return "\n".join(lines)
         if section == "promotions":
             return "\n".join(["Research Lab v2 - PROMOTIONS"] + [
-                f"{row['strategy_id']}: {row['status']} ({row['promotion_probability']:.1f}%)"
+                f"{row['strategy_id']}: {row['status']} | Evidence {row.get('evidence_state')} ({row['promotion_probability']:.1f}%)"
                 for row in report["top_strategies"] if row["strategy_id"] != "LIVE_BASELINE"
+            ])
+        if section == "research_health":
+            health = report["research_health"]
+            coverage = health["feature_coverage"]
+            counts = health["strategy_counts"]
+            return "\n".join([
+                "Research Lab v2 - HEALTH",
+                f"Pipeline: {health['data_pipeline']}",
+                f"Research DB: {'OK' if health['research_db']['exists'] else 'MISSING'}",
+                f"Feature joins: {coverage.get('joined_outcomes', 0)}/{coverage.get('closed_outcomes', 0)} ({coverage.get('join_coverage_percent', 0)}%)",
+                f"Strategies evaluated: {counts['evaluated']}/{counts['registered']}",
+                f"Closed evidence: {counts['with_closed_evidence']}",
+                f"Ready for comparison: {counts['ready_for_comparison']}",
+                f"Walk-forward candidates: {counts['walk_forward_candidates']}",
+                "Degraded: " + (", ".join(health['stale_or_degraded']) or "none"),
             ])
         return json.dumps(report, ensure_ascii=False, indent=2, default=str)
 

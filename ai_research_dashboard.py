@@ -239,6 +239,26 @@ def _age(path: Path, now: datetime | None = None) -> str:
     return f"{int(seconds // 86400)} d ago"
 
 
+def _timestamp_age(value: Any, now: datetime | None = None) -> str:
+    """Format an artifact's own timestamp without conflating it with DB mtime."""
+    if not value:
+        return "Not run"
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return "Unknown"
+    seconds = max(0.0, ((now or datetime.now(timezone.utc)) - parsed.astimezone(timezone.utc)).total_seconds())
+    if seconds < 60:
+        return f"{int(seconds)} sec ago"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} min ago"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)} h ago"
+    return f"{int(seconds // 86400)} d ago"
+
+
 def _newest_existing(root: Path, paths: tuple[str, ...]) -> Path:
     existing = [root / relative for relative in paths if (root / relative).exists()]
     return max(existing, key=lambda path: path.stat().st_mtime) if existing else root / paths[0]
@@ -330,7 +350,15 @@ class AIResearchDashboard:
         trades = aggregate_trade_metrics(_csv(self.base_dir / "trades.csv"))
         research_payload = _json(research_path)
         research_status = research_payload.get("system_research_status", {})
-        candidate = _candidate_leader(_json(candidate_path))
+        legacy_candidate = _candidate_leader(_json(candidate_path))
+        research_v2 = ResearchDashboardV2(self.base_dir / "research.db").build_report()
+        # A legacy candidate snapshot remains available for backwards
+        # compatibility, but it cannot override a Research Lab evidence gate.
+        candidate = (
+            research_v2.get("best_candidate", {})
+            if (self.base_dir / "research.db").exists()
+            else legacy_candidate
+        )
         root = RootCauseAnalyzer(self.base_dir).build_report()
         features = summarize_feature_coverage(feature_rows)
         news_payload = _json(news_path)
@@ -369,13 +397,16 @@ class AIResearchDashboard:
             "candidate": candidate,
             "shadow_validation": load_shadow_validation(self.base_dir),
             "walk_forward": load_walk_forward(self.base_dir),
-            "research_v2": ResearchDashboardV2(self.base_dir / "research.db").build_report(),
+            "research_v2": research_v2,
             "root_cause": root,
             "features": features,
             "news": news,
             "freshness": {
-                "Research": _age(research_path),
-                "Candidates": _age(candidate_path),
+                "Research Orchestrator": _age(research_path),
+                "Research Lab DB": _age(self.base_dir / "research.db"),
+                "Feature Analysis": _timestamp_age(research_v2.get("research_health", {}).get("last_successful_analysis", {}).get("feature_analysis")),
+                "Candidate Ranking": _timestamp_age(research_v2.get("research_health", {}).get("last_successful_analysis", {}).get("candidate_ranking")),
+                "Walk Forward": _timestamp_age(research_v2.get("research_health", {}).get("last_successful_analysis", {}).get("walk_forward")),
                 "Decision Features": _age(features_path),
                 "News": _age(news_path),
                 "Agent Stats": _age(stats_path),

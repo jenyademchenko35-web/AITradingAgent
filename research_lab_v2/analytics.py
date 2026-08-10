@@ -8,6 +8,14 @@ from collections import defaultdict
 from typing import Any, Iterable, Mapping, Sequence
 
 
+# Research performance is not evidence until it has enough independently closed
+# shadow outcomes.  These thresholds govern *presentation and promotion gates*
+# only; strategy evaluators and LIVE trading never consume them.
+MIN_CLOSED_FOR_COMPARISON = 20
+MIN_CLOSED_FOR_VALIDATION = 100
+MIN_FEATURE_OUTCOMES = 20
+
+
 def _finite(value: Any, default: float = 0.0) -> float:
     try:
         number = float(value)
@@ -41,6 +49,25 @@ def calculate_metrics(values: Iterable[float]) -> dict[str, Any]:
     }
 
 
+def evidence_state(row: Mapping[str, Any]) -> str:
+    """Classify research evidence without changing a strategy decision."""
+    from .candidate_policy import rejected_decision
+
+    strategy_id = str(row.get("strategy_id", "")).upper()
+    if rejected_decision(strategy_id):
+        return "REJECTED"
+    closed = int(row.get("closed_trades", 0) or 0)
+    walk_forward = str(row.get("walk_forward_status", row.get("walk_forward", ""))).upper()
+    confidence = str(row.get("confidence", "LOW")).upper()
+    if closed < MIN_CLOSED_FOR_COMPARISON:
+        return "INSUFFICIENT"
+    if closed < MIN_CLOSED_FOR_VALIDATION:
+        return "COLLECTING"
+    if walk_forward == "PASS" and confidence != "LOW":
+        return "VALIDATED"
+    return "READY_FOR_COMPARISON"
+
+
 def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LIVE_BASELINE") -> list[dict[str, Any]]:
     if not rows:
         return []
@@ -49,7 +76,8 @@ def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LI
     baseline_net = _finite(baseline.get("net_r"))
     ranked = []
     for row in rows:
-        pf = min(_finite(row.get("profit_factor"), 5.0), 5.0)
+        # Missing metrics are missing evidence, not an excellent PF.
+        pf = min(_finite(row.get("profit_factor"), 0.0), 5.0)
         net = _finite(row.get("net_r"))
         drawdown = max(_finite(row.get("max_drawdown")), 0.0)
         winrate = _finite(row.get("winrate"))
@@ -64,8 +92,20 @@ def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LI
             min(max(_finite(row.get("sortino")), 0) / 3, 1) * 5 +
             wf * 15 + better * 5 + profitable * 5
         )
-        ranked.append({**dict(row), "final_score": round(score, 4)})
-    ranked.sort(key=lambda item: (-item["final_score"], str(item.get("strategy_id"))))
+        state = evidence_state(row)
+        # Raw performance remains visible, but tiny samples must never be shown
+        # as leaders.  The evidence tier is intentionally sorted before score.
+        ranked.append({
+            **dict(row), "final_score": round(score, 4),
+            "evidence_state": state,
+            "ranking_eligible": state in {"READY_FOR_COMPARISON", "VALIDATED"},
+        })
+    order = {"VALIDATED": 0, "READY_FOR_COMPARISON": 1, "COLLECTING": 2,
+             "INSUFFICIENT": 3, "REJECTED": 4}
+    ranked.sort(key=lambda item: (
+        order.get(str(item["evidence_state"]), 5),
+        -item["final_score"], str(item.get("strategy_id")),
+    ))
     return [{**row, "rank": index} for index, row in enumerate(ranked, 1)]
 
 

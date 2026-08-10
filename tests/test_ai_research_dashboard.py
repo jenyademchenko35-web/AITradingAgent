@@ -175,7 +175,7 @@ class AIResearchDashboardTest(unittest.TestCase):
         os.utime(path, (timestamp, timestamp))
         freshness = AIResearchDashboard(self.root).build_report()["freshness"]
         self.assertEqual(freshness["Agent Stats"], "2 min ago")
-        self.assertEqual(freshness["Research"], "Unknown")
+        self.assertEqual(freshness["Research Orchestrator"], "Unknown")
 
 
 if __name__ == "__main__":

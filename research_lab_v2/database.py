@@ -300,6 +300,76 @@ class ResearchDatabase:
             })
         return grouped
 
+    def strategy_evidence(self) -> dict[str, dict[str, Any]]:
+        """Return counters with deliberately separate evaluation and trade facts."""
+        with self.connect() as db:
+            rows = db.execute("""
+                SELECT s.id AS strategy_id,
+                       COALESCE(SUM(CASE WHEN r.cycle_id NOT LIKE '%:closed:%' THEN 1 ELSE 0 END), 0) AS evaluations,
+                       COALESCE(SUM(CASE WHEN r.cycle_id NOT LIKE '%:closed:%'
+                                            AND UPPER(r.decision) IN ('SETUP', 'HIGH PRIORITY')
+                                         THEN 1 ELSE 0 END), 0) AS eligible_signals,
+                       COALESCE(SUM(CASE WHEN r.cycle_id NOT LIKE '%:closed:%' AND r.would_open_trade=1
+                                         THEN 1 ELSE 0 END), 0) AS would_open,
+                       COALESCE(SUM(CASE WHEN r.cycle_id NOT LIKE '%:closed:%' AND r.actual_shadow_opened=1
+                                         THEN 1 ELSE 0 END), 0) AS shadow_opened,
+                       COALESCE(SUM(CASE WHEN r.result_r IS NOT NULL THEN 1 ELSE 0 END), 0) AS closed_trades,
+                       COALESCE(SUM(CASE WHEN r.result_r > 0 THEN 1 ELSE 0 END), 0) AS wins,
+                       COALESCE(SUM(CASE WHEN r.result_r < 0 THEN 1 ELSE 0 END), 0) AS losses,
+                       MAX(r.timestamp) AS last_evaluation_at,
+                       MAX(CASE WHEN r.result_r IS NOT NULL THEN r.timestamp END) AS last_closed_at
+                FROM strategies s LEFT JOIN strategy_runs r ON r.strategy_id=s.id
+                GROUP BY s.id
+                ORDER BY s.id
+            """).fetchall()
+        result = {row["strategy_id"]: dict(row) for row in rows}
+        for row in result.values():
+            row["incomplete_outcomes"] = max(
+                int(row["shadow_opened"] or 0) - int(row["closed_trades"] or 0), 0
+            )
+            # Backward-compatible aliases make the data flow unambiguous to
+            # dashboards and Telegram formatters.
+            row["shadow_trades_opened"] = row["shadow_opened"]
+            row["shadow_trades_closed"] = row["closed_trades"]
+            row["complete_outcomes"] = row["closed_trades"]
+        return result
+
+    def feature_join_coverage(self) -> dict[str, Any]:
+        """Report only closed outcome ↔ feature joins; never infer missing data."""
+        with self.connect() as db:
+            rows = db.execute("""
+                SELECT strategy_id, feature_snapshot_json
+                FROM strategy_runs WHERE result_r IS NOT NULL ORDER BY id
+            """).fetchall()
+        total = len(rows)
+        joined = 0
+        malformed = 0
+        numeric_fields: set[str] = set()
+        for row in rows:
+            try:
+                snapshot = json.loads(row["feature_snapshot_json"] or "{}")
+            except (TypeError, ValueError):
+                malformed += 1
+                continue
+            if not isinstance(snapshot, Mapping):
+                malformed += 1
+                continue
+            values = [
+                key for key, value in snapshot.items()
+                if isinstance(value, (int, float)) and not isinstance(value, bool)
+            ]
+            if values:
+                joined += 1
+                numeric_fields.update(values)
+        return {
+            "closed_outcomes": total,
+            "joined_outcomes": joined,
+            "missing_or_malformed": total - joined,
+            "malformed_snapshots": malformed,
+            "join_coverage_percent": round(joined / total * 100, 2) if total else 0.0,
+            "numeric_feature_fields": sorted(numeric_fields),
+        }
+
     def cycle_count(self) -> int:
         with self.connect() as db:
             row = db.execute("""
