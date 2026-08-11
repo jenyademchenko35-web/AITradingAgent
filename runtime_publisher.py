@@ -71,6 +71,31 @@ def _read_json(path: Path) -> Any | None:
         return None
 
 
+def _system_summary(root: Path) -> dict[str, Any] | None:
+    """Transport only whitelisted operational status, never arbitrary runtime JSON."""
+    dashboard = _read_json(root / "dashboard_state.json")
+    monitor = _read_json(root / "live_monitor_state.json")
+    agent = _read_json(root / "agent_v3_stats.json")
+    dashboard = dashboard if isinstance(dashboard, Mapping) else {}
+    monitor = monitor if isinstance(monitor, Mapping) else {}
+    agent = agent if isinstance(agent, Mapping) else {}
+    system = dashboard.get("system") if isinstance(dashboard.get("system"), Mapping) else {}
+    trading = dashboard.get("trading") if isinstance(dashboard.get("trading"), Mapping) else {}
+    telegram = dashboard.get("telegram") if isinstance(dashboard.get("telegram"), Mapping) else {}
+    news = dashboard.get("news") if isinstance(dashboard.get("news"), Mapping) else {}
+    live = dashboard.get("live_monitor") if isinstance(dashboard.get("live_monitor"), Mapping) else {}
+    payload = {
+        "generated_at": dashboard.get("generated_at") or monitor.get("generated_at"),
+        "server": system.get("status") or monitor.get("status"),
+        "telegram": telegram.get("status"), "news": news.get("status"),
+        "cycle": trading.get("last_cycle") or trading.get("cycle") or monitor.get("current_cycle") or monitor.get("last_cycle") or agent.get("runs"),
+        "interval_seconds": monitor.get("interval") or live.get("interval") or agent.get("interval_seconds"),
+        "next_cycle_seconds": trading.get("next_cycle_seconds") or monitor.get("next_cycle_seconds") or agent.get("next_cycle_seconds"),
+        "uptime_seconds": system.get("uptime_seconds") or trading.get("uptime_seconds") or monitor.get("uptime_seconds") or agent.get("uptime_seconds"),
+    }
+    return payload if any(value not in (None, "") for value in payload.values()) else None
+
+
 def build_runtime_bundle(base_dir: str | Path) -> dict[str, Any] | None:
     """Build a bounded transport object from reports already produced by observers."""
     root = Path(base_dir)
@@ -84,11 +109,15 @@ def build_runtime_bundle(base_dir: str | Path) -> dict[str, Any] | None:
         "scenario_changes": "scenario_changes.json",
         "research_summary": "research_lab_v2_status.json",
         "impulse_summary": "impulse_probability.json",
+        "research_integrity": "research_data_integrity.json",
     }
     for field, filename in reports.items():
         report = _read_json(root / filename)
         if report is not None:
             bundle[field] = report
+    system = _system_summary(root)
+    if system is not None:
+        bundle["system_summary"] = system
     return bundle
 
 

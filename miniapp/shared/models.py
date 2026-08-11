@@ -45,6 +45,9 @@ class WatchlistItem(ImmutableModel):
     score: float
     timeframe: str
     updated_at: str
+    source: str = "UNKNOWN"
+    freshness: dict[str, Any] = Field(default_factory=dict)
+    source_freshness: str = "UNKNOWN"
 
 
 class Candle(ImmutableModel):
@@ -73,10 +76,13 @@ class ListResponse(ImmutableModel):
 class DashboardResponse(ImmutableModel):
     status: str
     updated_at: str
-    open_trades: int
-    winrate: float
-    profit_factor: float
+    open_trades: int | None = None
+    winrate: float | None = None
+    profit_factor: float | None = None
     research_status: str
+    metrics_source: str = "UNKNOWN"
+    metrics_available: bool = False
+    freshness: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvidenceExplanation(ImmutableModel):

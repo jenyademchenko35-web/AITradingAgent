@@ -20,7 +20,7 @@ from telegram_ui.data import (
     signal_payload_from_rows,
 )
 from trade_metrics_normalizer import aggregate_trade_metrics, is_closed_trade
-from runtime_contract import DEFAULT_STALE_AFTER_SECONDS, evaluate_freshness, read_runtime_snapshot
+from runtime_contract import DEFAULT_STALE_AFTER_SECONDS, evaluate_freshness, normalize_runtime_timestamp, read_runtime_snapshot
 
 from .runtime_ingest import validate_stored_bundle
 
@@ -141,6 +141,110 @@ class ReadOnlyRepository:
         if ingested is not None:
             return dict(ingested["payload"]["runtime_snapshot"])
         return self._canonical_snapshot()
+
+    def _freshness(self, timestamp: Any) -> dict[str, Any]:
+        """One consistent, honest freshness shape for frontend DTOs."""
+        return evaluate_freshness(
+            timestamp, stale_after_seconds=self.ingest_stale_after_seconds,
+        )
+
+    @staticmethod
+    def _mapping(value: Any) -> dict[str, Any]:
+        return dict(value) if isinstance(value, Mapping) else {}
+
+    def _integrity_projection(self, integrity: Mapping[str, Any]) -> dict[str, Any]:
+        """A stable, read-only integrity DTO for production clients."""
+        checks = self._mapping(integrity.get("checks"))
+        sync = self._mapping(checks.get("OUTCOME_SYNC_GAP"))
+        unresolved = self._mapping(checks.get("UNRESOLVED_ATTRIBUTION"))
+        current = self._mapping(checks.get("CURRENT_PIPELINE_ATTRIBUTION"))
+        features = self._mapping(checks.get("FEATURE_SNAPSHOT_COVERAGE"))
+        stale_metrics = self._mapping(checks.get("STALE_METRICS"))
+        stale_walk_forward = self._mapping(checks.get("STALE_WALK_FORWARD"))
+        gates = self._mapping(integrity.get("gates"))
+        return {
+            "state": integrity.get("state", "UNKNOWN"),
+            "integrity_state": integrity.get("state", "UNKNOWN"),
+            "ledger_closed": sync.get("ledger_closed"),
+            "canonical_outcomes": sync.get("canonical_outcomes"),
+            "sync_gap": sync.get("sync_gap"),
+            "historical_unresolved_joins": unresolved.get("historical_unresolved_joins"),
+            "current_pipeline_unresolved_joins": unresolved.get("current_pipeline_unresolved_joins"),
+            "feature_join_coverage": features.get("coverage_pct"),
+            "new_outcomes_since_attribution_fix": current.get("new_outcomes_since_attribution_fix"),
+            "new_outcomes_fully_joined": current.get("new_outcomes_fully_joined"),
+            "new_outcomes_join_coverage_pct": current.get("new_outcomes_join_coverage_pct"),
+            "ranking_allowed": gates.get("ranking_allowed"),
+            "walk_forward_allowed": gates.get("walk_forward_allowed"),
+            "promotion_allowed": gates.get("promotion_allowed"),
+            "metrics_fresh": self._freshness(stale_metrics.get("metrics_calculated_at")),
+            "walk_forward_fresh": self._freshness(stale_walk_forward.get("walk_forward_calculated_at")),
+            "checked_at": integrity.get("checked_at"),
+        }
+
+    def _ingested_research(self) -> dict[str, Any] | None:
+        ingested = self._ingested_bundle()
+        payload = self._mapping((ingested or {}).get("payload"))
+        summary = self._mapping(payload.get("research_summary"))
+        integrity = self._mapping(payload.get("research_integrity"))
+        if not summary and not integrity:
+            return None
+        strategy_modes = self._mapping(summary.get("strategy_modes"))
+        evaluated = {str(item) for item in summary.get("strategies_enabled", []) if isinstance(item, str)}
+        strategies = [
+            {
+                "strategy_id": strategy_id,
+                "runtime_enabled": strategy_id in evaluated,
+                "runtime_mode": mode,
+                "registry_enabled": None,
+                "evidence_state": "UNKNOWN",
+                "closed_evidence": None,
+                "profit_factor": None,
+                "winrate": None,
+                "net_r": None,
+                "strategy_version": None,
+                "walk_forward_status": "NOT_PUBLISHED",
+                "confidence": None,
+            }
+            for strategy_id, mode in sorted(strategy_modes.items())
+        ]
+        runtime_stamp = summary.get("updated_at") or summary.get("last_processed_at") or summary.get("last_processed_cycle")
+        checks = self._mapping(integrity.get("checks"))
+        sync = self._mapping(checks.get("OUTCOME_SYNC_GAP"))
+        unresolved = self._mapping(checks.get("UNRESOLVED_ATTRIBUTION"))
+        current = self._mapping(checks.get("CURRENT_PIPELINE_ATTRIBUTION"))
+        features = self._mapping(checks.get("FEATURE_SNAPSHOT_COVERAGE"))
+        gates = self._mapping(integrity.get("gates"))
+        return {
+            "top_strategies": [], "top_features": [], "worst_features": [],
+            "research_progress": {}, "best_candidate": None,
+            "promotion_probability": None, "strategies": strategies,
+            "runtime_status": summary, "shadow_ledger": None,
+            "feature_analysis": {
+                "status": "INSUFFICIENT_DATA" if not features else (
+                    "READY" if int(features.get("valid_feature_snapshot") or 0) >= 20 else "INSUFFICIENT_DATA"
+                ),
+                "closed_outcomes": features.get("closed_outcomes"),
+                "joined_outcomes": features.get("valid_feature_snapshot"),
+                "join_coverage_percent": features.get("coverage_pct"),
+                "reason": "Feature attribution uses fully joined canonical outcomes only.",
+            },
+            "research_data_integrity": integrity or None,
+            "integrity_projection": self._integrity_projection(integrity) if integrity else {},
+            "research_health": {
+                "state": integrity.get("state", "UNKNOWN"), "gates": gates,
+                "outcome_sync": {
+                    "ledger_closed_total": sync.get("ledger_closed"),
+                    "db_closed_total": sync.get("canonical_outcomes"),
+                    "outcome_sync_gap": sync.get("sync_gap"),
+                    "historical_unresolved_joins": unresolved.get("historical_unresolved_joins"),
+                    "current_pipeline_unresolved_joins": unresolved.get("current_pipeline_unresolved_joins"),
+                },
+                "current_pipeline_attribution": current,
+            },
+            "source_mode": "runtime_ingest_v1",
+            "freshness": self._freshness(runtime_stamp or integrity.get("checked_at")),
+        }
 
     @staticmethod
     def _published_value(*values: Any) -> Any:
@@ -302,7 +406,8 @@ class ReadOnlyRepository:
         return datetime.fromtimestamp(stamp, timezone.utc).isoformat()
 
     def watchlist(self) -> list[dict[str, Any]]:
-        latest = latest_rows(self.decision_rows())
+        rows, source_mode, source_freshness, _ = self._decision_source()
+        latest = latest_rows(rows)
         items = []
         for (symbol, timeframe), row in sorted(latest.items()):
             items.append({
@@ -314,6 +419,9 @@ class ReadOnlyRepository:
                 "score": _number(row.get("score") or row.get("weighted_score")) or 0,
                 "timeframe": timeframe,
                 "updated_at": str(row.get("timestamp") or ""),
+                "source": source_mode,
+                "freshness": self._freshness(row.get("timestamp") or None),
+                "source_freshness": source_freshness,
             })
         return items
 
@@ -374,10 +482,25 @@ class ReadOnlyRepository:
         return [row for row in self.trade_rows() if str(row.get("status", "")).upper() != "OPEN"]
 
     def stats(self) -> dict[str, Any]:
+        ingested = self._ingested_bundle()
+        if ingested is not None:
+            # Railway has no authoritative local trades.csv. Only metrics explicitly
+            # published in the canonical portfolio may be shown there.
+            payload = self._mapping((ingested or {}).get("payload"))
+            snapshot = self._mapping(payload.get("runtime_snapshot"))
+            portfolio = self._mapping(snapshot.get("portfolio"))
+            return {
+                key: value for key, value in portfolio.items()
+                if key in {"closed_trades", "winrate", "profit_factor", "net_r", "max_drawdown", "average_r", "average_hold_time"}
+                and isinstance(value, (int, float)) and not isinstance(value, bool)
+            }
         closed = [row for row in self.trade_rows() if is_closed_trade(row)]
         return aggregate_trade_metrics(closed)
 
     def research(self) -> dict[str, Any]:
+        ingested = self._ingested_research()
+        if ingested is not None:
+            return ingested
         return ResearchDashboardV2(self.base_dir / "research.db").build_report()
 
     def system(self) -> dict[str, Any]:
@@ -388,6 +511,8 @@ class ReadOnlyRepository:
         live_monitor = self._runtime_json("live_monitor_state.json")
         agent_stats = self._runtime_json("agent_v3_stats.json")
         ingested = self._ingested_bundle()
+        ingested_payload = self._mapping((ingested or {}).get("payload"))
+        system_summary = self._mapping(ingested_payload.get("system_summary"))
         research_status = ((ingested or {}).get("payload") or {}).get("research_summary")
         if not isinstance(research_status, Mapping):
             research_status = self._runtime_json("research_lab_v2_status.json")
@@ -403,7 +528,12 @@ class ReadOnlyRepository:
         safe_dashboard_research = dashboard_research if isinstance(dashboard_research, Mapping) else {}
         safe_telegram = telegram if isinstance(telegram, Mapping) else {}
         safe_news = news if isinstance(news, Mapping) else {}
+        snapshot_freshness = str((canonical or {}).get("freshness", {}).get("status") or canonical_freshness).upper()
         has_agent_runtime = bool(canonical) or any((dashboard_state, live_monitor, agent_stats))
+        agent_status = "ONLINE" if has_agent_runtime and (canonical is None or snapshot_freshness == "FRESH") else (
+            "STALE" if has_agent_runtime and snapshot_freshness == "STALE" else None
+        )
+        integrity = self._mapping(ingested_payload.get("research_integrity"))
         research = self._published_value(
             research_status.get("status"),
             "ONLINE" if research_status.get("enabled") is True else None,
@@ -411,32 +541,33 @@ class ReadOnlyRepository:
             safe_dashboard_research.get("status"),
         ) or "UNKNOWN"
         return {
-            "server": self._published_value(safe_system.get("status"), live_monitor.get("status"), "ONLINE" if canonical else None),
-            "agent": "ONLINE" if has_agent_runtime else None,
-            "telegram": self._published_value(safe_telegram.get("status")),
+            "server": self._published_value(system_summary.get("server"), safe_system.get("status"), live_monitor.get("status"), agent_status),
+            "agent": agent_status,
+            "telegram": self._published_value(system_summary.get("telegram"), safe_telegram.get("status")),
             "research": research,
-            "news": self._published_value(safe_news.get("status")),
+            "research_integrity_state": integrity.get("state") or "UNKNOWN",
+            "news": self._published_value(system_summary.get("news"), safe_news.get("status")),
             "cycle": self._published_value(
                 (canonical or {}).get("cycle_id"),
-                safe_trading.get("last_cycle"), safe_trading.get("cycle"),
+                system_summary.get("cycle"), safe_trading.get("last_cycle"), safe_trading.get("cycle"),
                 live_monitor.get("cycle"), live_monitor.get("current_cycle"),
                 live_monitor.get("last_cycle"), agent_stats.get("runs"),
             ),
             "interval_seconds": self._published_value(
-                live_monitor.get("interval"), safe_dashboard_live.get("interval"),
+                system_summary.get("interval_seconds"), live_monitor.get("interval"), safe_dashboard_live.get("interval"),
                 agent_stats.get("interval_seconds"),
             ),
             "next_cycle_seconds": self._published_value(
-                safe_trading.get("next_cycle_seconds"), live_monitor.get("next_cycle_seconds"),
+                system_summary.get("next_cycle_seconds"), safe_trading.get("next_cycle_seconds"), live_monitor.get("next_cycle_seconds"),
                 agent_stats.get("next_cycle_seconds"),
             ),
             "last_cycle_timestamp": self._published_value(
-                (canonical or {}).get("generated_at"),
+                (canonical or {}).get("generated_at"), system_summary.get("generated_at"),
                 safe_trading.get("last_cycle"), live_monitor.get("generated_at"),
                 dashboard_state.get("generated_at"),
             ),
             "uptime_seconds": self._published_value(
-                safe_system.get("uptime_seconds"), safe_trading.get("uptime_seconds"),
+                system_summary.get("uptime_seconds"), safe_system.get("uptime_seconds"), safe_trading.get("uptime_seconds"),
                 live_monitor.get("uptime_seconds"), agent_stats.get("uptime_seconds"),
             ),
             "read_only": True,
@@ -451,6 +582,16 @@ class ReadOnlyRepository:
                 "data_quality": ((canonical or {}).get("data_quality") or {}).get("status", "INSUFFICIENT"),
             },
             "runtime_ingest": dict((ingested or {}).get("metadata") or {}),
+            "freshness": {
+                "agent_snapshot": self._freshness((canonical or {}).get("generated_at")),
+                "market_data": self._freshness(self._mapping((canonical or {}).get("freshness")).get("source_updated_at")),
+                "trade_stats": self._freshness(self._mapping((canonical or {}).get("portfolio")).get("updated_at")),
+                "research_runtime": self._freshness(research_status.get("updated_at") or research_status.get("last_processed_at")),
+                "research_integrity": self._freshness(integrity.get("checked_at")),
+                "news": self._freshness(system_summary.get("news_updated_at")),
+                "candidate_ranking": self._freshness(None),
+                "walk_forward": self._freshness(None),
+            },
         }
 
     def activity(self, *, limit: int = 20) -> list[dict[str, Any]]:
@@ -468,7 +609,10 @@ class ReadOnlyRepository:
                 "timeframe": str(row.get("timeframe")) if row.get("timeframe") else None,
                 "status": str(status) if status else None,
             })
-        return events[-max(1, min(limit, 100)):]
+        for event in events:
+            event["freshness"] = self._freshness(event["timestamp"])
+        events.sort(key=lambda event: normalize_runtime_timestamp(event["timestamp"]) or "", reverse=True)
+        return events[:max(1, min(limit, 100))]
 
     def shadow(self) -> dict[str, Any]:
         """Expose Research Lab's existing separate shadow ledger without aggregation."""
@@ -477,12 +621,14 @@ class ReadOnlyRepository:
         safe_ledger = ledger if isinstance(ledger, Mapping) else {}
         runtime = report.get("runtime_status")
         safe_runtime = runtime if isinstance(runtime, Mapping) else {}
+        ledger_available = safe_ledger != {}
         return {
-            "active": safe_ledger.get("open", []),
-            "closed": safe_ledger.get("closed", []),
+            "active": safe_ledger.get("open", []) if ledger_available else None,
+            "closed": safe_ledger.get("closed", []) if ledger_available else None,
             "strategies": safe_runtime.get("strategy_modes", []),
             "symbols": None,
             "updated": safe_runtime.get("updated_at"),
+            "availability": "PUBLISHED" if ledger_available else "NOT_PUBLISHED",
         }
 
     def research_live(self) -> dict[str, Any]:
@@ -496,6 +642,13 @@ class ReadOnlyRepository:
             "recommendation": report.get("recommendation"),
             "top_features": report.get("top_features", []),
             "worst_features": report.get("worst_features", []),
+            "strategies": report.get("strategies", []),
+            "integrity": report.get("integrity_projection") or self._integrity_projection(
+                self._mapping(report.get("research_data_integrity")),
+            ),
+            "research_health": report.get("research_health"),
+            "freshness": report.get("freshness"),
+            "source_mode": report.get("source_mode", "local_read_only"),
         }
 
     def health_checks(self) -> dict[str, bool]:
@@ -519,15 +672,23 @@ class ReadOnlyRepository:
         }
 
     def dashboard(self) -> dict[str, Any]:
-        metrics = self.stats()
+        ingested = self._ingested_bundle()
+        portfolio = self._mapping(((ingested or {}).get("payload") or {}).get("runtime_snapshot", {}).get("portfolio"))
+        metrics = self.stats() if not ingested else portfolio
         research = self.research()
-        runtime = research.get("runtime_status", {})
+        runtime = self._mapping(research.get("runtime_status"))
+        snapshot = self._primary_snapshot() or {}
+        metrics_available = bool(portfolio) if ingested else True
         return {
-            "status": "ONLINE", "updated_at": self.updated_at(),
-            "open_trades": len(self.open_trades()),
-            "winrate": float(metrics.get("winrate", 0)),
-            "profit_factor": float(metrics.get("profit_factor", 0)),
-            "research_status": "ON" if runtime.get("enabled") else "OFF",
+            "status": "ONLINE" if str((snapshot.get("freshness") or {}).get("status")) == "FRESH" else "STALE" if snapshot else "UNKNOWN",
+            "updated_at": snapshot.get("generated_at") or self.updated_at(),
+            "open_trades": (portfolio.get("open_trades") if ingested else len(self.open_trades())),
+            "winrate": _number(metrics.get("winrate")),
+            "profit_factor": _number(metrics.get("profit_factor")),
+            "research_status": (research.get("research_data_integrity") or {}).get("state") or ("ON" if runtime.get("enabled") else "UNKNOWN"),
+            "metrics_source": "runtime_snapshot.portfolio" if ingested else "trades.csv",
+            "metrics_available": metrics_available,
+            "freshness": self._freshness(snapshot.get("generated_at")),
         }
 
     def signal_intelligence(self, symbol: str, timeframe: str):

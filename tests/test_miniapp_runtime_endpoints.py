@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import time
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 from fastapi.testclient import TestClient
@@ -36,7 +37,12 @@ def test_runtime_endpoints_project_only_saved_sources(tmp_path):
     assert system.status_code == activity.status_code == shadow.status_code == research.status_code == 200
     assert system.json()["read_only"] is True
     assert system.json()["agent"] is None
-    assert activity.json() == [{"timestamp": "2026-08-03T10:00:00Z", "type": "signal_snapshot", "symbol": "BTC/USDT", "timeframe": "1h", "status": "SETUP"}]
+    item = activity.json()[0]
+    assert {key: item[key] for key in ("timestamp", "type", "symbol", "timeframe", "status")} == {
+        "timestamp": "2026-08-03T10:00:00Z", "type": "signal_snapshot",
+        "symbol": "BTC/USDT", "timeframe": "1h", "status": "SETUP",
+    }
+    assert item["freshness"]["status"] == "STALE"
     shadow_payload = shadow.json()
     assert shadow_payload["active"] == []
     assert shadow_payload["closed"] == []
@@ -134,3 +140,64 @@ def test_health_checks_report_snapshot_as_a_current_signal_and_watchlist_source(
     assert checks["signals"] is True
     assert checks["watchlist"] is True
     assert checks["research"] is False
+
+
+def test_ingested_integrity_is_projected_without_mixing_it_with_system_health(tmp_path):
+    client = _client(tmp_path)
+    from runtime_contract import build_runtime_snapshot
+    from miniapp.backend.runtime_ingest import RuntimeIngestStore
+    snapshot = build_runtime_snapshot(
+        agent_version="agent", cycle_id="current", generated_at="2026-08-12T10:00:00Z",
+        signals=[{"symbol": "BTC/USDT", "timeframe": "1h", "timestamp": "2026-08-12T10:00:00Z", "signal": "WATCH"}],
+    )
+    store = RuntimeIngestStore(tmp_path / "runtime_ingest", max_payload_bytes=32_768, max_snapshot_age_seconds=9_999_999)
+    store.ingest(json.dumps({
+        "runtime_snapshot": snapshot,
+        "research_summary": {"enabled": True, "strategy_modes": {"RISK_CONSERVATIVE": "EVALUATE_ONLY"}},
+        "research_integrity": {
+            "state": "DATA_DEGRADED",
+            "checks": {"OUTCOME_SYNC_GAP": {"ledger_closed": 22, "canonical_outcomes": 22, "sync_gap": 0},
+                       "UNRESOLVED_ATTRIBUTION": {"historical_unresolved_joins": 22, "current_pipeline_unresolved_joins": 0},
+                       "CURRENT_PIPELINE_ATTRIBUTION": {"new_outcomes_since_attribution_fix": 0, "new_outcomes_fully_joined": 0, "new_outcomes_join_coverage_pct": 0},
+                       "FEATURE_SNAPSHOT_COVERAGE": {"closed_outcomes": 22, "valid_feature_snapshot": 0, "coverage_pct": 0}},
+            "gates": {"ranking_allowed": True, "walk_forward_allowed": False, "promotion_allowed": False},
+        },
+        "system_summary": {"server": "ONLINE", "telegram": "ONLINE"},
+    }).encode(), now=datetime(2026, 8, 12, 10, 0, tzinfo=timezone.utc))
+    headers = {"X-Telegram-Init-Data": _signed()}
+    system = client.get("/api/system", headers=headers).json()
+    research = client.get("/api/research/live", headers=headers).json()
+    assert system["server"] == "ONLINE"
+    assert system["research_integrity_state"] == "DATA_DEGRADED"
+    assert research["integrity"]["integrity_state"] == "DATA_DEGRADED"
+    assert research["integrity"]["ranking_allowed"] is True
+    assert research["integrity"]["feature_join_coverage"] == 0
+    assert research["strategies"] == [{
+        "strategy_id": "RISK_CONSERVATIVE", "runtime_enabled": False,
+        "runtime_mode": "EVALUATE_ONLY", "registry_enabled": None,
+        "evidence_state": "UNKNOWN", "closed_evidence": None,
+        "profit_factor": None, "winrate": None, "net_r": None,
+        "strategy_version": None, "walk_forward_status": "NOT_PUBLISHED",
+        "confidence": None,
+    }]
+
+
+def test_missing_ingested_trading_metrics_remain_not_published_and_signal_staleness_is_explicit(tmp_path):
+    repository = ReadOnlyRepository(tmp_path)
+    (tmp_path / "decision_debug.csv").write_text(
+        "timestamp,symbol,timeframe,signal\n2000-01-01T00:00:00Z,BTC/USDT,1h,WATCH\n", encoding="utf-8",
+    )
+    item = repository.watchlist()[0]
+    assert item["freshness"]["status"] == "STALE"
+
+    from runtime_contract import build_runtime_snapshot
+    from miniapp.backend.runtime_ingest import RuntimeIngestStore
+    snapshot = build_runtime_snapshot(agent_version="agent", cycle_id="metrics", signals=[])
+    store = RuntimeIngestStore(tmp_path / "runtime_ingest", max_payload_bytes=32_768, max_snapshot_age_seconds=9_999_999)
+    store.ingest(json.dumps({"runtime_snapshot": snapshot}).encode())
+    assert repository.stats() == {}
+    dashboard = repository.dashboard()
+    assert dashboard["metrics_available"] is False
+    assert dashboard["open_trades"] is None
+    assert dashboard["winrate"] is None
+    assert dashboard["profit_factor"] is None

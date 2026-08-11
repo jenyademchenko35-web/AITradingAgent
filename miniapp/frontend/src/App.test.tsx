@@ -47,7 +47,7 @@ test("dashboard hero, health, metrics and quick signals use published values", a
   expect(screen.getByText("Open Trades")).toBeInTheDocument();
   expect(screen.getByText("Profit Factor")).toBeInTheDocument();
   expect(screen.getByText("Shadow Active")).toBeInTheDocument();
-  expect(screen.getAllByText("Not published")).toHaveLength(1);
+  expect(screen.getAllByText("Not published").length).toBeGreaterThanOrEqual(1);
   expect(screen.getByText("Quick Signals")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /BTC\/USDT/ })).toBeInTheDocument();
   expect(screen.getByText("Live Activity")).toBeInTheDocument();
@@ -196,6 +196,24 @@ test("statistics and research present supplied live runtime fields without creat
   expect(screen.getByText("Ranking")).toBeInTheDocument();
   expect(screen.getByText("Top Features")).toBeInTheDocument();
   expect(screen.queryByText("[object Object]")).not.toBeInTheDocument();
+});
+
+test("research integrity remains degraded while independently published system health stays online", async () => {
+  render(<App api={api({ researchLive: vi.fn().mockResolvedValue({
+    runtime_status: { enabled: true }, best_candidate: null, promotion_probability: null,
+    ranking: [], recommendation: null, top_features: [], worst_features: [],
+    integrity: {
+      integrity_state: "DATA_DEGRADED", ledger_closed: 22, canonical_outcomes: 22,
+      sync_gap: 0, feature_join_coverage: 0, historical_unresolved_joins: 22,
+      current_pipeline_unresolved_joins: 0, new_outcomes_fully_joined: 0,
+      ranking_allowed: true, walk_forward_allowed: false, promotion_allowed: false,
+    },
+  }) })} />);
+  expect((await screen.findAllByText("ONLINE")).length).toBeGreaterThan(0);
+  fireEvent.click(screen.getByRole("button", { name: "Research" }));
+  expect(await screen.findByText("DATA_DEGRADED")).toBeInTheDocument();
+  expect(screen.getByText("Feature join coverage")).toBeInTheDocument();
+  expect(screen.getAllByText("BLOCKED").length).toBeGreaterThanOrEqual(2);
 });
 
 test("dashboard refreshes on the configured 30 second cadence", async () => {

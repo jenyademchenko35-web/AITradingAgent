@@ -3,10 +3,13 @@ export type SignalStatus = "HIGH PRIORITY" | "SETUP" | "WATCH" | "WAIT" | "NO TR
 export interface DashboardResponse {
   status: string;
   updated_at: string;
-  open_trades: number;
-  winrate: number;
-  profit_factor: number;
+  open_trades: number | null;
+  winrate: number | null;
+  profit_factor: number | null;
   research_status: string;
+  metrics_source: string;
+  metrics_available: boolean;
+  freshness: Record<string, unknown>;
 }
 
 export interface WatchlistItem {
@@ -18,6 +21,9 @@ export interface WatchlistItem {
   score: number;
   timeframe: string;
   updated_at: string;
+  source: string;
+  freshness: Record<string, unknown>;
+  source_freshness: string;
 }
 
 export interface Candle {

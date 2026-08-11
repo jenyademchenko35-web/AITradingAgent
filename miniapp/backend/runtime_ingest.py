@@ -58,6 +58,8 @@ def validate_runtime_bundle(payload: Any) -> dict[str, Any]:
         "signal_evaluation_report": Mapping,
         "scenario_changes": (Mapping, list),
         "research_summary": Mapping,
+        "research_integrity": Mapping,
+        "system_summary": Mapping,
         "impulse_summary": (Mapping, list),
     }
     unknown = set(payload).difference({"runtime_snapshot", *optional_types})

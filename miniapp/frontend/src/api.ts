@@ -19,6 +19,8 @@ export interface RuntimeSystem {
   last_cycle_timestamp: string | null;
   uptime_seconds: number | null;
   read_only: boolean | null;
+  research_integrity_state?: string | null;
+  freshness?: Record<string, { status?: string; updated_at?: string | null; age_seconds?: number | null }>;
 }
 
 export interface ActivityEvent {
@@ -27,14 +29,16 @@ export interface ActivityEvent {
   symbol: string | null;
   timeframe: string | null;
   status: string | null;
+  freshness?: { status?: string; updated_at?: string | null; age_seconds?: number | null };
 }
 
 export interface ShadowRuntime {
-  active: Record<string, unknown>[];
-  closed: Record<string, unknown>[];
+  active: Record<string, unknown>[] | null;
+  closed: Record<string, unknown>[] | null;
   strategies: Record<string, unknown> | unknown[] | null;
   symbols: string[] | null;
   updated: string | null;
+  availability?: string;
 }
 
 export interface ResearchLiveReport {
@@ -45,6 +49,11 @@ export interface ResearchLiveReport {
   recommendation: unknown;
   top_features: Record<string, unknown>[];
   worst_features: Record<string, unknown>[];
+  strategies?: Record<string, unknown>[];
+  integrity?: Record<string, unknown> | null;
+  research_health?: Record<string, unknown> | null;
+  freshness?: Record<string, unknown> | null;
+  source_mode?: string;
 }
 
 export interface MiniAppApiClient {
