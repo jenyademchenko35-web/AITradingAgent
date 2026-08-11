@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
     signal_audit_version TEXT, strategy_mode TEXT,
     actual_shadow_opened INTEGER NOT NULL DEFAULT 0,
     shadow_mode_started_at TEXT,
+    feature_snapshot_id TEXT, signal_id TEXT, decision_id TEXT,
+    strategy_version TEXT, attribution_version TEXT, data_quality TEXT,
     UNIQUE(cycle_id, strategy_id, symbol, timeframe)
 );
 CREATE TABLE IF NOT EXISTS strategy_metrics (
@@ -82,6 +84,8 @@ CREATE TABLE IF NOT EXISTS shadow_trade_outcomes (
     feature_snapshot_valid INTEGER NOT NULL DEFAULT 0,
     source_run_id INTEGER REFERENCES strategy_runs(id),
     join_status TEXT NOT NULL DEFAULT 'UNRESOLVED',
+    outcome_id TEXT, feature_snapshot_id TEXT, signal_id TEXT, decision_id TEXT,
+    strategy_version TEXT, attribution_version TEXT, data_quality TEXT,
     source TEXT NOT NULL, original_shadow_trade_id TEXT,
     created_at TEXT NOT NULL, persisted_at TEXT NOT NULL
 );
@@ -151,6 +155,12 @@ class ResearchDatabase:
             "strategy_mode": "TEXT",
             "actual_shadow_opened": "INTEGER NOT NULL DEFAULT 0",
             "shadow_mode_started_at": "TEXT",
+            "feature_snapshot_id": "TEXT",
+            "signal_id": "TEXT",
+            "decision_id": "TEXT",
+            "strategy_version": "TEXT",
+            "attribution_version": "TEXT",
+            "data_quality": "TEXT",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -160,6 +170,27 @@ class ResearchDatabase:
         connection.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS uq_strategy_runs_cycle_scope
             ON strategy_runs(cycle_id, strategy_id, symbol, timeframe)
+        """)
+        outcome_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(shadow_trade_outcomes)")
+        }
+        outcome_additions = {
+            "outcome_id": "TEXT",
+            "feature_snapshot_id": "TEXT",
+            "signal_id": "TEXT",
+            "decision_id": "TEXT",
+            "strategy_version": "TEXT",
+            "attribution_version": "TEXT",
+            "data_quality": "TEXT",
+        }
+        for name, definition in outcome_additions.items():
+            if name not in outcome_columns:
+                connection.execute(
+                    f"ALTER TABLE shadow_trade_outcomes ADD COLUMN {name} {definition}"
+                )
+        connection.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_outcomes_outcome_id
+            ON shadow_trade_outcomes(outcome_id) WHERE outcome_id IS NOT NULL
         """)
 
     def initialize(self) -> None:
@@ -198,7 +229,13 @@ class ResearchDatabase:
                    signal_audit_version: str | None = None,
                    strategy_mode: str | None = None,
                    actual_shadow_opened: bool = False,
-                   shadow_mode_started_at: str | None = None) -> None:
+                   shadow_mode_started_at: str | None = None,
+                   feature_snapshot_id: str | None = None,
+                   signal_id: str | None = None,
+                   decision_id: str | None = None,
+                   strategy_version: str | None = None,
+                   attribution_version: str | None = None,
+                   data_quality: str | None = None) -> None:
         with self.connect() as db:
             db.execute("""
                 INSERT INTO strategy_runs
@@ -207,8 +244,9 @@ class ResearchDatabase:
                  block_reason, condition_active, entry_triggered, trigger_reason,
                  signal_fingerprint, previous_fingerprint, is_new_signal, blocked_reason,
                  signal_audit_version, strategy_mode, actual_shadow_opened,
-                 shadow_mode_started_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 shadow_mode_started_at, feature_snapshot_id, signal_id, decision_id,
+                 strategy_version, attribution_version, data_quality)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(cycle_id, strategy_id, symbol, timeframe) DO NOTHING
             """, (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
                   json.dumps(dict(features), ensure_ascii=False, sort_keys=True, default=str),
@@ -216,7 +254,9 @@ class ResearchDatabase:
                   int(condition_active), int(entry_triggered), trigger_reason,
                   signal_fingerprint, previous_fingerprint, int(is_new_signal),
                   blocked_reason, signal_audit_version, strategy_mode,
-                  int(actual_shadow_opened), shadow_mode_started_at))
+                  int(actual_shadow_opened), shadow_mode_started_at,
+                  feature_snapshot_id, signal_id, decision_id, strategy_version,
+                  attribution_version, data_quality))
 
     def load_signal_states(self) -> dict[tuple[str, str, str], dict[str, Any]]:
         with self.connect() as db:
@@ -353,7 +393,14 @@ class ResearchDatabase:
         evaluation may lead to zero or multiple independently closed trades.
         """
         trade_id = str(trade.get("shadow_trade_id") or "").strip()
-        strategy_id = str(trade.get("strategy_id") or trade.get("candidate_id") or "").upper()
+        attribution_version = str(trade.get("attribution_version") or "") or None
+        is_new_attribution = attribution_version == "attribution_chain_v1"
+        # New runtime trades must carry their explicit strategy identity.  The
+        # candidate alias remains only for historical ledger compatibility.
+        strategy_value = trade.get("strategy_id")
+        if not strategy_value and not is_new_attribution:
+            strategy_value = trade.get("candidate_id")
+        strategy_id = str(strategy_value or "").upper()
         symbol = str(trade.get("symbol") or "").strip()
         timeframe = str(trade.get("timeframe") or "1h").strip() or "1h"
         side = str(trade.get("side") or trade.get("direction") or "UNKNOWN").upper()
@@ -373,8 +420,20 @@ class ResearchDatabase:
                 db, shadow_trade_id=trade_id, strategy_id=strategy_id,
                 symbol=symbol, timeframe=timeframe,
             )
-            join_status = "RESOLVED" if source_run_id is not None else "UNRESOLVED"
+            feature_snapshot_id = str(trade.get("feature_snapshot_id") or "") or None
+            signal_id = str(trade.get("signal_id") or "") or None
+            decision_id = str(trade.get("decision_id") or "") or None
+            strategy_version = str(trade.get("strategy_version") or "") or None
+            required_links = (feature_snapshot_id, signal_id, decision_id, strategy_version)
+            fully_attributed = source_run_id is not None and (
+                not is_new_attribution or all(required_links)
+            )
+            join_status = "RESOLVED" if fully_attributed else "UNRESOLVED"
+            data_quality = "COMPLETE" if fully_attributed else (
+                "PARTIAL" if is_new_attribution else "LEGACY_PARTIAL"
+            )
             now = persisted_at or _utc()
+            outcome_id = f"out-{trade_id}"
             db.execute("""
                 INSERT INTO shadow_trade_outcomes
                 (shadow_trade_id, strategy_id, symbol, timeframe, side,
@@ -382,8 +441,10 @@ class ResearchDatabase:
                  exit_time, exit_price, exit_reason, status, pnl_r, mfe_r, mae_r,
                  holding_candles, signal_fingerprint, feature_snapshot_json,
                  feature_snapshot_available, feature_snapshot_valid, source_run_id,
-                 join_status, source, original_shadow_trade_id, created_at, persisted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 join_status, outcome_id, feature_snapshot_id, signal_id, decision_id,
+                 strategy_version, attribution_version, data_quality,
+                 source, original_shadow_trade_id, created_at, persisted_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 trade_id, strategy_id, symbol, timeframe, side,
                 trade.get("entry_time") or trade.get("opened_at"),
@@ -396,11 +457,14 @@ class ResearchDatabase:
                 self._number_or_none(trade.get("mfe_r")), self._number_or_none(trade.get("mae_r")),
                 int(self._number_or_none(trade.get("holding_candles")) or 0),
                 trade.get("signal_fingerprint"), snapshot_json, int(snapshot_available),
-                int(snapshot_valid), source_run_id, join_status, source, trade_id,
+                int(snapshot_valid), source_run_id, join_status,
+                outcome_id, feature_snapshot_id, signal_id, decision_id,
+                strategy_version, attribution_version, data_quality, source, trade_id,
                 trade.get("entry_time") or trade.get("opened_at") or now, now,
             ))
         return {"status": "inserted", "shadow_trade_id": trade_id,
                 "join_status": join_status,
+                "outcome_id": outcome_id, "data_quality": data_quality,
                 "feature_snapshot_available": snapshot_available,
                 "feature_snapshot_valid": snapshot_valid}
 

@@ -43,6 +43,10 @@ class ResearchLab:
                 continue
             features = decision.get("feature_snapshot")
             features = features if isinstance(features, Mapping) else snapshot
+            attribution_version = decision.get("attribution_version")
+            attribution_complete = all(decision.get(field) for field in (
+                "feature_snapshot_id", "signal_id", "decision_id", "strategy_version",
+            ))
             self.database.record_run(
                 cycle_id=cycle_id, strategy_id=strategy_id, timestamp=timestamp,
                 symbol=symbol, timeframe=str(snapshot.get("timeframe", "1h")),
@@ -62,6 +66,13 @@ class ResearchLab:
                 strategy_mode=decision.get("strategy_mode"),
                 actual_shadow_opened=bool(decision.get("actual_shadow_opened", False)),
                 shadow_mode_started_at=decision.get("shadow_mode_started_at"),
+                feature_snapshot_id=decision.get("feature_snapshot_id"),
+                signal_id=decision.get("signal_id"),
+                decision_id=decision.get("decision_id"),
+                strategy_version=decision.get("strategy_version"),
+                attribution_version=attribution_version,
+                data_quality=("COMPLETE" if attribution_complete else "PARTIAL")
+                if attribution_version else None,
             )
         for trade in closed:
             # Ledger rows are canonicalized by `strategy_id`; `candidate_id` is

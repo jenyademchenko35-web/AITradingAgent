@@ -27,9 +27,12 @@ from .config import (
 )
 from .database import ResearchDatabaseBusy
 from .service import ResearchLab
+from .attribution import attribution_ids, feature_snapshot_id
+from .integrity import version_metadata
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATUS_FILE = BASE_DIR / "research_lab_v2_status.json"
+ATTRIBUTION_CHAIN_VERSION = "attribution_chain_v1"
 READINESS_FILE = BASE_DIR / "candidate_readiness.json"
 SHADOW_BOOK_FILE = BASE_DIR / "research_lab_v2_shadow_open.json"
 SHADOW_HISTORY_FILE = BASE_DIR / "research_lab_shadow_history.csv"
@@ -411,7 +414,8 @@ class ShadowResearchBook:
     def open(self, *, strategy_id: str, snapshot: Mapping[str, Any],
              plan: Mapping[str, Any], settings: ResearchLabSettings,
              signal_fingerprint: str | None,
-             shadow_mode_started_at: str) -> tuple[str | None, str | None]:
+             shadow_mode_started_at: str,
+             attribution: Mapping[str, Any] | None = None) -> tuple[str | None, str | None]:
         rows = self.load()
         reason = self.block_reason(strategy_id=strategy_id, symbol=str(snapshot["symbol"]),
                                    plan=plan, open_trades=rows, settings=settings)
@@ -431,6 +435,7 @@ class ShadowResearchBook:
             "mfe_r": 0.0, "mae_r": 0.0, "holding_candles": 0,
             "shadow_mode_started_at": shadow_mode_started_at,
             "feature_snapshot": dict(snapshot),
+            **dict(attribution or {}),
         })
         _atomic_json(self.path, rows)
         return trade_id, None
@@ -530,6 +535,8 @@ class ResearchLabRuntime:
         started = time.perf_counter()
         settings = settings or get_settings()
         rows = [dict(row) for row in snapshots]
+        for snapshot in rows:
+            snapshot.setdefault("feature_snapshot_id", feature_snapshot_id(snapshot))
         _write_log("info", {"event": "process_cycle_entered", "cycle_id": cycle_id,
             "snapshot_count": len(rows), "enabled": settings.enabled,
             "strategy_modes": dict(settings.strategy_modes)})
@@ -590,6 +597,16 @@ class ResearchLabRuntime:
                         previous=signal_states.get(key),
                         cooldown_minutes=settings.signal_cooldown_minutes,
                     )
+                    strategy_version = version_metadata(
+                        strategy_id=strategy_id,
+                        parameters=(spec.candidate_config() if spec else {}),
+                    )["strategy_version"]
+                    attribution = attribution_ids(
+                        strategy_id=strategy_id, snapshot=snapshot,
+                        signal_fingerprint=event.get("signal_fingerprint"),
+                        strategy_version=strategy_version,
+                    )
+                    attribution["attribution_version"] = ATTRIBUTION_CHAIN_VERSION
                     plan = _trade_plan(snapshot, minimum_rr=max(2.0, _number(result.get("minimum_rr"), 2.0)))
                     reason = str(event.get("blocked_reason") or "") or None
                     trade_id = None
@@ -623,6 +640,7 @@ class ResearchLabRuntime:
                                     plan=plan, settings=settings,
                                     signal_fingerprint=event.get("signal_fingerprint"),
                                     shadow_mode_started_at=str(shadow_mode_started_at or _utc()),
+                                    attribution=attribution,
                                 )
                                 if trade_id:
                                     actual_shadow_opened = True
@@ -657,6 +675,7 @@ class ResearchLabRuntime:
                         "actual_shadow_opened": actual_shadow_opened,
                         "shadow_mode_started_at": shadow_mode_started_at,
                         "blocked_reason": reason,
+                        **attribution,
                         "evaluation_reasons": list(result.get("reasons", [])),
                         "rejection_category": result.get("rejection_category", ""),
                     }
@@ -685,6 +704,7 @@ class ResearchLabRuntime:
                         "actual_shadow_opened": actual_shadow_opened,
                         "shadow_mode_started_at": shadow_mode_started_at,
                         "shadow_trade_id": trade_id,
+                        **attribution,
                         "feature_snapshot": feature_snapshot,
                     }
                     decisions.append(decision_row)
