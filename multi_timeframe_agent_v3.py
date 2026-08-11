@@ -592,6 +592,33 @@ class DecisionResult:
     explanation: str
 
 
+def research_trade_metadata_snapshot(feature_row, decision):
+    """Copy already-published decision context for immutable trade persistence.
+
+    This helper deliberately performs no eligibility, price, or risk
+    calculation.  It only carries values that were already computed for the
+    current decision into the live trade record so closing a trade never has to
+    query a later market state.
+    """
+    return {
+        "timeframe": feature_row.get("timeframe"),
+        "market_regime": feature_row.get("market_regime"),
+        "trend_alignment": feature_row.get("trend_alignment"),
+        "volatility": feature_row.get("volatility_regime"),
+        "confidence": getattr(decision, "confidence", None),
+        "score": getattr(decision, "score", None),
+        "quality": getattr(decision, "quality", None),
+        # An opened trade was not blocked; this is intentionally distinct from
+        # a missing historical blocker value.
+        "primary_blocker": "NOT_APPLICABLE",
+        "decision_source": "LIVE_BASELINE",
+        "decision_signal": getattr(decision, "signal", None),
+        "decision_summary": getattr(decision, "summary", None),
+        "snapshot_id": feature_row.get("snapshot_id"),
+        "decision_timestamp": feature_row.get("timestamp"),
+    }
+
+
 class TrendEngine:
 
     def __init__(self, market: MarketSnapshot):
@@ -1408,6 +1435,7 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 entry=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
+                research_metadata=research_trade_metadata_snapshot(feature_row, decision),
             )
             save_setup_history(symbol, decision)
 
@@ -1465,7 +1493,7 @@ def update_open_trades(current_prices):
 
             if price <= sl:
                 pnl = price - float(trade["entry"])
-                close_trade(symbol, "LOSS")
+                close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
                 LOGGER.trade_result(symbol, "LOSS")
                 send_trade_close_notification(
                     trade,

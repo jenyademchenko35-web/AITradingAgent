@@ -24,11 +24,20 @@ BACKFILL_PATH = BASE_DIR / "reports/backfill_report.json"
 ENRICHED_PATH = BASE_DIR / "reports/research_trades_enriched.json"
 SNAPSHOT_PATH = BASE_DIR / "decision_snapshot.json"
 
+# This remains the public union used by historical coverage reports.  It is not
+# a list of fields which must have existed in every legacy trade row.
 RESEARCH_FIELDS = (
     "symbol", "direction", "timeframe", "market_regime", "trend_alignment",
     "volatility", "confidence", "score", "quality", "primary_blocker",
     "entry_price", "exit_price", "risk_reward", "result", "trade_id", "timestamp",
 )
+REQUIRED_IDENTITY_FIELDS = ("symbol", "direction", "entry_price", "trade_id", "timestamp")
+REQUIRED_CLOSED_OUTCOME_FIELDS = ("result", "exit_price")
+OPTIONAL_RESEARCH_CONTEXT_FIELDS = (
+    "timeframe", "market_regime", "trend_alignment", "volatility",
+    "confidence", "score", "quality", "primary_blocker", "risk_reward",
+)
+DATA_QUALITY_STATUSES = {"COMPLETE", "PARTIAL", "LEGACY_PARTIAL", "UNAVAILABLE"}
 BACKFILL_FIELDS = (
     "confidence", "score", "quality", "trend_alignment", "volatility",
     "market_regime", "timeframe",
@@ -87,6 +96,13 @@ def _number(value: Any) -> float | None:
 
 
 def _canonical_trade(row: Mapping[str, Any]) -> dict[str, Any]:
+    metadata_raw = row.get("research_metadata_json", "")
+    try:
+        metadata = json.loads(metadata_raw) if isinstance(metadata_raw, str) else dict(metadata_raw or {})
+    except (TypeError, ValueError, json.JSONDecodeError):
+        metadata = {}
+    if not isinstance(metadata, Mapping):
+        metadata = {}
     entry = row.get("entry", row.get("entry_price"))
     exit_price = row.get("exit_price", row.get("exit"))
     stop = row.get("sl", row.get("stop_loss"))
@@ -97,6 +113,9 @@ def _canonical_trade(row: Mapping[str, Any]) -> dict[str, Any]:
         rr = round(abs(target_n - entry_n) / abs(entry_n - stop_n), 6)
     return {
         **dict(row),
+        # The metadata is captured at open time.  It can fill a missing legacy
+        # CSV column, but it never overwrites a persisted lifecycle value.
+        **{key: value for key, value in metadata.items() if _unknown(row.get(key))},
         "entry_price": entry,
         "exit_price": exit_price,
         "timestamp": row.get("timestamp", row.get("opened_at")),
@@ -104,12 +123,56 @@ def _canonical_trade(row: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_research_trade(row: Mapping[str, Any]) -> list[str]:
-    """Return every absent/unknown mandatory research field without raising."""
+def assess_research_trade(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Classify research metadata without treating historical context as required.
+
+    The result is diagnostic-only.  In particular, an OPEN trade has no
+    exit price by definition and an executed trade has no primary blocker.
+    """
     canonical = _canonical_trade(row)
-    missing = [field for field in RESEARCH_FIELDS if _field_unknown(field, canonical.get(field))]
+    source_status = str(canonical.get("status", "")).upper()
+    is_closed = source_status in {"WIN", "LOSS", "CLOSED"} or str(canonical.get("result", "")).upper() in {"WIN", "LOSS"}
+    required = list(REQUIRED_IDENTITY_FIELDS)
+    if is_closed:
+        required.extend(REQUIRED_CLOSED_OUTCOME_FIELDS)
+    missing_required = [field for field in required if _field_unknown(field, canonical.get(field))]
+    not_applicable = []
+    if not is_closed:
+        not_applicable.append("exit_price")
+    if str(canonical.get("primary_blocker", "")).strip().upper() in {"", "NOT_APPLICABLE"}:
+        not_applicable.append("primary_blocker")
+    missing_optional = [
+        field for field in OPTIONAL_RESEARCH_CONTEXT_FIELDS
+        if field not in not_applicable and _field_unknown(field, canonical.get(field))
+    ]
+    provenance = str(canonical.get("trade_id_provenance", "")).upper()
+    if missing_required and any(field in REQUIRED_IDENTITY_FIELDS for field in missing_required):
+        data_quality = "UNAVAILABLE"
+    elif provenance.startswith("LEGACY"):
+        data_quality = "LEGACY_PARTIAL"
+    elif missing_required or missing_optional:
+        data_quality = "PARTIAL"
+    else:
+        data_quality = "COMPLETE"
+    return {
+        "data_quality": data_quality,
+        "missing_required": missing_required,
+        "missing_optional": missing_optional,
+        "not_applicable": not_applicable,
+        "trade_id": canonical.get("trade_id"),
+        "trade_id_provenance": canonical.get("trade_id_provenance") or "UNAVAILABLE",
+    }
+
+
+def validate_research_trade(row: Mapping[str, Any]) -> list[str]:
+    """Backward-compatible required-field validator for diagnostics callers."""
+    assessment = assess_research_trade(row)
+    missing = assessment["missing_required"]
     if missing:
-        LOGGER.warning("research trade %s missing fields: %s", canonical.get("trade_id", "UNKNOWN"), ", ".join(missing))
+        LOGGER.warning(
+            "research trade data_quality=%s trade_id=%s missing_required=%s",
+            assessment["data_quality"], assessment.get("trade_id") or "UNAVAILABLE", ", ".join(missing),
+        )
     return missing
 
 

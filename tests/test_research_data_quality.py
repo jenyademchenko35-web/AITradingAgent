@@ -9,6 +9,7 @@ from unittest import TestCase
 from research_data_quality import (
     RESEARCH_FIELDS,
     ResearchDataQuality,
+    assess_research_trade,
     build_decision_snapshot,
     coverage_report,
     validate_research_trade,
@@ -40,10 +41,16 @@ class ResearchDataQualityTest(TestCase):
             "setup_history":[],"decision_log":[],"signals":[],
         }
 
-    def test_validator_lists_every_missing_research_field(self):
+    def test_validator_lists_only_missing_required_research_fields(self):
         missing=validate_research_trade(trade())
-        self.assertIn("confidence",missing); self.assertIn("market_regime",missing)
+        self.assertNotIn("confidence",missing); self.assertNotIn("market_regime",missing)
         self.assertNotIn("entry_price",missing); self.assertNotIn("risk_reward",missing)
+
+    def test_missing_context_is_partial_not_unknown_or_unavailable(self):
+        assessment = assess_research_trade(trade())
+        self.assertEqual("PARTIAL", assessment["data_quality"])
+        self.assertIn("confidence", assessment["missing_optional"])
+        self.assertEqual([], assessment["missing_required"])
 
     def test_unknown_recovery_uses_snapshot_then_context(self):
         engine=ResearchDataQuality(base_dir=self.root,registry=FakeRegistry([trade()]),sources=self.sources())
@@ -79,4 +86,3 @@ class ResearchDataQualityTest(TestCase):
         self.assertTrue({"dataquality","coverage","backfill","snapshot"}.issubset(commands))
         import telegram_bot_v4
         self.assertTrue(callable(telegram_bot_v4.coverage_command)); self.assertTrue(callable(telegram_bot_v4.backfill_command))
-
