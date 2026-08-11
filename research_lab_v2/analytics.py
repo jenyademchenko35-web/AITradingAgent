@@ -68,9 +68,11 @@ def evidence_state(row: Mapping[str, Any]) -> str:
     return "READY_FOR_COMPARISON"
 
 
-def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LIVE_BASELINE") -> list[dict[str, Any]]:
+def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LIVE_BASELINE",
+                    integrity: Mapping[str, Any] | None = None) -> list[dict[str, Any]]:
     if not rows:
         return []
+    integrity_allowed = bool((integrity or {}).get("gates", {}).get("ranking_allowed", True))
     baseline = next((row for row in rows if row.get("strategy_id") == baseline_id), {})
     baseline_pf = _finite(baseline.get("profit_factor"), 1.0) or 1.0
     baseline_net = _finite(baseline.get("net_r"))
@@ -98,7 +100,7 @@ def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LI
         ranked.append({
             **dict(row), "final_score": round(score, 4),
             "evidence_state": state,
-            "ranking_eligible": state in {"READY_FOR_COMPARISON", "VALIDATED"},
+            "ranking_eligible": integrity_allowed and state in {"READY_FOR_COMPARISON", "VALIDATED"},
         })
     order = {"VALIDATED": 0, "READY_FOR_COMPARISON": 1, "COLLECTING": 2,
              "INSUFFICIENT": 3, "REJECTED": 4}
@@ -109,11 +111,15 @@ def rank_strategies(rows: Sequence[Mapping[str, Any]], *, baseline_id: str = "LI
     return [{**row, "rank": index} for index, row in enumerate(ranked, 1)]
 
 
-def promotion_decision(candidate: Mapping[str, Any], baseline: Mapping[str, Any]) -> dict[str, Any]:
+def promotion_decision(candidate: Mapping[str, Any], baseline: Mapping[str, Any], *,
+                       integrity: Mapping[str, Any] | None = None) -> dict[str, Any]:
     from .candidate_policy import rejected_decision
     rejected = rejected_decision(str(candidate.get("strategy_id", "")))
     if rejected:
         return {**rejected, "eligible": False, "reasons": [rejected["reason"]], "promotion_probability": 0.0, "automatic_live_promotion": False}
+    if not bool((integrity or {}).get("gates", {}).get("promotion_allowed", True)):
+        return {"status": "BLOCKED", "eligible": False, "promotion_probability": 0.0,
+                "automatic_live_promotion": False, "reasons": ["RESEARCH_DATA_INTEGRITY"]}
     checks = {
         "PF > LIVE": _finite(candidate.get("profit_factor"), 1e6) > _finite(baseline.get("profit_factor"), 1e6),
         "NetR > LIVE": _finite(candidate.get("net_r")) > _finite(baseline.get("net_r")),
@@ -162,3 +168,6 @@ def feature_importance(trades: Sequence[Mapping[str, Any]], feature_names: Seque
             "samples": len(positive) + len(negative),
         })
     return sorted(rows, key=lambda row: (-abs(row["importance"]), row["feature"]))
+    if not bool((integrity or {}).get("gates", {}).get("promotion_allowed", True)):
+        return {"status": "BLOCKED", "eligible": False, "promotion_probability": 0.0,
+                "automatic_live_promotion": False, "reasons": ["RESEARCH_DATA_INTEGRITY"]}

@@ -11,6 +11,7 @@ from typing import Any
 from .analytics import evidence_state, rank_strategies
 from .database import ResearchDatabase
 from .health import build_research_health
+from .integrity import evaluate_integrity
 from .runtime import SHADOW_BOOK_FILE, SHADOW_HISTORY_FILE, load_runtime_status
 
 
@@ -72,6 +73,7 @@ class ResearchDashboardV2:
         evidence = database.strategy_evidence()
         ledger = self._shadow_ledger()
         reconciliation = database.outcome_reconciliation(ledger["closed"])
+        integrity = evaluate_integrity(database, ledger=ledger["closed"], artifact_path=self.path.parent / "research_data_integrity.json")
         top = _rows(self.path, """
             WITH latest AS (
               SELECT strategy_id, MAX(id) id FROM strategy_metrics GROUP BY strategy_id
@@ -107,7 +109,7 @@ class ResearchDashboardV2:
                 **row, "walk_forward_status": row.get("walk_forward"),
                 "confidence": row.get("confidence"),
             })
-            if reconciliation["outcome_sync_gap"] or reconciliation["unresolved_outcome_joins"]:
+            if not integrity["gates"]["ranking_allowed"]:
                 row["ranking_eligible"] = False
                 if row["evidence_state"] in {"READY_FOR_COMPARISON", "VALIDATED"}:
                     row["evidence_state"] = "COLLECTING"
@@ -119,7 +121,7 @@ class ResearchDashboardV2:
             for row in top
         ])
         for row in top:
-            if reconciliation["outcome_sync_gap"] or reconciliation["unresolved_outcome_joins"]:
+            if not integrity["gates"]["ranking_allowed"]:
                 row["ranking_eligible"] = False
                 if row.get("evidence_state") in {"READY_FOR_COMPARISON", "VALIDATED"}:
                     row["evidence_state"] = "COLLECTING"
@@ -162,7 +164,7 @@ class ResearchDashboardV2:
         health = build_research_health(
             evidence={row["strategy_id"]: row for row in top},
             feature_coverage=feature_coverage, runtime_status=runtime_status,
-            database_path=self.path, outcome_sync=reconciliation, **artifact_times,
+            database_path=self.path, outcome_sync=reconciliation, integrity=integrity, **artifact_times,
         )
         return {
             "top_strategies": top, "top_features": positive, "worst_features": negative,
@@ -178,6 +180,7 @@ class ResearchDashboardV2:
             "shadow_ledger": ledger,
             "feature_analysis": feature_analysis,
             "research_health": health,
+            "research_data_integrity": integrity,
         }
 
     def format(self, section: str = "top") -> str:
@@ -296,8 +299,12 @@ class ResearchDashboardV2:
             coverage = health["feature_coverage"]
             counts = health["strategy_counts"]
             sync = health["outcome_sync"]
+            integrity = health.get("data_integrity", {})
+            gates = health.get("gates", {})
+            checks = integrity.get("checks", {})
             return "\n".join([
-                "Research Lab v2 - HEALTH",
+                "Research Data Integrity",
+                f"State: {health.get('state', 'DATA_DEGRADED')}",
                 f"Pipeline: {health['data_pipeline']}",
                 f"Research DB: {'OK' if health['research_db']['exists'] else 'MISSING'}",
                 f"Ledger closed: {sync['ledger_closed_total']}",
@@ -306,6 +313,11 @@ class ResearchDashboardV2:
                 f"Unresolved outcome joins: {sync['unresolved_outcome_joins']}",
                 f"Duplicate shadow trade IDs: {sync['duplicate_shadow_trade_ids']}",
                 f"Feature joins: {coverage.get('joined_outcomes', 0)}/{coverage.get('closed_outcomes', 0)} ({coverage.get('join_coverage_percent', 0)}%)",
+                f"Metrics fresh: {'NO' if checks.get('STALE_METRICS', {}).get('metrics_stale') else 'YES'}",
+                f"Walk-forward fresh: {'NO' if checks.get('STALE_WALK_FORWARD', {}).get('walk_forward_stale') else 'YES'}",
+                f"Ranking allowed: {'YES' if gates.get('ranking_allowed') else 'NO'}",
+                f"Walk-forward allowed: {'YES' if gates.get('walk_forward_allowed') else 'NO'}",
+                f"Promotion allowed: {'YES' if gates.get('promotion_allowed') else 'NO'}",
                 f"Strategies evaluated: {counts['evaluated']}/{counts['registered']}",
                 f"Closed evidence: {counts['with_closed_evidence']}",
                 f"Ready for comparison: {counts['ready_for_comparison']}",

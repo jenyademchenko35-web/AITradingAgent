@@ -43,6 +43,7 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
                           runtime_status: Mapping[str, Any],
                           database_path: Path,
                           outcome_sync: Mapping[str, Any] | None = None,
+                          integrity: Mapping[str, Any] | None = None,
                           feature_updated_at: str | None = None,
                           candidate_updated_at: str | None = None,
                           walk_forward_updated_at: str | None = None) -> dict[str, Any]:
@@ -74,6 +75,7 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
         age = _age_seconds(value, now)
         if age is None:
             stale.append(f"{label}_not_run")
+    integrity = dict(integrity or {})
     return {
         **PIPELINE_AUDIT_V1,
         "generated_at": now.isoformat(),
@@ -101,4 +103,9 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
             "walk_forward": walk_forward_updated_at,
         },
         "stale_or_degraded": stale,
+        "data_integrity": integrity,
+        "state": integrity.get("state", "DATA_DEGRADED"),
+        "gates": dict(integrity.get("gates", {
+            "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+        })),
     }

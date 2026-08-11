@@ -14,6 +14,7 @@ from .analytics import (
     promotion_decision,
     rank_strategies,
 )
+from .integrity import evaluate_integrity, ledger_rows
 from .database import ResearchDatabase
 
 
@@ -101,25 +102,23 @@ class ResearchLab:
                 ])
                 if stats:
                     self.database.record_feature_statistics(strategy_id, stats)
-        if self.ledger_path is not None:
-            try:
-                import csv
-                with self.ledger_path.open("r", encoding="utf-8", newline="") as handle:
-                    reconciliation = self.database.outcome_reconciliation(csv.DictReader(handle))
-            except OSError:
-                reconciliation = {"outcome_sync_gap": 0}
-            if (int(reconciliation.get("outcome_sync_gap", 0) or 0) > 0 or
-                    int(reconciliation.get("unresolved_outcome_joins", 0) or 0) > 0):
-                return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": False,
-                        "ranking_blocked": "OUTCOME_EVIDENCE_INCOMPLETE", "reconciliation": reconciliation}
+        integrity = evaluate_integrity(
+            self.database, ledger=ledger_rows(self.ledger_path),
+            artifact_path=self.database.path.parent / "research_data_integrity.json",
+        )
+        if not integrity["gates"]["ranking_allowed"]:
+            reconciliation = self.database.outcome_reconciliation(ledger_rows(self.ledger_path))
+            return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": False,
+                    "ranking_blocked": "OUTCOME_EVIDENCE_INCOMPLETE", "integrity": integrity,
+                    "reconciliation": reconciliation}
         if self.database.cycle_count() % self.ranking_interval:
             return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": False}
-        ranking = rank_strategies(metrics_rows)
+        ranking = rank_strategies(metrics_rows, integrity=integrity)
         baseline = next((row for row in ranking if row["strategy_id"] == "LIVE_BASELINE"), {})
         for row in ranking:
             if row["strategy_id"] == "LIVE_BASELINE":
                 continue
-            self.database.record_candidate(row["strategy_id"], promotion_decision(row, baseline))
+            self.database.record_candidate(row["strategy_id"], promotion_decision(row, baseline, integrity=integrity))
         return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": True, "ranking": ranking}
 
     def record_walk_forward_report(self, report: Mapping[str, Any]) -> None:
@@ -130,6 +129,9 @@ class ResearchLab:
         if not strategy_id or registry.get(strategy_id) is None:
             raise ValueError("walk-forward report has no registered candidate_id")
         self.register_strategies()
+        integrity = evaluate_integrity(self.database, ledger=ledger_rows(self.ledger_path))
+        if not integrity["gates"]["walk_forward_allowed"]:
+            raise ValueError("walk-forward blocked by research data integrity")
         self.database.record_walk_forward(strategy_id, {
             "generated_at": report.get("generated_at"),
             "status": "PASS" if int(candidate.get("windows", 0) or 0) >= 3 else report.get("status", "NOT_RUN"),
