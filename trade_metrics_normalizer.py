@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
@@ -63,7 +64,8 @@ def optional_float(value: Any) -> float | None:
     if value is None or str(value).strip() == "":
         return None
     try:
-        return float(str(value).replace("%", "").strip())
+        parsed = float(str(value).replace("%", "").strip())
+        return parsed if math.isfinite(parsed) else None
     except (TypeError, ValueError):
         return None
 

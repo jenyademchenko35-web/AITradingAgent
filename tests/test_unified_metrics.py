@@ -56,6 +56,31 @@ class UnifiedMetricsTest(unittest.TestCase):
         self.assertEqual(metrics["net_r"], 3.0)
         self.assertEqual(metrics["max_drawdown_r"], 1.0)
 
+    def test_empty_and_one_sided_results_never_return_infinite_or_nan_profit_factor(self) -> None:
+        self.assertEqual(aggregate_trade_metrics([])["profit_factor"], 0.0)
+
+        winner = {
+            "symbol": "BTC/USDT", "direction": "LONG", "entry": "100",
+            "stop_loss": "90", "exit_price": "110", "status": "WIN",
+        }
+        loser = {
+            "symbol": "BTC/USDT", "direction": "LONG", "entry": "100",
+            "stop_loss": "90", "exit_price": "90", "status": "LOSS",
+        }
+        self.assertEqual(aggregate_trade_metrics([winner])["profit_factor"], 0.0)
+        self.assertEqual(aggregate_trade_metrics([loser])["profit_factor"], 0.0)
+
+    def test_non_finite_prices_are_incomplete_and_excluded_from_metrics(self) -> None:
+        for non_finite in ("NaN", "Infinity", "-Infinity"):
+            metrics = aggregate_trade_metrics([{
+                "symbol": "BTC/USDT", "direction": "LONG", "entry": "100",
+                "stop_loss": "90", "exit_price": non_finite, "status": "WIN",
+            }])
+            self.assertEqual(metrics["closed_trades"], 1)
+            self.assertEqual(metrics["metrics_trades"], 0)
+            self.assertEqual(metrics["incomplete_metrics"], 1)
+            self.assertEqual(metrics["net_r"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
