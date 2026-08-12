@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.aitradingagent.production.agent</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/jeynademcenko/AITradingAgentUpdated/venv/bin/python</string>
+    <string>/Users/jeynademcenko/AITradingAgentUpdated/multi_timeframe_agent_v3.py</string>
+    <string>--loop</string>
+    <string>--interval</string>
+    <string>300</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/jeynademcenko/AITradingAgentUpdated</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/jeynademcenko/AITradingAgentUpdated/logs/launchd_agent.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/jeynademcenko/AITradingAgentUpdated/logs/launchd_agent_error.log</string>
+</dict>
+</plist>
