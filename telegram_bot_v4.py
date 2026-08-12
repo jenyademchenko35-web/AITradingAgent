@@ -3171,39 +3171,40 @@ async def reply(
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Register chat and show the health dashboard."""
-    if update.effective_chat:
-        save_last_active_chat_id(update.effective_chat.id)
-    if should_use_v2(update):
-        try:
-            text, keyboard = _v2_screen(
-                "home", user_id=getattr(update.effective_user, "id", None),
-            )
-            keyboard = v2_with_miniapp_button(
-                keyboard, user_id=getattr(update.effective_user, "id", None),
-            )
-            await reply(update, text, keyboard)
-            return
-        except Exception:
-            TELEGRAM_LOGGER.exception("Telegram UI v2 /start failed; using legacy fallback")
-    await reply(update, format_dashboard())
+    """Register chat and show the compact primary entry point."""
+    effective_chat = getattr(update, "effective_chat", None)
+    if effective_chat:
+        save_last_active_chat_id(effective_chat.id)
+    text, keyboard = _primary_home(update)
+    await reply(update, text, keyboard)
 
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Open the active UI without changing notification settings."""
+    """Open the same compact primary entry point as /start."""
+    text, keyboard = _primary_home(update)
+    await reply(update, text, keyboard)
+
+
+def _primary_home(update: Update) -> tuple[str, InlineKeyboardMarkup]:
+    """Build compact navigation independently of the UI v2 rollout flag.
+
+    The flag still controls the versioned callback protocol.  Its legacy
+    fallback intentionally uses the compact legacy keyboard rather than the
+    long compatibility dashboard exposed by /dashboard.
+    """
+    user_id = getattr(getattr(update, "effective_user", None), "id", None)
     if should_use_v2(update):
         try:
-            text, keyboard = _v2_screen(
-                "home", user_id=getattr(update.effective_user, "id", None),
-            )
-            keyboard = v2_with_miniapp_button(
-                keyboard, user_id=getattr(update.effective_user, "id", None),
-            )
-            await reply(update, text, keyboard)
-            return
+            text, keyboard = _v2_screen("home", user_id=user_id)
+            return text, v2_with_miniapp_button(keyboard, user_id=user_id)
         except Exception:
-            TELEGRAM_LOGGER.exception("Telegram UI v2 /menu failed; using legacy fallback")
-    await reply(update, format_dashboard())
+            TELEGRAM_LOGGER.exception("Telegram UI v2 primary home failed; using compact legacy fallback")
+    try:
+        rows = _v2_market_rows(_v2_decision_rows())
+    except Exception:
+        TELEGRAM_LOGGER.exception("Telegram primary home market summary unavailable")
+        rows = []
+    return format_v2_home(rows), v2_with_miniapp_button(main_keyboard(), user_id=user_id)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

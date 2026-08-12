@@ -66,7 +66,9 @@ def test_start_updates_last_active_only(monkeypatch):
 
     monkeypatch.setattr(bot, "reply", fake_reply)
     asyncio.run(bot.start(update(7, -1007), SimpleNamespace()))
-    assert calls == [-1007, "legacy"]
+    assert calls[0] == -1007
+    assert "legacy" not in calls[1]
+    assert "🟢 Сервер: ONLINE" in calls[1]
 
 
 def test_last_active_write_preserves_owner_and_notification(monkeypatch, tmp_path):

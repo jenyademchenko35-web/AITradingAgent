@@ -17,23 +17,27 @@ def _start_update():
     )
 
 
-def test_v2_start_exception_falls_back_to_legacy(monkeypatch):
+def test_v2_start_exception_falls_back_to_compact_primary_home(monkeypatch):
     monkeypatch.setattr(bot, "save_last_active_chat_id", lambda value: None)
     monkeypatch.setattr(bot, "should_use_v2", lambda update: True)
-    monkeypatch.setattr(bot, "_v2_screen", lambda screen: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(bot, "_v2_screen", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
     monkeypatch.setattr(bot, "format_dashboard", lambda: "legacy-home")
     update = _start_update()
     asyncio.run(bot.start(update, SimpleNamespace()))
-    assert update.message.calls == ["legacy-home"]
+    assert len(update.message.calls) == 1
+    assert "legacy-home" not in update.message.calls[0]
+    assert "🟢 Сервер: ONLINE" in update.message.calls[0]
 
 
-def test_non_owner_still_receives_legacy_start(monkeypatch):
+def test_non_owner_still_receives_compact_primary_start(monkeypatch):
     monkeypatch.setattr(bot, "save_last_active_chat_id", lambda value: None)
     monkeypatch.setattr(bot, "should_use_v2", lambda update: False)
     monkeypatch.setattr(bot, "format_dashboard", lambda: "legacy-home")
     update = _start_update()
     asyncio.run(bot.start(update, SimpleNamespace()))
-    assert update.message.calls == ["legacy-home"]
+    assert len(update.message.calls) == 1
+    assert "legacy-home" not in update.message.calls[0]
+    assert "🟢 Сервер: ONLINE" in update.message.calls[0]
 
 
 def test_v2_callback_exception_edits_to_legacy(monkeypatch):

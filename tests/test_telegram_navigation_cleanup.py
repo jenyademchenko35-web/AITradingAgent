@@ -85,3 +85,30 @@ def test_all_existing_commands_remain_registered():
     assert source  # Regression guard: the command-registration function is preserved.
     for name in ("market", "researchlab", "backfill", "walkforward", "researchlab_on", "evaluation"):
         assert f'CommandHandler("{name}"' in open(bot.__file__, encoding="utf-8").read()
+
+
+def test_start_and_menu_use_the_same_compact_primary_entry_when_v2_is_disabled(monkeypatch):
+    monkeypatch.setattr(bot, "should_use_v2", lambda update: False)
+    monkeypatch.setattr(bot, "_v2_decision_rows", lambda: [])
+    monkeypatch.setattr(bot, "format_dashboard", lambda *_: "LONG LEGACY DASHBOARD")
+    start_update, menu_update = update(), update()
+
+    asyncio.run(bot.start(start_update, SimpleNamespace()))
+    asyncio.run(bot.menu_command(menu_update, SimpleNamespace()))
+
+    start_text, start_keyboard = start_update.message.calls[0]
+    menu_text, menu_keyboard = menu_update.message.calls[0]
+    assert start_text == menu_text
+    assert start_keyboard == menu_keyboard
+    assert "LONG LEGACY DASHBOARD" not in start_text
+    assert "🟢 Сервер: ONLINE" in start_text
+    for legacy_section in ("Shadow Validation", "Walk-Forward", "Feature Coverage", "Root Cause"):
+        assert legacy_section not in menu_text
+    assert button_texts(start_keyboard) == ["🟢 Статус", "📈 Рынок", "📂 Сделки", "🔬 Research Lab", "ℹ️ Помощь"]
+
+
+def test_dashboard_keeps_the_full_legacy_dashboard_handler(monkeypatch):
+    monkeypatch.setattr(bot, "format_dashboard", lambda *_: "LONG LEGACY DASHBOARD")
+    item = update()
+    asyncio.run(bot.dashboard_command(item, SimpleNamespace(args=[])))
+    assert item.message.calls[0][0] == "LONG LEGACY DASHBOARD"
