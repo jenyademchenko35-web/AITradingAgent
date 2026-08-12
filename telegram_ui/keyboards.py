@@ -5,7 +5,7 @@ from __future__ import annotations
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from .callbacks import build_callback
-from .miniapp import miniapp_url_for_user
+from .miniapp import build_miniapp_deep_link, miniapp_url_for_user
 
 
 # Recommendation only: BotFather registration remains legacy-controlled during
@@ -35,22 +35,35 @@ def with_miniapp_button(
     return InlineKeyboardMarkup(rows)
 
 
+def miniapp_signal_button(
+    symbol: str,
+    timeframe: str,
+    *,
+    user_id: object = None,
+    environ=None,
+) -> InlineKeyboardButton | None:
+    """Return a bounded signal-detail WebApp button when the user may open it."""
+    base_url = miniapp_url_for_user(user_id, environ)
+    if base_url is None:
+        return None
+    try:
+        url = build_miniapp_deep_link(base_url, symbol=symbol, timeframe=timeframe)
+    except ValueError:
+        return None
+    return InlineKeyboardButton("⚡ Открыть в TradeWatcher", web_app=WebAppInfo(url=url))
+
+
 def home_keyboard(*, user_id: object = None, environ=None) -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("📊 Сигналы", callback_data=build_callback("signals")),
+            InlineKeyboardButton("🟢 Статус", callback_data=build_callback("home")),
             InlineKeyboardButton("📈 Рынок", callback_data=build_callback("market")),
         ],
         [
             InlineKeyboardButton("💼 Сделки", callback_data=build_callback("trades")),
-            InlineKeyboardButton("📉 Статистика", callback_data=build_callback("stats")),
-        ],
-        [
-            InlineKeyboardButton("🧠 Аналитика", callback_data=build_callback("analytics")),
             InlineKeyboardButton("🔬 Research Lab", callback_data=build_callback("researchlab")),
         ],
         [
-            InlineKeyboardButton("⚙️ Настройки", callback_data=build_callback("settings")),
             InlineKeyboardButton("ℹ️ Помощь", callback_data=build_callback("help")),
         ],
     ])
@@ -86,8 +99,14 @@ def timeframe_keyboard(symbol: str, timeframes: tuple[str, ...]) -> InlineKeyboa
     return InlineKeyboardMarkup(rows)
 
 
-def signal_card_keyboard(symbol: str, timeframe: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+def signal_card_keyboard(
+    symbol: str,
+    timeframe: str,
+    *,
+    user_id: object = None,
+    environ=None,
+) -> InlineKeyboardMarkup:
+    rows = [
         [
             InlineKeyboardButton("🔄 Обновить", callback_data=build_callback("refresh", symbol, timeframe)),
             InlineKeyboardButton("🧠 Почему?", callback_data=build_callback("why", symbol, timeframe)),
@@ -100,7 +119,11 @@ def signal_card_keyboard(symbol: str, timeframe: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton("⬅️ Назад", callback_data=build_callback("back", "symbol")),
             InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home")),
         ],
-    ])
+    ]
+    miniapp_button = miniapp_signal_button(symbol, timeframe, user_id=user_id, environ=environ)
+    if miniapp_button is not None:
+        rows.insert(0, [miniapp_button])
+    return InlineKeyboardMarkup(rows)
 
 
 def market_keyboard(symbols: list[str] | tuple[str, ...]) -> InlineKeyboardMarkup:

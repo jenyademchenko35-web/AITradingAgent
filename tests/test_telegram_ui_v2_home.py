@@ -23,15 +23,14 @@ def _update(user_id=42):
     )
 
 
-def test_home_keyboard_has_eight_expected_destinations():
+def test_home_keyboard_has_the_compact_primary_destinations():
     keyboard = home_keyboard().inline_keyboard
     assert [[button.text for button in row] for row in keyboard] == [
-        ["📊 Сигналы", "📈 Рынок"], ["💼 Сделки", "📉 Статистика"],
-        ["🧠 Аналитика", "🔬 Research Lab"], ["⚙️ Настройки", "ℹ️ Помощь"],
+        ["🟢 Статус", "📈 Рынок"], ["💼 Сделки", "🔬 Research Lab"],
+        ["ℹ️ Помощь"],
     ]
     assert [button.callback_data for row in keyboard for button in row] == [
-        "ui:v2:signals", "ui:v2:market", "ui:v2:trades", "ui:v2:stats",
-        "ui:v2:analytics", "ui:v2:researchlab", "ui:v2:settings", "ui:v2:help",
+        "ui:v2:home", "ui:v2:market", "ui:v2:trades", "ui:v2:researchlab", "ui:v2:help",
     ]
 
 
@@ -55,7 +54,7 @@ def test_v2_start_uses_inline_home_without_changing_owner(monkeypatch):
     saved = []
     monkeypatch.setattr(bot, "save_last_active_chat_id", saved.append)
     monkeypatch.setattr(bot, "should_use_v2", lambda update: True)
-    monkeypatch.setattr(bot, "_v2_screen", lambda screen: ("v2-home", "keyboard"))
+    monkeypatch.setattr(bot, "_v2_screen", lambda screen, **kwargs: ("v2-home", "keyboard"))
     update = _update()
     asyncio.run(bot.start(update, SimpleNamespace()))
     assert saved == [100]

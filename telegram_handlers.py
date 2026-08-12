@@ -64,23 +64,15 @@ def main_keyboard() -> InlineKeyboardMarkup:
     """Return the compact daily-work inline menu."""
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("📊 Dashboard", callback_data="dashboard")],
             [
-                InlineKeyboardButton("📈 Market", callback_data="market"),
-                InlineKeyboardButton("🎯 Opportunities", callback_data="opportunities"),
+                InlineKeyboardButton("🟢 Статус", callback_data="dashboard"),
+                InlineKeyboardButton("📈 Рынок", callback_data="market"),
             ],
             [
-                InlineKeyboardButton("📋 Watchlist", callback_data="watchlist"),
-                InlineKeyboardButton("📂 Trades", callback_data="trades"),
+                InlineKeyboardButton("📂 Сделки", callback_data="trades"),
+                InlineKeyboardButton("🔬 Research Lab", callback_data="researchlab"),
             ],
-            [
-                InlineKeyboardButton("📊 Statistics", callback_data="stats"),
-                InlineKeyboardButton("🧠 AI Coach", callback_data="coach"),
-            ],
-            [
-                InlineKeyboardButton("⚙️ Settings", callback_data="settings"),
-                InlineKeyboardButton("🛠 Developer", callback_data="developer"),
-            ],
+            [InlineKeyboardButton("ℹ️ Помощь", callback_data="help")],
         ]
     )
 

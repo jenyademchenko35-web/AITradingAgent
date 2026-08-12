@@ -3176,7 +3176,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         save_last_active_chat_id(update.effective_chat.id)
     if should_use_v2(update):
         try:
-            text, keyboard = _v2_screen("home")
+            text, keyboard = _v2_screen(
+                "home", user_id=getattr(update.effective_user, "id", None),
+            )
             keyboard = v2_with_miniapp_button(
                 keyboard, user_id=getattr(update.effective_user, "id", None),
             )
@@ -3191,7 +3193,9 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Open the active UI without changing notification settings."""
     if should_use_v2(update):
         try:
-            text, keyboard = _v2_screen("home")
+            text, keyboard = _v2_screen(
+                "home", user_id=getattr(update.effective_user, "id", None),
+            )
             keyboard = v2_with_miniapp_button(
                 keyboard, user_id=getattr(update.effective_user, "id", None),
             )
@@ -3209,17 +3213,21 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 def help_overview_text() -> str:
     return "\n".join([
-        "❔ Помощь",
+        "🤖 AITradingAgent",
         "",
-        "/menu — главное меню",
-        "/market — рынок",
-        "/watchlist — наблюдение",
+        "Основные команды",
+        "/status — состояние системы",
+        "/market — рынок и сигналы",
         "/trades — открытые сделки",
-        "/stats — статистика",
-        "/researchlab — Research Lab",
+        "/researchlab — состояние Research Lab",
+        "/menu — главное меню",
         "",
-        "Разделы помощи:",
-        "/help_signals · /help_trading · /help_research",
+        "⚡ TradeWatcher",
+        "Подробный анализ доступен в Mini App.",
+        "",
+        "Дополнительно:",
+        "/help_research — Research и аналитика",
+        "/help_admin — служебные команды владельца",
     ])
 
 
@@ -3239,16 +3247,39 @@ async def help_trading_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def help_research_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply(update, "\n".join([
-        "🔬 Исследования", "", "/research", "/researchlab", "/researchlab_trades",
-        "/research_rank", "/features", "/strategies", "/promotions", "/research_health", "/walkforward",
+        "🔬 Research и аналитика", "",
+        "Research Lab (read-only)",
+        "/researchlab · /research_health · /research_rank",
+        "/features · /strategies · /top",
+        "",
+        "Evidence и validation (read-only)",
+        "/walkforward · /dataquality · /coverage · /rootcause",
+        "",
+        "Расширенная аналитика",
+        "/researchlab_trades · /shadowstatus · /candidates · /candidate <id>",
+        "/impulse · /impulse_learning · /scenarios · /evaluation",
+        "",
+        "Команды изменения состояния здесь не показаны.",
     ]))
 
 
 @require_owner
 async def help_admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await reply(update, "\n".join([
-        "🔐 Команды владельца", "",
-        *(f"/{command}" for command in OWNER_ONLY_COMMANDS if command != "help_admin"),
+        "🔐 Служебные команды владельца", "",
+        "Read-only и обслуживание",
+        "/settings · /developer · /datasources",
+        "/ready · /learning · /modules · /accuracy · /rootcause",
+        "",
+        "⚠️ Изменяют состояние",
+        "/set_notification_chat",
+        "/researchlab_on · /researchlab_off",
+        "/researchlab_dry_on · /researchlab_dry_off",
+        "/backfill",
+        "",
+        "Расширенные owner-only исследования",
+        "/research · /experiments · /calibration · /learn",
+        "/filters · /blocked · /regime · /posttrade",
     ]))
 
 
@@ -3269,53 +3300,8 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 def help_text() -> str:
-    """Return command help."""
-    return "\n".join(
-        [
-            "🤖 AITradingAgent v1.0 / Telegram UI v5",
-            "",
-            "Ежедневная работа",
-            "/dashboard",
-            "/market",
-            "/opportunities",
-            "/watchlist",
-            "/trades",
-            "/stats",
-            "/coach",
-            "",
-            "Сервис",
-            "/start",
-            "/help",
-            "/settings",
-            "/developer",
-            "",
-            "Developer-раздел",
-            "Replay, Calibration, Experiments, Blocked, Research,",
-            "Diagnostics, Dry Run, Reports.",
-            "",
-            "Прямые команды для глубокой аналитики всё ещё доступны:",
-            "/diagnostics BTC",
-            "/dashboard hypotheses|conflicts|status|history",
-            "/dashboard trading|live|news|lab|memory",
-            "/blocked Momentum|Structure|Risk|Trend|ALL",
-            "/research /experiments /calibration /quality",
-            "/news sources|health|BTC|risks|stale",
-            "/heatmap /intelligence /memory BTC /context",
-            "/live /live SOL /live trades /live setups /system",
-            "/lab hypotheses|cooldown|trend|momentum|atr|news|edge",
-            "/lab duplicate|volatility|compare|current|quality",
-            "/replay last|BTC|summary|patterns",
-            "/consensus momentum|edge|news|summary",
-            "/adaptive status|recommendations|stages",
-            "/promotion details",
-            "/walkforward",
-            "/research_rank /features /strategies /promotions /top",
-            "/researchlab",
-            "/candidates /candidate <id> /datafeatures",
-            "/dataquality | /trades health",
-            "/datasources",
-        ]
-    )
+    """Return the compact, stable command help for legacy and v2 users."""
+    return help_overview_text()
 
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3974,7 +3960,12 @@ def _v2_research_report() -> Mapping[str, Any]:
     return ResearchDashboardV2(BASE_DIR / "research.db").build_report()
 
 
-def _v2_screen(screen: str, arguments: tuple[str, ...] = ()) -> tuple[str, InlineKeyboardMarkup]:
+def _v2_screen(
+    screen: str,
+    arguments: tuple[str, ...] = (),
+    *,
+    user_id: object = None,
+) -> tuple[str, InlineKeyboardMarkup]:
     rows = _v2_decision_rows()
     if screen == "home":
         return format_v2_home(_v2_market_rows(rows)), v2_home_keyboard()
@@ -3993,7 +3984,9 @@ def _v2_screen(screen: str, arguments: tuple[str, ...] = ()) -> tuple[str, Inlin
     if screen in {"timeframe", "refresh"} and len(arguments) == 2:
         symbol, timeframe = arguments
         payload = _v2_signal_payload(symbol, timeframe)
-        return build_signal_card(payload), v2_signal_card_keyboard(symbol, timeframe)
+        return build_signal_card(payload), v2_signal_card_keyboard(
+            symbol, timeframe, user_id=user_id,
+        )
     if screen == "why" and len(arguments) == 2:
         symbol, timeframe = arguments
         return build_why_screen(_v2_signal_payload(symbol, timeframe)), v2_signal_card_keyboard(symbol, timeframe)
@@ -4088,7 +4081,9 @@ async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             } else None),
         )
     try:
-        text, markup = _v2_screen(screen, arguments)
+        text, markup = _v2_screen(
+            screen, arguments, user_id=getattr(update.effective_user, "id", None),
+        )
         if screen == "home":
             markup = v2_with_miniapp_button(
                 markup, user_id=getattr(update.effective_user, "id", None),
@@ -4158,6 +4153,8 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             "trades": format_trades,
             "settings": format_settings,
             "developer": format_developer,
+            "researchlab": lambda: format_research_lab_v2("researchlab"),
+            "help": help_text,
         }
         action = actions.get(query.data)
         text = action() if action is not None else STALE_BUTTON_TEXT

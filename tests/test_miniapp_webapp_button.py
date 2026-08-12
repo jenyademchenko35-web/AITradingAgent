@@ -22,13 +22,12 @@ def test_owner_sees_https_webapp_button():
 
 
 def test_non_owner_disabled_and_invalid_urls_hide_button():
-    assert len(home_keyboard(user_id=7, environ=environment()).inline_keyboard) == 4
-    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_ENABLED="false")).inline_keyboard) == 4
-    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_PUBLIC_URL="http://mini.example")).inline_keyboard) == 4
-    assert len(home_keyboard(user_id=42, environ=environment(TELEGRAM_UI_V2_ENABLED="false")).inline_keyboard) == 4
+    assert len(home_keyboard(user_id=7, environ=environment()).inline_keyboard) == 3
+    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_ENABLED="false")).inline_keyboard) == 3
+    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_PUBLIC_URL="http://mini.example")).inline_keyboard) == 3
+    assert len(home_keyboard(user_id=42, environ=environment(TELEGRAM_UI_V2_ENABLED="false")).inline_keyboard) == 3
 
 
-def test_legacy_default_keyboard_is_unchanged():
+def test_default_keyboard_uses_the_compact_primary_navigation():
     buttons = [button.callback_data for row in home_keyboard().inline_keyboard for button in row]
-    assert len(buttons) == 8
-    assert buttons[0] == "ui:v2:signals"
+    assert buttons == ["ui:v2:home", "ui:v2:market", "ui:v2:trades", "ui:v2:researchlab", "ui:v2:help"]

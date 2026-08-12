@@ -71,7 +71,7 @@ def test_production_adapter_does_not_reuse_unrelated_closed_trade(monkeypatch):
 
 def test_refresh_edits_current_message(monkeypatch):
     monkeypatch.setattr(bot, "should_use_v2", lambda update: True)
-    monkeypatch.setattr(bot, "_v2_screen", lambda screen, args: (f"{screen}:{args}", "keyboard"))
+    monkeypatch.setattr(bot, "_v2_screen", lambda screen, args, **kwargs: (f"{screen}:{args}", "keyboard"))
     current = _update("ui:v2:refresh:BTCUSDT:1h")
     asyncio.run(bot.handle_v2_button(current, SimpleNamespace()))
     assert current.callback_query.edits == ["refresh:('BTCUSDT', '1h')"]
