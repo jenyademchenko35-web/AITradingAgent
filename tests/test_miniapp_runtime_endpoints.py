@@ -201,3 +201,30 @@ def test_missing_ingested_trading_metrics_remain_not_published_and_signal_stalen
     assert dashboard["open_trades"] is None
     assert dashboard["winrate"] is None
     assert dashboard["profit_factor"] is None
+
+
+def test_ingested_portfolio_metrics_are_projected_without_recalculation(tmp_path):
+    from runtime_contract import build_runtime_snapshot
+    from miniapp.backend.runtime_ingest import RuntimeIngestStore
+
+    snapshot = build_runtime_snapshot(
+        agent_version="agent", cycle_id="metrics", signals=[],
+        portfolio={
+            "open_trades": 2, "closed_trades": 47, "winrate": 16.67,
+            "profit_factor": 0.26343, "net_r": -46.174018,
+            "max_drawdown": 46.174018, "average_r": -1.099381,
+            "metric_unit": "R", "source": "trades.csv",
+        },
+    )
+    store = RuntimeIngestStore(tmp_path / "runtime_ingest", max_payload_bytes=32_768, max_snapshot_age_seconds=9_999_999)
+    store.ingest(json.dumps({"runtime_snapshot": snapshot}).encode())
+    repository = ReadOnlyRepository(tmp_path, ingest_dir=tmp_path / "runtime_ingest")
+
+    assert repository.stats() == {
+        "closed_trades": 47, "winrate": 16.67, "profit_factor": 0.26343,
+        "net_r": -46.174018, "max_drawdown": 46.174018, "average_r": -1.099381,
+    }
+    dashboard = repository.dashboard()
+    assert dashboard["metrics_available"] is True
+    assert dashboard["open_trades"] == 2
+    assert dashboard["metrics_source"] == "runtime_snapshot.portfolio"

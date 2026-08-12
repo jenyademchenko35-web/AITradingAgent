@@ -94,3 +94,78 @@ def test_snapshot_publisher_failure_is_fail_open(monkeypatch, tmp_path):
     result = agent._publish_runtime_snapshot_observer("2026-08-09T10:00:00Z", [])
     assert result is None
     assert any("runtime_snapshot_error" in message for message in messages)
+
+
+def test_runtime_snapshot_portfolio_projection_uses_existing_trade_analytics_read_only(monkeypatch, tmp_path):
+    import multi_timeframe_agent_v3 as agent
+
+    (tmp_path / "trades.csv").write_text(
+        "symbol,direction,entry,stop_loss,take_profit,status,result,opened_at,closed_at,exit_price,pnl\n"
+        "BTC/USDT,LONG,100,98,104,WIN,WIN,2026-08-01T00:00:00Z,2026-08-01T01:00:00Z,104,4\n"
+        "ETH/USDT,SHORT,100,102,96,OPEN,,2026-08-01T00:00:00Z,,,\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(agent, "BASE_DIR", str(tmp_path))
+
+    portfolio = agent._runtime_portfolio_projection()
+
+    assert portfolio["source"] == "trades.csv"
+    assert portfolio["open_trades"] == 1
+    assert portfolio["closed_trades"] == 1
+    assert portfolio["metrics_trades"] == 1
+    assert portfolio["winrate"] == 100.0
+    assert portfolio["profit_factor"] == 0.0
+    assert portfolio["net_r"] == 2.0
+
+
+def test_runtime_portfolio_projection_handles_empty_or_malformed_csv_as_unpublished_metrics(monkeypatch, tmp_path):
+    import multi_timeframe_agent_v3 as agent
+
+    trade_file = tmp_path / "trades.csv"
+    monkeypatch.setattr(agent, "BASE_DIR", str(tmp_path))
+    for contents in (b"", b"\xff\xfe\x00"):
+        trade_file.write_bytes(contents)
+        portfolio = agent._runtime_portfolio_projection()
+        assert portfolio["closed_trades"] == 0
+        assert portfolio["metrics_trades"] == 0
+        assert portfolio["incomplete_metrics"] == 0
+        assert portfolio["winrate"] is None
+        assert portfolio["profit_factor"] is None
+        assert portfolio["net_r"] is None
+
+
+def test_runtime_snapshot_contains_the_portfolio_projection(monkeypatch, tmp_path):
+    import multi_timeframe_agent_v3 as agent
+
+    (tmp_path / "trades.csv").write_text(
+        "symbol,direction,entry,stop_loss,status,result,opened_at,closed_at,exit_price\n"
+        "BTC/USDT,LONG,100,98,WIN,WIN,2026-08-01T00:00:00Z,2026-08-01T01:00:00Z,104\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(agent, "BASE_DIR", str(tmp_path))
+
+    snapshot = agent._publish_runtime_snapshot_observer("2026-08-09T10:00:00Z", [])
+
+    assert snapshot is not None
+    assert snapshot["portfolio"]["source"] == "trades.csv"
+    assert snapshot["portfolio"]["closed_trades"] == 1
+    written = contract.read_runtime_snapshot(tmp_path / "runtime_snapshot.json")
+    assert written is not None
+    assert written["portfolio"]["net_r"] == 2.0
+
+
+def test_runtime_snapshot_publishes_safe_portfolio_when_analytics_fails(monkeypatch, tmp_path):
+    import multi_timeframe_agent_v3 as agent
+    import trade_metrics_normalizer
+
+    (tmp_path / "trades.csv").write_text("symbol,status\nBTC/USDT,WIN\n", encoding="utf-8")
+    monkeypatch.setattr(agent, "BASE_DIR", str(tmp_path))
+    monkeypatch.setattr(trade_metrics_normalizer, "read_trade_rows", lambda _path: (_ for _ in ()).throw(OSError("temporarily unavailable")))
+
+    snapshot = agent._publish_runtime_snapshot_observer("2026-08-09T10:00:00Z", [])
+
+    assert snapshot is not None
+    assert snapshot["portfolio"] == {}
+    written = contract.read_runtime_snapshot(tmp_path / "runtime_snapshot.json")
+    assert written is not None
+    assert written["portfolio"] == {}

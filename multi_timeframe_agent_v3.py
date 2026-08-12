@@ -1575,6 +1575,45 @@ def _run_research_lab_observer(cycle_id, snapshots):
         return None
 
 
+def _runtime_portfolio_projection():
+    """Return existing closed-trade analytics for the read-only runtime contract.
+
+    This observer reads ``trades.csv`` through the established analytics
+    normalizer.  It never writes a trade, changes execution state, or feeds a
+    value back into the strategy loop.
+    """
+    try:
+        from trade_metrics_normalizer import aggregate_trade_metrics, read_trade_rows
+        trade_path = Path(BASE_DIR) / "trades.csv"
+        if not trade_path.is_file():
+            return {}
+        rows = read_trade_rows(trade_path)
+        metrics = aggregate_trade_metrics(rows)
+        open_trades = sum(
+            str(row.get("status") or "").strip().upper() in {"OPEN", "ACTIVE", "PENDING"}
+            for row in rows
+        )
+        complete = int(metrics.get("metrics_trades") or 0)
+        return {
+            "open_trades": open_trades,
+            "closed_trades": int(metrics.get("closed_trades") or 0),
+            "winrate": metrics.get("winrate") if complete else None,
+            "profit_factor": metrics.get("profit_factor") if complete else None,
+            "net_r": metrics.get("net_r") if complete else None,
+            "max_drawdown": metrics.get("max_drawdown_r") if complete else None,
+            "average_r": metrics.get("average_r") if complete else None,
+            "metrics_trades": complete,
+            "incomplete_metrics": int(metrics.get("incomplete_metrics") or 0),
+            "metric_unit": metrics.get("metric_unit"),
+            "source": "trades.csv",
+        }
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({
+            "event": "runtime_snapshot_portfolio_error", "error": str(exc), "fail_open": True,
+        }, sort_keys=True))
+        return {}
+
+
 def _publish_runtime_snapshot_observer(cycle_id, decisions, *, current_prices=None, research_result=None, impulse_rows=None):
     """Publish a compact read-only runtime projection after a completed cycle.
 
@@ -1601,7 +1640,8 @@ def _publish_runtime_snapshot_observer(cycle_id, decisions, *, current_prices=No
         snapshot = build_runtime_snapshot(
             agent_version="multi_timeframe_agent_v3", cycle_id=cycle_id,
             source={"component": "multi_timeframe_agent_v3", "instance": "agent", "environment": os.getenv("RUNTIME_ENVIRONMENT", "unknown")},
-            market={"symbols_analyzed": len(rows)}, signals=rows, portfolio={},
+            market={"symbols_analyzed": len(rows)}, signals=rows,
+            portfolio=_runtime_portfolio_projection(),
             decision_telemetry={"count": len(rows)}, research=dict(research_result or {}), scenario={},
             impulse={"rows": list(impulse_rows or ())}, source_updated_at=cycle_id,
             stale_after_seconds=int(os.getenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "900")),

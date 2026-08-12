@@ -23,10 +23,42 @@ test("home is a concise data-only overview with four primary tabs", async () => 
   expect(await screen.findByText("AITradingAgent")).toBeInTheDocument();
   expect(screen.getByText("Closed")).toBeInTheDocument();
   expect(screen.getByText("Profit Factor")).toBeInTheDocument();
+  expect(screen.getByText("100")).toBeInTheDocument();
+  expect(screen.getByText("61%")).toBeInTheDocument();
+  expect(screen.getByText("1.7")).toBeInTheDocument();
+  expect(screen.getByText("12")).toBeInTheDocument();
   expect(screen.getByText("Market now")).toBeInTheDocument();
   expect(screen.getByText("Best candidate")).toBeInTheDocument();
+  expect(screen.getByText("TREND_CONFIRM")).toBeInTheDocument();
+  expect(screen.getByText("PF 1.3 · Net R 11")).toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: /Home|Market|Research|System/ })).toHaveLength(4);
   expect(screen.queryByText("Live Activity")).not.toBeInTheDocument();
+});
+
+test("home keeps unpublished trading metrics honest without undefined or NaN", async () => {
+  render(<App api={api({
+    dashboard: vi.fn().mockResolvedValue({ status: "ONLINE", updated_at: "2026-08-03T10:00:00Z", winrate: null, profit_factor: null }),
+    stats: vi.fn().mockResolvedValue({}),
+  })} />);
+
+  expect(await screen.findByText("Closed")).toBeInTheDocument();
+  expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(4);
+  expect(screen.queryByText(/undefined/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+});
+
+test("home shows a plain no-candidate state without empty performance placeholders", async () => {
+  render(<App api={api({
+    researchLive: vi.fn().mockResolvedValue({
+      runtime_status: { name: "Research Lab", state: "RUNNING", enabled: true },
+      best_candidate: null,
+      ranking: [],
+      integrity: { integrity_state: "DATA_DEGRADED" },
+    }),
+  })} />);
+
+  expect(await screen.findByText("Нет кандидата")).toBeInTheDocument();
+  expect(screen.queryByText("PF — · Net R —")).not.toBeInTheDocument();
 });
 
 test("market uses already-loaded watchlist and supports search without another request", async () => {
