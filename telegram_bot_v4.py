@@ -119,6 +119,7 @@ from telegram_formatters import (
 )
 from telegram_handlers import (
     BOT_COMMANDS_V5,
+    PRIMARY_BOT_COMMANDS,
     developer_keyboard as v5_developer_keyboard,
     main_keyboard as v5_main_keyboard,
     market_keyboard as v5_market_keyboard,
@@ -4180,7 +4181,7 @@ async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def register_bot_commands(app) -> None:
     """Register persistent Telegram menu commands on startup."""
-    await app.bot.set_my_commands(BOT_COMMANDS)
+    await app.bot.set_my_commands(PRIMARY_BOT_COMMANDS)
 
 
 def build_app():

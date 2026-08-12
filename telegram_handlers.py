@@ -60,6 +60,23 @@ BOT_COMMANDS_V5 = [
 ]
 
 
+# Telegram's slash-command menu is a compact entry point, not an inventory of
+# every supported legacy or owner-only command.  BOT_COMMANDS_V5 remains the
+# complete compatibility catalog; advanced commands continue to work when
+# entered manually and are documented in the scoped help screens.
+PRIMARY_BOT_COMMANDS = [
+    BotCommand("start", "Главное меню"),
+    BotCommand("status", "Состояние системы"),
+    BotCommand("market", "Рынок и сигналы"),
+    BotCommand("trades", "Открытые сделки"),
+    BotCommand("researchlab", "Research Lab"),
+    BotCommand("help", "Помощь"),
+    BotCommand("dashboard", "Полный dashboard"),
+    BotCommand("help_research", "Research-команды"),
+    BotCommand("help_admin", "Служебные команды"),
+]
+
+
 def main_keyboard() -> InlineKeyboardMarkup:
     """Return the compact daily-work inline menu."""
     return InlineKeyboardMarkup(

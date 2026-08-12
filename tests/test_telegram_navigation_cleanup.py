@@ -6,7 +6,7 @@ import asyncio
 from types import SimpleNamespace
 
 import telegram_bot_v4 as bot
-from telegram_handlers import main_keyboard
+from telegram_handlers import BOT_COMMANDS_V5, PRIMARY_BOT_COMMANDS, main_keyboard
 from telegram_ui.keyboards import signal_card_keyboard, with_miniapp_button
 
 
@@ -36,6 +36,42 @@ def test_compact_help_promotes_only_core_navigation():
     assert "/backfill" not in text
     assert "/walkforward" not in text
     assert len(text) < 700
+
+
+def test_telegram_command_menu_is_compact_and_matches_primary_help():
+    commands = [(item.command, item.description) for item in PRIMARY_BOT_COMMANDS]
+    assert commands == [
+        ("start", "Главное меню"),
+        ("status", "Состояние системы"),
+        ("market", "Рынок и сигналы"),
+        ("trades", "Открытые сделки"),
+        ("researchlab", "Research Lab"),
+        ("help", "Помощь"),
+        ("dashboard", "Полный dashboard"),
+        ("help_research", "Research-команды"),
+        ("help_admin", "Служебные команды"),
+    ]
+    shown = {item.command for item in PRIMARY_BOT_COMMANDS}
+    assert {"opportunities", "watchlist", "diagnostics", "live", "heatmap", "candidate", "features", "strategies", "promotions", "walkforward"}.isdisjoint(shown)
+    help_text = bot.help_overview_text()
+    for command in ("/status", "/market", "/trades", "/researchlab", "/help"):
+        assert command in help_text
+
+
+def test_command_menu_registration_uses_compact_list_without_removing_legacy_commands():
+    captured: list[object] = []
+
+    class FakeBot:
+        async def set_my_commands(self, commands):
+            captured.append(commands)
+
+    asyncio.run(bot.register_bot_commands(SimpleNamespace(bot=FakeBot())))
+    assert captured == [PRIMARY_BOT_COMMANDS]
+    legacy_commands = {item.command for item in BOT_COMMANDS_V5}
+    assert {"opportunities", "watchlist", "walkforward"}.issubset(legacy_commands)
+    handler_source = open(bot.__file__, encoding="utf-8").read()
+    for command in ("diagnostics", "researchlab_on"):
+        assert f'CommandHandler("{command}"' in handler_source
 
 
 def test_research_help_is_read_only_and_does_not_advertise_mutations():
