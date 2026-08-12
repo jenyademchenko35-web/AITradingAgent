@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import type { WatchlistItem } from "../../shared/contracts";
 
 export type SignalFilter = "ALL" | "SETUP" | "WATCH" | "LIVE" | "BLOCKED";
@@ -29,8 +29,33 @@ export const MetricCard = memo(function MetricCard({ label, value, detail, toolt
   loading?: boolean;
 }) {
   if (loading) return <SkeletonCard lines={2} />;
-  return <div className="metric" title={tooltip}><span>{label}</span><strong>{value ?? "—"}</strong>{detail && <small>{detail}</small>}</div>;
+  const safeValue = typeof value === "number" && !Number.isFinite(value) ? "—" : value ?? "—";
+  return <div className="metric" title={tooltip}><span>{label}</span><strong>{safeValue}</strong>{detail && <small>{detail}</small>}</div>;
 });
+
+export function PageHeader({ eyebrow, title, detail, status }: { eyebrow?: string; title: string; detail?: string; status?: string | null }) {
+  return <header className="page-header"><div>{eyebrow && <small>{eyebrow}</small>}<h2>{title}</h2>{detail && <p>{detail}</p>}</div>{status && <StatusBadge status={status} />}</header>;
+}
+
+export function Section({ title, detail, action, children }: { title: string; detail?: string; action?: ReactNode; children: ReactNode }) {
+  return <section className="section"><div className="section-heading"><div><h3>{title}</h3>{detail && <p>{detail}</p>}</div>{action}</div>{children}</section>;
+}
+
+export function MetricGrid({ children }: { children: ReactNode }) { return <div className="metric-grid">{children}</div>; }
+
+export function StatusRow({ label, status, detail }: { label: string; status: string | null | undefined; detail?: string }) {
+  return <div className="status-row"><span>{label}</span><div><StatusBadge status={status} />{detail && <small>{detail}</small>}</div></div>;
+}
+
+export function FreshnessIndicator({ value }: { value: string | null | undefined }) {
+  const status = value?.toUpperCase();
+  const label = status === "FRESH" ? "Fresh" : status === "DELAYED" ? "Delayed" : status === "STALE" ? "Stale" : "Unknown";
+  return <span className={`freshness freshness-${status?.toLowerCase() || "unknown"}`}>{label}</span>;
+}
+
+export function BottomNavigation<T extends string>({ active, items, onSelect }: { active: T; items: Array<{ id: T; label: string; icon: string }>; onSelect: (id: T) => void }) {
+  return <nav className="bottom-navigation" aria-label="Основная навигация">{items.map((item) => <button type="button" key={item.id} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined} onClick={() => onSelect(item.id)}><span aria-hidden="true">{item.icon}</span><b>{item.label}</b></button>)}</nav>;
+}
 
 export function EmptyState({ title, detail, icon = "◌", advice = "Mini App displays published data only." }: { title: string; detail: string; icon?: string; advice?: string }) {
   return <div className="empty-state" role="status"><i aria-hidden="true">{icon}</i><b>{title}</b><p>{detail}</p><small>{advice}</small></div>;
@@ -54,7 +79,7 @@ export function FilterBar({ filter, sort, onFilter, onSort }: {
 }
 
 export const SignalCard = memo(function SignalCard({ item, onOpen }: { item: WatchlistItem; onOpen: (item: WatchlistItem) => void }) {
-  return <button className="signal-card" onClick={() => onOpen(item)}><div className="signal-card-top"><div><b>{item.symbol}</b><small>{item.timeframe.toUpperCase()} · {item.side || "NEUTRAL"}</small></div><StatusBadge status={item.status} /></div><div className="signal-card-metrics"><span>Confidence <b>{item.confidence}%</b></span><span>Quality <b>{item.quality || "—"}</b></span><span>Direction <b>{item.side || "—"}</b></span></div><small>Updated: {item.updated_at || "—"}</small></button>;
+  return <button className="signal-card" onClick={() => onOpen(item)}><div className="signal-card-top"><div><b>{item.symbol}</b><small>{item.timeframe.toUpperCase()}</small></div><StatusBadge status={item.status} /></div><div className="signal-card-metrics"><span className={`direction ${String(item.side || "").toLowerCase()}`}>{item.side || "NEUTRAL"}</span><span>Score <b>{typeof item.score === "number" && Number.isFinite(item.score) ? item.score : "—"}</b></span><span>Confidence <b>{typeof item.confidence === "number" && Number.isFinite(item.confidence) ? `${item.confidence}%` : "—"}</b></span></div></button>;
 });
 
 export function ProgressBar({ label, value, maximum }: { label: string; value: number | null; maximum: number | null }) {
