@@ -317,6 +317,20 @@ def calculate_health_score(report: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def build_recommendation(report: Mapping[str, Any]) -> str:
+    research_v2 = report.get("research_v2", {})
+    integrity = (
+        research_v2.get("research_data_integrity", {})
+        if isinstance(research_v2, Mapping)
+        else {}
+    )
+    gates = integrity.get("gates", {}) if isinstance(integrity, Mapping) else {}
+    # This is a presentation-only use of the canonical Research Lab integrity
+    # gate.  It does not evaluate evidence or alter promotion/WF behaviour.
+    if isinstance(gates, Mapping) and gates.get("walk_forward_allowed") is False:
+        return (
+            "Continue collecting fully joined research evidence.\n"
+            "Walk-Forward is blocked by Data Integrity."
+        )
     candidate = report.get("candidate", {})
     if candidate and int(candidate.get("complete_trades", candidate.get("closed_trades", 0)) or 0) < 50:
         return (

@@ -66,6 +66,43 @@ class AIResearchDashboardTest(unittest.TestCase):
             "root_cause": {"causes": [{"name": "Risk", "severity": "HIGH"}]},
         }), "Review Risk Engine.")
 
+    def test_data_integrity_blocks_legacy_walk_forward_recommendation(self):
+        report = {
+            "candidate": {}, "research": {"status": "WARNING"},
+            "root_cause": {"causes": []},
+            "research_v2": {
+                "research_data_integrity": {
+                    "gates": {
+                        "ranking_allowed": True,
+                        "walk_forward_allowed": False,
+                        "promotion_allowed": False,
+                    },
+                    "checks": {
+                        "UNRESOLVED_ATTRIBUTION": {
+                            "historical_unresolved_joins": 22,
+                            "current_pipeline_unresolved_joins": 0,
+                        }
+                    },
+                }
+            },
+        }
+        recommendation = build_recommendation(report)
+        self.assertNotIn("Run Walk Forward Validation", recommendation)
+        self.assertIn("fully joined research evidence", recommendation)
+        self.assertIn("Data Integrity", recommendation)
+        self.assertFalse(report["research_v2"]["research_data_integrity"]["gates"]["promotion_allowed"])
+
+    def test_walk_forward_recommendation_is_preserved_when_integrity_allows_it(self):
+        self.assertEqual(build_recommendation({
+            "candidate": {}, "research": {"status": "WARNING"},
+            "root_cause": {"causes": []},
+            "research_v2": {
+                "research_data_integrity": {
+                    "gates": {"walk_forward_allowed": True, "promotion_allowed": False}
+                }
+            },
+        }), "Run Walk Forward Validation.")
+
     def test_reads_news_and_candidate(self):
         self.write_json("agent_v3_stats.json", {"runs": 10})
         self.write_json("reports/candidate_laboratory.json", {
