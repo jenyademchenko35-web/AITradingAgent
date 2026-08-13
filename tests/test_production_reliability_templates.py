@@ -5,7 +5,9 @@ from __future__ import annotations
 import plistlib
 import os
 from pathlib import Path
+import shlex
 import subprocess
+import sys
 
 import pytest
 
@@ -181,3 +183,267 @@ def test_status_script_handles_unreadable_snapshot_without_aborting(tmp_path: Pa
     assert result.returncode == 0
     assert "Runtime snapshot: unreadable" in result.stdout
     assert "Overall: DEGRADED" in result.stdout
+
+
+def _run_observability(tmp_path: Path, **overrides: str) -> subprocess.CompletedProcess[str]:
+    """Run production observability against bounded, isolated fake inputs."""
+    production_root = tmp_path / "production"
+    production_root.mkdir(exist_ok=True)
+    (production_root / "research.db").touch()
+    (production_root / "runtime_snapshot.json").touch()
+    (production_root / "live_monitor_state.json").touch()
+    (production_root / "research_lab_v2_status.json").touch()
+    logs = production_root / "logs"
+    logs.mkdir(exist_ok=True)
+    telemetry = overrides.get(
+        "telemetry",
+        "2026-08-13T12:00:00Z status=OK tracked=6 priced=6 cycle_ms=1800 "
+        "ticker_calls=6 history_appended=2 history_compacted=False history_bytes=1638900 "
+        "cache_hits=2 cache_misses=0",
+    )
+    if telemetry != "missing":
+        (logs / "live_monitor.log").write_text(
+            overrides.get("telemetry_lines", telemetry) + "\n", encoding="utf-8"
+        )
+    if overrides.get("error_tail"):
+        (logs / "launchd_market_error.log").write_text(overrides["error_tail"] + "\n", encoding="utf-8")
+
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir(exist_ok=True)
+    _write_executable(fake_bin / "launchctl", "#!/bin/bash\n"
+                      "[[ \"$1\" == \"print\" ]] || exit 2\n"
+                      "target=\"$2\"\n"
+                      "if [[ \"$target\" == *\"com.aitradingagent.watchdog\" ]]; then\n"
+                      "  [[ \"${FAKE_WATCHDOG:-OFF}\" == \"ON\" ]] && { echo 'pid = 999;'; exit 0; }\n"
+                      "  exit 1\n"
+                      "fi\n"
+                      "[[ -n \"${FAKE_MISSING_LABEL:-}\" && \"$target\" == *\"${FAKE_MISSING_LABEL}\" ]] && exit 1\n"
+                      "echo 'pid = 123;'\n")
+    _write_executable(fake_bin / "ps", "#!/bin/bash\n"
+                      "if [[ \"$1\" == \"-axo\" ]]; then\n"
+                      "  for ((i = 0; i < ${FAKE_TELEGRAM_COUNT:-1}; i++)); do echo '/isolated/telegram_bot_v4.py'; done\n"
+                      "  exit 0\n"
+                      "fi\n"
+                      "[[ \"${FAKE_PS_FAIL:-0}\" == \"1\" ]] && exit 1\n"
+                      "echo '0.5 102400 00:10:00'\n")
+    _write_executable(fake_bin / "git", "#!/bin/bash\n"
+                      "[[ \"${FAKE_GIT_MISSING:-0}\" == \"1\" ]] && exit 1\n"
+                      "case \"$3\" in\n"
+                      "  branch) echo 'telegram-ui-v2-miniapp' ;;\n"
+                      "  rev-parse) echo 'abcdef0' ;;\n"
+                      "  log) echo 'observability subject' ;;\n"
+                      "  status) [[ \"${FAKE_GIT_STATUS_FAIL:-0}\" == \"1\" ]] && exit 1; [[ \"${FAKE_DIRTY:-0}\" == \"1\" ]] && echo ' M tracked.py'; exit 0 ;;\n"
+                      "  *) exit 2 ;;\n"
+                      "esac\n")
+    _write_executable(fake_bin / "date", "#!/bin/bash\n"
+                      "[[ \"$1\" == '+%s' ]] && { echo 2000; exit 0; }\n"
+                      "exec /bin/date \"$@\"\n")
+    _write_executable(fake_bin / "stat", "#!/bin/bash\n"
+                      "[[ \"${FAKE_STAT_FAIL:-0}\" == \"1\" ]] && exit 1\n"
+                      "echo \"${FAKE_SNAPSHOT_MTIME:-1900}\"\n")
+    _write_executable(fake_bin / "tail", "#!/bin/bash\n"
+                      "[[ -n \"${FAKE_TAIL_ARGS:-}\" ]] && echo \"$*\" >> \"$FAKE_TAIL_ARGS\"\n"
+                      "exec /usr/bin/tail \"$@\"\n")
+    if overrides.get("actual_research_python"):
+        # The observability script changes into PRODUCTION_ROOT before importing
+        # the canonical helper, exactly as it does in production.  Link the
+        # source package into that isolated root so this test exercises the
+        # helper rather than the fake Python output contract.
+        (production_root / "research_lab_v2").symlink_to(ROOT / "research_lab_v2")
+    venv_bin = production_root / "venv" / "bin"
+    venv_bin.mkdir(parents=True, exist_ok=True)
+    if overrides.get("actual_research_python"):
+        _write_executable(venv_bin / "python", f"#!/bin/bash\nexec {shlex.quote(sys.executable)} \"$@\"\n")
+    else:
+        _write_executable(venv_bin / "python", "#!/bin/bash\n"
+                          "[[ \"${FAKE_PYTHON_FAIL:-0}\" == \"1\" ]] && exit 1\n"
+                          "[[ \"${FAKE_REQUIRE_PRODUCTION_CWD:-0}\" == \"1\" && \"$PWD\" != \"$FAKE_PRODUCTION_ROOT\" ]] && exit 1\n"
+                          "[[ \"$*\" == *\"generated_at\"* ]] && { echo '2026-08-13T12:00:00Z'; exit 0; }\n"
+                          "[[ \"$*\" == *\"last_processed_cycle\"* ]] && { echo 'cycle-1'; exit 0; }\n"
+                          "echo \"${FAKE_RESEARCH_EVIDENCE:-OK|22|0|0|0|False|First E2E outcome|0|1}\"\n")
+
+    environment = os.environ | {
+        "PATH": f"{fake_bin}:{os.environ['PATH']}",
+        "PRODUCTION_ROOT": str(production_root),
+        "PRODUCTION_LOG_DIR": str(logs),
+        "LAUNCH_DOMAIN": "gui/test",
+        "FAKE_TELEGRAM_COUNT": "1",
+        "FAKE_WATCHDOG": "OFF",
+        "FAKE_SNAPSHOT_MTIME": "1990",
+        "FAKE_PRODUCTION_ROOT": str(production_root),
+    }
+    if overrides.get("actual_research_python"):
+        # The temporary production root is deliberately sparse; the real
+        # process would have all project modules beside research_lab_v2.
+        environment["PYTHONPATH"] = str(ROOT) + os.pathsep + environment.get("PYTHONPATH", "")
+    environment.update({
+        key: value for key, value in overrides.items()
+        if key not in {"telemetry", "telemetry_lines", "error_tail", "run_cwd"}
+    })
+    run_cwd = Path(overrides.get("run_cwd", str(ROOT)))
+    run_cwd.mkdir(exist_ok=True)
+    return subprocess.run(
+        ["bash", str(SCRIPTS / "production_observability.sh")],
+        cwd=run_cwd, env=environment, text=True, capture_output=True, check=False,
+    )
+
+
+def test_observability_reports_compact_healthy_surface_and_reuses_evidence_watch(tmp_path: Path):
+    result = _run_observability(tmp_path)
+
+    assert result.returncode == 0
+    assert "HEAD: abcdef0 observability subject" in result.stdout
+    assert "Dirty tracked: NO" in result.stdout
+    assert "Cycle: 1800ms | tracked: 6 | ticker calls: 6" in result.stdout
+    assert "History append: 2 | compaction: False | bytes: 1638900" in result.stdout
+    assert "Latest agent cycle: 2026-08-13T12:00:00Z" in result.stdout
+    assert "Research Lab processed: cycle-1" in result.stdout
+    assert "Fully joined: 0" in result.stdout
+    assert "Historical debt: 22" in result.stdout
+    assert "Production: HEALTHY" in result.stdout
+    assert "Research: WAITING_FOR_EVIDENCE" in result.stdout
+    assert "Performance: NORMAL" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected"),
+    [
+        ({"FAKE_MISSING_LABEL": "com.aitradingagent.production.market"}, "Market: STOPPED"),
+        ({"FAKE_TELEGRAM_COUNT": "2"}, "Telegram instances: 2"),
+        ({"FAKE_SNAPSHOT_MTIME": "1000"}, "Runtime snapshot stale"),
+        ({"FAKE_STAT_FAIL": "1"}, "Runtime snapshot: unavailable"),
+        ({"FAKE_GIT_MISSING": "1"}, "Branch: UNKNOWN"),
+        ({"FAKE_PS_FAIL": "1"}, "Agent: unavailable"),
+    ],
+)
+def test_observability_degrades_safely_when_prerequisites_are_unavailable(
+    tmp_path: Path, overrides: dict[str, str], expected: str,
+):
+    result = _run_observability(tmp_path, **overrides)
+
+    assert result.returncode == 0
+    assert expected in result.stdout
+    assert "Production: DEGRADED" in result.stdout
+
+
+def test_observability_handles_missing_or_malformed_monitor_telemetry(tmp_path: Path):
+    missing = _run_observability(tmp_path, telemetry="missing")
+    malformed = _run_observability(tmp_path, telemetry="malformed telemetry without expected fields")
+
+    assert missing.returncode == 0
+    assert "Telemetry: unavailable" in missing.stdout
+    assert "Performance: OBSERVE" in missing.stdout
+    assert malformed.returncode == 0
+    assert "Telemetry: unavailable" in malformed.stdout
+    assert "Performance: OBSERVE" in malformed.stdout
+
+
+def test_observability_marks_partial_or_non_numeric_telemetry_as_observe(tmp_path: Path):
+    partial = _run_observability(tmp_path, telemetry="status=OK cycle_ms=1800")
+    non_numeric = _run_observability(
+        tmp_path,
+        telemetry=(
+            "status=OK tracked=6 priced=6 cycle_ms=slow ticker_calls=6 "
+            "history_appended=2 history_compacted=False history_bytes=1638900 "
+            "cache_hits=2 cache_misses=0"
+        ),
+    )
+
+    assert "Telemetry: unavailable (missing tracked)" in partial.stdout
+    assert "Performance: OBSERVE" in partial.stdout
+    assert "Telemetry: unavailable (non-numeric cycle_ms)" in non_numeric.stdout
+    assert "Performance: OBSERVE" in non_numeric.stdout
+
+
+def test_observability_separates_historical_debt_from_current_regression(tmp_path: Path):
+    healthy = _run_observability(tmp_path, FAKE_RESEARCH_EVIDENCE="OK|22|0|0|0|False|First E2E outcome|0|1")
+    regression = _run_observability(tmp_path, FAKE_RESEARCH_EVIDENCE="OK|22|1|1|0|True|Pipeline sample|1|5")
+
+    assert "Historical debt: 22" in healthy.stdout
+    assert "Research: WAITING_FOR_EVIDENCE" in healthy.stdout
+    assert "Partial/Broken: 1/0" in regression.stdout
+    assert "Research: CURRENT_PIPELINE_REGRESSION" in regression.stdout
+
+
+def test_observability_surfaces_read_only_research_projection_failure(tmp_path: Path):
+    result = _run_observability(tmp_path, FAKE_PYTHON_FAIL="1")
+
+    assert result.returncode == 0
+    assert "Evidence: unavailable (Research projection failed)" in result.stdout
+    assert "Research: UNAVAILABLE" in result.stdout
+    assert "Research: WAITING_FOR_EVIDENCE" not in result.stdout
+
+
+def test_observability_preserves_canonical_read_error_from_actual_python(tmp_path: Path):
+    """A helper READ_ERROR is unavailable evidence, not an empty pipeline."""
+    production_root = tmp_path / "production"
+    production_root.mkdir()
+    (production_root / "research.db").write_bytes(b"not a sqlite database")
+
+    result = _run_observability(tmp_path, actual_research_python="1")
+
+    assert result.returncode == 0
+    assert "Evidence: unavailable (Research projection status: READ_ERROR)" in result.stdout
+    assert "Research: UNAVAILABLE" in result.stdout
+    assert "Research: WAITING_FOR_EVIDENCE" not in result.stdout
+
+
+def test_observability_degrades_when_git_status_is_unavailable(tmp_path: Path):
+    result = _run_observability(tmp_path, FAKE_GIT_STATUS_FAIL="1")
+
+    assert result.returncode == 0
+    assert "Dirty tracked: UNKNOWN" in result.stdout
+    assert "Production: DEGRADED" in result.stdout
+    assert "Git status unavailable" in result.stdout
+
+
+def test_observability_bounds_invalid_and_oversized_log_tail_values(tmp_path: Path):
+    invalid_tail_args = tmp_path / "invalid-tail-args.txt"
+    invalid = _run_observability(
+        tmp_path,
+        OBSERVABILITY_LOG_TAIL_LINES="not-a-number",
+        FAKE_TAIL_ARGS=str(invalid_tail_args),
+    )
+    oversized_tail_args = tmp_path / "oversized-tail-args.txt"
+    oversized = _run_observability(
+        tmp_path,
+        OBSERVABILITY_LOG_TAIL_LINES="100000000",
+        FAKE_TAIL_ARGS=str(oversized_tail_args),
+    )
+
+    assert invalid.returncode == 0
+    assert oversized.returncode == 0
+    assert "-n 80" in invalid_tail_args.read_text(encoding="utf-8")
+    assert "-n 500" in oversized_tail_args.read_text(encoding="utf-8")
+
+
+def test_observability_absolute_invocation_does_not_require_caller_cwd(tmp_path: Path):
+    result = _run_observability(
+        tmp_path,
+        run_cwd=str(tmp_path / "outside-production"),
+        FAKE_REQUIRE_PRODUCTION_CWD="1",
+    )
+
+    assert result.returncode == 0
+    assert "Research: WAITING_FOR_EVIDENCE" in result.stdout
+
+
+def test_observability_reports_bounded_recent_tail_findings(tmp_path: Path):
+    result = _run_observability(tmp_path, error_tail="ERROR bounded failure")
+
+    assert result.returncode == 0
+    assert "Recent tail findings (timestamps not verified)" in result.stdout
+    assert "market: ERROR bounded failure" in result.stdout
+
+
+def test_observability_source_is_read_only_bounded_and_uses_canonical_helper():
+    content = (SCRIPTS / "production_observability.sh").read_text(encoding="utf-8")
+
+    assert "current_pipeline_summary" in content
+    assert "tail -n \"$LOG_TAIL_LINES\"" in content
+    assert "--untracked-files=no" in content
+    assert "launchctl bootstrap" not in content
+    assert "launchctl bootout" not in content
+    assert "launchctl kickstart" not in content
+    assert "sqlite3" not in content
+    assert "curl" not in content

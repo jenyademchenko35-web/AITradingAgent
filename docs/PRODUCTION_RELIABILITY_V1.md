@@ -43,6 +43,7 @@ test -x /Users/jeynademcenko/AITradingAgentUpdated/venv/bin/python
 launchctl print gui/$(id -u)/com.aitradingagent.watchdog
 ps -axo pid=,command= | grep '[t]elegram_bot_v4.py'
 scripts/production_stack_status.sh
+scripts/production_observability.sh
 ```
 
 The old `com.aitradingagent.watchdog` must be **OFF** before the new Telegram
@@ -113,6 +114,32 @@ also requires available Git branch and HEAD metadata. A missing, unreadable, or
 stale snapshot produces `DEGRADED` with a reason instead of aborting the
 read-only report. It does not inspect Research outcome debt, so historical unresolved outcomes do
 not make the process-stack result degraded.
+
+## Production observability (read-only)
+
+`scripts/production_observability.sh` is the compact diagnostic companion to
+the stack status command. It reads bounded log tails, process snapshots, file
+freshness, and the existing read-only Research Evidence Watch projection. It
+does not call the network, Telegram, a management script, or any Research Lab
+write/reconciliation path. Untracked generated runtime artifacts do not mark
+the deployment dirty; only tracked Git changes are reported.
+
+The report separates `Historical debt` from the current attribution epoch.
+The known 22 unresolved historical outcomes therefore remain migration debt,
+while a new `PARTIAL` or `BROKEN` canonical outcome is reported as
+`CURRENT_PIPELINE_REGRESSION`.
+
+The command can be invoked by absolute path: its Research projection changes
+only its own subprocess working directory to the production checkout before
+importing the existing read-only helper. A projection failure is displayed as
+`Research: UNAVAILABLE`, never as an absence of evidence. `Dirty tracked` is
+`UNKNOWN` if Git cannot answer, and that condition degrades the production
+report rather than being treated as clean.
+
+Log tails are bounded by `OBSERVABILITY_LOG_TAIL_LINES`: invalid values use the
+safe default of 80 lines and values above 500 are capped. Incomplete or invalid
+market telemetry is reported as `Performance: OBSERVE`; it is not presented as
+normal performance data.
 
 ## Rollback
 
