@@ -107,8 +107,22 @@ is_nonnegative_number() {
 # them from code.  Do not classify an arbitrary *_report.json or
 # *_summary.txt as runtime output: unknown paths must remain code/config
 # dirtiness.
-is_runtime_tracked_artifact() {
+runtime_tracked_category() {
   local path="$1"
+  # These tracked artifacts have distinct operational meaning.  Keep this
+  # classification intentionally narrow: every path not recognised below is
+  # still a real source/config change and must remain visible as code dirty.
+  case "$path" in
+    setup_history_v3.csv|trades.csv)
+      printf 'CORE'
+      return 0
+      ;;
+    trade_loss_cases.csv|trade_loss_patterns.csv|walk_forward_windows.csv)
+      printf 'RESEARCH'
+      return 0
+      ;;
+  esac
+
   # The .gitignore exception is intentionally not hidden as runtime dirtiness.
   [[ "$path" == "reports/consistency_report.json" ]] && return 1
   case "$path" in
@@ -138,6 +152,7 @@ is_runtime_tracked_artifact() {
     signal_evaluation_report.json|shadow_replay_trades.csv|trade_metrics_audit.json|\
     trade_metrics_audit_summary.txt|normalized_trade_metrics.csv|\
     adaptive_research_state.json|.adaptive_research.lock|.watchdog.lock)
+      printf 'CORE'
       return 0
       ;;
   esac
@@ -189,6 +204,7 @@ is_runtime_tracked_artifact() {
     trend_momentum_conflict_report.json|trend_momentum_conflict_summary.txt|\
     trend_momentum_conflict_v2_report.json|trend_momentum_conflict_v2_summary.txt|\
     walk_forward_report.json|reports/walk_forward.json|reports/signal_quality_summary.txt)
+      printf 'RESEARCH'
       return 0
       ;;
   esac
@@ -337,36 +353,63 @@ git_branch="$(git -C "$PRODUCTION_ROOT" branch --show-current 2>/dev/null || tru
 git_head="$(git -C "$PRODUCTION_ROOT" rev-parse --short HEAD 2>/dev/null || true)"
 git_subject="$(git -C "$PRODUCTION_ROOT" log -1 --format=%s 2>/dev/null || true)"
 if tracked_diff="$(git -C "$PRODUCTION_ROOT" diff --name-only --no-renames HEAD 2>/dev/null)"; then
-  code_paths=()
-  runtime_paths=()
+  unknown_paths=()
+  core_runtime_paths=()
+  research_runtime_paths=()
+  trade_journal_changed="NO"
+  walk_forward_changed="NO"
   while IFS= read -r path; do
     [[ -n "$path" ]] || continue
-    if is_runtime_tracked_artifact "$path"; then
-      runtime_paths+=("$path")
-    else
-      code_paths+=("$path")
-    fi
+    category="$(runtime_tracked_category "$path" || true)"
+    case "$category" in
+      CORE)
+        core_runtime_paths+=("$path")
+        [[ "$path" == "trades.csv" ]] && trade_journal_changed="YES"
+        ;;
+      RESEARCH)
+        research_runtime_paths+=("$path")
+        [[ "$path" == "walk_forward_windows.csv" ]] && walk_forward_changed="YES"
+        ;;
+      *) unknown_paths+=("$path") ;;
+    esac
   done <<<"$tracked_diff"
-  if (( ${#code_paths[@]} > 0 )); then
+  if (( ${#unknown_paths[@]} > 0 )); then
     code_dirty_state="YES"
   else
     code_dirty_state="NO"
   fi
 else
   code_dirty_state="UNKNOWN"
-  code_paths=()
-  runtime_paths=()
+  unknown_paths=()
+  core_runtime_paths=()
+  research_runtime_paths=()
+  trade_journal_changed="UNKNOWN"
+  walk_forward_changed="NO"
   add_degraded "Git tracked diff unavailable"
 fi
 printf 'Branch: %s\n' "${git_branch:-UNKNOWN}"
 printf 'HEAD: %s%s\n' "${git_head:-UNKNOWN}" "${git_subject:+ $git_subject}"
 printf 'Code dirty: %s\n' "$code_dirty_state"
-if (( ${#code_paths[@]} > 0 )); then
-  printf 'Code changes: %s\n' "$(bounded_path_list "${code_paths[@]}")"
+printf 'Core runtime tracked changes: %s\n' "${#core_runtime_paths[@]}"
+if (( ${#core_runtime_paths[@]} > 0 )); then
+  printf 'Core runtime paths: %s\n' "$(bounded_path_list "${core_runtime_paths[@]}")"
 fi
-printf 'Runtime tracked changes: %s\n' "${#runtime_paths[@]}"
-if (( ${#runtime_paths[@]} > 0 )); then
-  printf 'Runtime paths: %s\n' "$(bounded_path_list "${runtime_paths[@]}")"
+printf 'Research runtime tracked changes: %s\n' "${#research_runtime_paths[@]}"
+if (( ${#research_runtime_paths[@]} > 0 )); then
+  printf 'Research runtime paths: %s\n' "$(bounded_path_list "${research_runtime_paths[@]}")"
+fi
+printf 'Unknown tracked changes: %s\n' "${#unknown_paths[@]}"
+if (( ${#unknown_paths[@]} > 0 )); then
+  printf 'Unknown tracked paths: %s\n' "$(bounded_path_list "${unknown_paths[@]}")"
+fi
+printf 'Trade journal modified: %s\n' "$trade_journal_changed"
+if [[ "$walk_forward_changed" == "YES" ]]; then
+  walk_forward_age="$(safe_file_age "$PRODUCTION_ROOT/walk_forward_windows.csv" 2>/dev/null || true)"
+  if [[ -n "$walk_forward_age" ]]; then
+    printf 'Walk-Forward output changed: VERIFY_AUTHORIZED_RUN (%ss ago)\n' "$walk_forward_age"
+  else
+    echo 'Walk-Forward output changed: VERIFY_AUTHORIZED_RUN'
+  fi
 fi
 [[ "$code_dirty_state" == "YES" ]] && add_degraded "tracked source/config changes present"
 [[ -n "$git_branch" && -n "$git_head" ]] || add_degraded "Git metadata unavailable"

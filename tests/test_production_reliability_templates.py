@@ -301,7 +301,9 @@ def test_observability_reports_compact_healthy_surface_and_reuses_evidence_watch
     assert result.returncode == 0
     assert "HEAD: abcdef0 observability subject" in result.stdout
     assert "Code dirty: NO" in result.stdout
-    assert "Runtime tracked changes: 0" in result.stdout
+    assert "Core runtime tracked changes: 0" in result.stdout
+    assert "Research runtime tracked changes: 0" in result.stdout
+    assert "Unknown tracked changes: 0" in result.stdout
     assert "Research status: 10s" in result.stdout
     assert "Cycle: 1800ms | tracked: 6 | ticker calls: 6" in result.stdout
     assert "History append: 2 | compaction: False | bytes: 1638900" in result.stdout
@@ -326,11 +328,12 @@ def test_observability_separates_recognized_runtime_changes_from_code_dirtiness(
     source_code = _run_observability(tmp_path, FAKE_CODE_TRACKED="live_monitor/monitor.py")
 
     assert "Code dirty: NO" in runtime_only.stdout
-    assert "Runtime tracked changes: 8" in runtime_only.stdout
-    assert "Runtime paths: active_setups_v3.json, bot_config.json, confidence_sl_quality_d_dry_run.csv" in runtime_only.stdout
+    assert "Core runtime tracked changes: 8" in runtime_only.stdout
+    assert "Core runtime paths: active_setups_v3.json, bot_config.json, confidence_sl_quality_d_dry_run.csv" in runtime_only.stdout
+    assert "Unknown tracked changes: 0" in runtime_only.stdout
     assert "Production: HEALTHY" in runtime_only.stdout
     assert "Code dirty: YES" in source_code.stdout
-    assert "Code changes: live_monitor/monitor.py" in source_code.stdout
+    assert "Unknown tracked paths: live_monitor/monitor.py" in source_code.stdout
     assert "Production: DEGRADED" in source_code.stdout
 
 
@@ -352,16 +355,63 @@ def test_observability_classifies_documented_runtime_catalog_without_hiding_sour
     )
 
     assert "Code dirty: NO" in known_runtime.stdout
-    assert "Runtime tracked changes: 8" in known_runtime.stdout
-    assert "Runtime paths: decision_debug.csv, signals_v3.csv, market_news_observer.log" in known_runtime.stdout
+    assert "Core runtime tracked changes: 6" in known_runtime.stdout
+    assert "Core runtime paths: decision_debug.csv, signals_v3.csv, market_news_observer.log" in known_runtime.stdout
+    assert "Research runtime tracked changes: 2" in known_runtime.stdout
+    assert "Research runtime paths: strategy_experiments_report.json, market_intelligence_summary.txt" in known_runtime.stdout
     assert "Production: HEALTHY" in known_runtime.stdout
     assert "Code dirty: YES" in unknown_reports.stdout
-    assert "Runtime tracked changes: 0" in unknown_reports.stdout
+    assert "Core runtime tracked changes: 0" in unknown_reports.stdout
+    assert "Research runtime tracked changes: 0" in unknown_reports.stdout
     assert (
-        "Code changes: custom_runtime_report.json, custom_runtime_summary.txt, "
+        "Unknown tracked paths: custom_runtime_report.json, custom_runtime_summary.txt, "
         "reports/consistency_report.json"
     ) in unknown_reports.stdout
     assert "Production: DEGRADED" in unknown_reports.stdout
+
+
+def test_observability_classifies_tracked_journal_and_research_artifacts_without_hiding_unknown_code(tmp_path: Path):
+    runtime_only = _run_observability(
+        tmp_path,
+        FAKE_RUNTIME_TRACKED=(
+            "trades.csv\nsetup_history_v3.csv\ntrade_loss_cases.csv\n"
+            "trade_loss_patterns.csv\nwalk_forward_windows.csv"
+        ),
+    )
+    mixed = _run_observability(
+        tmp_path,
+        FAKE_RUNTIME_TRACKED="trades.csv\nwalk_forward_windows.csv",
+        FAKE_CODE_TRACKED="research_lab_v2/config.py",
+    )
+
+    assert runtime_only.returncode == 0
+    assert "Code dirty: NO" in runtime_only.stdout
+    assert "Core runtime tracked changes: 2" in runtime_only.stdout
+    assert "Core runtime paths: trades.csv, setup_history_v3.csv" in runtime_only.stdout
+    assert "Research runtime tracked changes: 3" in runtime_only.stdout
+    assert "Research runtime paths: trade_loss_cases.csv, trade_loss_patterns.csv, walk_forward_windows.csv" in runtime_only.stdout
+    assert "Trade journal modified: YES" in runtime_only.stdout
+    assert "Walk-Forward output changed: VERIFY_AUTHORIZED_RUN" in runtime_only.stdout
+    assert "Production: HEALTHY" in runtime_only.stdout
+
+    assert "Code dirty: YES" in mixed.stdout
+    assert "Unknown tracked changes: 1" in mixed.stdout
+    assert "Unknown tracked paths: research_lab_v2/config.py" in mixed.stdout
+    assert "Trade journal modified: YES" in mixed.stdout
+    assert "Walk-Forward output changed: VERIFY_AUTHORIZED_RUN" in mixed.stdout
+    assert "Production: DEGRADED" in mixed.stdout
+
+
+def test_observability_bounds_each_runtime_class_path_list(tmp_path: Path):
+    core_paths = "\n".join(("trades.csv", "setup_history_v3.csv") * 5)
+    research_paths = "\n".join(("trade_loss_cases.csv", "trade_loss_patterns.csv") * 5)
+    result = _run_observability(tmp_path, FAKE_RUNTIME_TRACKED=f"{core_paths}\n{research_paths}")
+
+    assert result.returncode == 0
+    assert "Core runtime tracked changes: 10" in result.stdout
+    assert "Research runtime tracked changes: 10" in result.stdout
+    assert result.stdout.count("trades.csv") < 8
+    assert result.stdout.count("trade_loss_cases.csv") < 8
 
 
 def test_observability_prefers_root_live_monitor_log_and_parses_actual_telemetry(tmp_path: Path):

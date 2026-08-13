@@ -149,11 +149,15 @@ the monitor's `status`, cycle, ticker, history, and cache fields. Decimal
 the newest fully valid event in the bounded tail. Process CPU is explicitly a
 snapshot, and does not by itself set the Performance verdict.
 
-The report distinguishes `Code dirty` from `Runtime tracked changes`. Some
-older deployments still track generated snapshots, dry-run CSVs, notification
-state, and logs. Those documented runtime artifacts are listed separately and
-do not degrade the stack; unknown tracked paths remain code/config changes and
-do degrade the report. Both path lists are bounded and never changed.
+The report distinguishes `Code dirty` from `Core runtime tracked changes` and
+`Research runtime tracked changes`. Some older deployments still track
+generated snapshots, dry-run CSVs, notification state, journals, and logs.
+Those documented runtime artifacts are listed separately and do not degrade
+the stack; unknown tracked paths remain code/config changes and do degrade the
+report. `trades.csv` remains visible as `Trade journal modified`, rather than
+being hidden. A changed `walk_forward_windows.csv` emits
+`VERIFY_AUTHORIZED_RUN`; it does not start Walk-Forward or mark a current
+pipeline regression. All path lists are bounded and never changed.
 
 Research status freshness is printed once with a seconds suffix. Evidence
 milestones are supplied by the canonical `evidence_watch_progress` helper:
