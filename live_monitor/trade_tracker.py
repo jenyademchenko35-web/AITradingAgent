@@ -49,7 +49,10 @@ class TrackedInstrument:
 
 def read_csv_tail(path: Path, limit: int = 500) -> list[dict[str, str]]:
     """Read a small CSV tail."""
-    if not path.exists() or path.stat().st_size == 0:
+    try:
+        if not path.exists() or path.stat().st_size == 0:
+            return []
+    except OSError:
         return []
     try:
         with path.open("r", encoding="utf-8", newline="") as file:
@@ -73,7 +76,10 @@ def read_csv_rows(path: Path) -> list[dict[str, str]]:
     Open positions can be older than the compact tail used for signal files, so
     the trades source must be scanned in full just like the main agent does.
     """
-    if not path.exists() or path.stat().st_size == 0:
+    try:
+        if not path.exists() or path.stat().st_size == 0:
+            return []
+    except OSError:
         return []
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as file:
@@ -110,7 +116,10 @@ def has_any_column(row: Mapping[str, Any], *names: str) -> bool:
 
 def read_json(path: Path) -> dict[str, Any]:
     """Read JSON safely."""
-    if not path.exists() or path.stat().st_size == 0:
+    try:
+        if not path.exists() or path.stat().st_size == 0:
+            return {}
+    except OSError:
         return {}
     try:
         with path.open("r", encoding="utf-8") as file:
@@ -137,6 +146,9 @@ class TradeTracker:
 
     def __init__(self, trades_file: Path = TRADES_FILE) -> None:
         self.trades_file = Path(trades_file)
+        self._source_cache: dict[Path, tuple[tuple[int, int] | None, Any]] = {}
+        self._cache_hits = 0
+        self._cache_misses = 0
         self.trade_diagnostics: dict[str, Any] = {
             "source": str(self.trades_file),
             "exists": self.trades_file.exists(),
@@ -145,8 +157,36 @@ class TradeTracker:
             "warning": "",
         }
 
+    @property
+    def cache_diagnostics(self) -> dict[str, int]:
+        """Return per-cycle source cache counters for observer telemetry."""
+        return {"hits": self._cache_hits, "misses": self._cache_misses}
+
+    @staticmethod
+    def _fingerprint(path: Path) -> tuple[int, int] | None:
+        """Return a cheap change detector without reading file contents."""
+        try:
+            stat = path.stat()
+        except OSError:
+            return None
+        return stat.st_mtime_ns, stat.st_size
+
+    def _cached_source(self, path: Path, loader: Any) -> Any:
+        """Reuse parsed read-only source data until its stat fingerprint changes."""
+        fingerprint = self._fingerprint(path)
+        cached = self._source_cache.get(path)
+        if cached is not None and cached[0] == fingerprint:
+            self._cache_hits += 1
+            return cached[1]
+        self._cache_misses += 1
+        value = loader(path)
+        self._source_cache[path] = (fingerprint, value)
+        return value
+
     def collect_targets(self) -> list[TrackedInstrument]:
         """Return unique instruments to monitor."""
+        self._cache_hits = 0
+        self._cache_misses = 0
         targets: list[TrackedInstrument] = []
         targets.extend(self.open_trades())
         existing = {item.symbol for item in targets}
@@ -160,7 +200,7 @@ class TradeTracker:
     def open_trades(self) -> list[TrackedInstrument]:
         """Return active rows from the exact trades source used by the agent."""
         exists = self.trades_file.exists()
-        rows = read_csv_rows(self.trades_file)
+        rows = self._cached_source(self.trades_file, read_csv_rows)
         targets: list[TrackedInstrument] = []
         for raw_row in rows:
             row = normalized_row(raw_row)
@@ -221,7 +261,9 @@ class TradeTracker:
 
     def strong_candidates(self) -> list[TrackedInstrument]:
         """Return HIGH PRIORITY, SETUP and up to 3 NEAR SETUP candidates."""
-        latest = latest_by_symbol(read_csv_tail(DEBUG_FILE) or read_csv_tail(SIGNALS_FILE))
+        debug_rows = self._cached_source(DEBUG_FILE, read_csv_tail)
+        signal_rows = debug_rows or self._cached_source(SIGNALS_FILE, read_csv_tail)
+        latest = latest_by_symbol(signal_rows)
         if not latest:
             latest = self.active_setup_rows()
         ranked = rank_candidates(latest.values())
@@ -253,7 +295,7 @@ class TradeTracker:
 
     def active_setup_rows(self) -> dict[str, dict[str, str]]:
         """Return active setup JSON rows as candidate-like mappings."""
-        payload = read_json(ACTIVE_SETUPS_FILE)
+        payload = self._cached_source(ACTIVE_SETUPS_FILE, read_json)
         rows = {}
         for key, value in payload.items():
             if not isinstance(value, Mapping):

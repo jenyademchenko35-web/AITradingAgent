@@ -36,6 +36,7 @@ class LiveMarketMonitor:
 
     def run_once(self) -> dict[str, Any]:
         """Collect targets, prices and persist state once."""
+        cycle_started = time.monotonic()
         timestamp = utc_now()
         targets = self.tracker.collect_targets()
         self.log_trade_diagnostics()
@@ -60,6 +61,10 @@ class LiveMarketMonitor:
             provider_label=provider_label,
             timestamp=timestamp,
         )
+        history = self.state_manager.append_history(self.history_rows(timestamp, items))
+        if history.error:
+            self.state_manager.log(f"{timestamp} WARNING {history.error}")
+        cache = self.tracker.cache_diagnostics
         state = {
             "generated_at": timestamp,
             "status": status,
@@ -74,16 +79,31 @@ class LiveMarketMonitor:
             "last_error_at": last_error_at,
             "items": items,
             "roles": self.role_counts(items),
+            "telemetry": {
+                "cycle_duration_ms": round((time.monotonic() - cycle_started) * 1000, 1),
+                "tracked_symbols": len(symbols),
+                "ticker_calls": len(symbols),
+                "history_rows_appended": history.rows_appended,
+                "history_compaction_performed": history.compaction_performed,
+                "history_file_size_bytes": history.file_size_bytes,
+                "source_cache_hits": cache["hits"],
+                "source_cache_misses": cache["misses"],
+            },
             "restrictions": [
                 "Live Monitor read-only.",
                 "DecisionEngine, сделки, SL/TP и торговая логика не меняются.",
             ],
         }
         self.state_manager.write_state(state)
-        self.state_manager.append_history(self.history_rows(timestamp, items))
+        cycle_duration_ms = round((time.monotonic() - cycle_started) * 1000, 1)
         self.state_manager.log(
             f"{timestamp} status={status} provider={provider_label} "
-            f"tracked={len(targets)} priced={priced_count}"
+            f"tracked={len(targets)} priced={priced_count} "
+            f"cycle_ms={cycle_duration_ms} ticker_calls={len(symbols)} "
+            f"history_appended={history.rows_appended} "
+            f"history_compacted={history.compaction_performed} "
+            f"history_bytes={history.file_size_bytes} "
+            f"cache_hits={cache['hits']} cache_misses={cache['misses']}"
         )
         return state
 
