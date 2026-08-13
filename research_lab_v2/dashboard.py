@@ -13,6 +13,7 @@ from .database import ResearchDatabase
 from .health import build_research_health
 from .integrity import evaluate_integrity
 from .runtime import SHADOW_BOOK_FILE, SHADOW_HISTORY_FILE, load_runtime_status
+from .trace_outcome import current_pipeline_summary
 
 
 def _rows(path: Path, query: str) -> list[dict[str, Any]]:
@@ -74,6 +75,7 @@ class ResearchDashboardV2:
         ledger = self._shadow_ledger()
         reconciliation = database.outcome_reconciliation(ledger["closed"])
         integrity = evaluate_integrity(database, ledger=ledger["closed"], artifact_path=self.path.parent / "research_data_integrity.json")
+        pipeline_progress = current_pipeline_summary(self.path)
         top = _rows(self.path, """
             WITH latest AS (
               SELECT strategy_id, MAX(id) id FROM strategy_metrics GROUP BY strategy_id
@@ -164,7 +166,8 @@ class ResearchDashboardV2:
         health = build_research_health(
             evidence={row["strategy_id"]: row for row in top},
             feature_coverage=feature_coverage, runtime_status=runtime_status,
-            database_path=self.path, outcome_sync=reconciliation, integrity=integrity, **artifact_times,
+            database_path=self.path, outcome_sync=reconciliation, integrity=integrity,
+            pipeline_progress=pipeline_progress, **artifact_times,
         )
         return {
             "top_strategies": top, "top_features": positive, "worst_features": negative,
@@ -181,6 +184,7 @@ class ResearchDashboardV2:
             "feature_analysis": feature_analysis,
             "research_health": health,
             "research_data_integrity": integrity,
+            "current_attribution_pipeline": pipeline_progress,
         }
 
     def format(self, section: str = "top") -> str:
@@ -302,6 +306,12 @@ class ResearchDashboardV2:
             integrity = health.get("data_integrity", {})
             gates = health.get("gates", {})
             checks = integrity.get("checks", {})
+            watch = health.get("evidence_watch", {})
+            next_milestone = watch.get("next_milestone")
+            next_text = (
+                f"{next_milestone.get('label')} — {next_milestone.get('progress')}/{next_milestone.get('target')}"
+                if isinstance(next_milestone, dict) else "all informational milestones reached"
+            )
             return "\n".join([
                 "Research Data Integrity",
                 f"State: {health.get('state', 'DATA_DEGRADED')}",
@@ -322,6 +332,14 @@ class ResearchDashboardV2:
                 f"Closed evidence: {counts['with_closed_evidence']}",
                 f"Ready for comparison: {counts['ready_for_comparison']}",
                 f"Walk-forward candidates: {counts['walk_forward_candidates']}",
+                "",
+                "Current pipeline:",
+                f"Fully joined: {watch.get('fully_joined', 0)}",
+                f"Partial/Broken: {watch.get('partial', 0)}/{watch.get('broken', 0)}",
+                f"Join coverage: {watch.get('join_coverage_pct', 0)}%",
+                f"Current pipeline regression: {'YES' if watch.get('current_pipeline_regression') else 'NO'}",
+                f"Next milestone: {next_text}",
+                f"Historical debt: {watch.get('historical_unresolved', 0)} unresolved",
                 "Degraded: " + (", ".join(health['stale_or_degraded']) or "none"),
             ])
         return json.dumps(report, ensure_ascii=False, indent=2, default=str)

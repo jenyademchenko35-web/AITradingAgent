@@ -26,6 +26,36 @@ PIPELINE_AUDIT_V1 = {
 }
 
 
+EVIDENCE_MILESTONES = (
+    ("FIRST_OUTCOME", "First E2E outcome", 1),
+    ("PIPELINE_SAMPLE", "Pipeline sample", 5),
+    ("EXPLORATORY_FEATURES", "Exploratory features", 20),
+    ("RANKING_EVIDENCE", "Ranking evidence", 50),
+    ("STRONGER_RANKING", "Stronger ranking", 100),
+)
+
+
+def evidence_watch_progress(pipeline: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Return informational milestones from canonical trace results only."""
+    pipeline = dict(pipeline or {})
+    fully_joined = max(0, int(pipeline.get("fully_joined", 0) or 0))
+    achieved = [name for name, _label, target in EVIDENCE_MILESTONES if fully_joined >= target]
+    next_item = next(((name, label, target) for name, label, target in EVIDENCE_MILESTONES if fully_joined < target), None)
+    return {
+        "fully_joined": fully_joined,
+        "partial": max(0, int(pipeline.get("partial", 0) or 0)),
+        "broken": max(0, int(pipeline.get("broken", 0) or 0)),
+        "historical_unresolved": max(0, int(pipeline.get("historical_unresolved", 0) or 0)),
+        "join_coverage_pct": pipeline.get("join_coverage_pct", 0.0),
+        "current_pipeline_regression": bool(pipeline.get("current_pipeline_regression")),
+        "achieved_milestones": achieved,
+        "next_milestone": (
+            {"name": next_item[0], "label": next_item[1], "target": next_item[2], "progress": fully_joined}
+            if next_item else None
+        ),
+    }
+
+
 def _age_seconds(value: str | None, now: datetime) -> float | None:
     if not value:
         return None
@@ -44,6 +74,7 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
                           database_path: Path,
                           outcome_sync: Mapping[str, Any] | None = None,
                           integrity: Mapping[str, Any] | None = None,
+                          pipeline_progress: Mapping[str, Any] | None = None,
                           feature_updated_at: str | None = None,
                           candidate_updated_at: str | None = None,
                           walk_forward_updated_at: str | None = None) -> dict[str, Any]:
@@ -76,6 +107,7 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
         if age is None:
             stale.append(f"{label}_not_run")
     integrity = dict(integrity or {})
+    evidence_watch = evidence_watch_progress(pipeline_progress)
     return {
         **PIPELINE_AUDIT_V1,
         "generated_at": now.isoformat(),
@@ -104,6 +136,7 @@ def build_research_health(*, evidence: Mapping[str, Mapping[str, Any]],
         },
         "stale_or_degraded": stale,
         "data_integrity": integrity,
+        "evidence_watch": evidence_watch,
         "state": integrity.get("state", "DATA_DEGRADED"),
         "gates": dict(integrity.get("gates", {
             "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,

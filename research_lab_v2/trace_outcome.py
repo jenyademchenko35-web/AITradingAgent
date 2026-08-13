@@ -209,6 +209,72 @@ def _trace_one(outcome: Mapping[str, Any], run: Mapping[str, Any] | None) -> dic
     }
 
 
+def _current_pipeline_rows(connection: sqlite3.Connection) -> tuple[list[dict[str, Any]], dict[int, dict[str, Any]], int]:
+    """Load the canonical attribution epoch from an explicitly read-only connection."""
+    outcomes = [dict(row) for row in connection.execute(
+        "SELECT * FROM shadow_trade_outcomes WHERE attribution_version=? "
+        "ORDER BY exit_time DESC, shadow_trade_id DESC",
+        (CURRENT_ATTRIBUTION_VERSION,),
+    ).fetchall()]
+    source_run_ids = [row.get("source_run_id") for row in outcomes if row.get("source_run_id") is not None]
+    runs = {
+        int(row["id"]): dict(row) for row in connection.execute(
+            "SELECT * FROM strategy_runs WHERE id IN (" + ",".join("?" for _ in source_run_ids) + ")",
+            source_run_ids,
+        ).fetchall()
+    } if source_run_ids else {}
+    historical_unresolved = int(connection.execute(
+        "SELECT COUNT(*) FROM shadow_trade_outcomes "
+        "WHERE attribution_version IS NOT ? AND join_status='UNRESOLVED'",
+        (CURRENT_ATTRIBUTION_VERSION,),
+    ).fetchone()[0])
+    return outcomes, runs, historical_unresolved
+
+
+def current_pipeline_summary(database_path: str | Path) -> dict[str, Any]:
+    """Aggregate the existing trace verdicts for the current attribution epoch.
+
+    This is a read-only presentation helper.  It intentionally reuses
+    ``_trace_one`` rather than inferring completeness from a second set of
+    integrity rules.
+    """
+    path = Path(database_path)
+    summary: dict[str, Any] = {
+        "tool": "research_attribution_trace_v1", "read_only": True,
+        "attribution_epoch": "CURRENT_ATTRIBUTION_PIPELINE",
+        "status": "DATABASE_NOT_FOUND", "historical_unresolved": 0,
+        "fully_joined": 0, "partial": 0, "broken": 0,
+        "outcomes_checked": 0, "join_coverage_pct": 0.0,
+        "current_pipeline_regression": False,
+    }
+    if not path.is_file():
+        return summary
+    try:
+        with _ro_connection(path) as connection:
+            tables = {str(row[0]) for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if not {"shadow_trade_outcomes", "strategy_runs"}.issubset(tables):
+                return {**summary, "status": "SCHEMA_UNAVAILABLE"}
+            outcomes, runs, historical_unresolved = _current_pipeline_rows(connection)
+    except (OSError, sqlite3.Error, ValueError) as exc:
+        return {**summary, "status": "READ_ERROR", "error": type(exc).__name__}
+
+    results = Counter(
+        _trace_one(row, runs.get(row.get("source_run_id"))).get("result")
+        for row in outcomes
+    )
+    total = len(outcomes)
+    fully_joined = results["FULLY_JOINED"]
+    partial = results["PARTIAL"]
+    broken = results["BROKEN"]
+    return {
+        **summary, "status": "OK", "historical_unresolved": historical_unresolved,
+        "fully_joined": fully_joined, "partial": partial, "broken": broken,
+        "outcomes_checked": total,
+        "join_coverage_pct": round(fully_joined / total * 100, 2) if total else 0.0,
+        "current_pipeline_regression": bool(partial or broken),
+    }
+
+
 def trace_outcomes(database_path: str | Path, *, latest: int = 5) -> dict[str, Any]:
     """Inspect current-epoch outcomes using a SQLite read-only connection only."""
     path = Path(database_path)
@@ -224,24 +290,11 @@ def trace_outcomes(database_path: str | Path, *, latest: int = 5) -> dict[str, A
             tables = {str(row[0]) for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if not {"shadow_trade_outcomes", "strategy_runs"}.issubset(tables):
                 return {**report, "status": "SCHEMA_UNAVAILABLE", "summary": {"outcomes_checked": 0}}
-            outcomes = [dict(row) for row in connection.execute(
-                "SELECT * FROM shadow_trade_outcomes WHERE attribution_version=? "
-                "ORDER BY exit_time DESC, shadow_trade_id DESC LIMIT ?",
-                (CURRENT_ATTRIBUTION_VERSION, max(0, int(latest))),
-            ).fetchall()]
-            historical_unresolved = int(connection.execute(
-                "SELECT COUNT(*) FROM shadow_trade_outcomes "
-                "WHERE attribution_version IS NOT ? AND join_status='UNRESOLVED'",
-                (CURRENT_ATTRIBUTION_VERSION,),
-            ).fetchone()[0])
+            all_outcomes, all_runs, historical_unresolved = _current_pipeline_rows(connection)
+            outcomes = all_outcomes[:max(0, int(latest))]
             duplicate_trade_ids = _duplicates(connection, "shadow_trade_id")
             duplicate_outcome_ids = _duplicates(connection, "outcome_id")
-            runs = {
-                int(row["id"]): dict(row) for row in connection.execute(
-                    "SELECT * FROM strategy_runs WHERE id IN (" + ",".join("?" for _ in outcomes) + ")",
-                    [row.get("source_run_id") for row in outcomes],
-                ).fetchall()
-            } if outcomes else {}
+            runs = all_runs
     except (OSError, sqlite3.Error, ValueError) as exc:
         return {**report, "status": "READ_ERROR", "error": type(exc).__name__, "summary": {"outcomes_checked": 0}}
 
