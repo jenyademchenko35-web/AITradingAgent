@@ -205,8 +205,13 @@ def _run_observability(tmp_path: Path, **overrides: str) -> subprocess.Completed
         (logs / "live_monitor.log").write_text(
             overrides.get("telemetry_lines", telemetry) + "\n", encoding="utf-8"
         )
+    if overrides.get("root_telemetry"):
+        (production_root / "live_monitor.log").write_text(
+            overrides["root_telemetry"] + "\n", encoding="utf-8"
+        )
     if overrides.get("error_tail"):
-        (logs / "launchd_market_error.log").write_text(overrides["error_tail"] + "\n", encoding="utf-8")
+        service = overrides.get("error_service", "market")
+        (logs / f"launchd_{service}_error.log").write_text(overrides["error_tail"] + "\n", encoding="utf-8")
 
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir(exist_ok=True)
@@ -232,7 +237,9 @@ def _run_observability(tmp_path: Path, **overrides: str) -> subprocess.Completed
                       "  branch) echo 'telegram-ui-v2-miniapp' ;;\n"
                       "  rev-parse) echo 'abcdef0' ;;\n"
                       "  log) echo 'observability subject' ;;\n"
-                      "  status) [[ \"${FAKE_GIT_STATUS_FAIL:-0}\" == \"1\" ]] && exit 1; [[ \"${FAKE_DIRTY:-0}\" == \"1\" ]] && echo ' M tracked.py'; exit 0 ;;\n"
+                      "  status) [[ \"${FAKE_GIT_STATUS_FAIL:-0}\" == \"1\" ]] && exit 1; "
+                      "[[ \"${FAKE_DIRTY:-0}\" == \"1\" ]] && { echo ' M tracked.py'; exit 0; }; "
+                      "if [[ \"${FAKE_UNTRACKED:-0}\" == \"1\" && \"$*\" != *\"--untracked-files=no\"* ]]; then echo '?? runtime.json'; fi; exit 0 ;;\n"
                       "  *) exit 2 ;;\n"
                       "esac\n")
     _write_executable(fake_bin / "date", "#!/bin/bash\n"
@@ -278,7 +285,7 @@ def _run_observability(tmp_path: Path, **overrides: str) -> subprocess.Completed
         environment["PYTHONPATH"] = str(ROOT) + os.pathsep + environment.get("PYTHONPATH", "")
     environment.update({
         key: value for key, value in overrides.items()
-        if key not in {"telemetry", "telemetry_lines", "error_tail", "run_cwd"}
+        if key not in {"telemetry", "telemetry_lines", "root_telemetry", "error_tail", "error_service", "run_cwd"}
     })
     run_cwd = Path(overrides.get("run_cwd", str(ROOT)))
     run_cwd.mkdir(exist_ok=True)
@@ -294,6 +301,7 @@ def test_observability_reports_compact_healthy_surface_and_reuses_evidence_watch
     assert result.returncode == 0
     assert "HEAD: abcdef0 observability subject" in result.stdout
     assert "Dirty tracked: NO" in result.stdout
+    assert "Research status: 10s" in result.stdout
     assert "Cycle: 1800ms | tracked: 6 | ticker calls: 6" in result.stdout
     assert "History append: 2 | compaction: False | bytes: 1638900" in result.stdout
     assert "Latest agent cycle: 2026-08-13T12:00:00Z" in result.stdout
@@ -302,6 +310,48 @@ def test_observability_reports_compact_healthy_surface_and_reuses_evidence_watch
     assert "Historical debt: 22" in result.stdout
     assert "Production: HEALTHY" in result.stdout
     assert "Research: WAITING_FOR_EVIDENCE" in result.stdout
+    assert "Performance: NORMAL" in result.stdout
+
+
+def test_observability_dirty_tracked_excludes_untracked_generated_artifacts(tmp_path: Path):
+    clean = _run_observability(tmp_path, FAKE_UNTRACKED="1")
+    dirty = _run_observability(tmp_path, FAKE_DIRTY="1")
+
+    assert "Dirty tracked: NO" in clean.stdout
+    assert "Tracked changes:" not in clean.stdout
+    assert "Dirty tracked: YES" in dirty.stdout
+    assert "Tracked changes: tracked.py" in dirty.stdout
+
+
+def test_observability_prefers_root_live_monitor_log_and_parses_actual_telemetry(tmp_path: Path):
+    result = _run_observability(
+        tmp_path,
+        telemetry="malformed fallback telemetry",
+        root_telemetry=(
+            "2026-08-13T12:00:00Z status=ONLINE tracked=6 priced=6 cycle_ms=1800 "
+            "ticker_calls=6 history_appended=2 history_compacted=False history_bytes=1638900 "
+            "cache_hits=2 cache_misses=0"
+        ),
+    )
+
+    assert result.returncode == 0
+    assert "Cycle: 1800ms | tracked: 6 | ticker calls: 6" in result.stdout
+    assert "Telemetry: unavailable" not in result.stdout
+
+
+def test_observability_accepts_production_telemetry_without_optional_tracked(tmp_path: Path):
+    result = _run_observability(
+        tmp_path,
+        telemetry=(
+            "status=ONLINE cycle_ms=1800 ticker_calls=6 history_appended=2 "
+            "history_compacted=False history_bytes=1638900 cache_hits=2 cache_misses=0"
+        ),
+    )
+
+    assert result.returncode == 0
+    assert "Cycle: 1800ms | tracked: — | ticker calls: 6" in result.stdout
+    assert "History append: 2 | compaction: False | bytes: 1638900" in result.stdout
+    assert "Telemetry: unavailable" not in result.stdout
     assert "Performance: NORMAL" in result.stdout
 
 
@@ -349,7 +399,7 @@ def test_observability_marks_partial_or_non_numeric_telemetry_as_observe(tmp_pat
         ),
     )
 
-    assert "Telemetry: unavailable (missing tracked)" in partial.stdout
+    assert "Telemetry: unavailable (missing ticker_calls)" in partial.stdout
     assert "Performance: OBSERVE" in partial.stdout
     assert "Telemetry: unavailable (non-numeric cycle_ms)" in non_numeric.stdout
     assert "Performance: OBSERVE" in non_numeric.stdout
@@ -363,6 +413,70 @@ def test_observability_separates_historical_debt_from_current_regression(tmp_pat
     assert "Research: WAITING_FOR_EVIDENCE" in healthy.stdout
     assert "Partial/Broken: 1/0" in regression.stdout
     assert "Research: CURRENT_PIPELINE_REGRESSION" in regression.stdout
+
+
+@pytest.mark.parametrize(
+    ("fully_joined", "label", "progress", "target"),
+    [
+        (0, "First E2E outcome", 0, 1),
+        (1, "Pipeline sample", 1, 5),
+        (5, "Exploratory features", 5, 20),
+        (20, "Ranking evidence", 20, 50),
+        (50, "Stronger ranking", 50, 100),
+    ],
+)
+def test_observability_shows_canonical_next_evidence_milestone(
+    tmp_path: Path, fully_joined: int, label: str, progress: int, target: int,
+):
+    result = _run_observability(
+        tmp_path,
+        FAKE_RESEARCH_EVIDENCE=f"OK|22|{fully_joined}|0|0|False|{label}|{progress}|{target}",
+    )
+
+    assert result.returncode == 0
+    assert f"Next: {label} — {progress}/{target}" in result.stdout
+
+
+def test_observability_excludes_old_tail_errors_and_keeps_fresh_news_warning_noncritical(tmp_path: Path):
+    logs = tmp_path / "production" / "logs"
+    logs.mkdir(parents=True, exist_ok=True)
+    (logs / "launchd_telegram_error.log").write_text(
+        "1970-01-01T00:00:00Z ERROR Telegram Conflict old\n", encoding="utf-8"
+    )
+    result = _run_observability(
+        tmp_path,
+        error_tail="1970-01-01T00:33:00Z PARSER_ERROR Binance News current",
+        error_service="news",
+    )
+
+    assert result.returncode == 0
+    assert "Telegram Conflict old" not in result.stdout
+    assert "news: 1970-01-01T00:33:00Z PARSER_ERROR Binance News current" in result.stdout
+    assert "News: DEGRADED" in result.stdout
+    assert "Production: HEALTHY" in result.stdout
+
+
+def test_observability_surfaces_fresh_non_news_error_as_current_and_degraded(tmp_path: Path):
+    """A timestamped Agent/Market error must not be hidden by freshness filtering."""
+    result = _run_observability(
+        tmp_path,
+        error_tail="1970-01-01T00:33:00Z ERROR Agent current failure",
+        error_service="agent",
+    )
+
+    assert result.returncode == 0
+    assert "agent: 1970-01-01T00:33:00Z ERROR Agent current failure" in result.stdout
+    assert "Production: DEGRADED" in result.stdout
+    assert "fresh agent error tail finding" in result.stdout
+
+
+def test_observability_marks_timestamp_free_errors_as_unverified_without_claiming_freshness(tmp_path: Path):
+    result = _run_observability(tmp_path, error_tail="ERROR no timestamp available")
+
+    assert result.returncode == 0
+    assert "Current: None" in result.stdout
+    assert "Unverified historical tail:" in result.stdout
+    assert "market: ERROR no timestamp available" in result.stdout
 
 
 def test_observability_surfaces_read_only_research_projection_failure(tmp_path: Path):
@@ -432,7 +546,8 @@ def test_observability_reports_bounded_recent_tail_findings(tmp_path: Path):
     result = _run_observability(tmp_path, error_tail="ERROR bounded failure")
 
     assert result.returncode == 0
-    assert "Recent tail findings (timestamps not verified)" in result.stdout
+    assert "Recent tail findings" in result.stdout
+    assert "Unverified historical tail:" in result.stdout
     assert "market: ERROR bounded failure" in result.stdout
 
 
@@ -440,6 +555,8 @@ def test_observability_source_is_read_only_bounded_and_uses_canonical_helper():
     content = (SCRIPTS / "production_observability.sh").read_text(encoding="utf-8")
 
     assert "current_pipeline_summary" in content
+    assert "evidence_watch_progress" in content
+    assert '"$PRODUCTION_ROOT/live_monitor.log"' in content
     assert "tail -n \"$LOG_TAIL_LINES\"" in content
     assert "--untracked-files=no" in content
     assert "launchctl bootstrap" not in content

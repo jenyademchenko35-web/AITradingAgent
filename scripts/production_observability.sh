@@ -11,6 +11,7 @@ RUNTIME_MAX_AGE_SECONDS=900
 LIVE_MONITOR_MAX_AGE_SECONDS=30
 DEFAULT_LOG_TAIL_LINES=80
 MAX_LOG_TAIL_LINES=500
+CURRENT_ISSUE_WINDOW_SECONDS=1800
 raw_log_tail_lines="${OBSERVABILITY_LOG_TAIL_LINES:-$DEFAULT_LOG_TAIL_LINES}"
 if [[ ! "$raw_log_tail_lines" =~ ^[0-9]+$ ]] || (( 10#$raw_log_tail_lines == 0 )); then
   LOG_TAIL_LINES="$DEFAULT_LOG_TAIL_LINES"
@@ -24,6 +25,7 @@ LOG_DIR="${PRODUCTION_LOG_DIR:-$PRODUCTION_ROOT/logs}"
 degraded_reasons=()
 production_state="HEALTHY"
 performance_state="NORMAL"
+news_state="NORMAL"
 
 add_degraded() {
   degraded_reasons+=("$1")
@@ -67,17 +69,15 @@ resource_snapshot() {
 }
 
 latest_monitor_telemetry() {
-  local log="$LOG_DIR/live_monitor.log" line
-  if [[ ! -r "$log" ]]; then
-    printf 'unavailable'
-    return 0
-  fi
-  line="$(tail -n "$LOG_TAIL_LINES" "$log" 2>/dev/null | awk '/cycle_ms=/ {line=$0} END {print line}')"
-  if [[ -z "$line" ]]; then
-    printf 'unavailable'
-  else
-    printf '%s' "$line"
-  fi
+  local log line
+  # StateManager writes this log beside live_monitor_state.json.  Keep the
+  # logs/ fallback for older deployments without treating it as the primary.
+  for log in "$PRODUCTION_ROOT/live_monitor.log" "$LOG_DIR/live_monitor.log"; do
+    [[ -r "$log" ]] || continue
+    line="$(tail -n "$LOG_TAIL_LINES" "$log" 2>/dev/null | awk '/status=/ && /cycle_ms=/ {line=$0} END {print line}')"
+    [[ -n "$line" ]] && { printf '%s' "$line"; return 0; }
+  done
+  printf 'unavailable'
 }
 
 field_from_telemetry() {
@@ -94,10 +94,11 @@ research_evidence() {
   [[ -x "$python" ]] || { printf 'UNAVAILABLE|Research Python unavailable'; return 0; }
   [[ -f "$PRODUCTION_ROOT/research.db" ]] || { printf 'UNAVAILABLE|Research DB unavailable'; return 0; }
   if ! output="$(cd "$PRODUCTION_ROOT" 2>/dev/null && "$python" -c '
+from research_lab_v2.health import evidence_watch_progress
 from research_lab_v2.trace_outcome import current_pipeline_summary
 import sys
 report = current_pipeline_summary(sys.argv[1])
-next_item = report.get("next_milestone") or {}
+next_item = evidence_watch_progress(report).get("next_milestone") or {}
 print("|".join(str(report.get(key, "")) for key in (
     "status", "historical_unresolved", "fully_joined", "partial", "broken", "current_pipeline_regression"
 )) + "|" + str(next_item.get("label", "NONE")) + "|" + str(next_item.get("progress", 0)) + "|" + str(next_item.get("target", 0)))
@@ -125,16 +126,53 @@ except (OSError, ValueError, AttributeError):
 }
 
 recent_tail_findings() {
-  local found="" log name
+  local current="" unverified="" log name line timestamp epoch now age
+  now="$(date +%s 2>/dev/null || true)"
   for name in agent telegram market news runtime_publisher; do
     log="$LOG_DIR/launchd_${name}_error.log"
     [[ -r "$log" ]] || continue
-    found+="$(tail -n "$LOG_TAIL_LINES" "$log" 2>/dev/null | grep -E 'Traceback|ERROR|CRITICAL|Conflict|database is locked|NaN|Infinity' | tail -n 3 | sed "s#^#${name}: #")"$'\n'
+    while IFS= read -r line; do
+      [[ -n "$line" ]] || continue
+      timestamp="${line%%[[:space:]]*}"
+      if [[ "$timestamp" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]; then
+        epoch="$(python3 -c '
+from datetime import datetime, timezone
+import sys
+try:
+    parsed = datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("timezone required")
+    print(int(parsed.astimezone(timezone.utc).timestamp()))
+except (TypeError, ValueError):
+    pass
+' "$timestamp" 2>/dev/null || true)"
+      else
+        epoch=""
+      fi
+      if [[ -z "$epoch" || -z "$now" ]]; then
+        unverified+="${name}: ${line}"$'\n'
+        continue
+      fi
+      age=$((now - epoch))
+      # Future-dated lines are not claimed to be current either.
+      if (( age < 0 || age > CURRENT_ISSUE_WINDOW_SECONDS )); then
+        continue
+      fi
+      current+="${name}: ${line}"$'\n'
+      if [[ "$name" == "news" ]]; then
+        news_state="DEGRADED"
+      else
+        add_degraded "fresh ${name} error tail finding"
+      fi
+    done < <(tail -n "$LOG_TAIL_LINES" "$log" 2>/dev/null | grep -E 'Traceback|ERROR|CRITICAL|Conflict|PARSER_ERROR|database is locked|NaN|Infinity' | tail -n 3)
   done
-  if [[ -n "${found//$'\n'/}" ]]; then
-    printf '%s' "$found"
+  if [[ -n "${current//$'\n'/}" ]]; then
+    printf 'Current:\n%s' "$current"
   else
-    printf 'None'
+    printf 'Current: None\n'
+  fi
+  if [[ -n "${unverified//$'\n'/}" ]]; then
+    printf 'Unverified historical tail:\n%s' "$unverified"
   fi
 }
 
@@ -153,6 +191,10 @@ fi
 printf 'Branch: %s\n' "${git_branch:-UNKNOWN}"
 printf 'HEAD: %s%s\n' "${git_head:-UNKNOWN}" "${git_subject:+ $git_subject}"
 printf 'Dirty tracked: %s\n' "$dirty_tracked_state"
+if [[ -n "$dirty_tracked" ]]; then
+  tracked_paths="$(printf '%s\n' "$dirty_tracked" | awk 'NF { print substr($0, 4); count++; if (count == 8) exit }')"
+  printf 'Tracked changes: %s\n' "${tracked_paths//$'\n'/, }"
+fi
 [[ -n "$git_branch" && -n "$git_head" ]] || add_degraded "Git metadata unavailable"
 
 echo
@@ -204,7 +246,11 @@ else
   add_degraded "Research DB missing"
 fi
 research_status_age="$(safe_file_age "$PRODUCTION_ROOT/research_lab_v2_status.json" 2>/dev/null || true)"
-printf 'Research status: %s\n' "${research_status_age:+${research_status_age}s}${research_status_age:-unavailable}"
+if [[ -n "$research_status_age" ]]; then
+  printf 'Research status: %ss\n' "$research_status_age"
+else
+  echo "Research status: unavailable"
+fi
 printf 'Latest agent cycle: %s\n' "$(json_scalar "$PRODUCTION_ROOT/runtime_snapshot.json" generated_at)"
 printf 'Research Lab processed: %s\n' "$(json_scalar "$PRODUCTION_ROOT/research_lab_v2_status.json" last_processed_cycle)"
 
@@ -225,7 +271,10 @@ else
   history_bytes="$(field_from_telemetry "$telemetry" history_bytes)"
   hits="$(field_from_telemetry "$telemetry" cache_hits)"
   misses="$(field_from_telemetry "$telemetry" cache_misses)"
-  for numeric_field in cycle_ms tracked ticker_calls appended history_bytes hits misses; do
+  # `tracked` was added as an optional monitor diagnostic after the initial
+  # telemetry contract.  Its absence must not turn otherwise valid production
+  # telemetry into an unavailable/OBSERVE state.
+  for numeric_field in cycle_ms ticker_calls appended history_bytes hits misses; do
     value="${!numeric_field}"
     if [[ -z "$value" ]]; then
       telemetry_reason="missing $numeric_field"
@@ -244,7 +293,7 @@ else
     printf 'Telemetry: unavailable (%s)\n' "$telemetry_reason"
     performance_state="OBSERVE"
   else
-    printf 'Cycle: %sms | tracked: %s | ticker calls: %s\n' "$cycle_ms" "$tracked" "$ticker_calls"
+    printf 'Cycle: %sms | tracked: %s | ticker calls: %s\n' "$cycle_ms" "${tracked:-—}" "$ticker_calls"
     printf 'History append: %s | compaction: %s | bytes: %s\n' "$appended" "$compacted" "$history_bytes"
     printf 'Cache: %s hit / %s miss\n' "$hits" "$misses"
   fi
@@ -282,15 +331,15 @@ else
 fi
 
 echo
-echo "Recent tail findings (timestamps not verified)"
-findings="$(recent_tail_findings)"
-printf '%s\n' "$findings"
+echo "Recent tail findings"
+recent_tail_findings
 
 echo
 echo "Overall"
 printf 'Production: %s\n' "$production_state"
 printf 'Research: %s\n' "$research_state"
 printf 'Performance: %s\n' "$performance_state"
+printf 'News: %s\n' "$news_state"
 if (( ${#degraded_reasons[@]} > 0 )); then
   printf 'Reasons: %s\n' "${degraded_reasons[*]}"
 fi

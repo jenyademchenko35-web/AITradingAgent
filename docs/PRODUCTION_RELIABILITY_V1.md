@@ -141,6 +141,26 @@ safe default of 80 lines and values above 500 are capped. Incomplete or invalid
 market telemetry is reported as `Performance: OBSERVE`; it is not presented as
 normal performance data.
 
+The monitor telemetry source is `live_monitor.log` in the production root,
+beside `live_monitor_state.json`; `logs/live_monitor.log` remains a legacy
+fallback. The report parses only the newest bounded telemetry line containing
+the monitor's `status`, cycle, ticker, history, and cache fields.
+
+`Dirty tracked` uses Git's tracked-only porcelain mode. Untracked or ignored
+runtime artifacts never make the deployment dirty. If tracked files are
+modified, the report prints a bounded path list without changing them.
+
+Research status freshness is printed once with a seconds suffix. Evidence
+milestones are supplied by the canonical `evidence_watch_progress` helper:
+`0/1`, `1/5`, `5/20`, `20/50`, and `50/100` are informational only and do not
+enable any Research Lab action.
+
+Recent error tails are timestamp-aware within a 30-minute window. Fresh news
+parser warnings produce `News: DEGRADED` but do not by themselves fail a
+healthy production stack. Old timestamped messages are excluded from current
+findings; entries without a trustworthy timestamp are shown separately as
+unverified historical tail data.
+
 ## Rollback
 
 1. Run `scripts/production_stack_stop.sh` to unload only the new labels.
