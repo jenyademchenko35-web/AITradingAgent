@@ -69,6 +69,19 @@ test("market uses already-loaded watchlist and supports search without another r
   expect(screen.getByText("BTC/USDT")).toBeInTheDocument(); expect(client.watchlist).toHaveBeenCalledTimes(1);
 });
 
+test("market renders nullable watchlist confidence honestly and keeps finite rows first", async () => {
+  render(<App api={api({
+    watchlist: vi.fn().mockResolvedValue([
+      { symbol: "MISSING/USDT", status: "WATCH", side: "NEUTRAL", confidence: null, quality: "N/A", score: null, timeframe: "1h", updated_at: "2026-08-03T10:00:00Z" },
+      { symbol: "FINITE/USDT", status: "SETUP", side: "LONG", confidence: 87.5, quality: "A", score: 23, timeframe: "1h", updated_at: "2026-08-03T10:00:00Z" },
+    ]),
+  })} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Market" }));
+  expect(screen.getByText("FINITE/USDT")).toBeInTheDocument();
+  expect(screen.getByText("MISSING/USDT")).toBeInTheDocument();
+  expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+});
+
 test("market opens the existing signal detail route", async () => {
   render(<App api={api()} />); fireEvent.click(await screen.findByRole("button", { name: "Market" }));
   fireEvent.click(await screen.findByText("BTC/USDT"));

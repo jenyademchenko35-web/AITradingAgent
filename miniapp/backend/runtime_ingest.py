@@ -14,7 +14,7 @@ from pathlib import Path
 import tempfile
 from typing import Any, Mapping
 
-from runtime_contract import normalize_runtime_timestamp, validate_runtime_snapshot
+from runtime_contract import find_non_finite_value, normalize_runtime_timestamp, validate_runtime_snapshot
 
 
 class RuntimeIngestError(ValueError):
@@ -44,6 +44,8 @@ def validate_runtime_bundle(payload: Any) -> dict[str, Any]:
     """Validate JSON types at the boundary, without accepting arbitrary objects."""
     if not isinstance(payload, Mapping):
         raise RuntimeIngestError("MALFORMED_PAYLOAD", 422)
+    if find_non_finite_value(payload) is not None:
+        raise RuntimeIngestError("NON_FINITE_VALUE", 422)
     snapshot = payload.get("runtime_snapshot")
     validation = validate_runtime_snapshot(snapshot)
     if not validation["valid"]:
@@ -172,7 +174,9 @@ class RuntimeIngestStore:
 
     def _atomic_write(self, document: Mapping[str, Any]) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
-        encoded = json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        encoded = json.dumps(
+            document, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False,
+        ).encode("utf-8")
         handle = tempfile.NamedTemporaryFile(
             mode="wb", dir=self.directory, prefix=".current.", suffix=".tmp", delete=False,
         )

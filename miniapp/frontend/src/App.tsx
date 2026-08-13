@@ -251,7 +251,16 @@ export function App({ api: injectedApi, telegramInitData: initialInitData }: { a
   useEffect(() => { const sync = () => setSignalRoute(routeFromLocation(window.location)); window.addEventListener("popstate", sync); window.addEventListener("hashchange", sync); return () => { window.removeEventListener("popstate", sync); window.removeEventListener("hashchange", sync); }; }, []);
   useEffect(() => { if (!signalRoute || signalRoute.view !== "card" || signal) return; api.signal(signalRoute.symbol, signalRoute.timeframe).then(setSignal).catch(() => setError("Snapshot сигнала недоступен.")); }, [api, signal, signalRoute]);
 
-  const filtered = useMemo(() => watchlist.filter((item) => item.symbol.includes(query.trim().toUpperCase()) && filterStatus(item, filter)).sort((left, right) => sort === "confidence" ? right.confidence - left.confidence : sort === "symbol" ? left.symbol.localeCompare(right.symbol) : sort === "status" ? left.status.localeCompare(right.status) : String(right.updated_at).localeCompare(String(left.updated_at))), [filter, query, sort, watchlist]);
+  const filtered = useMemo(() => watchlist.filter((item) => item.symbol.includes(query.trim().toUpperCase()) && filterStatus(item, filter)).sort((left, right) => {
+    if (sort === "confidence") {
+      const leftConfidence = left.confidence;
+      const rightConfidence = right.confidence;
+      if (leftConfidence === null) return rightConfidence === null ? 0 : 1;
+      if (rightConfidence === null) return -1;
+      return rightConfidence - leftConfidence;
+    }
+    return sort === "symbol" ? left.symbol.localeCompare(right.symbol) : sort === "status" ? left.status.localeCompare(right.status) : String(right.updated_at).localeCompare(String(left.updated_at));
+  }), [filter, query, sort, watchlist]);
   const navigateSignal = (route: SignalRoute | null, hash = "") => { const path = route ? signalPath(route.symbol, route.timeframe, route.view) : "/"; window.history.pushState({}, "", `${path}${hash ? `#${hash}` : ""}`); setSignalRoute(route); if (!route) setSignal(null); };
   const openSignal = (item: WatchlistItem) => { telegramHaptic("selection"); return api.signal(item.symbol, item.timeframe).then((next) => { setSignal(next); navigateSignal({ symbol: item.symbol, timeframe: item.timeframe, view: "card" }); }).catch(() => { telegramHaptic("error"); setError("Snapshot сигнала недоступен."); }); };
   const closeSignal = () => { telegramHaptic("selection"); navigateSignal(null); setTab("signals"); };

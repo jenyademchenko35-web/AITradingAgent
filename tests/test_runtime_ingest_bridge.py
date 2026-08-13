@@ -109,6 +109,27 @@ def test_ingest_rejects_stale_and_future_snapshots(tmp_path):
         store.ingest(_raw(_bundle(moment + timedelta(seconds=61))), now=moment)
 
 
+@pytest.mark.parametrize("value", (float("nan"), float("inf"), float("-inf")))
+def test_ingest_rejects_non_finite_values_and_preserves_last_good_cache(tmp_path, value):
+    store = _store(tmp_path)
+    moment = _now()
+    valid = _bundle(moment, snapshot_id="valid")
+    store.ingest(_raw(valid), now=moment)
+    invalid = _bundle(moment + timedelta(seconds=1), snapshot_id="invalid")
+    invalid["runtime_snapshot"]["portfolio"] = {"profit_factor": value}
+    with pytest.raises(RuntimeIngestError, match="NON_FINITE_VALUE"):
+        store.ingest(_raw(invalid), now=moment + timedelta(seconds=1))
+    assert store.read_current()["metadata"]["snapshot_id"] == "valid"
+
+
+def test_ingest_rejects_non_finite_optional_report_values(tmp_path):
+    store = _store(tmp_path)
+    bundle = _bundle(_now())
+    bundle["research_summary"] = {"score": float("nan")}
+    with pytest.raises(RuntimeIngestError, match="NON_FINITE_VALUE"):
+        store.ingest(_raw(bundle))
+
+
 def test_repository_prefers_ingest_and_explicitly_reports_stale_ingest(tmp_path):
     fresh_now = _now()
     store = _store(tmp_path)
@@ -166,6 +187,44 @@ def test_publisher_network_failure_retries_without_logging_secret(tmp_path, capl
     assert publish_with_retry(_publisher_settings(tmp_path), opener=opener, sleep=lambda _: None) is False
     assert len(calls) == 2
     assert "publisher-secret" not in caplog.text
+
+
+def test_publisher_invalid_canonical_snapshot_makes_no_http_attempt_or_retry(tmp_path, caplog):
+    snapshot = _bundle()["runtime_snapshot"]
+    snapshot["portfolio"] = {"profit_factor": float("nan")}
+    # Deliberately use the raw encoder: this models a malformed observer file
+    # that predates strict contract writing.
+    (tmp_path / "runtime_snapshot.json").write_text(json.dumps(snapshot), encoding="utf-8")
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    calls, sleeps = [], []
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=lambda *_args, **_kwargs: calls.append(True), sleep=sleeps.append,
+    ) is False
+    assert calls == [] and sleeps == []
+    assert "snapshot_invalid" in caplog.text
+    assert "event=retry" not in caplog.text
+
+
+def test_publisher_missing_snapshot_is_not_a_network_retry(tmp_path, caplog):
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    calls, sleeps = [], []
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=lambda *_args, **_kwargs: calls.append(True), sleep=sleeps.append,
+    ) is False
+    assert calls == [] and sleeps == []
+    assert "snapshot_unavailable" in caplog.text
+
+
+def test_publisher_skips_invalid_bundle_without_network_retries(tmp_path, caplog):
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", _bundle()["runtime_snapshot"])
+    (tmp_path / "research_lab_v2_status.json").write_text('{"score":NaN}', encoding="utf-8")
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    calls = []
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=lambda *_args, **_kwargs: calls.append(True), sleep=lambda _: None,
+    ) is False
+    assert calls == []
+    assert caplog.text.count("invalid_runtime_bundle") == 1
 
 
 def test_publisher_treats_duplicate_response_as_idempotent_success(tmp_path):

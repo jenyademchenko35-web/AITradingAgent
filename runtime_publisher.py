@@ -18,7 +18,7 @@ from urllib import error, request
 
 from dotenv import load_dotenv
 
-from runtime_contract import read_runtime_snapshot
+from runtime_contract import find_non_finite_value, read_runtime_snapshot
 
 
 LOGGER = logging.getLogger("runtime_publisher")
@@ -26,6 +26,11 @@ MAX_REPORT_BYTES = 1_048_576
 MAX_ERROR_RESPONSE_CHARS = 300
 MAX_ERROR_RESPONSE_BYTES = 8_192
 _SAFE_ERROR_FIELDS = ("error", "detail", "code", "reason")
+_PUBLISH_SUCCESS = "SUCCESS"
+_PUBLISH_NETWORK_FAILURE = "NETWORK_FAILURE"
+_PUBLISH_SNAPSHOT_UNAVAILABLE = "SNAPSHOT_UNAVAILABLE"
+_PUBLISH_SNAPSHOT_INVALID = "SNAPSHOT_INVALID"
+_PUBLISH_INVALID_BUNDLE = "INVALID_RUNTIME_BUNDLE"
 
 
 @dataclass(frozen=True)
@@ -96,12 +101,24 @@ def _system_summary(root: Path) -> dict[str, Any] | None:
     return payload if any(value not in (None, "") for value in payload.values()) else None
 
 
-def build_runtime_bundle(base_dir: str | Path) -> dict[str, Any] | None:
+def _runtime_snapshot_for_publish(root: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """Classify the canonical input without treating bad data as a network failure."""
+    path = root / "runtime_snapshot.json"
+    try:
+        if not path.is_file():
+            return None, _PUBLISH_SNAPSHOT_UNAVAILABLE
+    except OSError:
+        return None, _PUBLISH_SNAPSHOT_UNAVAILABLE
+    snapshot = read_runtime_snapshot(path)
+    return (snapshot, None) if snapshot is not None else (None, _PUBLISH_SNAPSHOT_INVALID)
+
+
+def _build_runtime_bundle_with_status(base_dir: str | Path) -> tuple[dict[str, Any] | None, str | None]:
     """Build a bounded transport object from reports already produced by observers."""
     root = Path(base_dir)
-    snapshot = read_runtime_snapshot(root / "runtime_snapshot.json")
+    snapshot, status = _runtime_snapshot_for_publish(root)
     if snapshot is None:
-        return None
+        return None, status
     bundle: dict[str, Any] = {"runtime_snapshot": snapshot}
     reports = {
         "scenario_report": "scenario_report.json",
@@ -118,7 +135,12 @@ def build_runtime_bundle(base_dir: str | Path) -> dict[str, Any] | None:
     system = _system_summary(root)
     if system is not None:
         bundle["system_summary"] = system
-    return bundle
+    return bundle, None
+
+
+def build_runtime_bundle(base_dir: str | Path) -> dict[str, Any] | None:
+    """Compatibility wrapper used by tests and non-network callers."""
+    return _build_runtime_bundle_with_status(base_dir)[0]
 
 
 def _log(event: str, **fields: Any) -> None:
@@ -163,20 +185,28 @@ def _ingest_error_diagnostics(response: Any, *, secret: str, payload_text: str) 
     return {"response_body": "json_without_safe_error_fields"}
 
 
-def publish_once(
+def _publish_once_result(
     settings: RuntimePublisherSettings,
     *,
     opener: Callable[..., Any] = request.urlopen,
-) -> bool:
-    bundle = build_runtime_bundle(settings.base_dir)
+) -> str:
+    bundle, snapshot_status = _build_runtime_bundle_with_status(settings.base_dir)
     snapshot_id = str(((bundle or {}).get("runtime_snapshot") or {}).get("snapshot_id") or "UNKNOWN")
     if bundle is None:
-        _log("skipped", reason="runtime_snapshot_unavailable")
-        return False
+        _log("skipped", reason=(snapshot_status or _PUBLISH_SNAPSHOT_UNAVAILABLE).lower())
+        return snapshot_status or _PUBLISH_SNAPSHOT_UNAVAILABLE
     if not settings.url or not settings.secret:
         _log("skipped", snapshot_id=snapshot_id, reason="publisher_not_configured")
-        return False
-    encoded = json.dumps(bundle, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        return _PUBLISH_SNAPSHOT_UNAVAILABLE
+    invalid_number_path = find_non_finite_value(bundle)
+    if invalid_number_path is not None:
+        _log("skipped", snapshot_id=snapshot_id, reason="invalid_runtime_bundle")
+        return _PUBLISH_INVALID_BUNDLE
+    try:
+        encoded = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    except (TypeError, ValueError):
+        _log("skipped", snapshot_id=snapshot_id, reason="invalid_runtime_bundle")
+        return _PUBLISH_INVALID_BUNDLE
     payload_text = encoded.decode("utf-8")
     outgoing = request.Request(
         settings.url, data=encoded, method="POST",
@@ -198,13 +228,22 @@ def publish_once(
         )
     except (OSError, ValueError) as exc:
         _log("failed", snapshot_id=snapshot_id, error_type=type(exc).__name__, latency_ms=int((time.monotonic() - started) * 1000))
-        return False
+        return _PUBLISH_NETWORK_FAILURE
     latency_ms = int((time.monotonic() - started) * 1000)
     if 200 <= status < 300 or status == 409:
         _log("success", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms)
-        return True
+        return _PUBLISH_SUCCESS
     _log("failed", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms, **diagnostics)
-    return False
+    return _PUBLISH_NETWORK_FAILURE
+
+
+def publish_once(
+    settings: RuntimePublisherSettings,
+    *,
+    opener: Callable[..., Any] = request.urlopen,
+) -> bool:
+    """Publish once for legacy callers; retry decisions live in ``publish_with_retry``."""
+    return _publish_once_result(settings, opener=opener) == _PUBLISH_SUCCESS
 
 
 def publish_with_retry(
@@ -214,8 +253,13 @@ def publish_with_retry(
     sleep: Callable[[float], None] = time.sleep,
 ) -> bool:
     for attempt in range(settings.max_retries + 1):
-        if publish_once(settings, opener=opener):
+        result = _publish_once_result(settings, opener=opener)
+        if result == _PUBLISH_SUCCESS:
             return True
+        # Invalid/unavailable observer inputs are not transport faults.  Wait
+        # for a later publisher cycle instead of spamming a fixed bad file.
+        if result != _PUBLISH_NETWORK_FAILURE:
+            return False
         if attempt < settings.max_retries:
             delay = min(60, 2 ** attempt)
             _log("retry", attempt=attempt + 1, delay_seconds=delay)

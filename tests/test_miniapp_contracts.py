@@ -143,7 +143,10 @@ def test_repository_uses_fresh_canonical_but_falls_back_when_it_is_stale(monkeyp
     repository = ReadOnlyRepository(tmp_path, cache_ttl_seconds=0.1)
     assert repository.decision_rows()[0]["symbol"] == "LEGACY/USDT"
     system = repository.system()
-    assert system["source_mode"] == "legacy"
+    # Signal rows correctly fall back to legacy, while the system projection
+    # still exposes stale canonical metadata with explicit provenance.
+    assert system["source_mode"] == "mixed"
+    assert system["source_provenance"]["fields"]["signals"] == "legacy_fallback"
     assert system["canonical_freshness"] == "STALE"
     assert system["fallback_reason"] == "canonical_stale_legacy_available"
 

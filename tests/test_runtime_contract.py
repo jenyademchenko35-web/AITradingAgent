@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import json
+import math
 
 import runtime_contract as contract
 from miniapp.backend.repository import ReadOnlyRepository
@@ -67,6 +68,22 @@ def test_atomic_write_and_malformed_json_are_safe(tmp_path):
     assert contract.read_runtime_snapshot(destination) is None
 
 
+def test_non_finite_values_are_rejected_recursively_and_never_written(tmp_path):
+    for value in (math.nan, math.inf, -math.inf):
+        snapshot = _snapshot(portfolio={"profit_factor": value})
+        validation = contract.validate_runtime_snapshot(snapshot)
+        assert validation["valid"] is False
+        assert any("non-finite numeric value" in error for error in validation["errors"])
+        try:
+            contract.write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
+        except ValueError:
+            pass
+        else:  # pragma: no cover - guard against accidental permissive writes
+            raise AssertionError("non-finite snapshot was written")
+    nested = _snapshot(market={"nested": [{"value": math.nan}]})
+    assert contract.validate_runtime_snapshot(nested)["valid"] is False
+
+
 def test_repository_prefers_valid_canonical_then_falls_back_to_legacy(monkeypatch, tmp_path):
     monkeypatch.setenv("RUNTIME_SNAPSHOT_STALE_AFTER_SECONDS", "99999999")
     legacy = tmp_path / "signals.csv"
@@ -76,11 +93,11 @@ def test_repository_prefers_valid_canonical_then_falls_back_to_legacy(monkeypatc
     }]))
     repository = ReadOnlyRepository(tmp_path)
     assert repository.decision_rows()[0]["symbol"] == "CANONICAL/USDT"
-    assert repository.system()["source_mode"] == "canonical_v1"
+    assert repository.system()["source_mode"] == "local_canonical"
     (tmp_path / "runtime_snapshot.json").write_text("not json", encoding="utf-8")
     repository = ReadOnlyRepository(tmp_path)
     assert repository.decision_rows()[0]["symbol"] == "LEGACY/USDT"
-    assert repository.system()["source_mode"] == "legacy"
+    assert repository.system()["source_mode"] == "legacy_fallback"
 
 
 def test_snapshot_publisher_failure_is_fail_open(monkeypatch, tmp_path):

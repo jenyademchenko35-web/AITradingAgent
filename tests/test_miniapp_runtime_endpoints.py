@@ -228,3 +228,64 @@ def test_ingested_portfolio_metrics_are_projected_without_recalculation(tmp_path
     assert dashboard["metrics_available"] is True
     assert dashboard["open_trades"] == 2
     assert dashboard["metrics_source"] == "runtime_snapshot.portfolio"
+
+
+def test_system_marks_legacy_fallback_fields_as_mixed_and_keeps_nulls_honest(tmp_path):
+    from runtime_contract import build_runtime_snapshot
+    from miniapp.backend.runtime_ingest import RuntimeIngestStore
+
+    snapshot = build_runtime_snapshot(agent_version="agent", cycle_id="current", signals=[])
+    store = RuntimeIngestStore(tmp_path / "runtime_ingest", max_payload_bytes=32_768, max_snapshot_age_seconds=3_600)
+    store.ingest(json.dumps({"runtime_snapshot": snapshot}).encode())
+    (tmp_path / "dashboard_state.json").write_text(json.dumps({
+        "system": {"status": "ONLINE"}, "telegram": {"status": "ONLINE"},
+    }), encoding="utf-8")
+    (tmp_path / "research_lab_v2_status.json").write_text(json.dumps({"enabled": True}), encoding="utf-8")
+    system = ReadOnlyRepository(tmp_path, ingest_dir=store.directory).system()
+    assert system["source_mode"] == "mixed"
+    assert system["source_provenance"]["fields"]["telegram"] == "legacy_fallback"
+    assert "telegram" in system["source_provenance"]["fallback_fields"]
+    assert system["source_provenance"]["fields"]["research"] == "legacy_fallback"
+    assert system["uptime_seconds"] is None
+
+
+def test_system_reports_single_ingest_source_without_fallback(tmp_path):
+    from runtime_contract import build_runtime_snapshot
+    from miniapp.backend.runtime_ingest import RuntimeIngestStore
+
+    snapshot = build_runtime_snapshot(agent_version="agent", cycle_id="current", signals=[])
+    store = RuntimeIngestStore(tmp_path / "runtime_ingest", max_payload_bytes=32_768, max_snapshot_age_seconds=3_600)
+    store.ingest(json.dumps({
+        "runtime_snapshot": snapshot,
+        "system_summary": {"server": "ONLINE", "telegram": "ONLINE", "cycle": "current", "uptime_seconds": 7},
+        "research_summary": {"enabled": True},
+    }).encode())
+    system = ReadOnlyRepository(tmp_path, ingest_dir=store.directory).system()
+    assert system["source_mode"] == "runtime_ingest_v1"
+    assert system["source_provenance"]["fallback_fields"] == []
+
+
+def test_local_legacy_non_finite_numbers_are_never_exposed_as_zero_or_nan(tmp_path):
+    write_csv(tmp_path / "decision_debug.csv", [decision_row(confidence="NaN", score="Infinity")], DECISION_FIELDS)
+    repository = ReadOnlyRepository(tmp_path)
+    watch = repository.watchlist()[0]
+    assert watch["confidence"] is None
+    assert watch["score"] is None
+
+    (tmp_path / "dashboard_state.json").write_text('{"system":{"uptime_seconds":NaN}}', encoding="utf-8")
+    assert repository._runtime_json("dashboard_state.json") == {}
+
+
+def test_watchlist_endpoint_serializes_non_finite_legacy_scores_as_null(tmp_path):
+    client = _client(tmp_path)
+    write_csv(tmp_path / "decision_debug.csv", [
+        decision_row(symbol="NAN/USDT", confidence="NaN", score="Infinity"),
+        decision_row(symbol="FINITE/USDT", confidence="87.5", score="23"),
+    ], DECISION_FIELDS)
+    response = client.get("/api/watchlist", headers={"X-Telegram-Init-Data": _signed()})
+    assert response.status_code == 200
+    payload = {item["symbol"]: item for item in response.json()}
+    assert payload["NAN/USDT"]["confidence"] is None
+    assert payload["NAN/USDT"]["score"] is None
+    assert payload["FINITE/USDT"]["confidence"] == 87.5
+    assert payload["FINITE/USDT"]["score"] == 23.0

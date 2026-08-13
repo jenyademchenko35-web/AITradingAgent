@@ -16,9 +16,9 @@ export interface WatchlistItem {
   symbol: string;
   status: SignalStatus;
   side: string;
-  confidence: number;
+  confidence: number | null;
   quality: string;
-  score: number;
+  score: number | null;
   timeframe: string;
   updated_at: string;
   source: string;

@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -24,6 +25,30 @@ ROOT_FIELDS = (
     "source", "freshness", "data_quality", "market", "signals", "portfolio",
     "decision_telemetry", "research", "scenario", "impulse",
 )
+
+
+def find_non_finite_value(value: Any, *, path: str = "$") -> str | None:
+    """Return the first JSON path containing NaN or infinity, if any.
+
+    Runtime snapshots are an inter-process JSON contract.  Python's default
+    encoder accepts these non-standard numeric values, while stricter clients
+    may not.  Rejecting them at the boundary is safer than silently changing a
+    reported metric to zero.
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        return path
+    if isinstance(value, Mapping):
+        for key, nested in value.items():
+            nested_path = f"{path}.{key}" if path else str(key)
+            invalid = find_non_finite_value(nested, path=nested_path)
+            if invalid is not None:
+                return invalid
+    elif isinstance(value, (list, tuple)):
+        for index, nested in enumerate(value):
+            invalid = find_non_finite_value(nested, path=f"{path}[{index}]")
+            if invalid is not None:
+                return invalid
+    return None
 
 
 def normalize_runtime_timestamp(value: Any) -> str | None:
@@ -139,6 +164,9 @@ def validate_runtime_snapshot(snapshot: Any) -> dict[str, Any]:
     warnings: list[str] = []
     if not isinstance(snapshot, Mapping):
         return {"valid": False, "status": "INVALID", "errors": ["snapshot must be an object"], "warnings": []}
+    invalid_number_path = find_non_finite_value(snapshot)
+    if invalid_number_path is not None:
+        errors.append(f"non-finite numeric value at {invalid_number_path}")
     missing = [field for field in ROOT_FIELDS if field not in snapshot]
     if missing:
         errors.extend(f"missing required field: {field}" for field in missing)
@@ -176,7 +204,9 @@ def write_runtime_snapshot(path: str | Path, snapshot: Mapping[str, Any]) -> Non
         raise ValueError("invalid runtime snapshot: " + "; ".join(validation["errors"]))
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    encoded = json.dumps(dict(snapshot), ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(
+        dict(snapshot), ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False,
+    ).encode("utf-8")
     handle = tempfile.NamedTemporaryFile(mode="wb", dir=destination.parent, prefix=f".{destination.name}.", suffix=".tmp", delete=False)
     try:
         with handle:

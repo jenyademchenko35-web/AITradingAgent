@@ -40,9 +40,9 @@ class WatchlistItem(ImmutableModel):
     symbol: str
     status: str
     side: str
-    confidence: float
+    confidence: float | None = None
     quality: str
-    score: float
+    score: float | None = None
     timeframe: str
     updated_at: str
     source: str = "UNKNOWN"
