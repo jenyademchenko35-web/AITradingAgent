@@ -3,9 +3,12 @@
 # This file deliberately never refers to the deprecated watchdog label.
 set -euo pipefail
 
-PRODUCTION_ROOT="/Users/jeynademcenko/AITradingAgentUpdated"
-LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
-LAUNCH_DOMAIN="gui/$(id -u)"
+# The defaults are the production locations. Environment overrides exist solely
+# for read-only diagnostics and their isolated tests; management scripts still
+# require explicit user invocation before taking any action.
+PRODUCTION_ROOT="${PRODUCTION_ROOT:-/Users/jeynademcenko/AITradingAgentUpdated}"
+LAUNCH_AGENTS_DIR="${LAUNCH_AGENTS_DIR:-${HOME}/Library/LaunchAgents}"
+LAUNCH_DOMAIN="${LAUNCH_DOMAIN:-gui/$(id -u)}"
 STACK_LABELS=(
   "com.aitradingagent.production.agent"
   "com.aitradingagent.production.telegram"

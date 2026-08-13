@@ -107,6 +107,12 @@ scripts/production_stack_status.sh
 
 Verify all five labels are running, Telegram instances equals `1`, old watchdog
 is `OFF`, `research.db` is present, and the runtime snapshot freshness advances.
+The read-only status script reports `Overall: HEALTHY` only when all of those
+conditions hold and `runtime_snapshot.json` is no older than 900 seconds. It
+also requires available Git branch and HEAD metadata. A missing, unreadable, or
+stale snapshot produces `DEGRADED` with a reason instead of aborting the
+read-only report. It does not inspect Research outcome debt, so historical unresolved outcomes do
+not make the process-stack result degraded.
 
 ## Rollback
 
