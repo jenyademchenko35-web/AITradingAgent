@@ -237,9 +237,9 @@ def _run_observability(tmp_path: Path, **overrides: str) -> subprocess.Completed
                       "  branch) echo 'telegram-ui-v2-miniapp' ;;\n"
                       "  rev-parse) echo 'abcdef0' ;;\n"
                       "  log) echo 'observability subject' ;;\n"
-                      "  status) [[ \"${FAKE_GIT_STATUS_FAIL:-0}\" == \"1\" ]] && exit 1; "
-                      "[[ \"${FAKE_DIRTY:-0}\" == \"1\" ]] && { echo ' M tracked.py'; exit 0; }; "
-                      "if [[ \"${FAKE_UNTRACKED:-0}\" == \"1\" && \"$*\" != *\"--untracked-files=no\"* ]]; then echo '?? runtime.json'; fi; exit 0 ;;\n"
+                      "  diff) [[ \"${FAKE_GIT_DIFF_FAIL:-0}\" == \"1\" ]] && exit 1; "
+                      "[[ -n \"${FAKE_RUNTIME_TRACKED:-}\" ]] && printf '%s\\n' \"${FAKE_RUNTIME_TRACKED}\"; "
+                      "[[ -n \"${FAKE_CODE_TRACKED:-}\" ]] && printf '%s\\n' \"${FAKE_CODE_TRACKED}\"; exit 0 ;;\n"
                       "  *) exit 2 ;;\n"
                       "esac\n")
     _write_executable(fake_bin / "date", "#!/bin/bash\n"
@@ -300,7 +300,8 @@ def test_observability_reports_compact_healthy_surface_and_reuses_evidence_watch
 
     assert result.returncode == 0
     assert "HEAD: abcdef0 observability subject" in result.stdout
-    assert "Dirty tracked: NO" in result.stdout
+    assert "Code dirty: NO" in result.stdout
+    assert "Runtime tracked changes: 0" in result.stdout
     assert "Research status: 10s" in result.stdout
     assert "Cycle: 1800ms | tracked: 6 | ticker calls: 6" in result.stdout
     assert "History append: 2 | compaction: False | bytes: 1638900" in result.stdout
@@ -313,14 +314,54 @@ def test_observability_reports_compact_healthy_surface_and_reuses_evidence_watch
     assert "Performance: NORMAL" in result.stdout
 
 
-def test_observability_dirty_tracked_excludes_untracked_generated_artifacts(tmp_path: Path):
-    clean = _run_observability(tmp_path, FAKE_UNTRACKED="1")
-    dirty = _run_observability(tmp_path, FAKE_DIRTY="1")
+def test_observability_separates_recognized_runtime_changes_from_code_dirtiness(tmp_path: Path):
+    runtime_only = _run_observability(
+        tmp_path,
+        FAKE_RUNTIME_TRACKED=(
+            "active_setups_v3.json\nbot_config.json\nconfidence_sl_quality_d_dry_run.csv\n"
+            "decision_learning.json\ndecision_snapshot.json\nlast_notification.json\n"
+            "logs/agent.log\nprotective_filter_dry_run.csv"
+        ),
+    )
+    source_code = _run_observability(tmp_path, FAKE_CODE_TRACKED="live_monitor/monitor.py")
 
-    assert "Dirty tracked: NO" in clean.stdout
-    assert "Tracked changes:" not in clean.stdout
-    assert "Dirty tracked: YES" in dirty.stdout
-    assert "Tracked changes: tracked.py" in dirty.stdout
+    assert "Code dirty: NO" in runtime_only.stdout
+    assert "Runtime tracked changes: 8" in runtime_only.stdout
+    assert "Runtime paths: active_setups_v3.json, bot_config.json, confidence_sl_quality_d_dry_run.csv" in runtime_only.stdout
+    assert "Production: HEALTHY" in runtime_only.stdout
+    assert "Code dirty: YES" in source_code.stdout
+    assert "Code changes: live_monitor/monitor.py" in source_code.stdout
+    assert "Production: DEGRADED" in source_code.stdout
+
+
+def test_observability_classifies_documented_runtime_catalog_without_hiding_source_code(tmp_path: Path):
+    known_runtime = _run_observability(
+        tmp_path,
+        FAKE_RUNTIME_TRACKED=(
+            "decision_debug.csv\nsignals_v3.csv\nmarket_news_observer.log\n"
+            "research_orchestrator.log\nstrategy_metrics.csv\nresearch_consensus.csv\n"
+            "strategy_experiments_report.json\nmarket_intelligence_summary.txt"
+        ),
+    )
+    unknown_reports = _run_observability(
+        tmp_path,
+        FAKE_RUNTIME_TRACKED=(
+            "custom_runtime_report.json\ncustom_runtime_summary.txt\n"
+            "reports/consistency_report.json"
+        ),
+    )
+
+    assert "Code dirty: NO" in known_runtime.stdout
+    assert "Runtime tracked changes: 8" in known_runtime.stdout
+    assert "Runtime paths: decision_debug.csv, signals_v3.csv, market_news_observer.log" in known_runtime.stdout
+    assert "Production: HEALTHY" in known_runtime.stdout
+    assert "Code dirty: YES" in unknown_reports.stdout
+    assert "Runtime tracked changes: 0" in unknown_reports.stdout
+    assert (
+        "Code changes: custom_runtime_report.json, custom_runtime_summary.txt, "
+        "reports/consistency_report.json"
+    ) in unknown_reports.stdout
+    assert "Production: DEGRADED" in unknown_reports.stdout
 
 
 def test_observability_prefers_root_live_monitor_log_and_parses_actual_telemetry(tmp_path: Path):
@@ -328,14 +369,14 @@ def test_observability_prefers_root_live_monitor_log_and_parses_actual_telemetry
         tmp_path,
         telemetry="malformed fallback telemetry",
         root_telemetry=(
-            "2026-08-13T12:00:00Z status=ONLINE tracked=6 priced=6 cycle_ms=1800 "
+            "2026-08-13T12:00:00Z status=ONLINE tracked=6 priced=6 cycle_ms=1800.0 "
             "ticker_calls=6 history_appended=2 history_compacted=False history_bytes=1638900 "
             "cache_hits=2 cache_misses=0"
         ),
     )
 
     assert result.returncode == 0
-    assert "Cycle: 1800ms | tracked: 6 | ticker calls: 6" in result.stdout
+    assert "Cycle: 1800.0ms | tracked: 6 | ticker calls: 6" in result.stdout
     assert "Telemetry: unavailable" not in result.stdout
 
 
@@ -343,16 +384,51 @@ def test_observability_accepts_production_telemetry_without_optional_tracked(tmp
     result = _run_observability(
         tmp_path,
         telemetry=(
-            "status=ONLINE cycle_ms=1800 ticker_calls=6 history_appended=2 "
+            "2026-08-13 12:00:00+00:00 status=ONLINE cycle_ms=1800.0 ticker_calls=6 history_appended=2 "
             "history_compacted=False history_bytes=1638900 cache_hits=2 cache_misses=0"
         ),
     )
 
     assert result.returncode == 0
-    assert "Cycle: 1800ms | tracked: — | ticker calls: 6" in result.stdout
+    assert "Cycle: 1800.0ms | tracked: — | ticker calls: 6" in result.stdout
     assert "History append: 2 | compaction: False | bytes: 1638900" in result.stdout
     assert "Telemetry: unavailable" not in result.stdout
     assert "Performance: NORMAL" in result.stdout
+
+
+def test_observability_uses_last_valid_telemetry_when_newest_line_is_malformed(tmp_path: Path):
+    result = _run_observability(
+        tmp_path,
+        telemetry_lines=(
+            "2026-08-13T12:00:00Z status=ONLINE cycle_ms=1603.0 ticker_calls=6 "
+            "history_appended=1 history_compacted=False history_bytes=16389 cache_hits=4 cache_misses=1\n"
+            "2026-08-13T12:00:03Z status=ONLINE cycle_ms=not-a-number"
+        ),
+    )
+
+    assert result.returncode == 0
+    assert "Cycle: 1603.0ms | tracked: — | ticker calls: 6" in result.stdout
+    assert "Telemetry: unavailable" not in result.stdout
+    assert "Performance: NORMAL" in result.stdout
+
+
+def test_observability_rejects_non_timestamped_noise_and_uses_newest_timestamped_event(tmp_path: Path):
+    result = _run_observability(
+        tmp_path,
+        telemetry_lines=(
+            "2026-08-13T12:00:00Z status=ONLINE cycle_ms=1603.0 ticker_calls=6 "
+            "history_appended=1 history_compacted=False history_bytes=16389 cache_hits=4 cache_misses=1\n"
+            "noise status=ONLINE cycle_ms=9999 ticker_calls=6 history_appended=1 "
+            "history_compacted=False history_bytes=99999 cache_hits=0 cache_misses=0\n"
+            "2026-08-13 12:00:03+00:00 status=ONLINE cycle_ms=1701.5 ticker_calls=6 "
+            "history_appended=2 history_compacted=False history_bytes=16400 cache_hits=5 cache_misses=1"
+        ),
+    )
+
+    assert result.returncode == 0
+    assert "Cycle: 1701.5ms | tracked: — | ticker calls: 6" in result.stdout
+    assert "9999ms" not in result.stdout
+    assert "Telemetry: unavailable" not in result.stdout
 
 
 @pytest.mark.parametrize(
@@ -399,9 +475,9 @@ def test_observability_marks_partial_or_non_numeric_telemetry_as_observe(tmp_pat
         ),
     )
 
-    assert "Telemetry: unavailable (missing ticker_calls)" in partial.stdout
+    assert "Telemetry: unavailable" in partial.stdout
     assert "Performance: OBSERVE" in partial.stdout
-    assert "Telemetry: unavailable (non-numeric cycle_ms)" in non_numeric.stdout
+    assert "Telemetry: unavailable" in non_numeric.stdout
     assert "Performance: OBSERVE" in non_numeric.stdout
 
 
@@ -456,6 +532,32 @@ def test_observability_excludes_old_tail_errors_and_keeps_fresh_news_warning_non
     assert "Production: HEALTHY" in result.stdout
 
 
+def test_observability_uses_timezone_aware_window_for_fresh_and_stale_news(tmp_path: Path):
+    fresh = _run_observability(
+        tmp_path,
+        error_tail="1970-01-01 00:33:00+00:00 PARSER_ERROR Binance News current",
+        error_service="news",
+    )
+    stale = _run_observability(
+        tmp_path,
+        error_tail="1970-01-01T00:00:00+00:00 PARSER_ERROR Binance News old",
+        error_service="news",
+    )
+
+    assert "News: DEGRADED" in fresh.stdout
+    assert "Production: HEALTHY" in fresh.stdout
+    assert "News: NORMAL" in stale.stdout
+    assert "Binance News old" not in stale.stdout
+
+
+def test_observability_labels_agent_cpu_as_snapshot_without_degrading_performance(tmp_path: Path):
+    result = _run_observability(tmp_path)
+
+    assert result.returncode == 0
+    assert "Agent: CPU snapshot 0.5%" in result.stdout
+    assert "Performance: NORMAL" in result.stdout
+
+
 def test_observability_surfaces_fresh_non_news_error_as_current_and_degraded(tmp_path: Path):
     """A timestamped Agent/Market error must not be hidden by freshness filtering."""
     result = _run_observability(
@@ -502,13 +604,13 @@ def test_observability_preserves_canonical_read_error_from_actual_python(tmp_pat
     assert "Research: WAITING_FOR_EVIDENCE" not in result.stdout
 
 
-def test_observability_degrades_when_git_status_is_unavailable(tmp_path: Path):
-    result = _run_observability(tmp_path, FAKE_GIT_STATUS_FAIL="1")
+def test_observability_degrades_when_git_tracked_diff_is_unavailable(tmp_path: Path):
+    result = _run_observability(tmp_path, FAKE_GIT_DIFF_FAIL="1")
 
     assert result.returncode == 0
-    assert "Dirty tracked: UNKNOWN" in result.stdout
+    assert "Code dirty: UNKNOWN" in result.stdout
     assert "Production: DEGRADED" in result.stdout
-    assert "Git status unavailable" in result.stdout
+    assert "Git tracked diff unavailable" in result.stdout
 
 
 def test_observability_bounds_invalid_and_oversized_log_tail_values(tmp_path: Path):
@@ -558,7 +660,7 @@ def test_observability_source_is_read_only_bounded_and_uses_canonical_helper():
     assert "evidence_watch_progress" in content
     assert '"$PRODUCTION_ROOT/live_monitor.log"' in content
     assert "tail -n \"$LOG_TAIL_LINES\"" in content
-    assert "--untracked-files=no" in content
+    assert "git -C \"$PRODUCTION_ROOT\" diff --name-only --no-renames HEAD" in content
     assert "launchctl bootstrap" not in content
     assert "launchctl bootout" not in content
     assert "launchctl kickstart" not in content
