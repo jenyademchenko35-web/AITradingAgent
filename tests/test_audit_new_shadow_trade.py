@@ -26,7 +26,8 @@ def _db(path, *, outcome_table=True):
                 shadow_trade_id TEXT, outcome_id TEXT, strategy_id TEXT, symbol TEXT,
                 timeframe TEXT, status TEXT, pnl_r REAL, entry_time TEXT, exit_time TEXT,
                 join_status TEXT, feature_snapshot_id TEXT, signal_id TEXT, decision_id TEXT,
-                strategy_version TEXT, attribution_version TEXT, data_quality TEXT)""")
+                strategy_version TEXT, attribution_version TEXT, data_quality TEXT,
+                feature_snapshot_available INTEGER, feature_snapshot_valid INTEGER)""")
 
 
 def _run(path, **overrides):
@@ -46,7 +47,8 @@ def _outcome(path, **overrides):
                symbol="LINK/USDT", timeframe="1h", status="CLOSED", pnl_r=1.0,
                entry_time=AT, exit_time="2026-08-14T10:11:00+00:00", join_status="RESOLVED",
                feature_snapshot_id="feat", signal_id="sig", decision_id="dec", strategy_version="v1",
-               attribution_version="attribution_chain_v1", data_quality="COMPLETE")
+               attribution_version="attribution_chain_v1", data_quality="COMPLETE",
+               feature_snapshot_available=1, feature_snapshot_valid=1)
     row.update(overrides)
     with sqlite3.connect(path) as db:
         db.execute("INSERT INTO shadow_trade_outcomes VALUES (" + ",".join("?" * len(row)) + ")", tuple(row.values()))
@@ -97,6 +99,44 @@ def test_healthy_closed_shadow_trade(tmp_path):
     db, book, history = _audit(tmp_path); _db(db); _run(db); _outcome(db); book.write_text("[]"); _ledger(history)
     report = audit_new_shadow_trade(database_path=db, open_book_path=book, history_path=history, since=SINCE)
     assert report["classification"] == "CLOSED_E2E_HEALTHY"
+
+
+def test_requested_shadow_trade_id_selects_that_trade(tmp_path):
+    db, book, history = _audit(tmp_path); _db(db); _run(db); _outcome(db); book.write_text("[]")
+    _ledger(history)
+    requested = "rl2-requested"
+    _run(db, id=2, timestamp="2026-08-14T12:00:00+00:00", shadow_trade_id=requested,
+         feature_snapshot_id="feat-2", signal_id="sig-2", decision_id="dec-2")
+    _outcome(db, shadow_trade_id=requested, outcome_id="out-requested",
+             feature_snapshot_id="feat-2", signal_id="sig-2", decision_id="dec-2")
+    _ledger(history, shadow_trade_id=requested)
+    report = audit_new_shadow_trade(
+        database_path=db, open_book_path=book, history_path=history, since=SINCE,
+        shadow_trade_id=requested,
+    )
+    assert report["classification"] == "CLOSED_E2E_HEALTHY"
+    assert report["shadow_trade_id"] == requested
+
+
+def test_requested_unknown_shadow_trade_id_waits_successfully(tmp_path):
+    db, book, history = _audit(tmp_path); _db(db); book.write_text("[]")
+    report = audit_new_shadow_trade(
+        database_path=db, open_book_path=book, history_path=history, since=SINCE,
+        shadow_trade_id="rl2-unknown",
+    )
+    assert report["classification"] == "WAITING_FOR_FIRST_SHADOW_TRADE"
+    assert report["state"] == "NOT_FOUND"
+    assert report["issues"] == ["SHADOW_TRADE_ID_NOT_FOUND"]
+
+
+@pytest.mark.parametrize("field", ["feature_snapshot_available", "feature_snapshot_valid"])
+def test_invalid_feature_snapshot_integrity_is_degraded(tmp_path, field):
+    db, book, history = _audit(tmp_path); _db(db); _run(db); _outcome(db, **{field: 0})
+    book.write_text("[]")
+    _ledger(history)
+    report = audit_new_shadow_trade(database_path=db, open_book_path=book, history_path=history, since=SINCE)
+    assert report["classification"] == "E2E_DEGRADED"
+    assert report["checks"][field] == "MISSING"
 
 
 @pytest.mark.parametrize("kind", ["missing_history", "missing_outcome"])

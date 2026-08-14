@@ -110,15 +110,23 @@ def _counter(connection: sqlite3.Connection, columns: set[str], since: str) -> d
     }
 
 
-def _first_open_run(connection: sqlite3.Connection, columns: set[str], since: str) -> dict[str, Any] | None:
+def _select_run(connection: sqlite3.Connection, columns: set[str], since: str,
+                shadow_trade_id: str | None) -> dict[str, Any] | None:
     required = {"actual_shadow_opened", "shadow_trade_id", "timestamp"}
     if not required <= columns:
         return None
-    row = connection.execute(
-        "SELECT * FROM strategy_runs WHERE timestamp >= ? "
-        "AND actual_shadow_opened=1 AND shadow_trade_id IS NOT NULL "
-        "ORDER BY timestamp ASC, id ASC LIMIT 1", (since,)
-    ).fetchone()
+    if shadow_trade_id:
+        row = connection.execute(
+            "SELECT * FROM strategy_runs WHERE actual_shadow_opened=1 "
+            "AND shadow_trade_id=? ORDER BY timestamp ASC, id ASC LIMIT 1",
+            (shadow_trade_id,),
+        ).fetchone()
+    else:
+        row = connection.execute(
+            "SELECT * FROM strategy_runs WHERE timestamp >= ? "
+            "AND actual_shadow_opened=1 AND shadow_trade_id IS NOT NULL "
+            "ORDER BY timestamp ASC, id ASC LIMIT 1", (since,)
+        ).fetchone()
     return dict(row) if row else None
 
 
@@ -148,7 +156,8 @@ def _link_status(run: Mapping[str, Any], outcome: Mapping[str, Any] | None,
 
 
 def audit_new_shadow_trade(*, database_path: str | Path, open_book_path: str | Path,
-                           history_path: str | Path, since: str) -> dict[str, Any]:
+                           history_path: str | Path, since: str,
+                           shadow_trade_id: str | None = None) -> dict[str, Any]:
     """Return a deterministic, read-only E2E audit result."""
     since_at = _timestamp(since)
     if since_at is None:
@@ -160,11 +169,13 @@ def audit_new_shadow_trade(*, database_path: str | Path, open_book_path: str | P
             raise ValueError("strategy_runs table is not available")
         run_columns = _columns(connection, "strategy_runs")
         counters = _counter(connection, run_columns, since)
-        run = _first_open_run(connection, run_columns, since)
+        run = _select_run(connection, run_columns, since, shadow_trade_id)
         if run is None:
             return {
                 "classification": "WAITING_FOR_FIRST_SHADOW_TRADE", "since": since,
-                "shadow_trade_id": None, "state": "WAITING", "checks": {}, "issues": [],
+                "shadow_trade_id": shadow_trade_id, "state": "NOT_FOUND" if shadow_trade_id else "WAITING",
+                "checks": {},
+                "issues": ["SHADOW_TRADE_ID_NOT_FOUND"] if shadow_trade_id else [],
                 "counters": counters,
             }
 
@@ -256,6 +267,27 @@ def audit_new_shadow_trade(*, database_path: str | Path, open_book_path: str | P
             if str(outcome.get("join_status") or "") == "UNRESOLVED":
                 issues.append("UNRESOLVED_OUTCOME_JOIN")
 
+            for field in ("feature_snapshot_available", "feature_snapshot_valid"):
+                if field not in outcome_columns:
+                    _check(checks, field, "TABLE_NOT_AVAILABLE")
+                elif int(outcome.get(field) or 0) == 1:
+                    _check(checks, field, "MATCH")
+                else:
+                    _check(checks, field, "MISSING")
+                    issues.append(field.upper())
+            if str(outcome.get("attribution_version") or "") != "attribution_chain_v1":
+                issues.append("UNEXPECTED_ATTRIBUTION_VERSION")
+            if str(outcome.get("data_quality") or "") != "COMPLETE":
+                issues.append("INCOMPLETE_DATA_QUALITY")
+            outcome_id = outcome.get("outcome_id")
+            if outcome_id and "outcome_id" in outcome_columns:
+                duplicate_outcomes = int(connection.execute(
+                    "SELECT COUNT(*) FROM shadow_trade_outcomes WHERE outcome_id=?", (outcome_id,)
+                ).fetchone()[0])
+                _check(checks, "outcome_identity", "MATCH" if duplicate_outcomes == 1 else "MISMATCH")
+                if duplicate_outcomes != 1:
+                    issues.append("DUPLICATE_OUTCOME_IDENTITY")
+
         links = _link_status(run, outcome, outcome_columns)
         checks.update({f"attribution.{key}": value for key, value in links.items()})
         if any(value == "MISMATCH" for value in links.values()):
@@ -269,6 +301,7 @@ def audit_new_shadow_trade(*, database_path: str | Path, open_book_path: str | P
             "RUN_SYMBOL_MISMATCH", "RUN_TIMEFRAME_MISMATCH", "MALFORMED_ENTRY_OR_EXIT_TIMESTAMP",
             "EXIT_BEFORE_ENTRY", "NONFINITE_PNL_R", "OUTCOME_NOT_CLOSED", "ATTRIBUTION_ID_MISMATCH",
             "LEDGER_STRATEGY_ID_MISMATCH", "LEDGER_SYMBOL_MISMATCH", "LEDGER_TIMEFRAME_MISMATCH",
+            "DUPLICATE_OUTCOME_IDENTITY",
         ))
         classification = "E2E_BROKEN" if broken else "E2E_DEGRADED" if issues else "CLOSED_E2E_HEALTHY"
         return {
@@ -302,11 +335,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--open-book", required=True, type=Path)
     parser.add_argument("--history", required=True, type=Path)
     parser.add_argument("--since", required=True)
+    parser.add_argument("--shadow-trade-id", help="audit this exact existing RL2 shadow trade")
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
     report = audit_new_shadow_trade(
         database_path=args.db, open_book_path=args.open_book, history_path=args.history,
-        since=args.since,
+        since=args.since, shadow_trade_id=args.shadow_trade_id,
     )
     if args.as_json:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, default=str))
