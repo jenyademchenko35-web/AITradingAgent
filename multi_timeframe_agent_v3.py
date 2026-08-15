@@ -449,6 +449,9 @@ class TFData:
     ema200: float = 0.0
     adx: float = 0.0
     atr_percentile: float = 0.0
+    # Stable OHLCV open time for observer-only consumers.  It is deliberately
+    # separate from the agent-cycle timestamp.
+    candle_open_at: str = ""
 
 
 @dataclass
@@ -495,6 +498,10 @@ def build_tf(df: pd.DataFrame) -> TFData:
     )
 
     last = df.iloc[-1]
+    try:
+        candle_open_at = datetime.fromtimestamp(float(last.ts) / 1000, tz=timezone.utc).isoformat()
+    except (AttributeError, TypeError, ValueError, OverflowError, OSError):
+        candle_open_at = ""
 
     return TFData(
         close=float(last.close),
@@ -521,6 +528,7 @@ def build_tf(df: pd.DataFrame) -> TFData:
         ema200=float(last.ema200),
         adx=float(last.adx),
         atr_percentile=float(last.atr_percentile),
+        candle_open_at=candle_open_at,
     )
 
 

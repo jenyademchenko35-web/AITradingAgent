@@ -77,6 +77,16 @@ def _timestamp(value: Any) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
+def _candle_identity(snapshot: Mapping[str, Any]) -> str | None:
+    """Return the stable UTC identity of the snapshot's timeframe candle.
+
+    Agent-cycle timestamps and cycle IDs intentionally cannot be used here:
+    both change while the same OHLCV candle remains active.
+    """
+    candle_at = _timestamp(snapshot.get("candle_open_at"))
+    return candle_at.isoformat() if candle_at else None
+
+
 def _signal_fingerprint(strategy_id: str, snapshot: Mapping[str, Any],
                         evaluation: Mapping[str, Any]) -> str:
     """Stable setup identity; timestamps, snapshot IDs and prices are excluded."""
@@ -211,6 +221,7 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
         "high": _number(getattr(tf, "high", close), close),
         "low": _number(getattr(tf, "low", close), close),
         "candle_open": _number(getattr(tf, "open", close), close),
+        "candle_open_at": str(getattr(tf, "candle_open_at", "") or ""),
         "ema20": _number(getattr(tf, "ema20", 0)),
         "ema50": _number(getattr(tf, "ema50", 0)),
         "atr": _number(getattr(tf, "atr", 0)), "adx": _number(getattr(tf, "adx", 0)),
@@ -345,7 +356,17 @@ class ShadowResearchBook:
                 adverse = (low - entry) / price_risk if direction == "LONG" else (entry - high) / price_risk
                 trade["mfe_r"] = round(max(_number(trade.get("mfe_r")), favorable), 6)
                 trade["mae_r"] = round(min(_number(trade.get("mae_r")), adverse), 6)
-            trade["holding_candles"] = int(trade.get("holding_candles", 0) or 0) + 1
+            # MFE/MAE remain per-snapshot observations.  Holding duration, by
+            # contrast, advances only once per distinct trade-timeframe candle.
+            # The marker is persisted with the open book, so a process restart
+            # cannot count the same candle twice.
+            candle_at = _candle_identity(row)
+            last_counted = _candle_identity({
+                "candle_open_at": trade.get("last_counted_candle_at"),
+            })
+            if candle_at and candle_at != last_counted:
+                trade["holding_candles"] = int(trade.get("holding_candles", 0) or 0) + 1
+                trade["last_counted_candle_at"] = candle_at
             loss = low <= sl if direction == "LONG" else high >= sl
             win = high >= tp if direction == "LONG" else low <= tp
             invalidated = bool(row.get("research_invalidated") or row.get("invalidated"))

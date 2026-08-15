@@ -227,6 +227,7 @@ def _snapshot(cycle_id="cycle-1", symbol="BTC/USDT"):
         "trend_direction": "LONG", "momentum_direction": "LONG",
         "risk_direction": "LONG", "structure_direction": "LONG",
         "ema20": 100.0, "ema50": 98.0, "candle_open": 99.5,
+        "candle_open_at": "2026-07-31T10:00:00+00:00",
         "volume_ratio": 1.2, "atr_percentile": 40.0,
     }
 
@@ -621,7 +622,8 @@ def test_native_component_values_reach_strict_strategy_gates():
 def test_feature_snapshot_uses_engine_values_not_rsi_or_atr_aliases():
     tf = SimpleNamespace(close=100, high=101, low=99, atr=2, adx=30,
                          volume_ratio=1.2, atr_percentile=90, ema200=95,
-                         ema20=101, ema50=99, trend_ema="BULLISH", rsi=70)
+                         ema20=101, ema50=99, trend_ema="BULLISH", rsi=70,
+                         candle_open_at="2026-07-31T10:00:00+00:00")
     decision = SimpleNamespace(
         direction="LONG", signal="SETUP", score=30,
         decision_timestamp="2026-07-31T10:00:00+00:00",
@@ -639,6 +641,7 @@ def test_feature_snapshot_uses_engine_values_not_rsi_or_atr_aliases():
     assert snapshot["risk_score"] == 20
     assert snapshot["momentum_score"] != tf.rsi
     assert snapshot["risk_score"] != 100 - tf.atr_percentile
+    assert snapshot["candle_open_at"] == "2026-07-31T10:00:00+00:00"
 
 
 def test_rejection_diagnostics_are_grouped_by_reason(tmp_path):
@@ -760,6 +763,102 @@ def test_research_shadow_book_survives_runtime_restart(tmp_path):
     assert result["opened_shadow"] == 0
     assert result["open_research_shadow_trades"] == 1
     assert len(json.loads(open_path.read_text(encoding="utf-8"))) == 1
+
+
+def _open_shadow_book_trade(book, settings, *, attribution=None):
+    snapshot = _snapshot("book-open")
+    trade_id, reason = book.open(
+        strategy_id="RISK_CONSERVATIVE", snapshot=snapshot, plan=_plan(),
+        settings=settings, signal_fingerprint="fingerprint",
+        shadow_mode_started_at=snapshot["timestamp"], attribution=attribution,
+    )
+    assert reason is None
+    assert trade_id
+    return trade_id
+
+
+def _candle_snapshot(candle_at, *, invalidated=False):
+    snapshot = _snapshot("book-cycle")
+    snapshot.update(
+        timestamp=candle_at.replace(":00+00:00", ":05+00:00"),
+        candle_open_at=candle_at,
+        research_invalidated=invalidated,
+    )
+    return snapshot
+
+
+def test_shadow_holding_candles_counts_distinct_timeframe_candles_and_survives_restart(tmp_path):
+    open_path = tmp_path / "open.json"
+    settings = ResearchLabSettings(shadow_timeout_candles=0)
+    book = ShadowResearchBook(open_path, tmp_path / "history.csv")
+    trade_id = _open_shadow_book_trade(book, settings)
+    candle = _candle_snapshot("2026-07-31T10:00:00+00:00")
+
+    book.close_from_snapshots([candle], settings=settings)
+    book.close_from_snapshots([candle], settings=settings)
+    persisted = book.load()[0]
+    assert persisted["shadow_trade_id"] == trade_id
+    assert persisted["holding_candles"] == 1
+    assert persisted["last_counted_candle_at"] == "2026-07-31T10:00:00+00:00"
+
+    restarted = ShadowResearchBook(open_path, tmp_path / "history.csv")
+    restarted.close_from_snapshots([candle], settings=settings)
+    assert restarted.load()[0]["holding_candles"] == 1
+    restarted.close_from_snapshots([_candle_snapshot("2026-07-31T11:00:00+00:00")], settings=settings)
+    assert restarted.load()[0]["holding_candles"] == 2
+
+
+def test_legacy_open_shadow_trade_initializes_candle_marker_without_resetting_identity(tmp_path):
+    open_path = tmp_path / "open.json"
+    settings = ResearchLabSettings()
+    book = ShadowResearchBook(open_path, tmp_path / "history.csv")
+    trade_id = _open_shadow_book_trade(book, settings, attribution={"signal_id": "signal-1"})
+    legacy = book.load()[0]
+    legacy.pop("last_counted_candle_at", None)
+    legacy["holding_candles"] = 4
+    open_path.write_text(json.dumps([legacy]), encoding="utf-8")
+
+    book.close_from_snapshots([_candle_snapshot("2026-07-31T10:00:00+00:00")], settings=settings)
+    migrated = book.load()[0]
+    assert migrated["shadow_trade_id"] == trade_id
+    assert migrated["signal_id"] == "signal-1"
+    assert migrated["holding_candles"] == 5
+    assert migrated["last_counted_candle_at"] == "2026-07-31T10:00:00+00:00"
+
+
+def test_shadow_timeout_uses_distinct_candles_not_processing_cycles(tmp_path):
+    open_path = tmp_path / "open.json"
+    settings = ResearchLabSettings(shadow_timeout_candles=3)
+    book = ShadowResearchBook(open_path, tmp_path / "history.csv")
+    trade_id = _open_shadow_book_trade(book, settings, attribution={"decision_id": "decision-1"})
+    first = _candle_snapshot("2026-07-31T10:00:00+00:00")
+    for _ in range(3):
+        assert book.close_from_snapshots([first], settings=settings) == []
+    assert book.load()[0]["holding_candles"] == 1
+
+    assert book.close_from_snapshots([_candle_snapshot("2026-07-31T11:00:00+00:00")], settings=settings) == []
+    closed = book.close_from_snapshots([_candle_snapshot("2026-07-31T12:00:00+00:00")], settings=settings)
+    assert len(closed) == 1
+    assert closed[0]["shadow_trade_id"] == trade_id
+    assert closed[0]["decision_id"] == "decision-1"
+    assert closed[0]["holding_candles"] == 3
+    assert closed[0]["exit_reason"] == "TIMEOUT"
+
+
+def test_shadow_invalidation_closes_on_snapshot_without_changing_attribution(tmp_path):
+    book = ShadowResearchBook(tmp_path / "open.json", tmp_path / "history.csv")
+    settings = ResearchLabSettings(shadow_timeout_candles=0)
+    trade_id = _open_shadow_book_trade(
+        book, settings, attribution={"feature_snapshot_id": "feature-1", "signal_id": "signal-1"},
+    )
+    closed = book.close_from_snapshots(
+        [_candle_snapshot("2026-07-31T10:00:00+00:00", invalidated=True)], settings=settings,
+    )
+    assert len(closed) == 1
+    assert closed[0]["exit_reason"] == "INVALIDATED"
+    assert closed[0]["shadow_trade_id"] == trade_id
+    assert closed[0]["feature_snapshot_id"] == "feature-1"
+    assert closed[0]["signal_id"] == "signal-1"
 
 
 @pytest.mark.parametrize(("invalidated", "timeout_candles", "expected"), [
