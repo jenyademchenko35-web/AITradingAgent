@@ -58,3 +58,19 @@ def test_v2_callback_exception_edits_to_legacy(monkeypatch):
         effective_chat=SimpleNamespace(id=42),
     ), SimpleNamespace()))
     assert captured == ["legacy-home"]
+
+
+def test_diagnostics_uses_existing_nearest_symbol_formatter_helper(monkeypatch):
+    """Regression: persisted diagnostics must not fail with a NameError."""
+    row = {"symbol": "BTC/USDT", "timestamp": "2026-08-16T10:00:00+00:00"}
+
+    class FakeDiagnostics:
+        def __init__(self, **kwargs): pass
+        def analyze(self, *args): return {}
+        def format_report(self, report): return "diagnostics-ok"
+
+    monkeypatch.setattr(bot, "latest_debug_for_symbol", lambda symbol: row)
+    monkeypatch.setattr(bot, "DecisionDiagnostics", FakeDiagnostics)
+    monkeypatch.setattr(bot, "load_weights", lambda symbol: {})
+    monkeypatch.setattr(bot, "read_csv_rows", lambda path: [row])
+    assert bot.format_diagnostics("BTC/USDT") == "diagnostics-ok"

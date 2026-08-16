@@ -731,6 +731,7 @@ def test_research_shadow_tp_and_sl_lifecycle(tmp_path, exit_high, exit_low, reas
     result = runtime.process_cycle(cycle_id="close", snapshots=[exit_snapshot], settings=settings)
     assert result["closed_shadow_this_cycle"] == 1
     assert json.loads(open_path.read_text(encoding="utf-8")) == []
+    assert runtime.shadow_book.pending_closes() == []
     with history_path.open(encoding="utf-8", newline="") as handle:
         history = list(csv.DictReader(handle))
     assert len(history) == 1

@@ -102,6 +102,7 @@ from report_synchronization import (
     synchronize_reports,
 )
 from telegram_formatters import (
+    _nearest_symbol_row,
     format_ai_coach as v5_format_ai_coach,
     format_developer as v5_format_developer,
     format_dry_run as v5_format_dry_run,

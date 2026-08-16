@@ -12,7 +12,7 @@ import uuid
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from strategies import registry
 
@@ -276,9 +276,15 @@ class ShadowResearchBook:
     )
 
     def __init__(self, path: str | Path = SHADOW_BOOK_FILE,
-                 history_path: str | Path = SHADOW_HISTORY_FILE) -> None:
+                 history_path: str | Path = SHADOW_HISTORY_FILE,
+                 pending_closes_path: str | Path | None = None) -> None:
         self.path = Path(path)
         self.history_path = Path(history_path)
+        self.pending_closes_path = (
+            Path(pending_closes_path)
+            if pending_closes_path is not None
+            else self.path.with_name("research_lab_v2_pending_closes.json")
+        )
 
     def load(self) -> list[dict[str, Any]]:
         try:
@@ -312,6 +318,72 @@ class ShadowResearchBook:
             )
             writer.writerow(payload)
 
+    def pending_closes(self) -> list[dict[str, Any]]:
+        """Return durable, not-yet-acknowledged closed trades.
+
+        This is a small outbox for the cross-store boundary between the CSV
+        ledger and SQLite outcome persistence. It is deliberately separate
+        from the open book, so a restart never recreates a shadow trade.
+        """
+        try:
+            payload = json.loads(self.pending_closes_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return []
+        return [dict(row) for row in payload if isinstance(row, Mapping)] if isinstance(payload, list) else []
+
+    def _write_pending_closes(self, rows: Iterable[Mapping[str, Any]]) -> None:
+        _atomic_json(self.pending_closes_path, [dict(row) for row in rows])
+
+    def queue_closed_trade(self, trade: Mapping[str, Any]) -> bool:
+        """Durably retain a closed trade until its canonical outcome is acknowledged."""
+        trade_id = str(trade.get("shadow_trade_id") or "").strip()
+        if not trade_id:
+            return False
+        pending = self.pending_closes()
+        if any(str(row.get("shadow_trade_id") or "") == trade_id for row in pending):
+            return False
+        pending.append(dict(trade))
+        self._write_pending_closes(pending)
+        return True
+
+    def reconcile_pending_closes(
+        self,
+        persist: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+    ) -> dict[str, int]:
+        """Persist only ledger-confirmed queued closures, then acknowledge them."""
+        pending = self.pending_closes()
+        remaining: list[dict[str, Any]] = []
+        ledger_ids = {
+            str(row.get("shadow_trade_id") or "").strip()
+            for row in self.history()
+        }
+        recovered = failed = deferred = 0
+        for trade in pending:
+            trade_id = str(trade.get("shadow_trade_id") or "").strip()
+            if not trade_id or trade_id not in ledger_ids:
+                # The durable outbox is written first. A crash before CSV
+                # append must never manufacture a canonical outcome.
+                remaining.append(trade)
+                deferred += 1
+                continue
+            try:
+                result = persist(trade)
+            except Exception:  # noqa: BLE001 - retain the durable outbox for every persistence failure
+                remaining.append(trade)
+                failed += 1
+                continue
+            if str(result.get("status") or "") in {"inserted", "existing"}:
+                recovered += 1
+            else:
+                remaining.append(trade)
+                failed += 1
+        if len(remaining) != len(pending):
+            self._write_pending_closes(remaining)
+        return {
+            "pending": len(pending), "recovered": recovered,
+            "failed": failed, "deferred": deferred,
+        }
+
     def summary(self) -> dict[str, Any]:
         open_rows = self.load()
         closed_rows = self.history()
@@ -339,8 +411,23 @@ class ShadowResearchBook:
         by_symbol = {str(row.get("symbol")): row for row in snapshots}
         remaining, closed = [], []
         open_rows = self.load()
+        pending_by_id = {
+            str(row.get("shadow_trade_id") or "").strip(): row
+            for row in self.pending_closes()
+        }
+        ledger_ids = {
+            str(row.get("shadow_trade_id") or "").strip()
+            for row in self.history()
+        }
         for original in open_rows:
             trade = dict(original)
+            trade_id = str(trade.get("shadow_trade_id") or "").strip()
+            prior_closed = pending_by_id.get(trade_id)
+            if prior_closed is not None and trade_id in ledger_ids:
+                # Recover the already-recorded close after a crash before the
+                # open-book replace. Do not append a second ledger row.
+                closed.append(dict(prior_closed))
+                continue
             row = by_symbol.get(str(trade.get("symbol")))
             if not row:
                 remaining.append(trade)
@@ -400,6 +487,10 @@ class ShadowResearchBook:
                 "exit_reason": exit_reason,
                 "pnl_r": round(pnl_r, 6),
             }
+            # Queue before the ledger append: even a crash during CSV work
+            # leaves the exact closure and its attribution durable. Reconcile
+            # only persists queue entries once the ledger confirms them.
+            self.queue_closed_trade(closed_trade)
             self._append_history(closed_trade)
             closed.append(closed_trade)
         if open_rows or remaining:
@@ -589,6 +680,16 @@ class ResearchLabRuntime:
         try:
             lab.database.initialize()
             lab.register_strategies()
+            recovered = self.shadow_book.reconcile_pending_closes(
+                lambda trade: lab.database.persist_closed_outcome(
+                    trade, source="LIVE_RESEARCH_RUNTIME",
+                )
+            )
+            if recovered["failed"]:
+                _write_log("warning", {
+                    "event": "pending_shadow_close_reconciliation",
+                    **recovered,
+                }, self.log_path)
             signal_states = lab.database.load_signal_states()
             try:
                 previous_status = json.loads(self.status_path.read_text(encoding="utf-8"))
@@ -733,6 +834,19 @@ class ResearchLabRuntime:
                 lab.process_cycle(cycle_id=cycle_id, snapshot=snapshot,
                                   decisions=snapshot_decisions,
                                   closed_trades=closed)
+                # Normal closures are already persisted above.  This removes
+                # their durable outbox entries; a crash before this point is
+                # safe because the next cycle retries by shadow_trade_id.
+                recovered = self.shadow_book.reconcile_pending_closes(
+                    lambda trade: lab.database.persist_closed_outcome(
+                        trade, source="LIVE_RESEARCH_RUNTIME",
+                    )
+                )
+                if recovered["failed"]:
+                    _write_log("warning", {
+                        "event": "pending_shadow_close_reconciliation",
+                        **recovered,
+                    }, self.log_path)
                 for key, state in pending_states:
                     lab.database.upsert_signal_state(**state)
                     signal_states[key] = state
