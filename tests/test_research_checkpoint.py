@@ -3,6 +3,8 @@ import hashlib
 import json
 import sqlite3
 
+import pytest
+
 from research_lab_v2.research_checkpoint import build_checkpoint
 
 
@@ -102,13 +104,50 @@ def test_missing_feature_evidence_is_not_reconstructed(tmp_path):
     assert report["by_session"] == []
 
 
-def test_detects_correlated_cross_strategy_entries(tmp_path):
+def test_detects_exact_cross_strategy_correlation_with_auditable_evidence(tmp_path):
     db, history = _report(tmp_path)
-    _outcome(db, "risk", entry_time="2026-08-14T10:00:00+00:00")
-    _outcome(db, "trend", strategy_id="TREND_CONFIRM", entry_time="2026-08-14T10:04:00+00:00")
+    entry = "2026-08-16T05:03:00.845738+00:00"
+    _outcome(db, "b304cc4457b54df8ac13d26a540ca451", symbol="LINK/USDT", pnl_r=-1.0, entry_time=entry)
+    _outcome(db, "7652b7ae740a44cda31e82e19b9c1024", strategy_id="TREND_CONFIRM",
+             symbol="LINK/USDT", pnl_r=-1.0, entry_time=entry)
     report = build_checkpoint(database_path=db, history_path=history, since=SINCE)
     assert report["correlated_observations"]["window_seconds"] == 300
-    assert len(report["correlated_observations"]["pairs"]) == 1
+    pairs = report["correlated_observations"]["pairs"]
+    assert pairs == [{
+        "shadow_trade_id_a": "rl2-7652b7ae740a44cda31e82e19b9c1024",
+        "strategy_id_a": "TREND_CONFIRM",
+        "shadow_trade_id_b": "rl2-b304cc4457b54df8ac13d26a540ca451",
+        "strategy_id_b": "RISK_CONSERVATIVE", "symbol": "LINK/USDT", "side": "LONG",
+        "entry_time_a": entry, "entry_time_b": entry, "difference_seconds": 0.0,
+        "pnl_r_a": -1.0, "pnl_r_b": -1.0,
+    }]
+
+
+@pytest.mark.parametrize("changes", [
+    {"entry_time": "2026-08-14T10:05:01+00:00"},
+    {"symbol": "ETH/USDT"},
+    {"side": "SHORT"},
+    {"strategy_id": "RISK_CONSERVATIVE"},
+    {"join_status": "UNRESOLVED", "data_quality": "PARTIAL"},
+])
+def test_excludes_non_correlated_or_integrity_ineligible_rows(tmp_path, changes):
+    db, history = _report(tmp_path)
+    _outcome(db, "risk", entry_time="2026-08-14T10:00:00+00:00")
+    candidate = {"strategy_id": "TREND_CONFIRM", "entry_time": "2026-08-14T10:04:00+00:00"}
+    candidate.update(changes)
+    _outcome(db, "other", **candidate)
+    report = build_checkpoint(database_path=db, history_path=history, since=SINCE)
+    assert report["correlated_observations"]["pairs"] == []
+
+
+def test_includes_entries_at_or_inside_correlation_window_once(tmp_path):
+    db, history = _report(tmp_path)
+    _outcome(db, "risk", entry_time="2026-08-14T10:00:00+00:00")
+    _outcome(db, "trend", strategy_id="TREND_CONFIRM", entry_time="2026-08-14T10:05:00+00:00")
+    report = build_checkpoint(database_path=db, history_path=history, since=SINCE)
+    pairs = report["correlated_observations"]["pairs"]
+    assert len(pairs) == 1
+    assert pairs[0]["difference_seconds"] == 300.0
 
 
 def test_verdict_stays_early_signal_below_fifty_trades(tmp_path):

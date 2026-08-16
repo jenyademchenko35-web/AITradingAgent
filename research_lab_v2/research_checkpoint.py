@@ -181,24 +181,40 @@ def _feature_comparison(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _canonical_identity(value: Any) -> str:
+    """Compare canonical text identities without whitespace/case artefacts."""
+    raw = str(value or "").strip().upper()
+    return {"BUY": "LONG", "SELL": "SHORT"}.get(raw, raw)
+
+
 def _correlated(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    ordered = sorted(rows, key=lambda row: (_utc(row.get("entry_time")) or datetime.min.replace(tzinfo=timezone.utc)))
-    correlations = []
-    for index, left in enumerate(ordered):
-        left_time = _utc(left.get("entry_time"))
-        if left_time is None:
-            continue
-        for right in ordered[index + 1:]:
-            right_time = _utc(right.get("entry_time"))
-            if right_time is None or (right_time - left_time).total_seconds() > CORRELATED_ENTRY_WINDOW_SECONDS:
-                break
-            if (left.get("symbol") == right.get("symbol") and left.get("side") == right.get("side")
-                    and left.get("strategy_id") != right.get("strategy_id")):
+    groups: dict[tuple[str, str], list[tuple[datetime, Mapping[str, Any]]]] = defaultdict(list)
+    for row in rows:
+        entry_time = _utc(row.get("entry_time"))
+        symbol, side = _canonical_identity(row.get("symbol")), _canonical_identity(row.get("side"))
+        if entry_time and symbol and side:
+            groups[(symbol, side)].append((entry_time, row))
+
+    correlations: list[dict[str, Any]] = []
+    for (symbol, side), entries in sorted(groups.items()):
+        ordered = sorted(entries, key=lambda item: (item[0], str(item[1].get("shadow_trade_id") or "")))
+        for index, (left_time, left) in enumerate(ordered):
+            left_strategy = _canonical_identity(left.get("strategy_id"))
+            for right_time, right in ordered[index + 1:]:
+                difference = abs((right_time - left_time).total_seconds())
+                if difference > CORRELATED_ENTRY_WINDOW_SECONDS:
+                    break
+                if left_strategy == _canonical_identity(right.get("strategy_id")):
+                    continue
                 correlations.append({
-                    "left_shadow_trade_id": left.get("shadow_trade_id"),
-                    "right_shadow_trade_id": right.get("shadow_trade_id"),
-                    "symbol": left.get("symbol"), "side": left.get("side"),
-                    "entry_time_delta_seconds": round((right_time - left_time).total_seconds(), 3),
+                    "shadow_trade_id_a": left.get("shadow_trade_id"),
+                    "strategy_id_a": left.get("strategy_id"),
+                    "shadow_trade_id_b": right.get("shadow_trade_id"),
+                    "strategy_id_b": right.get("strategy_id"),
+                    "symbol": symbol, "side": side,
+                    "entry_time_a": left.get("entry_time"), "entry_time_b": right.get("entry_time"),
+                    "difference_seconds": round(difference, 6),
+                    "pnl_r_a": _number(left.get("pnl_r")), "pnl_r_b": _number(right.get("pnl_r")),
                 })
     return correlations
 
