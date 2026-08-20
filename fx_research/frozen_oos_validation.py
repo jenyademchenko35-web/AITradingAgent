@@ -264,3 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.json_output:
         args.json_output.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

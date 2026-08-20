@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from fx_research import frozen_oos_validation
@@ -12,6 +14,8 @@ from fx_research.frozen_oos_validation import (
     build_report,
     main,
 )
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _outcome(
@@ -139,3 +143,46 @@ def test_invalid_canonical_schema_is_data_invalid(tmp_path: Path) -> None:
     report = build_report(eurusd_path=invalid, gbpusd_path=invalid)
     assert report["overall"] == "DATA_INVALID"
     assert all(item["verdict"] == "DATA_INVALID" for item in report["hypotheses"])  # type: ignore[index]
+
+
+def test_module_help_executes_argparse_cli() -> None:
+    result = subprocess.run(
+        [sys.executable, "-m", "fx_research.frozen_oos_validation", "--help"],
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert "usage:" in result.stdout and "--eurusd" in result.stdout and "--gbpusd" in result.stdout
+
+
+def test_module_cli_writes_explicit_json_for_pre_cutoff_inputs(tmp_path: Path) -> None:
+    header = "timestamp,open,high,low,close,volume,source,symbol,timeframe\n"
+    row = "2026-08-19T23:00:00+00:00,1.1,1.2,1.0,1.15,,TEST,EUR/USD,1h\n"
+    eurusd, gbpusd, output = tmp_path / "eur.csv", tmp_path / "gbp.csv", tmp_path / "report.json"
+    eurusd.write_text(header + row, encoding="utf-8")
+    gbpusd.write_text((header + row).replace("EUR/USD", "GBP/USD"), encoding="utf-8")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "fx_research.frozen_oos_validation",
+            "--eurusd",
+            str(eurusd),
+            "--gbpusd",
+            str(gbpusd),
+            "--json-output",
+            str(output),
+        ],
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert "FX FROZEN OOS VALIDATION" in result.stdout and "Overall: WAITING_FOR_OOS_DATA" in result.stdout
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["overall"] == "WAITING_FOR_OOS_DATA"
+    assert _hypothesis(report, "FX-DIAG-V2-01")["verdict"] == "WAITING_FOR_SAMPLE"
+    assert _hypothesis(report, "FX-DIAG-V2-02")["verdict"] == "WAITING_FOR_SAMPLE"
