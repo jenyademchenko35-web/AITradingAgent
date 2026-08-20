@@ -57,8 +57,8 @@ def _trade() -> dict[str, object]:
 
 def test_csv_loader_validates_missing_volume_and_weekend_gap(tmp_path: Path) -> None:
     rows = _rows("EUR/USD", count=2)
-    rows[0]["timestamp"] = "2026-08-21T21:00:00+00:00"  # Friday 21:00
-    rows[1]["timestamp"] = "2026-08-23T22:00:00+00:00"  # Sunday market-open
+    rows[0]["timestamp"] = "2026-08-21T20:00:00+00:00"  # Friday before EDT close.
+    rows[1]["timestamp"] = "2026-08-23T21:00:00+00:00"  # Sunday EDT reopening.
     source = tmp_path / "eurusd.csv"; _csv(source, rows)
     series = load_historical(source, symbol="EUR/USD")
     assert series.quality.candles_loaded == 2

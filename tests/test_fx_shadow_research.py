@@ -63,8 +63,8 @@ def test_candle_rejects_bad_geometry_and_nonfinite() -> None:
 
 def test_weekends_closed_and_sessions_are_utc_deterministic() -> None:
     assert not is_market_open(datetime(2026, 8, 15, 12, tzinfo=UTC))
-    assert not is_market_open(datetime(2026, 8, 16, 21, tzinfo=UTC))
-    assert is_market_open(datetime(2026, 8, 16, 22, tzinfo=UTC))
+    assert not is_market_open(datetime(2026, 8, 16, 20, tzinfo=UTC))
+    assert is_market_open(datetime(2026, 8, 16, 21, tzinfo=UTC))
     assert session_label(datetime(2026, 8, 17, 13, tzinfo=UTC)) == "OVERLAP"
     assert session_label(datetime(2026, 8, 15, 12, tzinfo=UTC)) == "OFF_HOURS"
 

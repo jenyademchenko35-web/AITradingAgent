@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -136,5 +136,10 @@ def load_historical(path: str | Path, *, symbol: str) -> HistoricalSeries:
 
 
 def _weekend_gap(left: FXCandle, right: FXCandle) -> bool:
-    """Missing Fri→Sun candles are normal; weekday discontinuities are reported."""
-    return left.candle_open_at.weekday() == 4 and left.candle_open_at.hour >= 21 and right.candle_open_at.weekday() == 6
+    """A gap is normal only when every omitted H1 boundary is market-closed."""
+    current = left.candle_open_at + timedelta(hours=1)
+    while current < right.candle_open_at:
+        if is_market_open(current):
+            return False
+        current += timedelta(hours=1)
+    return True

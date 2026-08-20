@@ -1,8 +1,11 @@
-"""Deterministic UTC FX market-hours labels (without holiday modelling)."""
+"""Deterministic FX market-hours labels anchored to New York weekly boundaries."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+NEW_YORK = ZoneInfo("America/New_York")
 
 
 def as_utc(value: datetime) -> datetime:
@@ -12,18 +15,19 @@ def as_utc(value: datetime) -> datetime:
 
 
 def is_market_open(value: datetime) -> bool:
-    """Approximate weekly FX market: Sun 22:00 UTC through Fri 22:00 UTC.
+    """Approximate weekly FX market: Sun 17:00 through Fri 17:00 New York time.
 
-    Public holiday calendars and DST-adjusted regional sessions are intentionally
-    outside v1.  A closed market produces no entry and is never a data-gap.
+    The UTC boundary is therefore 22:00 in EST and 21:00 in EDT. Public holiday
+    calendars remain outside v1. A closed market produces no entry and is never
+    a data-gap.
     """
-    stamp = as_utc(value)
-    if stamp.weekday() == 5:  # Saturday
+    local = as_utc(value).astimezone(NEW_YORK)
+    if local.weekday() == 5:  # Saturday
         return False
-    if stamp.weekday() == 6:  # Sunday
-        return stamp.hour >= 22
-    if stamp.weekday() == 4:  # Friday
-        return stamp.hour < 22
+    if local.weekday() == 6:  # Sunday
+        return local.hour >= 17
+    if local.weekday() == 4:  # Friday
+        return local.hour < 17
     return True
 
 

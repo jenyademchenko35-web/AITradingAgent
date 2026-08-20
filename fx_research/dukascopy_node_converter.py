@@ -14,6 +14,7 @@ import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,7 @@ SOURCE = "DUKASCOPY_NODE"
 TIMEFRAME = "1h"
 ANOMALY_EXAMPLE_LIMIT = 5
 GAP_EXAMPLE_LIMIT = 5
+FX_PRICE_STEP = Decimal("0.00001")
 
 
 class DukascopyNodeConversionError(ValueError):
@@ -80,6 +82,8 @@ def _empty_report(*, symbol: str, raw_sha256: str) -> dict[str, Any]:
         "market_open_flat_rows": 0,
         "market_closed_flat_rows": 0,
         "market_closed_nonflat_rows": 0,
+        "ohlc_one_tick_normalized": 0,
+        "ohlc_normalization_examples": [],
         "duplicates": 0,
         "invalid_ohlc": 0,
         "first_timestamp": None,
@@ -92,6 +96,54 @@ def _empty_report(*, symbol: str, raw_sha256: str) -> dict[str, Any]:
         "raw_sha256": raw_sha256,
         "canonical_sha256": None,
     }
+
+
+def _price(value: Any, *, field: str) -> Decimal:
+    if isinstance(value, bool):
+        raise TypeError(f"{field} must be numeric")
+    try:
+        parsed = Decimal(str(value).strip())
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError(f"{field} must be numeric") from exc
+    if not parsed.is_finite() or parsed <= 0:
+        raise ValueError(f"{field} must be finite and positive")
+    return parsed
+
+
+def _decimal_text(value: Decimal) -> str:
+    return format(value, "f")
+
+
+def _normalise_one_tick_ohlc(row: Mapping[str, Any], *, timestamp: datetime,
+                             report: dict[str, Any]) -> dict[str, str]:
+    """Correct only exact one-pipette aggregation-edge violations, using Decimal."""
+    raw = {field: _price(row.get(field), field=field) for field in ("open", "high", "low", "close")}
+    if raw["high"] < raw["low"]:
+        raise ValueError("invalid OHLC geometry")
+    upper_excess = max(Decimal(0), raw["open"], raw["close"]) - raw["high"]
+    lower_excess = raw["low"] - min(raw["open"], raw["close"])
+    lower_excess = max(Decimal(0), lower_excess)
+    if upper_excess > FX_PRICE_STEP or lower_excess > FX_PRICE_STEP:
+        raise ValueError("OHLC geometry exceeds one source price step")
+    canonical = {
+        "open": raw["open"],
+        "high": max(raw["high"], raw["open"], raw["close"]),
+        "low": min(raw["low"], raw["open"], raw["close"]),
+        "close": raw["close"],
+    }
+    adjustment = max(upper_excess, lower_excess)
+    if adjustment:
+        report["ohlc_one_tick_normalized"] += 1
+        examples = report["ohlc_normalization_examples"]
+        if len(examples) < ANOMALY_EXAMPLE_LIMIT:
+            examples.append({
+                "timestamp": timestamp.isoformat(),
+                "raw_ohlc": {field: _decimal_text(raw[field]) for field in raw},
+                "canonical_ohlc": {field: _decimal_text(canonical[field]) for field in canonical},
+                "adjustment_magnitude": _decimal_text(adjustment),
+                "inferred_price_step": _decimal_text(FX_PRICE_STEP),
+            })
+    return {field: _decimal_text(value) for field, value in canonical.items()}
 
 
 def _read_raw(path: Path, *, symbol: str, report: dict[str, Any]) -> list[RawCandle]:
@@ -118,14 +170,12 @@ def _read_raw(path: Path, *, symbol: str, report: dict[str, Any]) -> list[RawCan
                 raise DukascopyNodeConversionError(f"duplicate timestamp at raw row {index}", report)
             if previous is not None and timestamp <= previous:
                 raise DukascopyNodeConversionError(f"timestamps are not strictly increasing at raw row {index}", report)
+            ohlc = _normalise_one_tick_ohlc(row, timestamp=timestamp, report=report)
             candle = FXCandle.from_mapping({
                 "symbol": symbol,
                 "timeframe": TIMEFRAME,
                 "candle_open_at": timestamp.isoformat(),
-                "open": row.get("open"),
-                "high": row.get("high"),
-                "low": row.get("low"),
-                "close": row.get("close"),
+                **ohlc,
                 "volume": None,
                 "source": SOURCE,
                 "fetched_at": timestamp.isoformat(),
