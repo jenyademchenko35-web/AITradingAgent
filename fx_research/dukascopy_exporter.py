@@ -9,6 +9,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
@@ -24,16 +26,23 @@ from .provider import FXCandle
 
 UTC = timezone.utc
 TIMEFRAME_MILLISECONDS = 3_600_000
-DEFAULT_ENDPOINT = "https://freeserv.dukascopy.com/2.0/index.php"
+MAX_CANDLES_PER_REQUEST = 5_000
+DEFAULT_ENDPOINT = "https://freeserv.dukascopy.com/2.0/"
+INSTRUMENT_LIST_PATH = "api/instrumentList"
+HISTORICAL_PRICES_PATH = "api/historicalPrices"
+API_TIMEFRAME = "1hour"
+API_PRICE_SIDES = {"BID": "B", "ASK": "A"}
 COLUMNS = ("timestamp", "open", "high", "low", "close", "volume", "source", "symbol", "timeframe")
 
 
 class DukascopyExportError(RuntimeError):
     """A failed or malformed chunk must prevent a partial canonical export."""
 
-    def __init__(self, message: str, *, failed_chunks: Iterable[tuple[datetime, datetime]] = ()) -> None:
+    def __init__(self, message: str, *, failed_chunks: Iterable[tuple[datetime, datetime]] = (),
+                 details: Iterable[str] = ()) -> None:
         super().__init__(message)
         self.failed_chunks = tuple(failed_chunks)
+        self.details = tuple(details)
 
 
 class ExistingDatasetError(FileExistsError):
@@ -94,35 +103,48 @@ def _response_status(response: Any) -> int:
     return int(status if status is not None else response.getcode())
 
 
-def _records(payload: Any) -> list[Any]:
-    if isinstance(payload, Mapping):
-        payload = payload.get("candles", payload.get("data"))
+def _array_response(payload: Any, *, endpoint: str) -> list[Any]:
+    """The documented v2 endpoints return a JSON array, never chart/json3 data."""
     if not isinstance(payload, list):
-        raise TypeError("Dukascopy response has no candle list")
+        raise TypeError(f"Dukascopy {endpoint} response must be a JSON array")
     return payload
 
 
+def _chunk_label(symbol: str, chunk: DukascopyChunk) -> str:
+    return f"symbol={symbol} start={chunk.start.isoformat()} end={chunk.end.isoformat()}"
+
+
+def _request_error_detail(error: Exception | None) -> str:
+    if error is None:
+        return "unknown error"
+    status = getattr(error, "code", None)
+    if status is not None:
+        return f"HTTP {status}: {type(error).__name__}"
+    return f"{type(error).__name__}: {error}"
+
+
 class DukascopyHTTPClient:
-    """Minimal bounded reader for Dukascopy's chart/json3 historical endpoint."""
+    """Bounded, fail-closed reader for the documented Dukascopy v2 API."""
 
     def __init__(self, *, endpoint: str = DEFAULT_ENDPOINT, timeout_seconds: float = 15.0,
-                 retries: int = 2, opener: Callable[..., Any] = urlopen,
+                 retries: int = 2, api_key: str | None = None, opener: Callable[..., Any] = urlopen,
                  sleeper: Callable[[float], None] = time.sleep) -> None:
         self.endpoint = endpoint
         self.timeout_seconds = max(.1, float(timeout_seconds))
         self.retries = min(3, max(0, int(retries)))
         self.opener, self.sleeper = opener, sleeper
+        self.api_key = api_key.strip() if api_key and api_key.strip() else None
+        self._instrument_ids: dict[str, int] = {}
 
-    def fetch_chunk(self, *, symbol: str, chunk: DukascopyChunk, price_side: str) -> list[Any]:
-        instrument = normalize_symbol(symbol)
-        if price_side not in {"BID", "ASK"}:
-            raise ValueError("price side must be BID or ASK")
-        query = urlencode({
-            "path": "chart/json3", "instrument": instrument, "offerSide": price_side,
-            "timeFrame": TIMEFRAME_MILLISECONDS,
-            "start": int(chunk.start.timestamp() * 1000), "end": int(chunk.end.timestamp() * 1000),
-        })
-        request = Request(f"{self.endpoint}?{query}", headers={"User-Agent": "AITradingAgent-FX-Historical-Exporter/1.0"})
+    def _request_json(self, query_values: Mapping[str, Any], *, endpoint_name: str) -> Any:
+        separator = "&" if "?" in self.endpoint else "?"
+        query = dict(query_values)
+        if self.api_key:
+            query["key"] = self.api_key
+        request = Request(
+            f"{self.endpoint}{separator}{urlencode(query)}",
+            headers={"User-Agent": "AITradingAgent-FX-Historical-Exporter/1.0", "Accept": "application/json"},
+        )
         error: Exception | None = None
         for attempt in range(self.retries + 1):
             try:
@@ -131,21 +153,84 @@ class DukascopyHTTPClient:
                     content = response.read()
                 if status < 200 or status >= 300:
                     raise OSError(f"HTTP {status}")
-                return _records(json.loads(content.decode("utf-8")))
+                if not content:
+                    raise ValueError(f"Dukascopy {endpoint_name} returned an empty response")
+                return json.loads(content.decode("utf-8"))
             except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
                 error = exc
                 if attempt < self.retries:
-                    self.sleeper(min(.25 * (2 ** attempt), 1.0))
-        raise DukascopyExportError(f"Dukascopy chunk failed: {type(error).__name__}", failed_chunks=(chunk,))
+                    self.sleeper(min(.25 * (2**attempt), 1.0))
+        raise DukascopyExportError(f"Dukascopy {endpoint_name} failed: {_request_error_detail(error)}")
+
+    def resolve_instrument_id(self, symbol: str) -> int:
+        """Resolve documented instrument ids once per client, using an exact name match."""
+        normalised = normalize_symbol(symbol)
+        cached = self._instrument_ids.get(normalised)
+        if cached is not None:
+            return cached
+        payload = self._request_json(
+            {"path": INSTRUMENT_LIST_PATH, "fields": "id,name"}, endpoint_name="instrumentList"
+        )
+        matches: list[int] = []
+        for item in _array_response(payload, endpoint="instrumentList"):
+            if not isinstance(item, Mapping) or item.get("name") != normalised:
+                continue
+            identifier = item.get("id")
+            if isinstance(identifier, bool):
+                continue
+            try:
+                parsed = int(identifier)
+            except (TypeError, ValueError):
+                continue
+            if parsed > 0:
+                matches.append(parsed)
+        if len(matches) != 1:
+            raise DukascopyExportError(
+                f"Dukascopy instrumentList did not resolve exactly one id for {normalised}"
+            )
+        self._instrument_ids[normalised] = matches[0]
+        return matches[0]
+
+    def fetch_chunk(self, *, symbol: str, chunk: DukascopyChunk, price_side: str) -> list[Any]:
+        instrument = normalize_symbol(symbol)
+        if price_side not in API_PRICE_SIDES:
+            raise ValueError("price side must be BID or ASK")
+        requested_candles = (chunk.end - chunk.start).total_seconds() / 3600
+        if requested_candles > MAX_CANDLES_PER_REQUEST:
+            raise DukascopyExportError(
+                f"Dukascopy chunk exceeds {MAX_CANDLES_PER_REQUEST} one-hour candles: {_chunk_label(instrument, chunk)}",
+                failed_chunks=(chunk,),
+            )
+        try:
+            instrument_id = self.resolve_instrument_id(instrument)
+            payload = self._request_json(
+                {
+                    "path": HISTORICAL_PRICES_PATH,
+                    "instrument": instrument_id,
+                    "timeFrame": API_TIMEFRAME,
+                    "count": MAX_CANDLES_PER_REQUEST,
+                    "start": int(chunk.start.timestamp() * 1000),
+                    "end": int(chunk.end.timestamp() * 1000),
+                    "dayStartTime": "UTC",
+                    "offerSide": API_PRICE_SIDES[price_side],
+                },
+                endpoint_name="historicalPrices",
+            )
+            records = _array_response(payload, endpoint="historicalPrices")
+            if not records:
+                raise ValueError("Dukascopy historicalPrices returned an empty candle array")
+            return records
+        except (DukascopyExportError, TypeError, ValueError) as exc:
+            raise DukascopyExportError(
+                f"Dukascopy chunk failed ({_chunk_label(instrument, chunk)}): {exc}",
+                failed_chunks=(chunk,),
+            ) from exc
 
 
 def _raw_mapping(raw: Any) -> Mapping[str, Any]:
     if isinstance(raw, Mapping):
         return raw
-    if isinstance(raw, list) and len(raw) >= 5:
-        # Dukascopy chart/json3 array form: time, open, close, low, high, volume.
-        return {"timestamp": raw[0], "open": raw[1], "close": raw[2], "low": raw[3], "high": raw[4], "volume": raw[5] if len(raw) > 5 else None}
-    raise ValueError("unsupported Dukascopy candle shape")
+    raise ValueError("Dukascopy historicalPrices candle must be an object")
 
 
 def _timestamp(value: Any) -> datetime:
@@ -157,7 +242,8 @@ def _timestamp(value: Any) -> datetime:
 def _normalise(raw: Any, *, symbol: str, price_side: str) -> dict[str, Any]:
     row = _raw_mapping(raw)
     side = row.get("price_side") or row.get("offerSide")
-    if side is not None and str(side).upper() != price_side:
+    accepted_sides = {price_side, API_PRICE_SIDES[price_side]}
+    if side is not None and str(side).upper() not in accepted_sides:
         raise ValueError("mixed BID/ASK candle response")
     stamp = _timestamp(row.get("timestamp", row.get("candle_open_at", row.get("time"))))
     candle = FXCandle.from_mapping({
@@ -191,6 +277,27 @@ def _validate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "missing_volume_pct": round(100 * missing_volume / len(rows), 6) if rows else 0.0}
 
 
+def _expected_market_hours(start: datetime, end: datetime) -> set[datetime]:
+    """Return every requested 1h candle-open timestamp that should be tradable."""
+    cursor = start.replace(minute=0, second=0, microsecond=0)
+    if cursor < start:
+        cursor += timedelta(hours=1)
+    expected: set[datetime] = set()
+    while cursor < end:
+        if is_market_open(cursor):
+            expected.add(cursor)
+        cursor += timedelta(hours=1)
+    return expected
+
+
+def _assert_requested_coverage(rows: Iterable[Mapping[str, Any]], *, start: datetime, end: datetime) -> None:
+    expected = _expected_market_hours(start, end)
+    observed = {_timestamp(row["timestamp"]) for row in rows}
+    missing = expected - observed
+    if missing:
+        raise ValueError(f"missing requested coverage: {len(missing)} one-hour market candles")
+
+
 def _csv_bytes(rows: Iterable[Mapping[str, Any]]) -> bytes:
     lines = [",".join(COLUMNS)]
     for row in rows:
@@ -218,6 +325,7 @@ def export_symbol(*, client: DukascopyHTTPClient, symbol: str, start: str | date
         raise ExistingDatasetError(f"dataset already exists: {destination}; use --force to replace")
     rows: list[dict[str, Any]] = []
     failed: list[tuple[datetime, datetime]] = []
+    failure_details: list[str] = []
     for chunk in chunks:
         try:
             raw_rows = client.fetch_chunk(symbol=normalised_symbol, chunk=chunk, price_side=price_side)
@@ -227,11 +335,16 @@ def export_symbol(*, client: DukascopyHTTPClient, symbol: str, start: str | date
             rows.extend(normalised)
         except (DukascopyExportError, ValueError) as exc:
             failed.append((chunk.start, chunk.end))
-            if isinstance(exc, DukascopyExportError):
-                failed.extend((item.start, item.end) for item in exc.failed_chunks)
+            failure_details.append(str(exc))
     if failed:
-        raise DukascopyExportError("one or more chunks failed; no canonical dataset written", failed_chunks=failed)
+        diagnostics = "; ".join(failure_details[:5])
+        raise DukascopyExportError(
+            f"one or more chunks failed; no canonical dataset written: {diagnostics}",
+            failed_chunks=failed,
+            details=failure_details,
+        )
     quality = _validate(rows)
+    _assert_requested_coverage(rows, start=start_at, end=end_at)
     content = _csv_bytes(rows)
     _write_atomic(destination, content)
     return {"symbol": normalised_symbol, "timeframe": "1h", "price_side": price_side,
@@ -263,7 +376,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.timeframe != "1h":
         parser.error("only 1h is supported")
-    report = run_export(symbols=args.symbols, start=args.start, end=args.end, output_dir=args.output_dir, price_side=args.price_side, force=args.force)
+    api_key = os.environ.get("DUKASCOPY_API_KEY")
+    client = DukascopyHTTPClient(api_key=api_key)
+    try:
+        report = run_export(symbols=args.symbols, start=args.start, end=args.end, output_dir=args.output_dir, price_side=args.price_side, force=args.force, client=client)
+    except DukascopyExportError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if args.report_json:
         args.report_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
