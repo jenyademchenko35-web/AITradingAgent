@@ -1,0 +1,20 @@
+[Unit]
+Description=AITradingAgent daily read-only OOS research automation
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/home/aitrading/AITradingAgent/venv/bin/python
+ConditionPathExists=/home/aitrading/AITradingAgent/research.db
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/aitrading/AITradingAgent
+EnvironmentFile=%h/.config/aitradingagent/oos-research.env
+ExecStart=/home/aitrading/AITradingAgent/venv/bin/python -m research_oos_daily --crypto-db research.db --crypto-history research_lab_shadow_history.csv --eurusd data/fx/canonical/EURUSD_1h.csv --gbpusd data/fx/canonical/GBPUSD_1h.csv --staging-dir data/fx/oos_staging --reports-dir reports/oos --log-file logs/oos_research_daily.log --lock-file reports/oos/.daily.lock --retention 30 --dukascopy-npx ${OOS_NPX}
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

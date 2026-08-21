@@ -1,0 +1,11 @@
+[Unit]
+Description=Run AITradingAgent OOS research automation daily
+
+[Timer]
+OnCalendar=*-*-* 06:20:00 UTC
+Persistent=true
+AccuracySec=1min
+Unit=aitrading-oos-research.service
+
+[Install]
+WantedBy=timers.target

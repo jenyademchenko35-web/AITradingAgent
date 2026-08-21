@@ -29,6 +29,7 @@ candidate_shadow_open_trades.json
 decision_features.csv
 reports/candidate_laboratory.json
 reports/candidate_comparison.json
+reports/oos/
 diagnostics_report.json
 signals_v3.csv
 agent_v3_stats.json
