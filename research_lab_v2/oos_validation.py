@@ -21,6 +21,7 @@ from pathlib import Path
 from statistics import mean, median
 from typing import Any
 
+from .oos_cutoff_registry import CRYPTO_OOS_CUTOFF_ID, get_frozen_oos_cutoff
 from .research_checkpoint import (
     ATTRIBUTION_IDS,
     CORRELATED_ENTRY_WINDOW_SECONDS,
@@ -217,11 +218,14 @@ def _integrity(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_oos_report(*, database_path: str | Path, history_path: str | Path, cutoff: str,
+def build_oos_report(*, database_path: str | Path, history_path: str | Path, cutoff: str | None = None,
                      bootstrap_iterations: int = DEFAULT_BOOTSTRAP_ITERATIONS, bootstrap_seed: int = DEFAULT_BOOTSTRAP_SEED) -> dict[str, Any]:
-    parsed_cutoff = _utc(cutoff)
+    canonical_cutoff = get_frozen_oos_cutoff()
+    parsed_cutoff = canonical_cutoff if cutoff is None else _utc(cutoff)
     if parsed_cutoff is None:
-        raise ValueError("--cutoff must be a timezone-aware ISO-8601 timestamp")
+        raise ValueError("cutoff must be a timezone-aware ISO-8601 timestamp")
+    if parsed_cutoff != canonical_cutoff:
+        raise ValueError("cutoff conflicts with the immutable Crypto OOS registry")
     if bootstrap_iterations <= 0:
         raise ValueError("bootstrap iterations must be positive")
     with _ro_connection(Path(database_path)) as connection:
@@ -252,7 +256,8 @@ def build_oos_report(*, database_path: str | Path, history_path: str | Path, cut
         history = {"status": "NOT_AVAILABLE", "rows": None}
     correlated = _correlated(eligible)
     return {
-        "cutoff": parsed_cutoff.isoformat(), "partition": {"in_sample": "entry_time < cutoff", "out_of_sample": "entry_time >= cutoff"},
+        "cutoff": parsed_cutoff.isoformat(), "cutoff_id": CRYPTO_OOS_CUTOFF_ID,
+        "partition": {"in_sample": "entry_time < cutoff", "out_of_sample": "entry_time >= cutoff"},
         "frozen_in_sample_benchmark": copy.deepcopy(FROZEN_IS_BENCHMARK), "history": history,
         "oos_integrity": _integrity(oos), "analysis_population": {"eligible_closed_resolved_complete_finite": len(eligible), "excluded": len(oos) - len(eligible)},
         "metrics": {"total": _metrics(eligible), "by_strategy": by_strategy, "by_strategy_direction": by_direction, "by_strategy_symbol": [{"strategy_id": strategy, "symbol": symbol, **_metrics(group)} for (strategy, symbol), group in sorted(_multi_group(eligible, "strategy_id", "symbol").items())], "by_market_regime": _group(enriched, "market_regime", feature=True), "by_session": _group(enriched, "session", feature=True), "bootstrap": _bootstrap(eligible, iterations=bootstrap_iterations, seed=bootstrap_seed), "mfe_mae": _mfe_mae(eligible)},
@@ -273,6 +278,7 @@ def _multi_group(rows: Iterable[Mapping[str, Any]], *fields: str) -> dict[tuple[
 def _print_report(report: Mapping[str, Any]) -> None:
     print("RL2 OUT-OF-SAMPLE VALIDATION")
     print(f"Cutoff: {report['cutoff']}")
+    print(f"Cutoff ID: {report['cutoff_id']}")
     print(f"Eligible OOS outcomes: {report['analysis_population']['eligible_closed_resolved_complete_finite']}")
     print(f"Verdict: {report['oos_verdict']}")
     for item in report["hypotheses"]:
@@ -283,19 +289,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", required=True, type=Path)
     parser.add_argument("--history", required=True, type=Path)
-    parser.add_argument("--cutoff")
-    parser.add_argument("--freeze-cutoff", action="store_true")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--bootstrap-iterations", type=int, default=DEFAULT_BOOTSTRAP_ITERATIONS)
     parser.add_argument("--bootstrap-seed", type=int, default=DEFAULT_BOOTSTRAP_SEED)
     args = parser.parse_args(argv)
-    if args.freeze_cutoff:
-        report = freeze_cutoff(args.db)
-    elif args.cutoff:
-        report = build_oos_report(database_path=args.db, history_path=args.history, cutoff=args.cutoff, bootstrap_iterations=args.bootstrap_iterations, bootstrap_seed=args.bootstrap_seed)
-    else:
-        parser.error("--cutoff is required for OOS analysis; use --freeze-cutoff once to derive a deterministic cutoff")
-    _print_report(report) if "oos_verdict" in report else print(json.dumps(report, ensure_ascii=False, indent=2))
+    report = build_oos_report(
+        database_path=args.db, history_path=args.history,
+        bootstrap_iterations=args.bootstrap_iterations,
+        bootstrap_seed=args.bootstrap_seed,
+    )
+    _print_report(report)
     if args.json_output:
         args.json_output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return 0
