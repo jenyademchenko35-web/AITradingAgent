@@ -27,12 +27,27 @@ from .frozen_oos_validation import build_report as build_oos_report
 from .historical_data import HistoricalDataError, load_historical
 
 SYMBOLS = {"EUR/USD": "EURUSD", "GBP/USD": "GBPUSD"}
+# dukascopy-node accepts only its explicit lower-case instrument identifiers.
+# Keep this separate from file-name aliases so an arbitrary symbol can never
+# become part of a subprocess command.
+DUKASCOPY_INSTRUMENTS = {"EUR/USD": "eurusd", "GBP/USD": "gbpusd"}
 Downloader = Callable[[str, datetime, datetime, Path], None]
 Writer = Callable[[Path, bytes], None]
 
 
 class OOSCollectionError(RuntimeError):
     """A failed collection leaves canonical files untouched."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        exit_code: int | None = None,
+        failure_report: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.exit_code = exit_code
+        self.failure_report = failure_report
 
 
 def _closed_hour(now: datetime) -> datetime:
@@ -69,18 +84,55 @@ def _sha(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def _download_with_cli(command: Sequence[str], symbol: str, start: datetime, end: datetime, output: Path) -> None:
-    """Bounded argv-only adapter; operators may pass an explicit command prefix."""
-    argv = [*command, "--symbol", SYMBOLS[symbol], "--timeframe", "H1", "--price", "BID", "--from", start.isoformat(), "--to", end.isoformat(), "--output", str(output)]
+def _dukascopy_time(value: datetime) -> str:
+    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _download_with_cli(
+    command: Sequence[str], symbol: str, start: datetime, end: datetime,
+    output: Path,
+) -> None:
+    """Run dukascopy-node with a bounded, argv-only incremental H1 request.
+
+    dukascopy-node's default side is BID.  The adapter deliberately does not
+    supply an undocumented price-side switch; canonical datasets therefore
+    retain the established BID provenance without guessing another CLI option.
+    """
+    instrument = DUKASCOPY_INSTRUMENTS.get(symbol)
+    if instrument is None:
+        raise OOSCollectionError(f"{symbol}: unsupported Dukascopy instrument")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # ``-from`` and ``-to`` are exact UTC hour boundaries calculated from the
+    # last canonical candle through the last completed current hour.  The
+    # downstream overlap validation is deliberately retained as a fail-closed
+    # guard for any downloader inclusivity difference.
+    argv = [
+        *command,
+        "-i", instrument,
+        "-from", _dukascopy_time(start),
+        "-to", _dukascopy_time(end),
+        "-t", "h1",
+        "-f", "csv",
+        "-dir", str(output.parent),
+    ]
     try:
         result = subprocess.run(argv, shell=False, timeout=90, text=True, capture_output=True, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise OOSCollectionError(f"{symbol}: downloader unavailable: {type(exc).__name__}") from exc
+        raise OOSCollectionError(
+            f"{symbol}: downloader unavailable: {type(exc).__name__}"
+        ) from exc
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "unknown downloader failure").strip().splitlines()[-1][:240]
-        raise OOSCollectionError(f"{symbol}: downloader failed ({result.returncode}): {detail}")
-    if not output.exists() or not output.stat().st_size:
+        raise OOSCollectionError(
+            f"{symbol}: downloader failed ({result.returncode}): {detail}",
+            exit_code=result.returncode,
+        )
+    # A per-symbol temporary directory ensures that exactly one CSV is the
+    # downloader result; never select an arbitrary stale staging artifact.
+    candidates = sorted(path for path in output.parent.glob("*.csv") if path != output)
+    if len(candidates) != 1 or not candidates[0].stat().st_size:
         raise OOSCollectionError(f"{symbol}: downloader produced no raw data")
+    candidates[0].replace(output)
 
 
 def _merge(existing: list[dict[str, str]], incoming: list[dict[str, str]], symbol: str) -> tuple[list[dict[str, str]], int]:
@@ -117,17 +169,45 @@ def _prepare_one(
     start = last + timedelta(hours=1)
     if start > end:
         return {"symbol": symbol, "status": "NO_NEW_CLOSED_CANDLES", "existing": existing, "old_bytes": old_bytes, "new_rows": 0}
-    raw = staging / f"{SYMBOLS[symbol].lower()}-raw.csv"
+    raw = staging / SYMBOLS[symbol].lower() / "raw.csv"
     prepared = staging / f"{SYMBOLS[symbol].lower()}-canonical.csv"
-    downloader(symbol, start, end, raw)
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    failure = {
+        "status": "FAILED",
+        "symbol": symbol,
+        "previous_last_timestamp": existing[-1]["timestamp"],
+        "requested_start": start.isoformat(),
+        "requested_end": end.isoformat(),
+        "downloader_exit_code": None,
+        "error": None,
+        "canonical_modified": False,
+    }
+    try:
+        downloader(symbol, start, end, raw)
+    except OOSCollectionError as exc:
+        failure["downloader_exit_code"] = exc.exit_code
+        failure["error"] = str(exc)[:300]
+        raise OOSCollectionError(
+            str(exc), exit_code=exc.exit_code, failure_report=failure
+        ) from exc
     try:
         conversion = convert(input_path=raw, output_path=prepared, symbol=symbol)
     except (DukascopyNodeConversionError, ValueError) as exc:
-        raise OOSCollectionError(f"{symbol}: raw conversion failed: {exc}") from exc
+        failure["error"] = f"{symbol}: raw conversion failed: {exc}"[:300]
+        raise OOSCollectionError(
+            failure["error"], failure_report=failure
+        ) from exc
     if conversion["closed_market_nonflat_anomaly"]["requires_review"]:
-        raise OOSCollectionError(f"{symbol}: closed-market non-flat anomaly requires review")
-    incoming = _canonical_rows(prepared, symbol)
-    merged, new_rows = _merge(existing, incoming, symbol)
+        failure["error"] = f"{symbol}: closed-market non-flat anomaly requires review"
+        raise OOSCollectionError(failure["error"], failure_report=failure)
+    try:
+        incoming = _canonical_rows(prepared, symbol)
+        merged, new_rows = _merge(existing, incoming, symbol)
+    except OOSCollectionError as exc:
+        failure["error"] = str(exc)[:300]
+        raise OOSCollectionError(
+            str(exc), failure_report=failure
+        ) from exc
     content = _csv_bytes(merged)
     return {
         "symbol": symbol,
@@ -164,7 +244,17 @@ def collect(
     staging_parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(prefix="fx-oos-", dir=staging_parent) as directory:
         staging = Path(directory)
-        prepared = {symbol: _prepare_one(symbol=symbol, canonical_path=path, staging=staging, end=end, downloader=fetch) for symbol, path in paths.items()}
+        prepared: dict[str, dict[str, Any]] = {}
+        for symbol, path in paths.items():
+            try:
+                prepared[symbol] = _prepare_one(
+                    symbol=symbol, canonical_path=path, staging=staging,
+                    end=end, downloader=fetch,
+                )
+            except OOSCollectionError as exc:
+                if exc.failure_report is not None:
+                    exc.failure_report["dry_run"] = dry_run
+                raise
         changed = [item for item in prepared.values() if item["new_rows"]]
         if not changed:
             return {"status": "NO_NEW_CLOSED_CANDLES", "dry_run": dry_run, "symbols": prepared, "oos": None}
@@ -197,6 +287,17 @@ def main(argv: list[str] | None = None) -> int:
     try:
         report = collect(eurusd_path=args.eurusd, gbpusd_path=args.gbpusd, staging_dir=args.staging_dir, dry_run=args.dry_run, dukascopy_command=args.dukascopy_command)
     except OOSCollectionError as exc:
+        report = exc.failure_report or {
+            "status": "FAILED",
+            "dry_run": args.dry_run,
+            "error": str(exc)[:300],
+            "canonical_modified": False,
+        }
+        if args.json_output:
+            args.json_output.write_text(
+                json.dumps(report, ensure_ascii=False, indent=2, default=str),
+                encoding="utf-8",
+            )
         print(str(exc))
         return 2
     print(json.dumps(report, ensure_ascii=False, indent=2, default=str))

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import csv
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
+import fx_research.oos_data_collector as collector
 from fx_research.oos_data_collector import OOSCollectionError, collect
 
 HEADER = ("timestamp", "open", "high", "low", "close", "volume", "source", "symbol", "timeframe")
@@ -96,4 +99,78 @@ def test_conflicting_overlap_dry_run_and_writer_rollback_are_safe(tmp_path: Path
         path.write_bytes(content)
     with pytest.raises(OOSCollectionError):
         collect(eurusd_path=eurusd, gbpusd_path=gbpusd, staging_dir=tmp_path / "stage", now=last + timedelta(hours=3), downloader=_downloader(valid), writer=failing_writer)
+    assert (eurusd.read_bytes(), gbpusd.read_bytes()) == before
+
+
+@pytest.mark.parametrize(("symbol", "instrument"), [
+    ("EUR/USD", "eurusd"),
+    ("GBP/USD", "gbpusd"),
+])
+def test_dukascopy_node_argv_uses_explicit_supported_instrument(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, symbol: str, instrument: str,
+) -> None:
+    output = tmp_path / "isolated" / "raw.csv"
+    start = datetime(2026, 8, 20, 1, tzinfo=UTC)
+    end = datetime(2026, 8, 20, 2, tzinfo=UTC)
+    captured: dict[str, object] = {}
+
+    def fake_run(argv: list[str], **kwargs: object) -> SimpleNamespace:
+        captured["argv"] = argv
+        captured["kwargs"] = kwargs
+        (output.parent / f"{instrument}-BID.csv").write_text(
+            "timestamp,open,high,low,close\n", encoding="utf-8"
+        )
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(collector.subprocess, "run", fake_run)
+    collector._download_with_cli(["npx", "dukascopy-node"], symbol, start, end, output)
+
+    assert captured["argv"] == [
+        "npx", "dukascopy-node", "-i", instrument,
+        "-from", "2026-08-20T01:00:00Z",
+        "-to", "2026-08-20T02:00:00Z",
+        "-t", "h1", "-f", "csv", "-dir", str(output.parent),
+    ]
+    assert captured["kwargs"] == {
+        "shell": False, "timeout": 90, "text": True,
+        "capture_output": True, "check": False,
+    }
+    assert output.exists()
+
+
+def test_unknown_symbol_fails_before_subprocess(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(collector.subprocess, "run", lambda *_args, **_kwargs: pytest.fail("must not run"))
+    with pytest.raises(OOSCollectionError, match="unsupported Dukascopy instrument"):
+        collector._download_with_cli(
+            ["npx", "dukascopy-node"], "BTC/USD", datetime.now(UTC),
+            datetime.now(UTC), tmp_path / "raw.csv",
+        )
+
+
+def test_downloader_failure_writes_bounded_json_report_and_dry_run_preserves_sha(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    eurusd, gbpusd, _last = _paths(tmp_path)
+    before = (eurusd.read_bytes(), gbpusd.read_bytes())
+    report_path = tmp_path / "failed.json"
+
+    monkeypatch.setattr(
+        collector.subprocess, "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=1, stdout="", stderr="error: required option '-i, --instrument <value>' not specified",
+        ),
+    )
+    exit_code = collector.main([
+        "--eurusd", str(eurusd), "--gbpusd", str(gbpusd),
+        "--staging-dir", str(tmp_path / "stage"),
+        "--dukascopy-command", "npx", "dukascopy-node",
+        "--dry-run", "--json-output", str(report_path),
+    ])
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert exit_code == 2
+    assert report["status"] == "FAILED" and report["dry_run"] is True
+    assert report["symbol"] == "EUR/USD"
+    assert report["downloader_exit_code"] == 1
+    assert report["canonical_modified"] is False
+    assert "required option" in report["error"]
     assert (eurusd.read_bytes(), gbpusd.read_bytes()) == before
