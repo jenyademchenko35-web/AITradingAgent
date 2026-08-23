@@ -14,6 +14,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from .calendar import is_market_open
 from .dukascopy_node_converter import (
     CANONICAL_COLUMNS,
     SOURCE,
@@ -53,6 +54,21 @@ class OOSCollectionError(RuntimeError):
 def _closed_hour(now: datetime) -> datetime:
     now = now.astimezone(UTC)
     return now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+
+
+def _has_expected_market_open_candle(start: datetime, end: datetime) -> bool:
+    """Return whether an uncollected, fully closed H1 candle can exist.
+
+    Both boundaries represent candle-open times.  The shared New York-aware
+    calendar is the authority for weekend and DST behaviour; do not invoke the
+    downloader merely because a UTC hour elapsed while FX was closed.
+    """
+    current = start.astimezone(UTC).replace(minute=0, second=0, microsecond=0)
+    while current <= end:
+        if is_market_open(current):
+            return True
+        current += timedelta(hours=1)
+    return False
 
 
 def _canonical_rows(path: Path, symbol: str) -> list[dict[str, str]]:
@@ -167,7 +183,7 @@ def _prepare_one(
     existing = _canonical_rows(canonical_path, symbol)
     last = _timestamp(existing[-1])
     start = last + timedelta(hours=1)
-    if start > end:
+    if start > end or not _has_expected_market_open_candle(start, end):
         return {"symbol": symbol, "status": "NO_NEW_CLOSED_CANDLES", "existing": existing, "old_bytes": old_bytes, "new_rows": 0}
     raw = staging / SYMBOLS[symbol].lower() / "raw.csv"
     prepared = staging / f"{SYMBOLS[symbol].lower()}-canonical.csv"

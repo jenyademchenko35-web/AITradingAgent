@@ -92,6 +92,26 @@ def test_success_runs_collector_then_checkpoint_and_writes_compact_reports(tmp_p
     assert len(list((tmp_path / "reports" / "history").glob("*.json"))) == 1
 
 
+def test_no_new_fx_candles_still_runs_checkpoint_and_is_successful(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def collector(**_kwargs: object) -> dict[str, object]:
+        calls.append("collector")
+        return _collection(status="NO_NEW_CLOSED_CANDLES")
+
+    def checkpoint_builder(**_kwargs: object) -> dict[str, object]:
+        calls.append("checkpoint")
+        return _checkpoint()
+
+    code, report = daily.orchestrate(
+        **_kwargs(tmp_path), collector=collector, checkpoint_builder=checkpoint_builder,
+    )
+    assert code == 0 and report["status"] == "SUCCESS"
+    assert report["collection"]["status"] == "NO_NEW_CLOSED_CANDLES"
+    assert report["checkpoint"]["crypto"]["cutoff_id"] == "CRYPTO-OOS-V1"
+    assert calls == ["collector", "checkpoint"]
+
+
 def test_collector_failure_is_bounded_and_never_runs_checkpoint(tmp_path: Path) -> None:
     checkpoint_called = False
 

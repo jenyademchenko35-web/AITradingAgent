@@ -48,6 +48,57 @@ def test_no_new_closed_candles_is_idempotent(tmp_path: Path) -> None:
     assert report["status"] == "NO_NEW_CLOSED_CANDLES" and (eurusd.read_bytes(), gbpusd.read_bytes()) == before
 
 
+@pytest.mark.parametrize("now", [
+    datetime(2026, 8, 22, 6, 20, tzinfo=UTC),  # Saturday.
+    datetime(2026, 8, 23, 6, 20, tzinfo=UTC),  # Sunday morning UTC.
+    datetime(2026, 8, 23, 20, 59, tzinfo=UTC),  # Immediately before EDT reopen.
+    datetime(2026, 8, 23, 21, 59, tzinfo=UTC),  # Reopened, but first H1 has not closed.
+])
+def test_closed_fx_market_skips_downloader_and_preserves_hashes(
+    tmp_path: Path, now: datetime,
+) -> None:
+    last = datetime(2026, 8, 21, 20, tzinfo=UTC)  # Friday 16:00 New York.
+    eurusd, gbpusd = tmp_path / "EUR.csv", tmp_path / "GBP.csv"
+    _write_canonical(eurusd, "EUR/USD", [last])
+    _write_canonical(gbpusd, "GBP/USD", [last])
+    before = (eurusd.read_bytes(), gbpusd.read_bytes())
+
+    def must_not_download(*_args: object) -> None:
+        raise AssertionError("closed FX window must not invoke downloader")
+
+    report = collect(
+        eurusd_path=eurusd, gbpusd_path=gbpusd, staging_dir=tmp_path / "stage",
+        now=now, downloader=must_not_download,
+    )
+    assert report["status"] == "NO_NEW_CLOSED_CANDLES"
+    assert all(item["status"] == "NO_NEW_CLOSED_CANDLES" for item in report["symbols"].values())
+    assert (eurusd.read_bytes(), gbpusd.read_bytes()) == before
+
+
+def test_first_fully_closed_sunday_candle_invokes_downloader(tmp_path: Path) -> None:
+    last = datetime(2026, 8, 21, 20, tzinfo=UTC)
+    eurusd, gbpusd = tmp_path / "EUR.csv", tmp_path / "GBP.csv"
+    _write_canonical(eurusd, "EUR/USD", [last])
+    _write_canonical(gbpusd, "GBP/USD", [last])
+    sunday_reopen = datetime(2026, 8, 23, 21, tzinfo=UTC)
+    calls: list[str] = []
+
+    def download(symbol: str, start: datetime, end: datetime, output: Path) -> None:
+        calls.append(symbol)
+        assert start == last + timedelta(hours=1)
+        assert end == sunday_reopen
+        _downloader({symbol: [(sunday_reopen, "1.1", "1.2", "1.0", "1.15")]})(
+            symbol, start, end, output,
+        )
+
+    report = collect(
+        eurusd_path=eurusd, gbpusd_path=gbpusd, staging_dir=tmp_path / "stage",
+        now=datetime(2026, 8, 23, 22, tzinfo=UTC), downloader=download,
+    )
+    assert report["status"] == "PUBLISHED"
+    assert calls == ["EUR/USD", "GBP/USD"]
+
+
 def test_successful_batch_preserves_prefix_publishes_both_and_calls_oos(tmp_path: Path) -> None:
     eurusd, gbpusd, last = _paths(tmp_path)
     rows = {symbol: [(last + timedelta(hours=1), "1.1", "1.2", "1.0", "1.15")] for symbol in ("EUR/USD", "GBP/USD")}
@@ -80,6 +131,23 @@ def test_downloader_or_one_symbol_failure_prevents_both_publications(tmp_path: P
         _downloader({"EUR/USD": [(last + timedelta(hours=1), "1.1", "1.2", "1.0", "1.15")]})(symbol, start, end, output)
     with pytest.raises(OOSCollectionError):
         collect(eurusd_path=eurusd, gbpusd_path=gbpusd, staging_dir=tmp_path / "stage", now=last + timedelta(hours=3), downloader=broken)
+    assert (eurusd.read_bytes(), gbpusd.read_bytes()) == before
+
+
+def test_empty_downloader_response_when_open_candle_is_expected_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    eurusd, gbpusd, last = _paths(tmp_path)
+    before = (eurusd.read_bytes(), gbpusd.read_bytes())
+    monkeypatch.setattr(
+        collector.subprocess, "run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stdout="", stderr=""),
+    )
+    with pytest.raises(OOSCollectionError, match="downloader produced no raw data"):
+        collect(
+            eurusd_path=eurusd, gbpusd_path=gbpusd, staging_dir=tmp_path / "stage",
+            now=last + timedelta(hours=3), dukascopy_command=("fixture-npx",),
+        )
     assert (eurusd.read_bytes(), gbpusd.read_bytes()) == before
 
 
