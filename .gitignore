@@ -82,6 +82,7 @@ fx_shadow_history.csv
 fx_pending_closes.json
 data/fx/
 research_lab_v2_runtime_override.json
+research_lab_v2_h9_boundary.json
 runtime_snapshot.json
 runtime_ingest/
 signal_episodes.jsonl

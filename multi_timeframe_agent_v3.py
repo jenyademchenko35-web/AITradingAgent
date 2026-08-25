@@ -7,7 +7,7 @@ import os
 import json
 import math
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 from config import (
     MIN_CONFIDENCE,
     MIN_EDGE,
@@ -460,6 +460,9 @@ class MarketSnapshot:
     tf1h: TFData
     tf4h: TFData
     tf1d: TFData
+    # Observer-only bounded raw H1 candles. Decision engines continue to use
+    # TFData exactly as before; this is consumed only after a decision exists.
+    tf1h_candles: tuple[dict[str, Any], ...] = ()
 
 
 # ==========================
@@ -570,11 +573,26 @@ def build_market_snapshot(
     tf4h_df: pd.DataFrame,
     tf1d_df: pd.DataFrame,
 ) -> MarketSnapshot:
+    tf1h = build_tf(tf1h_df)
+    # H9 may observe the source candles only after a decision has been made.
+    # A malformed observer row must never prevent normal market analysis.
+    try:
+        observer_candles = tuple(
+            {
+                "timestamp": datetime.fromtimestamp(float(row.ts) / 1000, tz=timezone.utc).isoformat(),
+                "open": float(row.open), "high": float(row.high),
+                "low": float(row.low), "close": float(row.close),
+            }
+            for row in tf1h_df.tail(64).itertuples(index=False)
+        )
+    except (AttributeError, OverflowError, TypeError, ValueError, OSError):
+        observer_candles = ()
     return MarketSnapshot(
         symbol=symbol,
-        tf1h=build_tf(tf1h_df),
+        tf1h=tf1h,
         tf4h=build_tf(tf4h_df),
         tf1d=build_tf(tf1d_df),
+        tf1h_candles=observer_candles,
     )
 
 # ==========================

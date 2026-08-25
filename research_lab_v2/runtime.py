@@ -261,6 +261,22 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
         "direction": direction, "signal": str(getattr(decision, "signal", "")),
         "decision": str(getattr(decision, "signal", "")),
     })
+    # H9 is a post-decision observer. It has no input to DecisionEngine,
+    # execution, risk, or shadow admission; unavailable evidence remains
+    # explicitly unknown rather than being coerced to "no sweep".
+    candles = getattr(market, "tf1h_candles", ())
+    if candles:
+        try:
+            from .liquidity_sweep import attach_h9_evidence
+
+            fallback.update(attach_h9_evidence(fallback, candles=candles))
+        except Exception:  # noqa: BLE001 - observer evidence must fail open
+            fallback["liquidity_sweep"] = {
+                "evidence_status": "NOT_AVAILABLE",
+                "liquidity_sweep_detected": None,
+                "liquidity_sweep_side": "UNKNOWN",
+                "reclaim_detected": None,
+            }
     return fallback
 
 
