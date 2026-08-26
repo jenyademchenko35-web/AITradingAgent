@@ -72,13 +72,39 @@ def _metrics(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def _scope(snapshot: Mapping[str, Any], boundary: Mapping[str, Any] | None) -> str:
-    observed = _utc(snapshot.get("timestamp") or snapshot.get("observed_at"))
+    observed = _utc(snapshot.get("h9_observed_at") or snapshot.get("timestamp") or snapshot.get("observed_at"))
     start = _utc(snapshot.get("h9_started_at"))
     if (snapshot.get("h9_version") == H9_VERSION and observed and start and observed >= start
+            and snapshot.get("h9_observation_scope") == "FORWARD_H9"
             and boundary and boundary.get("h9_version") == H9_VERSION
             and boundary.get("h9_started_at") == snapshot.get("h9_started_at")):
         return "FORWARD_H9"
     return "RETROSPECTIVE_H9"
+
+
+def _complete_h9_evidence(snapshot: Mapping[str, Any]) -> bool:
+    """Validate the persisted H9 schema without reconstructing any evidence."""
+    evidence = snapshot.get("liquidity_sweep")
+    if not isinstance(evidence, Mapping):
+        return False
+    if (snapshot.get("h9_version") != H9_VERSION
+            or _utc(snapshot.get("h9_started_at")) is None
+            or _utc(snapshot.get("h9_observed_at")) is None
+            or snapshot.get("h9_observation_scope") != "FORWARD_H9"
+            or evidence.get("evidence_status") != "COMPLETE"):
+        return False
+    detected = evidence.get("liquidity_sweep_detected")
+    side = evidence.get("liquidity_sweep_side")
+    reclaim = evidence.get("reclaim_detected")
+    bars = evidence.get("bars_since_sweep")
+    ignored = evidence.get("ignored_future_candles")
+    if not isinstance(detected, bool) or not isinstance(reclaim, bool):
+        return False
+    if not isinstance(ignored, int) or ignored < 0:
+        return False
+    if detected:
+        return side in {"LOW_SWEEP", "HIGH_SWEEP"} and isinstance(bars, int) and bars >= 0
+    return side == "NONE" and bars is None and reclaim is False
 
 
 def _boundary(path: Path | None) -> dict[str, Any] | None:
@@ -133,7 +159,7 @@ def build_report(*, database_path: str | Path = "research.db",
             raise ValueError("shadow_trade_outcomes table is not available")
         rows = [dict(row) for row in connection.execute("SELECT * FROM shadow_trade_outcomes WHERE status='CLOSED' ORDER BY exit_time, shadow_trade_id")]
 
-    eligible, h8 = [], []
+    eligible, h8, complete_h9 = [], [], []
     for row in rows:
         snapshot = _snapshot(row.get("feature_snapshot_json"))
         if (row.get("join_status") != "RESOLVED" or row.get("data_quality") != "COMPLETE"
@@ -141,6 +167,9 @@ def build_report(*, database_path: str | Path = "research.db",
             continue
         item = {**row, "feature_snapshot": snapshot}
         eligible.append(item)
+        if _complete_h9_evidence(snapshot):
+            item["h9_scope"] = _scope(snapshot, boundary)
+            complete_h9.append(item)
         classification = h8_classification(snapshot)
         if classification:
             item["classification"] = classification
@@ -150,7 +179,11 @@ def build_report(*, database_path: str | Path = "research.db",
     groups: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for item in h8:
         groups[str(item["classification"])].append(item)
-    forward = [item for item in h8 if item["scope"] == "FORWARD_H9"]
+    forward = [item for item in complete_h9 if item["h9_scope"] == "FORWARD_H9"]
+    forward_h8 = [
+        item for item in h8
+        if item.get("scope") == "FORWARD_H9" and _complete_h9_evidence(item["feature_snapshot"])
+    ]
     losses = [item for item in h8 if (_number(item.get("pnl_r")) or 0) < 0]
     post = {
         "h8_losses": len(losses),
@@ -169,13 +202,13 @@ def build_report(*, database_path: str | Path = "research.db",
     return {
         "report_version": H9_VERSION, "read_only": True, "boundary": boundary,
         "population": {"closed_outcomes": len(rows), "eligible_trades": len(eligible), "h8_trades": len(h8),
-                       "complete_h9_evidence": sum(item["classification"] != "D_INSUFFICIENT_EVIDENCE" for item in h8),
-                       "incomplete_h9_evidence": sum(item["classification"] == "D_INSUFFICIENT_EVIDENCE" for item in h8)},
+                       "complete_h9_evidence": len(complete_h9),
+                       "incomplete_h9_evidence": len(eligible) - len(complete_h9)},
         "h8_overall": _metrics(h8),
         "groups": {name: _metrics(group) for name, group in sorted(groups.items())},
         "retrospective": _metrics([item for item in h8 if item["scope"] == "RETROSPECTIVE_H9"]),
-        "forward": {"metrics": _metrics(forward), "complete": sum(item["classification"] != "D_INSUFFICIENT_EVIDENCE" for item in forward),
-                    "checkpoint": _checkpoint(forward)},
+        "forward": {"metrics": _metrics(forward), "complete": len(forward),
+                    "h8_complete": len(forward_h8), "checkpoint": _checkpoint(forward_h8)},
         "post_trade_diagnostics": post,
     }
 
