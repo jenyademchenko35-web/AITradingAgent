@@ -277,6 +277,19 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
                 "liquidity_sweep_side": "UNKNOWN",
                 "reclaim_detected": None,
             }
+    # H10 consumes the existing immutable session label only.  It is attached
+    # after the normal decision is finalized and remains fail-open observer
+    # evidence; it cannot affect strategy scoring, admission, or execution.
+    try:
+        from .session_overlap import attach_h10_evidence
+
+        fallback.update(attach_h10_evidence(fallback))
+    except Exception:  # noqa: BLE001 - observer evidence must fail open
+        fallback["session_overlap"] = {
+            "evidence_status": "NOT_AVAILABLE",
+            "source_session": fallback.get("session"),
+            "classification": "UNKNOWN_SESSION",
+        }
     return fallback
 
 

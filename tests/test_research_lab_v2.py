@@ -619,7 +619,18 @@ def test_native_component_values_reach_strict_strategy_gates():
     assert registry.get("MOMENTUM_STRICT").evaluate(mismatched)["rejection_category"] == "TREND_MISMATCH"
 
 
-def test_feature_snapshot_uses_engine_values_not_rsi_or_atr_aliases():
+def test_feature_snapshot_uses_engine_values_not_rsi_or_atr_aliases(monkeypatch):
+    # The snapshot unit test is not a real observer run; keep its H10 boundary
+    # isolated rather than creating a repository runtime artifact.
+    from research_lab_v2 import session_overlap
+    monkeypatch.setattr(session_overlap, "attach_h10_evidence", lambda snapshot: {
+        "h10_version": "H10_SESSION_OVERLAP_V1",
+        "h10_started_at": None,
+        "h10_observed_at": snapshot["timestamp"],
+        "h10_observation_scope": "H10_BOUNDARY_UNAVAILABLE",
+        "session_overlap": {"evidence_status": "NOT_AVAILABLE", "source_session": None,
+                            "classification": "UNKNOWN_SESSION"},
+    })
     tf = SimpleNamespace(close=100, high=101, low=99, atr=2, adx=30,
                          volume_ratio=1.2, atr_percentile=90, ema200=95,
                          ema20=101, ema50=99, trend_ema="BULLISH", rsi=70,
