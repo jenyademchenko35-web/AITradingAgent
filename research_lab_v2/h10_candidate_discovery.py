@@ -22,6 +22,17 @@ from typing import Any
 MIN_CANDIDATE_N = 20
 MAX_CANDIDATES = 5
 H9_VERSION = "H9_LIQUIDITY_SWEEP_V1"
+SQLITE_IN_CHUNK_SIZE = 900
+
+# All values selected from the canonical outcome population.  Deliberately do
+# not use SELECT *: the table grows independently of this audit, while these
+# are the only values its report can observe.
+OUTCOME_COLUMNS = (
+    "shadow_trade_id", "strategy_id", "symbol", "timeframe", "side",
+    "entry_time", "exit_time", "status", "pnl_r", "mfe_r", "mae_r",
+    "feature_snapshot_json", "join_status", "data_quality",
+    "feature_snapshot_id", "signal_id", "decision_id", "source_run_id",
+)
 
 # This narrow allow-list is deliberately conservative.  It contains fields
 # produced before/at a decision; outcome-side and post-entry values remain out.
@@ -82,6 +93,28 @@ def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
     return connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)
     ).fetchone() is not None
+
+
+def _source_run_ids(connection: sqlite3.Connection, source_ids: Iterable[Any]) -> set[int]:
+    """Return only existing referenced source-run IDs, in SQLite-safe chunks.
+
+    ``strategy_runs`` can hold hundreds of thousands of evaluator records and
+    heavy feature JSON.  H10 needs only the existence of source rows for its
+    canonical outcome integrity gate; it intentionally never reads their JSON
+    or materializes unrelated runs.
+    """
+    wanted = sorted({int(value) for value in source_ids if isinstance(value, int)})
+    found: set[int] = set()
+    for start in range(0, len(wanted), SQLITE_IN_CHUNK_SIZE):
+        chunk = wanted[start:start + SQLITE_IN_CHUNK_SIZE]
+        placeholders = ",".join("?" for _ in chunk)
+        found.update(
+            int(row["id"])
+            for row in connection.execute(
+                f"SELECT id FROM strategy_runs WHERE id IN ({placeholders})", chunk
+            )
+        )
+    return found
 
 
 def _max_drawdown(values: list[float]) -> float:
@@ -260,11 +293,20 @@ def build_h10_discovery(*, database_path: str | Path) -> dict[str, Any]:
     with _ro_connection(Path(database_path)) as connection:
         if not _table_exists(connection, "shadow_trade_outcomes"):
             raise ValueError("shadow_trade_outcomes table is not available")
-        rows = [dict(row) for row in connection.execute("SELECT * FROM shadow_trade_outcomes ORDER BY exit_time, shadow_trade_id")]
-        runs = {}
+        columns = ", ".join(OUTCOME_COLUMNS)
+        total_outcomes = int(connection.execute(
+            "SELECT COUNT(*) FROM shadow_trade_outcomes"
+        ).fetchone()[0])
+        rows = [dict(row) for row in connection.execute(
+            f"SELECT {columns} FROM shadow_trade_outcomes "
+            "WHERE status='CLOSED' ORDER BY exit_time, shadow_trade_id"
+        )]
+        source_ids: set[int] = set()
         if _table_exists(connection, "strategy_runs"):
-            runs = {row["id"]: dict(row) for row in connection.execute("SELECT * FROM strategy_runs")}
-    closed = [row for row in rows if row.get("status") == "CLOSED"]
+            source_ids = _source_run_ids(
+                connection, (row.get("source_run_id") for row in rows)
+            )
+    closed = rows
     duplicate_counts = Counter(str(row.get("shadow_trade_id") or "") for row in closed)
     exclusion = Counter()
     eligible: list[dict[str, Any]] = []
@@ -287,7 +329,7 @@ def build_h10_discovery(*, database_path: str | Path) -> dict[str, Any]:
         for field in ("feature_snapshot_id", "signal_id", "decision_id"):
             if not row.get(field):
                 reasons.append(f"missing_{field}")
-        if row.get("source_run_id") is None or row.get("source_run_id") not in runs:
+        if row.get("source_run_id") is None or row.get("source_run_id") not in source_ids:
             reasons.append("missing_source_strategy_run")
         if reasons:
             exclusion.update(reasons)
@@ -313,7 +355,7 @@ def build_h10_discovery(*, database_path: str | Path) -> dict[str, Any]:
     credible = [item for item in candidates if item["verdict"] == "PROMISING_FOR_FORWARD_TEST"]
     return {
         "read_only": True,
-        "data_integrity": {"total_outcomes": len(rows), "closed_outcomes": len(closed), "duplicates": sum(count - 1 for count in duplicate_counts.values() if count > 1), "exclusions": dict(sorted(exclusion.items()))},
+        "data_integrity": {"total_outcomes": total_outcomes, "closed_outcomes": len(closed), "duplicates": sum(count - 1 for count in duplicate_counts.values() if count > 1), "exclusions": dict(sorted(exclusion.items()))},
         "canonical_population": {"eligible_canonical_outcomes": len(eligible), "excluded_closed_outcomes": len(closed) - len(eligible), "identity_unique": not any(count > 1 for count in duplicate_counts.values())},
         "field_inventory": _inventory(eligible), "baseline_performance": baseline,
         "single_factor_findings": {"categorical": categorical, "numeric_descriptive_tertiles": numeric, "warning": "Numeric tertiles are descriptive only; no threshold is optimized or proposed."},

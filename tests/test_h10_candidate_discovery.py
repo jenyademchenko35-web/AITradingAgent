@@ -4,8 +4,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-import pytest
-
+from research_lab_v2 import h10_candidate_discovery as discovery
 from research_lab_v2.h10_candidate_discovery import build_h10_discovery
 
 
@@ -19,7 +18,10 @@ def _db(path: Path) -> None:
               join_status TEXT, data_quality TEXT, feature_snapshot_id TEXT,
               signal_id TEXT, decision_id TEXT, source_run_id INTEGER
             );
-            CREATE TABLE strategy_runs (id INTEGER PRIMARY KEY, shadow_trade_id TEXT);
+            CREATE TABLE strategy_runs (
+              id INTEGER PRIMARY KEY, shadow_trade_id TEXT,
+              feature_snapshot_json TEXT
+            );
         """)
 
 
@@ -43,7 +45,7 @@ def _row(identifier: str, pnl: float = 1.0, **overrides: object) -> dict[str, ob
 def _insert(path: Path, rows: list[dict[str, object]]) -> None:
     with sqlite3.connect(path) as db:
         for row in rows:
-            db.execute("INSERT INTO strategy_runs(id, shadow_trade_id) VALUES (?, ?)", (row["source_run_id"], row["shadow_trade_id"]))
+            db.execute("INSERT INTO strategy_runs(id, shadow_trade_id, feature_snapshot_json) VALUES (?, ?, ?)", (row["source_run_id"], row["shadow_trade_id"], "{\"large\": \"unused\"}"))
             db.execute("INSERT INTO shadow_trade_outcomes VALUES (:shadow_trade_id,:strategy_id,:symbol,:timeframe,:side,:entry_time,:exit_time,:exit_reason,:status,:pnl_r,:mfe_r,:mae_r,:feature_snapshot_json,:join_status,:data_quality,:feature_snapshot_id,:signal_id,:decision_id,:source_run_id)", row)
 
 
@@ -93,3 +95,43 @@ def test_deterministic_ranking_small_sample_and_h9_isolation(tmp_path: Path) -> 
     range_row = next(row for row in left["single_factor_findings"]["categorical"]["market_regime"] if row["market_regime"] == "RANGE")
     assert range_row["small_sample"] is True
     assert left["single_factor_findings"]["numeric_descriptive_tertiles"]["adx"]["boundaries"]["method"] == "full_population_descriptive_tertiles_only"
+
+
+def test_unrelated_source_runs_are_not_read_or_materialized(tmp_path: Path, monkeypatch) -> None:
+    path = tmp_path / "research.db"; _db(path)
+    outcomes = [_row(f"trade-{index}", source_run_id=index) for index in range(1, 4)]
+    _insert(path, outcomes)
+    with sqlite3.connect(path) as db:
+        db.executemany(
+            "INSERT INTO strategy_runs(id, shadow_trade_id, feature_snapshot_json) VALUES (?, ?, ?)",
+            [(index, f"unrelated-{index}", "{\"must_not_be_read\": true}") for index in range(100, 250)],
+        )
+
+    original = discovery._ro_connection
+
+    def guarded_connection(database_path: Path) -> sqlite3.Connection:
+        connection = original(database_path)
+
+        def authorizer(action: int, arg1: str | None, arg2: str | None, *_: object) -> int:
+            if action == sqlite3.SQLITE_READ and arg1 == "strategy_runs" and arg2 == "feature_snapshot_json":
+                return sqlite3.SQLITE_DENY
+            return sqlite3.SQLITE_OK
+
+        connection.set_authorizer(authorizer)
+        return connection
+
+    monkeypatch.setattr(discovery, "_ro_connection", guarded_connection)
+    report = build_h10_discovery(database_path=path)
+    assert report["canonical_population"]["eligible_canonical_outcomes"] == 3
+
+
+def test_filtered_source_lookup_preserves_report_with_unrelated_runs(tmp_path: Path) -> None:
+    plain, noisy = tmp_path / "plain.db", tmp_path / "noisy.db"
+    for path in (plain, noisy):
+        _db(path); _insert(path, [_row(f"trade-{index}", source_run_id=index) for index in range(1, 5)])
+    with sqlite3.connect(noisy) as db:
+        db.executemany(
+            "INSERT INTO strategy_runs(id, shadow_trade_id, feature_snapshot_json) VALUES (?, ?, ?)",
+            [(index, f"unrelated-{index}", "{\"large\": \"not an H10 input\"}") for index in range(100, 250)],
+        )
+    assert build_h10_discovery(database_path=plain) == build_h10_discovery(database_path=noisy)
