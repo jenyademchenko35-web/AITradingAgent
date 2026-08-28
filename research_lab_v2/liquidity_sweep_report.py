@@ -137,6 +137,23 @@ def _checkpoint(forward: list[Mapping[str, Any]]) -> str:
     return "POSSIBLE_SIGNAL"
 
 
+def _descriptive_status(rows: Iterable[Mapping[str, Any]]) -> str:
+    """Describe the all-forward-H9 population without invoking H8 gates.
+
+    This is deliberately separate from ``_checkpoint``: the latter is the
+    frozen formal H8-subset experiment, while this status only labels the
+    complete valid FORWARD_H9 observer population.
+    """
+    metrics = _metrics(rows)
+    if metrics["n"] < 20:
+        return "PRELIMINARY_OBSERVATION"
+    if ((metrics["pf"] is not None and metrics["pf"] < 1)
+            and metrics["net_r"] < 0
+            and (metrics["expectancy_r"] is not None and metrics["expectancy_r"] < 0)):
+        return "NEGATIVE_SIGNAL"
+    return "OBSERVATION_CONTINUES"
+
+
 def _rate(count: int, total: int) -> float | None:
     return round(100 * count / total, 2) if total else None
 
@@ -199,6 +216,9 @@ def build_report(*, database_path: str | Path = "research.db",
     }
     for name in ("stop_then_reversal", "reached_entry_after_stop", "reached_1r_after_stop", "reached_2r_after_stop"):
         post[f"{name}_rate_pct"] = _rate(int(post[name]), len(losses))
+    descriptive_metrics = _metrics(forward)
+    formal_metrics = _metrics(forward_h8)
+    formal_checkpoint_status = _checkpoint(forward_h8)
     return {
         "report_version": H9_VERSION, "read_only": True, "boundary": boundary,
         "population": {"closed_outcomes": len(rows), "eligible_trades": len(eligible), "h8_trades": len(h8),
@@ -207,8 +227,22 @@ def build_report(*, database_path: str | Path = "research.db",
         "h8_overall": _metrics(h8),
         "groups": {name: _metrics(group) for name, group in sorted(groups.items())},
         "retrospective": _metrics([item for item in h8 if item["scope"] == "RETROSPECTIVE_H9"]),
-        "forward": {"metrics": _metrics(forward), "complete": len(forward),
-                    "h8_complete": len(forward_h8), "checkpoint": _checkpoint(forward_h8)},
+        # Legacy ambiguous field retained for consumers. New code should use
+        # the explicit descriptive/formal blocks below.
+        "forward": {"metrics": descriptive_metrics, "complete": len(forward),
+                    "h8_complete": len(forward_h8), "checkpoint": formal_checkpoint_status},
+        "descriptive_forward_h9": {
+            "definition": "all complete valid FORWARD_H9 outcomes",
+            "n": len(forward), "metrics": descriptive_metrics,
+            "status": _descriptive_status(forward),
+        },
+        "formal_h8_subset": {
+            "definition": "complete valid FORWARD_H9 outcomes satisfying the frozen H8 predicate",
+            "n": len(forward_h8), "metrics": formal_metrics,
+            "checkpoint_input_n": len(forward_h8),
+            "checkpoint_status": formal_checkpoint_status,
+            "next_condition": "complete forward_h8 N >= 20",
+        },
         "post_trade_diagnostics": post,
     }
 
@@ -224,7 +258,15 @@ def _print(report: Mapping[str, Any]) -> None:
     for name, values in report["groups"].items():
         print(f"{name}: N={values['n']} W/L={values['wins']}/{values['losses']} WR={_fmt(values['winrate_pct'], 1)}% PF={_fmt(values['pf'])} NetR={_fmt(values['net_r'])} ExpR={_fmt(values['expectancy_r'])} AvgW={_fmt(values['avg_win_r'])} AvgL={_fmt(values['avg_loss_r'])}")
     print("RETROSPECTIVE:", report["retrospective"])
-    print("FORWARD H9:", report["forward"])
+    descriptive = report["descriptive_forward_h9"]
+    formal = report["formal_h8_subset"]
+    print("DESCRIPTIVE FORWARD H9:", {
+        "N": descriptive["n"], "metrics": descriptive["metrics"], "status": descriptive["status"],
+    })
+    print("FORMAL H8 SUBSET:", {
+        "N": formal["n"], "checkpoint_input_n": formal["checkpoint_input_n"],
+        "checkpoint_status": formal["checkpoint_status"], "next_condition": formal["next_condition"],
+    })
     print("H8 LOSSES:", report["post_trade_diagnostics"])
     print("No LIVE recommendation is produced by this report.")
 

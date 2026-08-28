@@ -51,6 +51,16 @@ def test_report_is_query_only_and_separates_h9_groups(tmp_path: Path) -> None:
     assert report["forward"]["metrics"]["n"] == 3
     assert report["population"]["complete_h9_evidence"] == 3
     assert report["population"]["incomplete_h9_evidence"] == 1
+    assert report["descriptive_forward_h9"] == {
+        "definition": "all complete valid FORWARD_H9 outcomes",
+        "n": 3,
+        "metrics": report["forward"]["metrics"],
+        "status": "PRELIMINARY_OBSERVATION",
+    }
+    assert report["formal_h8_subset"]["n"] == 3
+    assert report["formal_h8_subset"]["checkpoint_input_n"] == 3
+    assert report["formal_h8_subset"]["checkpoint_status"] == "INSUFFICIENT_SAMPLE"
+    assert report["formal_h8_subset"]["next_condition"] == "complete forward_h8 N >= 20"
     assert report["post_trade_diagnostics"]["not_available"] == 2
     assert report["post_trade_diagnostics"]["mfe_r"] == {"mean": None, "count": 0}
 
@@ -88,3 +98,46 @@ def test_canonical_non_h8_forward_evidence_is_not_dropped(tmp_path: Path) -> Non
     assert report["forward"]["complete"] == 2
     assert report["forward"]["h8_complete"] == 0
     assert report["forward"]["checkpoint"] == "INSUFFICIENT_SAMPLE"
+    assert report["descriptive_forward_h9"]["n"] == 2
+    assert report["descriptive_forward_h9"]["metrics"]["net_r"] == -2.0
+    assert report["descriptive_forward_h9"]["status"] == "PRELIMINARY_OBSERVATION"
+    assert report["formal_h8_subset"] == {
+        "definition": "complete valid FORWARD_H9 outcomes satisfying the frozen H8 predicate",
+        "n": 0,
+        "metrics": {"n": 0, "wins": 0, "losses": 0, "winrate_pct": None, "pf": None,
+                    "net_r": 0, "expectancy_r": None, "avg_win_r": None, "avg_loss_r": None,
+                    "max_drawdown_r": 0.0},
+        "checkpoint_input_n": 0,
+        "checkpoint_status": "INSUFFICIENT_SAMPLE",
+        "next_condition": "complete forward_h8 N >= 20",
+    }
+
+
+def test_descriptive_negative_signal_does_not_replace_formal_h8_checkpoint(tmp_path: Path) -> None:
+    database, boundary = tmp_path / "research.db", tmp_path / "h9.json"
+    started_at = "2026-08-25T14:55:53.165396+00:00"
+    boundary.write_text(json.dumps({"h9_version": H9_VERSION, "h9_started_at": started_at}), encoding="utf-8")
+    evidence = {
+        "evidence_status": "COMPLETE", "liquidity_sweep_detected": False,
+        "liquidity_sweep_side": "NONE", "reclaim_detected": False,
+        "bars_since_sweep": None, "ignored_future_candles": 0,
+    }
+    with sqlite3.connect(database) as db:
+        db.execute("""CREATE TABLE shadow_trade_outcomes (
+            shadow_trade_id TEXT, status TEXT, join_status TEXT, data_quality TEXT,
+            pnl_r REAL, feature_snapshot_json TEXT, exit_time TEXT, exit_reason TEXT
+        )""")
+        db.executemany(
+            "INSERT INTO shadow_trade_outcomes VALUES (?, 'CLOSED', 'RESOLVED', 'COMPLETE', -1.0, ?, ?, 'STOP_LOSS')",
+            [
+                (f"forward-{index}", _snapshot(evidence=evidence, timestamp=f"2026-08-26T{index:02d}:00:00+00:00", h8=False, h9_started_at=started_at),
+                 f"2026-08-27T{index:02d}:00:00+00:00")
+                for index in range(20)
+            ],
+        )
+    report = build_report(database_path=database, boundary_path=boundary)
+    assert report["descriptive_forward_h9"]["n"] == 20
+    assert report["descriptive_forward_h9"]["status"] == "NEGATIVE_SIGNAL"
+    assert report["formal_h8_subset"]["n"] == 0
+    assert report["formal_h8_subset"]["checkpoint_input_n"] == 0
+    assert report["formal_h8_subset"]["checkpoint_status"] == "INSUFFICIENT_SAMPLE"
