@@ -277,6 +277,24 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
                 "liquidity_sweep_side": "UNKNOWN",
                 "reclaim_detected": None,
             }
+        # H9 V2 is an independent prospective observer.  It keeps V1
+        # immutable, stores evidence in its own namespace, and is fail-open
+        # just like V1: it cannot affect a finalized decision or LIVE path.
+        try:
+            from .liquidity_sweep_v2 import attach_h9_v2_evidence
+
+            fallback.update(attach_h9_v2_evidence(fallback, candles=candles))
+        except Exception:  # noqa: BLE001 - observer evidence must fail open
+            fallback["liquidity_sweep_v2"] = {
+                "h9_version": "H9_LIQUIDITY_SWEEP_V2",
+                "h9_started_at": None,
+                "h9_observed_at": fallback.get("timestamp"),
+                "h9_observation_scope": "H9_V2_BOUNDARY_UNAVAILABLE",
+                "cohort_version": "H8_LIVE_QUALITY_V2",
+                "cohort_quality_field": "live_quality",
+                "forward_boundary_version": "H9_LIQUIDITY_SWEEP_V2",
+                "evidence": {"evidence_status": "NOT_AVAILABLE"},
+            }
     # H10 consumes the existing immutable session label only.  It is attached
     # after the normal decision is finalized and remains fail-open observer
     # evidence; it cannot affect strategy scoring, admission, or execution.

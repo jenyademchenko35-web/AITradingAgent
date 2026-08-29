@@ -83,6 +83,7 @@ fx_pending_closes.json
 data/fx/
 research_lab_v2_runtime_override.json
 research_lab_v2_h9_boundary.json
+research_lab_v2_h9_v2_boundary.json
 research_lab_v2_h10_boundary.json
 runtime_snapshot.json
 runtime_ingest/
