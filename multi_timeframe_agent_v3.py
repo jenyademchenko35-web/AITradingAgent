@@ -58,6 +58,7 @@ from doge_link_opportunity_dry_run import DogeLinkOpportunityDryRun
 from long_rebound_opportunity_dry_run import LongReboundOpportunityDryRun
 from relaxed_edge_dry_run import RelaxedEdgeDryRun
 from runtime_csv import append_row_atomic_or_locked, ensure_header
+from active_setups_state import load_active_setups_state, save_active_setups_state
 from telegram import Bot
 from trade_tracker import (
     open_trade,
@@ -208,19 +209,20 @@ def fetch_with_retry(symbol, timeframe):
     raise last_exc
 
 def load_active_setups():
+    data = load_active_setups_state(
+        ACTIVE_SETUPS_FILE,
+        log=lambda message: LOGGER.timestamped(message, minimum="NORMAL"),
+    )
     if os.path.exists(ACTIVE_SETUPS_FILE):
-        try:
-            with open(ACTIVE_SETUPS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            LOGGER.csv_read(ACTIVE_SETUPS_FILE)
-            return data
-        except Exception:
-            return {}
-    return {}
+        LOGGER.csv_read(ACTIVE_SETUPS_FILE)
+    return data
 
 def save_active_setups(data):
-    with open(ACTIVE_SETUPS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    save_active_setups_state(
+        ACTIVE_SETUPS_FILE,
+        data,
+        log=lambda message: LOGGER.timestamped(message, minimum="NORMAL"),
+    )
     LOGGER.csv_write(ACTIVE_SETUPS_FILE)
 
 def is_setup_active(setup_id):
