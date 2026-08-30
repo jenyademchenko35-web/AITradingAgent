@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import time
 from pathlib import Path
@@ -14,6 +15,8 @@ from news_observer import MarketNewsObserver, format_summary_text
 
 BASE_DIR = Path(__file__).resolve().parent
 LOG_FILE = BASE_DIR / "market_news_observer.log"
+LOG_MAX_BYTES = 10 * 1024 * 1024
+LOG_BACKUP_COUNT = 6
 
 
 def _configure_logging() -> None:
@@ -23,7 +26,12 @@ def _configure_logging() -> None:
         return
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-    file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+    file_handler = RotatingFileHandler(
+        LOG_FILE,
+        maxBytes=LOG_MAX_BYTES,
+        backupCount=LOG_BACKUP_COUNT,
+        encoding="utf-8",
+    )
     file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)

@@ -6,6 +6,7 @@ import json
 import hashlib
 import csv
 import logging
+from logging.handlers import RotatingFileHandler
 import math
 import time
 import uuid
@@ -37,6 +38,8 @@ READINESS_FILE = BASE_DIR / "candidate_readiness.json"
 SHADOW_BOOK_FILE = BASE_DIR / "research_lab_v2_shadow_open.json"
 SHADOW_HISTORY_FILE = BASE_DIR / "research_lab_shadow_history.csv"
 LOG_FILE = BASE_DIR / "logs" / "research_lab_v2.log"
+LOG_MAX_BYTES = 25 * 1024 * 1024
+LOG_BACKUP_COUNT = 8
 REAL_ORDER_ALLOWED = False
 ELIGIBLE_SIGNALS = {"SETUP", "HIGH PRIORITY"}
 MANDATORY_FEATURE_FIELDS = {
@@ -192,7 +195,12 @@ def _logger(path: Path = LOG_FILE) -> logging.Logger:
     logger = logging.getLogger(f"research_lab_v2.runtime.{path}")
     if not logger.handlers:
         path.parent.mkdir(parents=True, exist_ok=True)
-        handler = logging.FileHandler(path, encoding="utf-8")
+        handler = RotatingFileHandler(
+            path,
+            maxBytes=LOG_MAX_BYTES,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding="utf-8",
+        )
         handler.setFormatter(logging.Formatter("%(message)s"))
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
