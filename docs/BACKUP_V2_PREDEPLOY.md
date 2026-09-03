@@ -1,4 +1,4 @@
-# Backup V2 pre-deploy and legacy-transition contract
+# Backup V2.1 pre-deploy and legacy-transition contract
 
 Status: reviewed locally on 2026-09-03. Nothing in this document authorizes a
 deployment, unit change, production write, or legacy deletion.
@@ -17,16 +17,18 @@ stable and be copied; otherwise the attempt aborts. Absence is explicit in the
 manifest. In particular, `active_setups_v3.json.bak` is not mandatory: the
 writer creates it only when replacing an existing valid primary.
 
-Decision/runtime snapshots, live-monitor state/history, signals, agent stats,
-candidate readiness, and the ephemeral Research Lab runtime override are
-`OPTIONAL`. If present they are still hashed and stability-checked. Secrets are
-excluded.
+Decision/runtime snapshots, live-monitor state/rolling price history, signals,
+agent stats, candidate readiness, and the ephemeral Research Lab runtime
+override are `VOLATILE_OPTIONAL`. Source writers show they are rebuildable
+operational projections rather than canonical attribution evidence. Each gets
+an individual bounded capture; persistent mutation yields
+`SKIPPED_UNSTABLE`, never a global core failure. Secrets are excluded.
 
 ## Cross-file consistency
 
 The stable-window contract is detection plus application recovery, not a claim
-of a cross-filesystem transaction. Every selected file is hashed before and
-after the SQLite online backup/copy window; the DB path identity and the open
+of a cross-filesystem transaction. Every core/conditional file is hashed before
+and after the SQLite online backup/copy window; the DB path identity and the open
 connection's `PRAGMA data_version` must also remain unchanged.
 
 The shadow-close protocol is deliberately crash-recoverable: pending outbox is
@@ -37,6 +39,8 @@ rejects an open/pending overlap rather than publishing a transient set.
 Boundaries are create-once. Active-setup primary/backup writes are individually
 atomic and primary remains authoritative. Runtime projections are optional.
 
+Telegram configuration, signal dedup and close-notification state remain
+`CONDITIONAL_CORE`; their update rate is not grounds for weakening recovery.
 Telegram delivery and its local dedup file cannot be transactional with the
 external Telegram side effect. A crash at send/ack can already cause one retry
 independently of backup; V2 neither worsens nor claims to eliminate that
@@ -65,6 +69,14 @@ seconds, to be measured during canary. The agent sleeps 300 seconds after each
 cycle and backup cadence is six hours. SQLite WAL readers do not require a
 long-lived exclusive writer lock; the backup flock coordinates backup writers
 only. A 30-minute service timeout leaves substantial margin.
+
+The failed first canary proved that a global window including projections
+updated every three seconds cannot be satisfied during a 30-120 second DB
+operation. V2.1 publishes exactly when the SQLite snapshot validates, DB path
+identity/data_version are stable, every present core/conditional file is stable
+and semantically valid, and every volatile file has independently reached one
+of CAPTURED, ABSENT, or SKIPPED_UNSTABLE. No three-second global quiet period is
+required.
 
 ## Legacy strategy: C — validated one-for-one cohort drain
 
@@ -138,3 +150,7 @@ patching V1 or teaching either retention engine about the other cohort.
 
 Any canary failure stops the timer transition before rollback. No V2 or legacy
 restore point is deleted merely because rollback is requested.
+
+The existing hidden `.20260903_201928.372004.partial` remains operator-owned,
+is ignored by publication, listing, and retention, and is not reused by a later
+timestamped run.

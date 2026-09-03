@@ -111,7 +111,11 @@ def test_successful_hot_backup_has_full_restore_set_and_full_hash_manifest(
     assert manifest["consistency"]["sqlite_data_version_stable"] is True
     names = {row["path"] for row in manifest["files"]}
     assert {backup.DB_RAW, *backup.CRITICAL_FILES} <= names
-    assert all(len(row["sha256"]) == 64 for row in manifest["files"])
+    assert all(
+        len(row["sha256"]) == 64
+        for row in manifest["files"]
+        if row["capture_status"] == backup.CAPTURED
+    )
 
 
 def test_atomic_publish_renames_staging_directory(
@@ -148,8 +152,7 @@ def test_missing_active_setups_backup_is_valid_conditional_absence(
     config = _config(tmp_path, monkeypatch)
     (config.source_root / "active_setups_v3.json.bak").unlink()
     point = _create(config)
-    manifest = json.loads((point / backup.MANIFEST).read_text())
-    assert "active_setups_v3.json.bak" in manifest["absent_required_if_exists"]
+    assert _manifest_row(point, "active_setups_v3.json.bak")["capture_status"] == backup.ABSENT
     assert backup.validate_restore_point(point)["verified"]
 
 
@@ -575,3 +578,153 @@ def test_backup_does_not_mutate_source_or_outside_roots(
     source_after = {path.name: _sha(path) for path in config.source_root.iterdir() if path.is_file()}
     assert source_after == source_before
     assert sentinel.read_text() == "unchanged"
+
+
+def _manifest_row(point: Path, name: str) -> dict:
+    manifest = json.loads((point / backup.MANIFEST).read_text())
+    return next(row for row in manifest["files"] if row["path"] == name)
+
+
+def test_continuously_mutating_volatile_is_skipped_but_point_is_verified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    volatile = config.source_root / "live_price_history.csv"
+
+    def mutate(stage: str) -> None:
+        if stage.startswith("after_volatile_copy:live_price_history.csv:"):
+            volatile.write_text(volatile.read_text() + stage + "\n", encoding="utf-8")
+
+    point = _create(config, fault=mutate)
+    row = _manifest_row(point, "live_price_history.csv")
+    result = backup.validate_restore_point(point, full_integrity=True)
+    assert row["capture_status"] == backup.SKIPPED_UNSTABLE
+    assert row["attempts"] == config.consistency_attempts
+    assert result["verified"]
+    assert not (point / "live_price_history.csv").exists()
+    assert any("VOLATILE_OPTIONAL_SKIPPED" in warning for warning in result["warnings"])
+
+
+def test_long_core_window_does_not_require_volatile_global_stability(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    volatile = config.source_root / "live_monitor_state.json"
+
+    def emulate_long_core(stage: str) -> None:
+        if stage == "after_state_copy":
+            # Represents many 3-second projection writes during a 30-120s DB copy.
+            for tick in range(40):
+                volatile.write_text(json.dumps({"tick": tick}), encoding="utf-8")
+
+    point = _create(config, fault=emulate_long_core)
+    assert backup.validate_restore_point(point, full_integrity=True)["verified"]
+    assert _manifest_row(point, "live_monitor_state.json")["capture_status"] == backup.CAPTURED
+
+
+def test_stable_volatile_is_captured_with_hash_and_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    row = _manifest_row(point, "runtime_snapshot.json")
+    assert row["capture_status"] == backup.CAPTURED
+    assert row["sha256"] == _sha(point / "runtime_snapshot.json")
+    assert {"device", "inode", "mode", "size", "mtime_ns"} <= set(row["source_identity"])
+
+
+def test_core_mutation_still_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+
+    def mutate(stage: str) -> None:
+        if stage == "after_state_copy":
+            (config.source_root / "strategy_weights.json").write_text('{"Trend":2}', encoding="utf-8")
+
+    with pytest.raises(backup.BackupError, match="source state changed"):
+        backup.create_backup(config, fault=mutate)
+
+
+def test_conditional_appearing_mid_window_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    conditional = config.source_root / "active_setups_v3.json.bak"
+    conditional.unlink()
+
+    def appear(stage: str) -> None:
+        if stage == "after_state_copy":
+            conditional.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(backup.BackupError, match="source state changed"):
+        backup.create_backup(config, fault=appear)
+
+
+@pytest.mark.parametrize(
+    "name,value",
+    (
+        ("research_lab_v2_h9_boundary.json", '{"changed":true}'),
+        ("active_setups_v3.json", '{"setup":"2026-09-03T12:00:00Z"}'),
+    ),
+)
+def test_boundary_and_active_state_mutation_fail_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, value: str
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+
+    def mutate(stage: str) -> None:
+        if stage == "after_state_copy":
+            (config.source_root / name).write_text(value, encoding="utf-8")
+
+    with pytest.raises(backup.BackupError, match="source state changed"):
+        backup.create_backup(config, fault=mutate)
+
+
+def test_skipped_volatile_restore_is_ready_with_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+
+    def mutate(stage: str) -> None:
+        if stage.startswith("after_volatile_copy:decision_snapshot.json:"):
+            path = config.source_root / "decision_snapshot.json"
+            path.write_text(path.read_text() + " ", encoding="utf-8")
+
+    point = _create(config, fault=mutate)
+    restored = backup.prepare_restore(point, tmp_path / "restore")
+    ready = json.loads((restored / "RESTORE_READY.json").read_text())
+    assert ready["RESTORE_READY"] is True
+    assert any("VOLATILE_OPTIONAL_SKIPPED" in warning for warning in ready["warnings"])
+    assert not (restored / "decision_snapshot.json").exists()
+
+
+def test_corrupted_captured_optional_and_missing_core_are_invalid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    optional_point = _create(config)
+    (optional_point / "runtime_snapshot.json").write_text("{}", encoding="utf-8")
+    assert not backup.validate_restore_point(optional_point)["verified"]
+    core_point = _create(config)
+    (core_point / "strategy_weights.json").unlink()
+    assert not backup.validate_restore_point(core_point)["verified"]
+
+
+def test_manifest_rejects_wrong_class_and_core_skip_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    manifest_path = point / backup.MANIFEST
+    manifest = json.loads(manifest_path.read_text())
+    row = next(row for row in manifest["files"] if row["path"] == "strategy_weights.json")
+    row["consistency_class"] = backup.VOLATILE_OPTIONAL
+    row["capture_status"] = backup.SKIPPED_UNSTABLE
+    row["reason"] = "test"
+    row["attempts"] = 3
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    result = backup.validate_restore_point(point)
+    assert not result["verified"]
+    assert any("invalid consistency_class" in error for error in result["errors"])
+    assert any("invalid capture_status" in error for error in result["errors"])

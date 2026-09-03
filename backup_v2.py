@@ -26,7 +26,7 @@ import tempfile
 from typing import Any, Callable, Iterable, Mapping
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = "2.1"
 MANIFEST = "manifest.v2.json"
 COLD_SIDECAR = "cold_conversion.json"
 DB_RAW = "research.db"
@@ -36,14 +36,14 @@ DEFAULT_LOCK = Path("/tmp/aitrading-backup.lock")
 # These files are necessary to continue trading/research without silently
 # resetting open positions, durable outboxes, experiment boundaries or dedup.
 # Required for every established or freshly initialized installation.
-REQUIRED_ALWAYS_FILES = (
+CORE_RECOVERY_FILES = (
     "strategy_weights.json",
 )
 
 # These are durable state when present, but source logic permits a healthy
 # initial installation before each file's first write.  Presence/absence is
 # frozen across the snapshot window and recorded in the manifest.
-REQUIRED_IF_EXISTS_FILES = (
+CONDITIONAL_CORE_FILES = (
     "research_lab_v2_shadow_open.json",
     "research_lab_v2_pending_closes.json",
     "research_lab_shadow_history.csv",
@@ -63,7 +63,7 @@ REQUIRED_IF_EXISTS_FILES = (
 
 # Absence is recorded but is not allowed to invalidate the canonical DB/state
 # set.  Runtime overrides are conditional: when present they must be preserved.
-OPTIONAL_FILES = (
+VOLATILE_OPTIONAL_FILES = (
     "decision_snapshot.json",
     "runtime_snapshot.json",
     "live_monitor_state.json",
@@ -75,8 +75,18 @@ OPTIONAL_FILES = (
 )
 
 # Compatibility aliases for callers/tests that inspect the policy.
-CRITICAL_FILES = REQUIRED_ALWAYS_FILES + REQUIRED_IF_EXISTS_FILES
-USEFUL_FILES = OPTIONAL_FILES
+REQUIRED_ALWAYS_FILES = CORE_RECOVERY_FILES
+REQUIRED_IF_EXISTS_FILES = CONDITIONAL_CORE_FILES
+OPTIONAL_FILES = VOLATILE_OPTIONAL_FILES
+CRITICAL_FILES = CORE_RECOVERY_FILES + CONDITIONAL_CORE_FILES
+USEFUL_FILES = VOLATILE_OPTIONAL_FILES
+
+CORE_RECOVERY = "CORE_RECOVERY"
+CONDITIONAL_CORE = "CONDITIONAL_CORE"
+VOLATILE_OPTIONAL = "VOLATILE_OPTIONAL"
+CAPTURED = "CAPTURED"
+ABSENT = "ABSENT"
+SKIPPED_UNSTABLE = "SKIPPED_UNSTABLE"
 
 DIAGNOSTIC_FILES = (
     "decision_debug.csv",
@@ -183,12 +193,28 @@ def _file_record(path: Path, *, relative: str | None = None) -> dict[str, Any]:
     }
 
 
+def _source_identity(path: Path) -> dict[str, int]:
+    info = path.lstat()
+    if path.is_symlink() or not stat.S_ISREG(info.st_mode):
+        raise BackupError(f"not a regular file: {path}")
+    return {
+        "device": info.st_dev,
+        "inode": info.st_ino,
+        "mode": info.st_mode,
+        "size": info.st_size,
+        "mtime_ns": info.st_mtime_ns,
+    }
+
+
 def _source_records(root: Path, names: Iterable[str]) -> dict[str, dict[str, Any]]:
     records: dict[str, dict[str, Any]] = {}
     for name in names:
         path = root / name
         if path.exists():
-            records[name] = _file_record(path, relative=name)
+            records[name] = {
+                **_file_record(path, relative=name),
+                "source_identity": _source_identity(path),
+            }
     return records
 
 
@@ -330,11 +356,15 @@ def _check_required_sources(config: BackupConfig) -> None:
     missing = [name for name in missing if not (source / name).is_file()]
     if missing:
         raise BackupError(f"missing critical files: {', '.join(missing)}")
-    for name in (*REQUIRED_ALWAYS_FILES, *REQUIRED_IF_EXISTS_FILES, *OPTIONAL_FILES):
+    for name in (*CORE_RECOVERY_FILES, *CONDITIONAL_CORE_FILES, *VOLATILE_OPTIONAL_FILES):
         if name in SECRET_NAMES or Path(name).name in SECRET_NAMES:
             raise BackupError(f"secret path is forbidden: {name}")
         path = source / name
-        if path.exists() and (path.is_symlink() or not path.is_file()):
+        if (
+            name not in VOLATILE_OPTIONAL_FILES
+            and path.exists()
+            and (path.is_symlink() or not path.is_file())
+        ):
             raise BackupError(f"state path is not a regular file: {name}")
 
 
@@ -434,7 +464,7 @@ def _semantic_state(root: Path) -> dict[str, Any]:
 def _copy_state(source: Path, staging: Path) -> tuple[list[str], list[str]]:
     copied: list[str] = []
     absent_useful: list[str] = []
-    for name in (*REQUIRED_ALWAYS_FILES, *REQUIRED_IF_EXISTS_FILES, *OPTIONAL_FILES):
+    for name in (*CORE_RECOVERY_FILES, *CONDITIONAL_CORE_FILES):
         source_path = source / name
         if not source_path.exists():
             absent_useful.append(name)
@@ -444,6 +474,67 @@ def _copy_state(source: Path, staging: Path) -> tuple[list[str], list[str]]:
         shutil.copy2(source_path, destination, follow_symlinks=False)
         copied.append(name)
     return copied, absent_useful
+
+
+def _capture_volatile_file(
+    source: Path,
+    staging: Path,
+    name: str,
+    *,
+    attempts: int,
+    fault: Callable[[str], None] | None,
+) -> dict[str, Any]:
+    """Capture one projection without extending the canonical stable window."""
+    source_path = source / name
+    destination = staging / name
+    temporary = staging / f".{Path(name).name}.volatile.partial"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    for attempt in range(1, attempts + 1):
+        temporary.unlink(missing_ok=True)
+        destination.unlink(missing_ok=True)
+        try:
+            before = _source_identity(source_path)
+        except FileNotFoundError:
+            try:
+                _source_identity(source_path)
+            except FileNotFoundError:
+                return {
+                    "path": name,
+                    "consistency_class": VOLATILE_OPTIONAL,
+                    "capture_status": ABSENT,
+                }
+            except (OSError, BackupError):
+                pass
+            continue
+        except (OSError, BackupError):
+            before = None
+        if before is not None:
+            try:
+                shutil.copy2(source_path, temporary, follow_symlinks=False)
+                if fault:
+                    fault(f"after_volatile_copy:{name}:{attempt}")
+                copied = _file_record(temporary, relative=name)
+                after = _source_identity(source_path)
+                if before == after and copied["size"] == before["size"]:
+                    os.replace(temporary, destination)
+                    return {
+                        **copied,
+                        "consistency_class": VOLATILE_OPTIONAL,
+                        "capture_status": CAPTURED,
+                        "source_identity": before,
+                        "attempts": attempt,
+                    }
+            except (FileNotFoundError, OSError, BackupError):
+                pass
+    temporary.unlink(missing_ok=True)
+    destination.unlink(missing_ok=True)
+    return {
+        "path": name,
+        "consistency_class": VOLATILE_OPTIONAL,
+        "capture_status": SKIPPED_UNSTABLE,
+        "reason": "SOURCE_CHANGED_OR_UNSAFE_DURING_CAPTURE",
+        "attempts": attempts,
+    }
 
 
 def _clear_attempt(staging: Path) -> None:
@@ -459,9 +550,9 @@ def _snapshot_attempt(
     staging: Path,
     *,
     fault: Callable[[str], None] | None,
-) -> tuple[dict[str, Any], list[str], list[str]]:
+) -> tuple[dict[str, Any], list[str], list[str], dict[str, dict[str, Any]]]:
     source = config.source_root
-    watched = (*REQUIRED_ALWAYS_FILES, *REQUIRED_IF_EXISTS_FILES, *OPTIONAL_FILES)
+    watched = (*CORE_RECOVERY_FILES, *CONDITIONAL_CORE_FILES)
     database_identity_before = _path_identity(source / DB_RAW)
     before = _source_records(source, watched)
     source_db = sqlite3.connect(f"file:{source / DB_RAW}?mode=ro", uri=True)
@@ -497,9 +588,16 @@ def _snapshot_attempt(
             "source_data_version_before": version_before,
             "source_data_version_after": version_after,
             "snapshot_completed_at": _utc(config.now()),
+            "source_identity": {
+                "device": database_identity_before[0],
+                "inode": database_identity_before[1],
+                "mode": database_identity_before[2],
+                "size": (source / DB_RAW).stat().st_size,
+                "mtime_ns": (source / DB_RAW).stat().st_mtime_ns,
+            },
         }
     )
-    return database, copied, absent
+    return database, copied, absent, before
 
 
 def _manifest(
@@ -510,10 +608,33 @@ def _manifest(
     database: Mapping[str, Any],
     copied: list[str],
     absent: list[str],
+    core_source_records: Mapping[str, Mapping[str, Any]],
+    volatile_records: list[dict[str, Any]],
 ) -> dict[str, Any]:
     completed = config.now()
-    files = [_file_record(staging / DB_RAW, relative=DB_RAW)]
-    files.extend(_file_record(staging / name, relative=name) for name in copied)
+    files = [{
+        **_file_record(staging / DB_RAW, relative=DB_RAW),
+        "consistency_class": CORE_RECOVERY,
+        "capture_status": CAPTURED,
+        "source_identity": dict(database["source_identity"]),
+    }]
+    for name in copied:
+        classification = CORE_RECOVERY if name in CORE_RECOVERY_FILES else CONDITIONAL_CORE
+        files.append({
+            **_file_record(staging / name, relative=name),
+            "consistency_class": classification,
+            "capture_status": CAPTURED,
+            "source_identity": dict(core_source_records[name]["source_identity"]),
+        })
+    files.extend(
+        {
+            "path": name,
+            "consistency_class": CONDITIONAL_CORE,
+            "capture_status": ABSENT,
+        }
+        for name in absent if name in CONDITIONAL_CORE_FILES
+    )
+    files.extend(volatile_records)
     return {
         "schema_version": SCHEMA_VERSION,
         "created_at": _utc(completed),
@@ -521,19 +642,16 @@ def _manifest(
         "branch": _git(config.source_root, "branch", "--show-current"),
         "full_commit_sha": _git(config.source_root, "rev-parse", "HEAD"),
         "files": sorted(files, key=lambda row: row["path"]),
-        "missing_useful_files": sorted(absent),
-        "absent_required_if_exists": sorted(
-            name for name in REQUIRED_IF_EXISTS_FILES if name in absent
-        ),
         "excluded_diagnostic_files": list(DIAGNOSTIC_FILES),
         "secrets_included": [],
         "research_boundaries": _semantic_state(staging)["boundary_hashes"],
         "database": dict(database),
         "consistency": {
-            "contract": "stable_files_and_sqlite_data_version_v1",
+            "contract": "core_stable_window_with_individual_volatile_capture_v2_1",
             "backup_started_at": _utc(started),
             "backup_completed_at": _utc(completed),
             "database_snapshot_completed_at": database["snapshot_completed_at"],
+            "core_source_files_stable": True,
             "source_files_stable": True,
             "sqlite_data_version_stable": True,
             "semantic_state": _semantic_state(staging),
@@ -562,15 +680,16 @@ def validate_restore_point(
 ) -> dict[str, Any]:
     point = Path(point)
     errors: list[str] = []
+    warnings: list[str] = []
     manifest_path = point / MANIFEST
     if manifest_path.is_symlink():
-        return {"path": str(point), "verified": False, "layout": "UNKNOWN", "errors": ["manifest is a symlink"]}
+        return {"path": str(point), "verified": False, "layout": "UNKNOWN", "errors": ["manifest is a symlink"], "warnings": []}
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return {"path": str(point), "verified": False, "layout": "UNKNOWN", "errors": [str(exc)]}
+        return {"path": str(point), "verified": False, "layout": "UNKNOWN", "errors": [str(exc)], "warnings": []}
     if not isinstance(manifest, dict):
-        return {"path": str(point), "verified": False, "layout": "UNKNOWN", "errors": ["manifest must be a JSON object"]}
+        return {"path": str(point), "verified": False, "layout": "UNKNOWN", "errors": ["manifest must be a JSON object"], "warnings": []}
     if manifest.get("schema_version") != SCHEMA_VERSION:
         errors.append("unsupported manifest schema")
     if manifest.get("backup_state") != "VERIFIED":
@@ -585,7 +704,13 @@ def validate_restore_point(
         errors.append("manifest files must contain only objects")
     rows = [row for row in file_value if isinstance(row, dict)]
     names = [row.get("path") for row in rows]
-    allowed = {DB_RAW, *CRITICAL_FILES, *USEFUL_FILES}
+    allowed = {DB_RAW, *CORE_RECOVERY_FILES, *CONDITIONAL_CORE_FILES, *VOLATILE_OPTIONAL_FILES}
+    expected_classes = {
+        DB_RAW: CORE_RECOVERY,
+        **{name: CORE_RECOVERY for name in CORE_RECOVERY_FILES},
+        **{name: CONDITIONAL_CORE for name in CONDITIONAL_CORE_FILES},
+        **{name: VOLATILE_OPTIONAL for name in VOLATILE_OPTIONAL_FILES},
+    }
     if len(names) != len(set(names)):
         errors.append("duplicate file path in manifest")
     for name in names:
@@ -598,10 +723,50 @@ def validate_restore_point(
         ):
             errors.append(f"unsafe or unknown manifest path: {name}")
     records = {row.get("path"): row for row in rows}
-    if DB_RAW not in records:
-        errors.append("database absent from manifest")
+    for name in allowed:
+        if name not in records:
+            errors.append(f"state file absent from manifest: {name}")
     cold = (point / DB_COLD).is_file()
     for name, record in records.items():
+        if name not in expected_classes:
+            continue
+        classification = record.get("consistency_class")
+        status_value = record.get("capture_status")
+        if classification != expected_classes[name]:
+            errors.append(f"{name}: invalid consistency_class")
+        allowed_statuses = {
+            CORE_RECOVERY: {CAPTURED},
+            CONDITIONAL_CORE: {CAPTURED, ABSENT},
+            VOLATILE_OPTIONAL: {CAPTURED, ABSENT, SKIPPED_UNSTABLE},
+        }[expected_classes[name]]
+        if status_value not in allowed_statuses:
+            errors.append(f"{name}: invalid capture_status")
+            continue
+        if status_value != CAPTURED:
+            if (point / str(name)).exists():
+                errors.append(f"{name}: non-captured file exists")
+            if status_value == SKIPPED_UNSTABLE:
+                if not isinstance(record.get("reason"), str) or type(record.get("attempts")) is not int:
+                    errors.append(f"{name}: invalid skipped metadata")
+                warnings.append(f"VOLATILE_OPTIONAL_SKIPPED: {name}")
+            elif expected_classes[name] == VOLATILE_OPTIONAL:
+                warnings.append(f"VOLATILE_OPTIONAL_MISSING: {name}")
+            continue
+        identity = record.get("source_identity")
+        if not isinstance(identity, dict) or not all(
+            type(identity.get(field)) is int
+            for field in ("device", "inode", "mode", "size", "mtime_ns")
+        ):
+            errors.append(f"{name}: source identity metadata missing")
+        if (
+            type(record.get("size")) is not int
+            or record.get("size", -1) < 0
+            or not isinstance(record.get("sha256"), str)
+            or re.fullmatch(r"[0-9a-f]{64}", record.get("sha256", "")) is None
+            or not isinstance(record.get("mtime"), str)
+            or type(record.get("mode")) is not int
+        ):
+            errors.append(f"{name}: invalid captured metadata")
         if name == DB_RAW and cold and not (point / DB_RAW).exists():
             continue
         path = point / str(name)
@@ -613,20 +778,6 @@ def validate_restore_point(
         for field in ("size", "sha256"):
             if actual[field] != record.get(field):
                 errors.append(f"{name}: {field} mismatch")
-    for name in REQUIRED_ALWAYS_FILES:
-        if name not in records:
-            errors.append(f"critical file absent from manifest: {name}")
-    absent_value = manifest.get("absent_required_if_exists")
-    if not isinstance(absent_value, list) or not all(
-        isinstance(name, str) and name in REQUIRED_IF_EXISTS_FILES
-        for name in absent_value
-    ):
-        errors.append("invalid absent_required_if_exists")
-        absent_value = []
-    absent_conditional = set(absent_value)
-    for name in REQUIRED_IF_EXISTS_FILES:
-        if (name in records) == (name in absent_conditional):
-            errors.append(f"conditional file presence is ambiguous: {name}")
     raw = (point / DB_RAW).is_file()
     if raw:
         try:
@@ -642,6 +793,8 @@ def validate_restore_point(
             sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
             if not isinstance(sidecar, dict):
                 raise BackupError("cold sidecar must be a JSON object")
+            if DB_RAW not in records:
+                raise BackupError("database absent from manifest")
             _validate_cold(point, records[DB_RAW], sidecar, zstd=zstd)
         except (OSError, ValueError, KeyError, BackupError) as exc:
             errors.append(f"cold database: {exc}")
@@ -657,7 +810,7 @@ def validate_restore_point(
             errors.append("semantic state metadata mismatch")
     except BackupError as exc:
         errors.append(str(exc))
-    return {"path": str(point), "verified": not errors, "layout": layout, "errors": errors}
+    return {"path": str(point), "verified": not errors, "layout": layout, "errors": errors, "warnings": warnings}
 
 
 def list_restore_points(root: Path) -> list[dict[str, Any]]:
@@ -783,13 +936,35 @@ def create_backup(
         for _ in range(config.consistency_attempts):
             _clear_attempt(staging)
             try:
-                database, copied, absent = _snapshot_attempt(config, staging, fault=fault)
+                database, copied, absent, core_source_records = _snapshot_attempt(
+                    config, staging, fault=fault
+                )
                 break
             except BackupError as exc:
                 last_error = exc
         else:
             raise BackupError(f"consistent snapshot unavailable: {last_error}")
-        manifest = _manifest(config, staging, stamp, started, database, copied, absent)
+        volatile_records = [
+            _capture_volatile_file(
+                config.source_root,
+                staging,
+                name,
+                attempts=config.consistency_attempts,
+                fault=fault,
+            )
+            for name in VOLATILE_OPTIONAL_FILES
+        ]
+        manifest = _manifest(
+            config,
+            staging,
+            stamp,
+            started,
+            database,
+            copied,
+            absent,
+            core_source_records,
+            volatile_records,
+        )
         _atomic_json(staging / MANIFEST, manifest)
         if fault:
             fault("before_publish")
@@ -919,6 +1094,8 @@ def prepare_restore(point: Path, staging: Path, *, zstd: str = "zstd") -> Path:
         raise BackupError("restore manifest changed during validation")
     staging.mkdir(mode=0o700, parents=True)
     for record in manifest["files"]:
+        if record.get("capture_status") != CAPTURED:
+            continue
         name = record["path"]
         if name == DB_RAW:
             continue
@@ -957,9 +1134,11 @@ def prepare_restore(point: Path, staging: Path, *, zstd: str = "zstd") -> Path:
             _fsync_file(path)
     ready = {
         "state": "RESTORE_STAGING_VERIFIED",
+        "RESTORE_READY": True,
         "source_restore_point": str(point),
         "validated_at": _utc(datetime.now(timezone.utc)),
         "production_installed": False,
+        "warnings": validation["warnings"],
     }
     _atomic_json(staging / "RESTORE_READY.json", ready)
     _fsync_directory(staging)

@@ -1,18 +1,18 @@
-# AITradingAgent Backup System V2
+# AITradingAgent Backup System V2.1
 
 Status: local design and synthetic implementation only. It is not installed,
 scheduled or connected to production.
 
 ## Restore-set classification
 
-### Required always
+### CORE_RECOVERY
 
 The backup fails closed if either file is missing or is not regular:
 
 - `research.db`
 - `strategy_weights.json`
 
-### Required if present
+### CONDITIONAL_CORE
 
 Source logic permits a healthy initial state before these generated files have
 been written. If present, their inclusion and stability are mandatory; absence
@@ -36,14 +36,17 @@ does not exist until a valid primary is replaced for the first time. Once
 present, it must be retained. Boundaries are immutable experiment evidence once
 created and cannot be regenerated with the same forensic meaning.
 
-### Useful
+### VOLATILE_OPTIONAL
 
-These are copied when present and their absence is recorded in the manifest:
+These are rolling/rebuildable operational projections, not canonical research
+attribution or notification dedup evidence:
 `decision_snapshot.json`, `runtime_snapshot.json`, `live_monitor_state.json`,
 `live_price_history.csv`, `signals_v3.csv`, `agent_v3_stats.json`,
 `candidate_readiness.json`, and `research_lab_v2_runtime_override.json`.
-The override is conditionally persistent: if present during the stable snapshot
-window it is included and hashed.
+Each is captured in its own bounded stat/copy/hash/stat retry. A stable copy is
+`CAPTURED`; a missing source is `ABSENT`; a continuously changing or unsafe
+source is removed from staging and recorded as `SKIPPED_UNSTABLE`. None extends
+the core stable window or aborts an otherwise valid core restore point.
 
 ### Diagnostic
 
@@ -59,22 +62,24 @@ separate, explicitly-authorized concern.
 
 ## Consistency contract
 
-V2 does not claim that unrelated files form a filesystem transaction. It finds
-a stable application window instead:
+V2.1 does not claim that unrelated files form a filesystem transaction. It
+finds a stable application window for CORE_RECOVERY and CONDITIONAL_CORE only:
 
-1. hash and stat every selected state file;
+1. hash and stat every core/conditional state file;
 2. keep one read-only SQLite connection open and record `PRAGMA data_version`;
 3. create the DB with SQLite's online backup API;
-4. copy the selected state files;
+4. copy the core/conditional state files;
 5. hash/stat the sources again and reread `data_version`;
-6. accept only an unchanged file set and unchanged SQLite data version.
+6. accept only an unchanged core file set and unchanged SQLite data version;
+7. after that gate, capture each volatile projection independently.
 
 The whole attempt is retried a bounded number of times. Exhaustion leaves an
 unpublished partial directory and preserves every older verified point.
 
-The manifest records both ends of the window, the DB snapshot completion time,
-source file mtimes/hashes, full Git SHA, branch, DB schema metadata, boundary
-hashes, and semantic counts. Validation checks JSON types, requires disjoint
+For every state path the manifest records `consistency_class` and
+`capture_status`. Captured records include size, SHA-256, mtime, and source
+device/inode/mode/size/mtime identity. Skipped records include reason and retry
+count. Validation checks JSON types, requires disjoint
 open and pending-close trade IDs, records the ledger header, and compares the
 semantic summary to the manifest. This detects a changed or substituted member;
 it does not pretend to supply cross-store transactional semantics that the live
@@ -160,7 +165,8 @@ on every invocation; these trend numbers are planning estimates, not a quota.
 |---|---|
 | lock contention | exit before staging |
 | disk guard | exit before large writes or retention |
-| missing/changed critical file | retry stable window, then fail with partial |
+| missing/changed core/conditional file | retry stable window, then fail with partial |
+| changing volatile projection | bounded individual retry, then warning and verified core point |
 | DB backup/integrity failure | no publication, old points retained |
 | manifest/rename failure | partial remains; no retention |
 | zstd/hash failure | raw remains; partial/final is not a replacement |
@@ -181,10 +187,12 @@ python backup_v2.py validate <restore-point>
 python backup_v2.py prepare-restore <restore-point> <new-staging-directory>
 ```
 
-`prepare-restore` requires a new directory, validates all hashes and semantic
+`prepare-restore` requires a new directory, validates all captured hashes and semantic
 state, runs `zstd -t` for COLD, materializes the DB, verifies its original
 SHA-256/size, runs full SQLite checks, and writes `RESTORE_READY.json` with
-`production_installed=false`. It has no command that replaces production files.
+`RESTORE_READY=true`, `production_installed=false`, and explicit
+`VOLATILE_OPTIONAL_MISSING` / `VOLATILE_OPTIONAL_SKIPPED` warnings. It has no
+command that replaces production files.
 Actual installation requires a separate procedure, explicit authority and an
 application-level quiescence decision.
 
