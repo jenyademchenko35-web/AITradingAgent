@@ -25,6 +25,8 @@ import subprocess
 import tempfile
 from typing import Any, Callable, Iterable, Mapping
 
+import legacy_drain
+
 
 SCHEMA_VERSION = "2.1"
 MANIFEST = "manifest.v2.json"
@@ -122,11 +124,17 @@ class BackupConfig:
         default=lambda: datetime.now(timezone.utc), compare=False
     )
     free_bytes: Callable[[Path], int] | None = field(default=None, compare=False)
+    legacy_drain_enabled: bool = False
+    legacy_root: Path | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "source_root", Path(self.source_root))
         object.__setattr__(self, "backup_root", Path(self.backup_root))
         object.__setattr__(self, "lock_path", Path(self.lock_path))
+        if self.legacy_root is not None:
+            object.__setattr__(self, "legacy_root", Path(self.legacy_root))
+        if self.legacy_drain_enabled and self.legacy_root is None:
+            raise ValueError("legacy_root is required when legacy drain is enabled")
         if not 0 < self.hot_keep <= self.total_keep:
             raise ValueError("hot_keep must be between 1 and total_keep")
         if self.consistency_attempts < 1:
@@ -164,6 +172,10 @@ class BackupLock:
         if self.handle is not None:
             fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
             self.handle.close()
+
+    @property
+    def held(self) -> bool:
+        return self.handle is not None and not self.handle.closed
 
 
 def _utc(value: datetime) -> str:
@@ -920,7 +932,7 @@ def create_backup(
         raise BackupError("backup root must be a regular directory")
     if config.source_root.resolve() == config.backup_root.resolve():
         raise BackupError("source and backup roots must be different directories")
-    with BackupLock(config.lock_path):
+    with BackupLock(config.lock_path) as shared_lock:
         _check_required_sources(config)
         peak = estimate_peak_bytes(config)
         if peak["available"] < peak["required"]:
@@ -978,7 +990,26 @@ def create_backup(
         _rename_new(staging, final)
         _fsync_directory(config.backup_root)
         warnings = _rebalance_locked(config, delete_point=delete_point) if rebalance_after else []
-        return {"path": str(final), "peak": peak, "warnings": warnings}
+        output = {"path": str(final), "peak": peak, "warnings": warnings}
+        if config.legacy_drain_enabled:
+            # This remains inside the same BackupLock ownership as disk guard,
+            # publication, and V2 retention.  A drain failure never invalidates
+            # or rolls back the already VERIFIED V2 restore point.
+            output["legacy_drain"] = legacy_drain.drain_one(
+                legacy_drain.LegacyDrainConfig(
+                    legacy_root=config.legacy_root,
+                    v2_root=config.backup_root,
+                    source_root=config.source_root,
+                    zstd=config.zstd,
+                    now=config.now,
+                ),
+                final,
+                validate_trigger=lambda point: validate_restore_point(
+                    point, full_integrity=True, zstd=config.zstd
+                ),
+                lock_held=shared_lock.held,
+            )
+        return output
 
 
 def _convert_to_cold(config: BackupConfig, point: Path) -> None:
@@ -1152,6 +1183,8 @@ def _cli() -> argparse.ArgumentParser:
     create.add_argument("--backup-root", type=Path, required=True)
     create.add_argument("--source-root", type=Path, required=True)
     create.add_argument("--lock", type=Path, default=DEFAULT_LOCK)
+    create.add_argument("--legacy-drain", action="store_true")
+    create.add_argument("--legacy-root", type=Path)
     listing = sub.add_parser("list")
     listing.add_argument("--backup-root", type=Path, required=True)
     validate = sub.add_parser("validate")
@@ -1167,7 +1200,15 @@ def main(argv: list[str] | None = None) -> int:
     args = _cli().parse_args(argv)
     try:
         if args.command == "backup":
-            value = create_backup(BackupConfig(args.source_root, args.backup_root, args.lock))
+            value = create_backup(
+                BackupConfig(
+                    args.source_root,
+                    args.backup_root,
+                    args.lock,
+                    legacy_drain_enabled=args.legacy_drain,
+                    legacy_root=args.legacy_root,
+                )
+            )
         elif args.command == "list":
             value = list_restore_points(args.backup_root)
         elif args.command == "validate":
@@ -1176,7 +1217,7 @@ def main(argv: list[str] | None = None) -> int:
             value = {"path": str(prepare_restore(args.point, args.staging, zstd=args.zstd))}
         print(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
-    except (BackupError, OSError, sqlite3.DatabaseError) as exc:
+    except (BackupError, OSError, ValueError, sqlite3.DatabaseError) as exc:
         print(json.dumps({"status": "FAILED", "error": str(exc)}, sort_keys=True))
         return 1
 
