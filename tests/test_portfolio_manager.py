@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import csv
 import tempfile
 from pathlib import Path
 from unittest import TestCase
@@ -44,6 +45,28 @@ class PortfolioManagerTest(TestCase):
         return PortfolioManager(registry=FakeRegistry(positions), config_path=self.config,
                                 groups_path=self.groups, report_path=self.report,
                                 summary_path=self.summary)
+
+    @staticmethod
+    def write_trade_state(path, rows):
+        fields = [
+            "symbol", "direction", "entry", "stop_loss", "take_profit",
+            "status", "result", "opened_at", "closed_at", "exit_price", "pnl",
+        ]
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    @staticmethod
+    def persisted_trade(symbol, *, status="OPEN", opened_at="2026-08-30T12:00:00+00:00"):
+        closed = status != "OPEN"
+        return {
+            "symbol": symbol, "direction": "LONG", "entry": "100",
+            "stop_loss": "99", "take_profit": "102", "status": status,
+            "result": status if closed else "", "opened_at": opened_at,
+            "closed_at": "2026-08-30T13:00:00+00:00" if closed else "",
+            "exit_price": "98" if closed else "", "pnl": "-2" if closed else "",
+        }
 
     def test_allows_trade_inside_limits_and_uses_registry(self):
         manager = self.manager([trade("SOL/USDT", risk_pct=.5)])
@@ -97,9 +120,46 @@ class PortfolioManagerTest(TestCase):
         self.manager().can_open_trade(signal)
         self.assertEqual(signal, original)
 
+    def test_refresh_releases_all_slots_after_startup_positions_close(self):
+        trades = Path(self.temp.name) / "trades.csv"
+        initial = [
+            self.persisted_trade("ADA/USDT", opened_at="2026-08-30T12:00:00+00:00"),
+            self.persisted_trade("SOL/USDT", opened_at="2026-08-30T12:01:00+00:00"),
+            self.persisted_trade("BNB/USDT", opened_at="2026-08-30T12:02:00+00:00"),
+        ]
+        self.write_trade_state(trades, initial)
+        manager = PortfolioManager(
+            registry_path=trades, config_path=self.config, groups_path=self.groups,
+            report_path=self.report, summary_path=self.summary,
+        )
+        self.assertIn("MAX_OPEN_TRADES", manager.can_open_trade(trade("ETH"))["reasons"])
+
+        self.write_trade_state(trades, [{**row, "status": "LOSS", "result": "LOSS",
+                                         "closed_at": "2026-08-30T13:00:00+00:00",
+                                         "exit_price": "98", "pnl": "-2"}
+                                        for row in initial])
+        result = manager.can_open_trade(trade("ETH"))
+        self.assertEqual(result["open_trades"], 0)
+        self.assertNotIn("MAX_OPEN_TRADES", result["reasons"])
+        self.assertEqual(result["status"], "ALLOW")
+
+    def test_refresh_observes_close_without_manager_restart(self):
+        trades = Path(self.temp.name) / "trades.csv"
+        opened = self.persisted_trade("SOL/USDT")
+        self.write_trade_state(trades, [opened])
+        manager = PortfolioManager(
+            registry_path=trades, config_path=self.config, groups_path=self.groups,
+            report_path=self.report, summary_path=self.summary,
+        )
+        self.assertEqual(manager.portfolio_summary()["open_trades"], 1)
+
+        self.write_trade_state(trades, [{**opened, "status": "WIN", "result": "WIN",
+                                         "closed_at": "2026-08-30T13:00:00+00:00",
+                                         "exit_price": "102", "pnl": "2"}])
+        self.assertEqual(manager.portfolio_summary()["open_trades"], 0)
+
     def test_telegram_command_is_registered(self):
         from telegram_handlers import BOT_COMMANDS_V5
         import telegram_bot_v4
         self.assertIn("portfolio", {command.command for command in BOT_COMMANDS_V5})
         self.assertTrue(callable(telegram_bot_v4.portfolio_command))
-

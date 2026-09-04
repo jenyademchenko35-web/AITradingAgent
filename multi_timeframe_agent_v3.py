@@ -1,6 +1,7 @@
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
+from enum import Enum
 import argparse
 import traceback
 import os
@@ -1023,6 +1024,18 @@ class DecisionEngine:
 # Notification Sending
 # ==========================
 
+class NotificationStatus(str, Enum):
+    SENT = "SENT"
+    SKIPPED = "SKIPPED"
+    ERROR = "ERROR"
+
+
+@dataclass(frozen=True)
+class NotificationResult:
+    status: NotificationStatus
+    reason: str = ""
+    error: str = ""
+
 async def send_notification(
         symbol: str,
         decision: DecisionResult,
@@ -1031,10 +1044,10 @@ async def send_notification(
         entry: float,
         stop_loss: float,
         take_profit: float,
-    ):
+    ) -> NotificationResult:
     chat_id = load_chat_id()
     if not chat_id or not BOT_TOKEN:
-        return
+        return NotificationResult(NotificationStatus.SKIPPED, "missing_configuration")
 
     fingerprint = decision_signal_fingerprint(
         symbol,
@@ -1046,7 +1059,7 @@ async def send_notification(
     )
 
     if is_duplicate(fingerprint):
-        return
+        return NotificationResult(NotificationStatus.SKIPPED, "duplicate")
 
     text = format_signal(
         symbol,
@@ -1057,9 +1070,32 @@ async def send_notification(
         take_profit=take_profit,
     )
 
-    bot = Bot(BOT_TOKEN)
-    await bot.send_message(chat_id=chat_id, text=text)
-    mark_as_sent(fingerprint)
+    try:
+        bot = Bot(BOT_TOKEN)
+        await bot.send_message(chat_id=chat_id, text=text)
+    except Exception as exc:
+        return NotificationResult(NotificationStatus.ERROR, "send_error", str(exc))
+
+    try:
+        mark_as_sent(fingerprint)
+    except Exception as exc:
+        return NotificationResult(NotificationStatus.ERROR, "state_persist_error", str(exc))
+    return NotificationResult(NotificationStatus.SENT)
+
+
+def log_notification_result(symbol: str, result: NotificationResult) -> None:
+    if result.status is NotificationStatus.SENT:
+        LOGGER.notification_sent()
+    elif result.status is NotificationStatus.SKIPPED:
+        LOGGER.timestamped(
+            f"Notification skipped for {symbol}: {result.reason}",
+            minimum="NORMAL",
+        )
+    else:
+        LOGGER.timestamped(
+            f"Notification error for {symbol}: {result.reason}",
+            minimum="NORMAL",
+        )
 
 
 def send_trade_close_notification(
@@ -1389,7 +1425,6 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
             LOGGER.cooldown_active(symbol, setup_id)
         else:
             diagnostics.set_execution_status(decision, "ELIGIBLE")
-            mark_setup_active(setup_id)
             entry = market.tf1h.close
 
             if decision.direction == "LONG":
@@ -1465,6 +1500,10 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 take_profit=take_profit,
                 research_metadata=research_trade_metadata_snapshot(feature_row, decision),
             )
+            # Cooldown describes an accepted/opened setup, not an attempted
+            # candidate.  Every rejection and open failure above leaves the
+            # state untouched.
+            mark_setup_active(setup_id)
             save_setup_history(symbol, decision)
 
             if (
@@ -1472,7 +1511,7 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 and decision.confidence >= 75
             ):
                 LOGGER.notification_sending(symbol)
-                asyncio.run(
+                notification_result = asyncio.run(
                     send_notification(
                         symbol,
                         decision,
@@ -1482,7 +1521,7 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                         take_profit=take_profit,
                     )
                 )
-                LOGGER.notification_sent()
+                log_notification_result(symbol, notification_result)
     elif decision.raw_signal_status in ("SETUP", "HIGH PRIORITY"):
         diagnostics.set_execution_status(
             decision,

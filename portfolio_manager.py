@@ -7,9 +7,12 @@ the candidate's existing risk estimate fits the current open portfolio.
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import math
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -53,12 +56,17 @@ class PortfolioManager:
         self,
         *,
         registry: TradeRegistry | None = None,
+        registry_path: str | Path = BASE_DIR / "trades.csv",
         config_path: str | Path = DEFAULT_CONFIG_PATH,
         groups_path: str | Path = DEFAULT_GROUPS_PATH,
         report_path: str | Path = REPORT_PATH,
         summary_path: str | Path = SUMMARY_PATH,
     ) -> None:
-        self.registry = registry or TradeRegistry(BASE_DIR / "trades.csv")
+        # Injected registries remain stable for tests and explicit callers.  The
+        # production path is reloaded for every top-level evaluation so trade
+        # closes performed after process startup are immediately visible.
+        self.registry = registry
+        self.registry_path = Path(registry_path)
         self.config_path = Path(config_path)
         self.groups_path = Path(groups_path)
         self.report_path = Path(report_path)
@@ -90,8 +98,54 @@ class PortfolioManager:
     def max_group_risk(self) -> float:
         return _number(self.config.get("MAX_CORRELATED_GROUP_RISK", 2.0), 2.0)
 
+    def _fresh_registry(self) -> TradeRegistry:
+        """Return a canonical registry built from a stable CSV generation.
+
+        ``trade_tracker.close_trade`` currently rewrites the canonical file in
+        place.  Two identical, structurally valid samples separated by a short
+        observation interval prevent a portfolio decision from consuming the
+        transient truncated/partial generation without changing that writer's
+        persistence semantics.
+        """
+        last_error: Exception | None = None
+
+        def sample() -> tuple[tuple[int, int, int], bytes, list[dict[str, str]]]:
+            before = self.registry_path.stat()
+            payload = self.registry_path.read_bytes()
+            after = self.registry_path.stat()
+            signature_before = (before.st_ino, before.st_size, before.st_mtime_ns)
+            signature_after = (after.st_ino, after.st_size, after.st_mtime_ns)
+            if signature_before != signature_after or len(payload) != after.st_size:
+                raise RuntimeError("trades.csv changed during portfolio refresh")
+            text = payload.decode("utf-8-sig")
+            reader = csv.DictReader(io.StringIO(text, newline=""))
+            fields = set(reader.fieldnames or ())
+            if not {"symbol", "direction", "status"}.issubset(fields):
+                raise ValueError("trades.csv is missing required portfolio fields")
+            rows = [dict(row) for row in reader if row and any(row.values())]
+            if any(None in row or any(value is None for value in row.values()) for row in rows):
+                raise ValueError("trades.csv contains an incomplete row")
+            return signature_after, payload, rows
+
+        for _ in range(3):
+            try:
+                first_signature, first_payload, first_rows = sample()
+                time.sleep(0.01)
+                second_signature, second_payload, _ = sample()
+                if first_signature == second_signature and first_payload == second_payload:
+                    return TradeRegistry(rows=first_rows)
+                last_error = RuntimeError("trades.csv did not remain stable between samples")
+            except (OSError, csv.Error, UnicodeDecodeError, ValueError, RuntimeError) as exc:
+                last_error = exc
+        raise RuntimeError("unable to read a stable canonical trade state") from last_error
+
     def _positions(self, positions: Iterable[Mapping[str, Any]] | None = None) -> list[dict[str, Any]]:
-        source = self.registry.get_open_trades() if positions is None else positions
+        if positions is not None:
+            source = positions
+        elif self.registry is not None:
+            source = self.registry.get_open_trades()
+        else:
+            source = self._fresh_registry().get_open_trades()
         return [dict(item) for item in source]
 
     def _risk_pct(self, payload: Mapping[str, Any]) -> float:
