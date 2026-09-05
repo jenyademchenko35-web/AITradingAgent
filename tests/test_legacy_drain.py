@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import sqlite3
 import subprocess
+import tempfile
 
 import pytest
 
@@ -73,42 +74,51 @@ def _source(path: Path) -> Path:
 
 
 @pytest.fixture
-def model(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
-    source = _source(tmp_path / "source")
-    v2 = tmp_path / "v2"
-    legacy = tmp_path / "legacy"
-    legacy.mkdir()
-    clock = Clock()
-    monkeypatch.setattr(
-        backup,
-        "_git",
-        lambda _root, *args: "a" * 40 if args == ("rev-parse", "HEAD") else "test",
-    )
-    config = backup.BackupConfig(
-        source,
-        v2,
-        tmp_path / "backup.lock",
-        reserve_bytes=1,
-        now=clock,
-    )
-    trigger = Path(backup.create_backup(config, rebalance_after=False)["path"])
-    drain_config = drain.LegacyDrainConfig(
-        legacy_root=legacy,
-        v2_root=v2,
-        source_root=source,
-        temp_root=tmp_path / "temp",
-        now=clock,
-        open_fd_check=lambda _path: False,
-    )
-    return {
-        "source": source,
-        "v2": v2,
-        "legacy": legacy,
-        "clock": clock,
-        "backup_config": config,
-        "drain_config": drain_config,
-        "trigger": trigger,
-    }
+def model(monkeypatch: pytest.MonkeyPatch):
+    # tempfile.mkdtemp is 0700 regardless of process umask, matching the
+    # production-owned subtree beneath /home/aitrading.
+    test_root = Path(tempfile.mkdtemp(prefix="legacy-drain-model-")).resolve()
+    try:
+        source = _source(test_root / "source")
+        v2 = test_root / "v2"
+        v2.mkdir(mode=0o755)
+        v2.chmod(0o755)
+        legacy = test_root / "legacy"
+        legacy.mkdir(mode=0o700)
+        clock = Clock()
+        monkeypatch.setattr(
+            backup,
+            "_git",
+            lambda _root, *args: "a" * 40 if args == ("rev-parse", "HEAD") else "test",
+        )
+        config = backup.BackupConfig(
+            source,
+            v2,
+            test_root / "backup.lock",
+            reserve_bytes=1,
+            now=clock,
+        )
+        trigger = Path(backup.create_backup(config, rebalance_after=False)["path"])
+        drain_config = drain.LegacyDrainConfig(
+            legacy_root=legacy,
+            v2_root=v2,
+            source_root=source,
+            temp_root=test_root / "temp",
+            now=clock,
+            open_fd_check=lambda _path: False,
+        )
+        yield {
+            "test_root": test_root,
+            "source": source,
+            "v2": v2,
+            "legacy": legacy,
+            "clock": clock,
+            "backup_config": config,
+            "drain_config": drain_config,
+            "trigger": trigger,
+        }
+    finally:
+        shutil.rmtree(test_root)
 
 
 def _hot(root: Path, name: str) -> Path:
@@ -548,6 +558,6 @@ def test_all_writes_are_confined_to_explicit_test_roots(model: dict[str, object]
         assert sentinel.read_text() == "unchanged"
         journal = model["v2"] / drain.TRANSITION_DIR
         assert journal.is_dir()
-        assert all(str(path).startswith(str(tmp_path)) for path in journal.rglob("*"))
+        assert all(str(path).startswith(str(model["test_root"])) for path in journal.rglob("*"))
     finally:
         sentinel.unlink()

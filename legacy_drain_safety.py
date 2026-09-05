@@ -22,7 +22,21 @@ class DrainSafetyError(RuntimeError):
     pass
 
 
-def open_directory(path: Path) -> int:
+def _check_journal_ancestor(info: os.stat_result) -> None:
+    if info.st_uid not in {0, os.geteuid()}:
+        raise DrainSafetyError("untrusted journal ancestor owner")
+    writable = info.st_mode & 0o022
+    sticky = info.st_mode & stat.S_ISVTX
+    if writable and not sticky:
+        raise DrainSafetyError("untrusted writable journal ancestor")
+
+
+def _check_journal_parent(info: os.stat_result) -> None:
+    if info.st_uid != os.geteuid() or info.st_mode & 0o022:
+        raise DrainSafetyError("untrusted journal directory permissions")
+
+
+def open_directory(path: Path, *, journal_trust: bool = False) -> int:
     """Open every component without following even an ancestor symlink."""
     path = Path(path).absolute()
     if ".." in path.parts:
@@ -30,10 +44,20 @@ def open_directory(path: Path) -> int:
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     fd = os.open(path.anchor, flags)
     try:
-        for part in path.parts[1:]:
+        parts = path.parts[1:]
+        if journal_trust and parts:
+            _check_journal_ancestor(os.fstat(fd))
+        for index, part in enumerate(parts):
             child = os.open(part, flags, dir_fd=fd)
             os.close(fd)
             fd = child
+            if journal_trust:
+                if index == len(parts) - 1:
+                    _check_journal_parent(os.fstat(fd))
+                else:
+                    _check_journal_ancestor(os.fstat(fd))
+        if journal_trust and not parts:
+            _check_journal_parent(os.fstat(fd))
         if path.resolve(strict=True) != path:
             raise DrainSafetyError("directory path is not canonical")
         return fd
@@ -43,8 +67,8 @@ def open_directory(path: Path) -> int:
 
 
 @contextmanager
-def directory(path: Path):
-    fd = open_directory(path)
+def directory(path: Path, *, journal_trust: bool = False):
+    fd = open_directory(path, journal_trust=journal_trust)
     try:
         yield fd
     finally:
@@ -106,10 +130,7 @@ def _json_pairs(pairs):
 
 
 def read_json(path: Path) -> dict:
-    with directory(path.parent) as parent:
-        parent_info = os.fstat(parent)
-        if parent_info.st_uid != os.geteuid() or parent_info.st_mode & 0o022:
-            raise DrainSafetyError("untrusted journal directory permissions")
+    with directory(path.parent, journal_trust=True) as parent:
         fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
         with os.fdopen(fd, "rb") as stream:
             info = os.fstat(stream.fileno())
@@ -127,10 +148,7 @@ def read_json(path: Path) -> dict:
 
 def publish_json(path: Path, value: dict, *, once: bool = False) -> None:
     """Durable publication; link gives atomic no-replace for immutable intents."""
-    with directory(path.parent) as parent:
-        parent_info = os.fstat(parent)
-        if parent_info.st_uid != os.geteuid() or parent_info.st_mode & 0o022:
-            raise DrainSafetyError("untrusted journal directory permissions")
+    with directory(path.parent, journal_trust=True) as parent:
         temporary = f".{path.name}.{uuid.uuid4().hex}.partial"
         fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
                      0o400 if once else 0o600, dir_fd=parent)

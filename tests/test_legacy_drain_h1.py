@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 
 import pytest
 
@@ -12,6 +13,22 @@ import legacy_drain as drain
 import legacy_drain_safety as safety
 from tests.test_legacy_drain import (model, _hot, _cold, _run, _validator,
                                      _next_trigger, SimulatedCrash)
+
+
+@pytest.fixture
+def trusted_transition_root():
+    """Model the production V2 transition hierarchy without relying on umask."""
+    trusted_root = Path(tempfile.mkdtemp(prefix="legacy-drain-h1-trusted-")).resolve()
+    try:
+        trusted_root.chmod(0o700)
+        v2_root = trusted_root / "AITradingAgent-v2"
+        v2_root.mkdir(mode=0o755)
+        transition_root = v2_root / drain.TRANSITION_DIR
+        transition_root.mkdir(mode=0o700)
+        transition_root.chmod(0o700)
+        yield transition_root
+    finally:
+        shutil.rmtree(trusted_root)
 
 
 def crash_at(stage):
@@ -329,8 +346,8 @@ def test_hard_link_in_tree_blocks_delete(model):
     assert result["action"] == "SKIPPED" and first.exists()
 
 
-def test_journal_write_failure_keeps_old_complete_json(model, monkeypatch):
-    path = model["legacy"] / "journal.json"
+def test_journal_write_failure_keeps_old_complete_json(trusted_transition_root, monkeypatch):
+    path = trusted_transition_root / "journal.json"
     safety.publish_json(path, {"old": True})
     def fail_replace(*args, **kwargs):
         raise OSError("injected atomic publication failure")
@@ -338,7 +355,76 @@ def test_journal_write_failure_keeps_old_complete_json(model, monkeypatch):
     with pytest.raises(OSError):
         safety.publish_json(path, {"new": True})
     assert json.loads(path.read_text()) == {"old": True}
-    assert not list(model["legacy"].glob(".*.partial"))
+    assert not list(trusted_transition_root.glob(".*.partial"))
+
+
+def test_production_like_transition_directory_is_trusted(trusted_transition_root):
+    info = trusted_transition_root.stat()
+    assert info.st_uid == os.geteuid()
+    assert info.st_mode & 0o777 == 0o700
+    path = trusted_transition_root / "accepted.json"
+    safety.publish_json(path, {"trusted": True})
+    assert safety.read_json(path) == {"trusted": True}
+
+
+@pytest.mark.parametrize("mode", [0o720, 0o702], ids=["group-writable", "world-writable"])
+def test_writable_transition_directory_is_rejected(trusted_transition_root, mode):
+    transition_root = trusted_transition_root
+    transition_root.chmod(mode)
+    with pytest.raises(safety.DrainSafetyError, match="untrusted journal directory permissions"):
+        safety.publish_json(transition_root / "rejected.json", {"trusted": False})
+
+
+def test_transition_directory_ownership_mismatch_is_rejected(
+        trusted_transition_root, monkeypatch):
+    actual_uid = os.geteuid()
+    monkeypatch.setattr(safety.os, "geteuid", lambda: actual_uid + 1)
+    with pytest.raises(safety.DrainSafetyError, match="untrusted journal directory permissions"):
+        safety._check_journal_parent(trusted_transition_root.stat())
+
+
+@pytest.mark.parametrize("mode", [0o755, 0o1777], ids=["non-writable", "sticky-writable"])
+def test_foreign_owned_ancestor_is_rejected(trusted_transition_root, monkeypatch, mode):
+    ancestor = trusted_transition_root.parent
+    ancestor.chmod(mode)
+    actual_uid = os.geteuid()
+    monkeypatch.setattr(safety.os, "geteuid", lambda: actual_uid + 1)
+    with pytest.raises(safety.DrainSafetyError, match="untrusted journal ancestor owner"):
+        safety._check_journal_ancestor(ancestor.stat())
+
+
+def test_symlink_transition_parent_is_rejected(trusted_transition_root):
+    actual = trusted_transition_root.parent / "actual-transition"
+    actual.mkdir(mode=0o700)
+    alias = trusted_transition_root.parent / "transition-alias"
+    alias.symlink_to(actual, target_is_directory=True)
+    with pytest.raises(OSError):
+        safety.publish_json(alias / "rejected.json", {"trusted": False})
+
+
+def test_world_writable_tmp_ancestor_allows_owned_trusted_transition(trusted_transition_root):
+    tmp_parent = trusted_transition_root.parent / "tmp-like"
+    tmp_parent.mkdir(mode=0o700)
+    tmp_parent.chmod(0o1777)
+    v2_root = tmp_parent / "AITradingAgent-v2"
+    v2_root.mkdir(mode=0o755)
+    transition_root = v2_root / drain.TRANSITION_DIR
+    transition_root.mkdir(mode=0o700)
+    path = transition_root / "accepted.json"
+    safety.publish_json(path, {"trusted-child": True})
+    assert safety.read_json(path) == {"trusted-child": True}
+
+
+def test_non_sticky_writable_ancestor_is_rejected(trusted_transition_root):
+    untrusted_parent = trusted_transition_root.parent / "untrusted-parent"
+    untrusted_parent.mkdir(mode=0o700)
+    untrusted_parent.chmod(0o777)
+    v2_root = untrusted_parent / "AITradingAgent-v2"
+    v2_root.mkdir(mode=0o755)
+    transition_root = v2_root / drain.TRANSITION_DIR
+    transition_root.mkdir(mode=0o700)
+    with pytest.raises(safety.DrainSafetyError, match="untrusted writable journal ancestor"):
+        safety.publish_json(transition_root / "rejected.json", {"trusted-child": False})
 
 
 def test_real_lsof_open_fd_is_detected(model):
