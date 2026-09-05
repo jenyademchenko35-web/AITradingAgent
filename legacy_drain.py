@@ -21,15 +21,13 @@ import stat
 import subprocess
 import tempfile
 from typing import Any, Callable, Mapping
+import legacy_drain_safety as safety
+from legacy_drain_safety import DrainSafetyError as LegacyDrainError
 
 
-TIMESTAMP_RE = re.compile(r"\d{8}_\d{6}")
-TRANSITION_SCHEMA = 1
+TIMESTAMP_RE = re.compile(r"[0-9]{8}_[0-9]{6}")
+TRANSITION_SCHEMA = 2
 TRANSITION_DIR = ".legacy-drain-transitions"
-
-
-class LegacyDrainError(RuntimeError):
-    """A fail-closed legacy validation or transition error."""
 
 
 @dataclass(frozen=True)
@@ -80,25 +78,7 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if path.parent.is_symlink() or not path.parent.is_dir():
         raise LegacyDrainError(f"unsafe transition directory: {path.parent}")
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.partial")
-    if temporary.exists() or temporary.is_symlink():
-        raise LegacyDrainError(f"transition temporary path exists: {temporary}")
-    try:
-        descriptor = os.open(
-            temporary,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
-            0o600,
-        )
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            json.dump(dict(value), stream, ensure_ascii=False, sort_keys=True)
-            stream.write("\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-        _fsync_directory(path.parent)
-    finally:
-        if temporary.exists() and not temporary.is_symlink():
-            temporary.unlink()
+    safety.publish_json(path, dict(value))
 
 
 def _regular_file(path: Path, description: str) -> None:
@@ -148,6 +128,8 @@ def _valid_timestamp(value: str) -> bool:
 
 
 def _require_disjoint_roots(config: LegacyDrainConfig) -> tuple[Path, Path, Path]:
+    for path in (config.legacy_root, config.v2_root, config.source_root):
+        safety.check_directory(path)
     legacy = config.legacy_root.resolve(strict=True)
     v2 = config.v2_root.resolve(strict=True)
     source = config.source_root.resolve(strict=True)
@@ -211,10 +193,20 @@ def _default_open_fd_check(point: Path) -> bool | None:
         stderr=subprocess.PIPE,
         text=True,
         check=False,
+        timeout=30,
     )
-    if result.returncode not in (0, 1):
+    if result.returncode not in (0, 1) or result.stderr.strip():
         raise LegacyDrainError(f"open-FD check failed with status {result.returncode}")
+    if result.returncode == 0 and not result.stdout.strip():
+        raise LegacyDrainError("open-FD check returned ambiguous success")
     return bool(result.stdout.strip())
+
+
+def _require_no_open_fds(config: LegacyDrainConfig, point: Path) -> None:
+    value = (config.open_fd_check or _default_open_fd_check)(point)
+    if value is not False:
+        reason = "open file descriptors" if value is True else "open-FD check unavailable"
+        raise LegacyDrainError(reason)
 
 
 def _validate_hot(point: Path) -> dict[str, Any]:
@@ -343,13 +335,14 @@ def _validate_candidate(
         validation = _validate_cold(config, candidate)
     else:
         raise LegacyDrainError("legacy candidate has no supported database layout")
-    checker = config.open_fd_check or _default_open_fd_check
-    open_state = checker(candidate)
-    if open_state is True:
-        raise LegacyDrainError("legacy candidate has open file descriptors")
-    validation["open_fd_check"] = "UNAVAILABLE" if open_state is None else "PASS"
+    _require_no_open_fds(config, candidate)
+    validation["open_fd_check"] = "PASS"
     validation["directory_device"] = info.st_dev
     validation["directory_inode"] = info.st_ino
+    validation["directory_identity"] = safety.identity(info)
+    validation["inventory"] = safety.inventory(candidate, safety.identity(info))
+    if _tree_fingerprint(candidate) != fingerprint:
+        raise LegacyDrainError("candidate changed during validation")
     return validation, fingerprint, _tree_size(candidate)
 
 
@@ -413,6 +406,9 @@ def _trigger_gate(
 def _record_base(config: LegacyDrainConfig, trigger: Path) -> dict[str, Any]:
     return {
         "schema_version": TRANSITION_SCHEMA,
+        "legacy_root": str(config.legacy_root.resolve(strict=True)),
+        "v2_root": str(config.v2_root.resolve(strict=True)),
+        "source_root": str(config.source_root.resolve(strict=True)),
         "trigger_v2_point": str(trigger),
         "trigger_v2_timestamp": trigger.name,
         "updated_at": _utc(config.now()),
@@ -426,36 +422,198 @@ def _record_base(config: LegacyDrainConfig, trigger: Path) -> dict[str, Any]:
     }
 
 
+TRANSITIONS = {
+    "STARTED": {"STARTED", "VALIDATED", "VALIDATION_FAILED", "LEGACY_EMPTY", "RECOVERY_CONSUMED_RUN", "RECOVERED_BEFORE_VALIDATION"},
+    "VALIDATED": {"TOMBSTONED", "RECOVERED_BEFORE_RENAME", "RECOVERED_AFTER_DELETE"},
+    "TOMBSTONED": {"DELETE_STARTED", "RECOVERED_AFTER_DELETE"},
+    "DELETE_STARTED": {"COMPLETED", "DELETE_FAILED_ROLLED_BACK", "DELETE_INCOMPLETE_TOMBSTONE", "RECOVERED_AFTER_DELETE", "RECOVERED_BEFORE_RENAME"},
+    "DELETE_INCOMPLETE_TOMBSTONE": {"RECOVERED_AFTER_DELETE"},
+}
+STATE_ACTION = {
+    **{s: "PENDING" for s in ("STARTED", "VALIDATED", "TOMBSTONED", "DELETE_STARTED", "DELETE_INCOMPLETE_TOMBSTONE")},
+    **{s: "SKIPPED" for s in ("VALIDATION_FAILED", "RECOVERY_CONSUMED_RUN", "RECOVERED_BEFORE_VALIDATION", "RECOVERED_BEFORE_RENAME", "DELETE_FAILED_ROLLED_BACK")},
+    "LEGACY_EMPTY": "NOOP", "COMPLETED": "DELETED", "RECOVERED_AFTER_DELETE": "DELETED",
+}
+
+
 def _write_state(path: Path, record: dict[str, Any], config: LegacyDrainConfig, **changes: Any) -> None:
-    record.update(changes)
-    record["updated_at"] = _utc(config.now())
-    _atomic_json(path, record)
+    updated = {**record, **changes, "updated_at": _utc(config.now())}
+    if updated["state"] not in TRANSITIONS.get(record["state"], set()):
+        raise LegacyDrainError("invalid state transition")
+    if updated["action"] != STATE_ACTION.get(updated["state"]):
+        raise LegacyDrainError("invalid state/action pair")
+    if updated["action"] != "PENDING":
+        terminal = _receipt(path, "terminal")
+        terminal.parent.mkdir(mode=0o700, exist_ok=True)
+        safety.check_directory(terminal.parent)
+        _fsync_directory(terminal.parent.parent)
+        safety.publish_json(terminal, updated, once=True)
+    _atomic_json(path, updated)
+    record.clear()
+    record.update(updated)
+
+
+def _tombstone_name(candidate: str, trigger: str) -> str:
+    if not _valid_timestamp(candidate) or not _valid_timestamp(trigger):
+        raise LegacyDrainError("invalid candidate/trigger basename")
+    return f".{candidate}.{trigger}.legacy-drain.tombstone"
+
+
+MUTABLE_FIELDS = {"action", "state", "updated_at", "reason", "bytes_reclaimed"}
+
+
+def _binding(record: dict) -> dict:
+    return {k: v for k, v in record.items() if k not in MUTABLE_FIELDS}
+
+
+def _receipt(journal: Path, suffix: str = "intent") -> Path:
+    return journal.parent / ".intents" / f"{journal.stem}.{suffix}.json"
+
+
+def _journal_header(config: LegacyDrainConfig, journal: Path, record: dict) -> None:
+    if record.get("schema_version") != TRANSITION_SCHEMA:
+        raise LegacyDrainError("unsupported recovery journal schema")
+    root, v2, source = _require_disjoint_roots(config)
+    if (not _valid_timestamp(journal.stem)
+            or record.get("trigger_v2_timestamp") != journal.stem
+            or record.get("trigger_v2_point") != str(v2 / journal.stem)
+            or record.get("legacy_root") != str(root)
+            or record.get("v2_root") != str(v2)
+            or record.get("source_root") != str(source)):
+        raise LegacyDrainError("invalid journal roots/trigger")
+    state = record.get("state")
+    if state not in STATE_ACTION or record.get("action") != STATE_ACTION[state]:
+        raise LegacyDrainError("invalid recovery state/action")
+    terminal = _receipt(journal, "terminal")
+    if record["action"] != "PENDING":
+        if safety.read_json(terminal) != record:
+            raise LegacyDrainError("terminal journal lacks matching immutable receipt")
+    elif terminal.exists() or terminal.is_symlink():
+        raise LegacyDrainError("interrupted terminal publication requires explicit review")
+    candidate_path = record.get("legacy_candidate")
+    if candidate_path is not None:
+        if not isinstance(candidate_path, str):
+            raise LegacyDrainError("invalid candidate path type")
+        path = Path(candidate_path)
+        if not _valid_timestamp(path.name) or path != root / path.name:
+            raise LegacyDrainError("invalid journal candidate path")
+    if state == "STARTED" and any(k in record for k in ("inventory", "tombstone_basename", "directory_identity")):
+        raise LegacyDrainError("validated evidence cannot regress to STARTED")
+
+
+def _seal(journal: Path, record: dict) -> None:
+    parent = _receipt(journal).parent
+    parent.mkdir(mode=0o700, exist_ok=True)
+    safety.check_directory(parent)
+    _fsync_directory(parent.parent)
+    safety.publish_json(_receipt(journal), _binding(record), once=True)
+
+
+def _check_bound(config: LegacyDrainConfig, record: dict, path: Path) -> None:
+    root, v2, source = _require_disjoint_roots(config)
+    for key, expected in (("legacy_root", root), ("v2_root", v2), ("source_root", source)):
+        if record.get(key) != str(expected):
+            raise LegacyDrainError("journal root mismatch")
+    candidate = record.get("candidate_basename")
+    trigger = record.get("trigger_v2_timestamp")
+    if not isinstance(candidate, str) or not isinstance(trigger, str):
+        raise LegacyDrainError("missing candidate/trigger basename")
+    tombstone = _tombstone_name(candidate, trigger)
+    if (record.get("legacy_candidate") != str(root / candidate)
+            or record.get("tombstone_basename") != tombstone
+            or record.get("trigger_v2_point") != str(v2 / trigger)
+            or path.parent != root or path.name not in {candidate, tombstone}):
+        raise LegacyDrainError("journal path is outside exact legacy root or basename contract")
+    safety.check_directory(root, record["root_identity"])
+    if path.exists() or path.is_symlink():
+        safety.check_directory(path, record["directory_identity"])
+        if path.resolve(strict=True).parent != root:
+            raise LegacyDrainError("point parent is not exact legacy root")
+    validation = record.get("validation", {})
+    if (record.get("candidate_type") not in {"HOT_RAW", "COLD_ZSTD"}
+            or validation.get("type") != record["candidate_type"]
+            or validation.get("directory_inode") != record["directory_identity"]["inode"]
+            or validation.get("directory_device") != record["directory_identity"]["device"]
+            or record["directory_identity"]["device"] != record["root_identity"]["device"]
+            or record.get("validation_result") != "PASS"):
+        raise LegacyDrainError("invalid candidate validation evidence")
+
+
+def _delete_permit(journal: Path, record: dict, *, create: bool = False) -> None:
+    expected = {"intent_sha256": _sha256(_receipt(journal))}
+    path = _receipt(journal, "delete")
+    if create and not path.exists():
+        safety.publish_json(path, expected, once=True)
+    if safety.read_json(path) != expected:
+        raise LegacyDrainError("invalid physical-delete permit")
+
+
+def _physical_delete(config: LegacyDrainConfig, journal: Path, record: dict,
+                     delete_tree: Callable | None, *, partial: bool = False) -> None:
+    root = config.legacy_root.resolve(strict=True)
+    tombstone = root / record["tombstone_basename"]
+    _check_bound(config, record, tombstone)
+    remaining = safety.check_inventory(tombstone, record["directory_identity"], record["inventory"], partial=partial)
+    _require_no_open_fds(config, tombstone)
+    _check_bound(config, record, tombstone)
+    _delete_permit(journal, record, create=True)
+    if delete_tree is not None:
+        # Explicit injection seam for local failure tests only; never supplied
+        # by the CLI/integration. Production always takes descriptor deletion.
+        delete_tree(tombstone)
+    else:
+        safety.delete_bound(root, tombstone.name, record["directory_identity"], remaining,
+                            record["root_identity"])
+    _fsync_directory(root)
 
 
 def _recover_pending(
     config: LegacyDrainConfig,
     transition_root: Path,
-    delete_tree: Callable[[Path], None],
+    delete_tree: Callable[[Path], None] | None,
+    validate_trigger: Callable,
+    current_journal: Path,
+    current_trigger: Path,
 ) -> dict[str, Any] | None:
     for journal in sorted(transition_root.glob("*.json")):
-        if journal.is_symlink() or not journal.is_file():
-            raise LegacyDrainError("unsafe transition journal entry")
-        record = json.loads(journal.read_text(encoding="utf-8"))
-        if not isinstance(record, dict) or record.get("schema_version") != TRANSITION_SCHEMA:
-            raise LegacyDrainError(f"invalid transition journal: {journal.name}")
+        record = safety.read_json(journal)
+        if not _valid_timestamp(journal.stem):
+            raise LegacyDrainError("unsafe transition journal filename")
+        # Old completed records remain history, never recovery capabilities.
+        if record.get("schema_version") == 1 and record.get("action") in {"DELETED", "SKIPPED", "NOOP"}:
+            continue
+        _journal_header(config, journal, record)
         if record.get("action") != "PENDING":
             continue
-        candidate_name = record.get("candidate_basename")
-        tombstone_name = record.get("tombstone_basename")
-        if not isinstance(candidate_name, str) or not _valid_timestamp(candidate_name):
-            raise LegacyDrainError("pending transition has unsafe candidate")
-        if not isinstance(tombstone_name, str) or not tombstone_name.startswith(f".{candidate_name}.") or not tombstone_name.endswith(".tombstone"):
-            raise LegacyDrainError("pending transition has unsafe tombstone")
-        original = config.legacy_root / candidate_name
-        tombstone = config.legacy_root / tombstone_name
+        if record.get("trigger_v2_timestamp") != journal.stem:
+            raise LegacyDrainError("journal trigger filename mismatch")
+        if record["state"] == "STARTED":
+            # No validation capability exists: never infer a deletion target.
+            _write_state(journal, record, config, action="SKIPPED",
+                         state="RECOVERED_BEFORE_VALIDATION", reason="validation never completed")
+            return record
+        if safety.read_json(_receipt(journal)) != _binding(record):
+            raise LegacyDrainError("journal differs from immutable validated intent")
+        original = config.legacy_root.resolve(strict=True) / record["candidate_basename"]
+        tombstone = config.legacy_root.resolve(strict=True) / record["tombstone_basename"]
+        _check_bound(config, record, original)
+        _check_bound(config, record, tombstone)
+        trigger = _trigger_gate(config, Path(record["trigger_v2_point"]), validate_trigger)
+        if trigger["manifest_sha256"] != record["manifest_sha256"]:
+            raise LegacyDrainError("recovery trigger manifest changed")
         original_exists = original.exists() or original.is_symlink()
         tombstone_exists = tombstone.exists() or tombstone.is_symlink()
+        # Consume the new trigger BEFORE touching the previous candidate. A
+        # crash can waste a run, but cannot assign this run a second candidate.
+        if journal != current_journal:
+            current = _record_base(config, current_trigger)
+            _write_state(current_journal, current, config, action="SKIPPED",
+                         state="RECOVERY_CONSUMED_RUN", reason=f"reserved for recovery of {journal.stem}")
         if original_exists and not tombstone_exists:
+            if record["state"] not in {"VALIDATED", "DELETE_STARTED"}:
+                raise LegacyDrainError("unexpected original in recovery state")
+            safety.check_inventory(original, record["directory_identity"], record["inventory"])
+            _require_no_open_fds(config, original)
             _write_state(
                 journal,
                 record,
@@ -469,18 +627,22 @@ def _recover_pending(
         if original_exists and tombstone_exists:
             raise LegacyDrainError("ambiguous recovery: original and tombstone both exist")
         if tombstone_exists:
-            if tombstone.is_symlink() or not tombstone.is_dir():
-                raise LegacyDrainError("unsafe tombstone during recovery")
-            tombstone_info = tombstone.lstat()
-            validation = record.get("validation")
-            if (
-                not isinstance(validation, dict)
-                or validation.get("directory_device") != tombstone_info.st_dev
-                or validation.get("directory_inode") != tombstone_info.st_ino
-            ):
-                raise LegacyDrainError("tombstone identity mismatch during recovery")
-            delete_tree(tombstone)
-            _fsync_directory(config.legacy_root)
+            partial = record["state"] in {"DELETE_STARTED", "DELETE_INCOMPLETE_TOMBSTONE"}
+            if partial:
+                _delete_permit(journal, record)
+            else:
+                safety.check_inventory(tombstone, record["directory_identity"], record["inventory"])
+                _require_no_open_fds(config, tombstone)
+                if record["state"] == "VALIDATED":
+                    _write_state(journal, record, config, state="TOMBSTONED")
+                _delete_permit(journal, record, create=True)
+                _write_state(journal, record, config, state="DELETE_STARTED")
+            _physical_delete(config, journal, record, delete_tree, partial=partial)
+        else:
+            # VALIDATED + both missing is not evidence of our deletion.
+            if record["state"] not in {"DELETE_STARTED", "DELETE_INCOMPLETE_TOMBSTONE"}:
+                raise LegacyDrainError("missing paths without DELETE_STARTED evidence")
+            _delete_permit(journal, record)
         _write_state(
             journal,
             record,
@@ -502,7 +664,7 @@ def drain_one(
     validate_trigger: Callable[[Path], Mapping[str, Any]],
     lock_held: bool,
     fault: Callable[[str], None] | None = None,
-    delete_tree: Callable[[Path], None] = shutil.rmtree,
+    delete_tree: Callable[[Path], None] | None = None,
 ) -> dict[str, Any]:
     """Validate and remove at most one oldest legacy point.
 
@@ -510,13 +672,13 @@ def drain_one(
     injected by tests may escape to model process crashes; the durable journal
     plus same-filesystem tombstone makes the next enabled run deterministic.
     """
-    trigger_point = Path(trigger_point)
+    trigger_point = Path(trigger_point).absolute()
     if not lock_held:
         return {"action": "SKIPPED", "reason": "shared backup lock is not held", "bytes_reclaimed": 0}
     try:
         trigger = _trigger_gate(config, trigger_point, validate_trigger)
-    except (LegacyDrainError, OSError, ValueError, sqlite3.DatabaseError) as exc:
-        return {"action": "SKIPPED", "reason": str(exc), "bytes_reclaimed": 0}
+    except Exception as exc:
+        return {"action": "SKIPPED", "state": "RECOVERY_BLOCKED", "reason": f"RECOVERY_FAIL_CLOSED: {exc}", "bytes_reclaimed": 0}
     if fault:
         fault("after_trigger_verified")
     transition_root = config.v2_root / TRANSITION_DIR
@@ -525,26 +687,25 @@ def drain_one(
         transition_root.mkdir(mode=0o700, exist_ok=True)
         if transition_root.is_symlink() or not transition_root.is_dir():
             raise LegacyDrainError("transition root is unsafe")
-        if journal.exists():
-            existing = json.loads(journal.read_text(encoding="utf-8"))
-            if isinstance(existing, dict) and existing.get("action") != "PENDING":
+        if journal.exists() or journal.is_symlink():
+            existing = safety.read_json(journal)
+            _journal_header(config, journal, existing)
+            if existing.get("action") != "PENDING":
                 return existing
-        recovered = _recover_pending(config, transition_root, delete_tree)
+        recovered = _recover_pending(config, transition_root, delete_tree,
+                                     validate_trigger, journal, trigger_point)
         if recovered is not None:
             if recovered.get("trigger_v2_timestamp") == trigger_point.name:
                 return recovered
+            if journal.exists():
+                return safety.read_json(journal)
             current = _record_base(config, trigger_point)
-            current.update(trigger)
-            _write_state(
-                journal,
-                current,
-                config,
-                action="SKIPPED",
-                state="RECOVERY_CONSUMED_RUN",
-                reason="an interrupted legacy transition consumed this run",
-                validation_result="SKIPPED",
-            )
+            _write_state(journal, current, config, action="SKIPPED", state="RECOVERY_CONSUMED_RUN")
             return current
+        if _receipt(journal).exists():
+            raise LegacyDrainError("orphan intent: refusing to select another candidate")
+        if any(p.name.endswith(".tombstone") for p in config.legacy_root.iterdir()):
+            raise LegacyDrainError("unreconciled tombstone: refusing to select another candidate")
         root = config.legacy_root.resolve(strict=True)
         if config.legacy_root.is_symlink() or not root.is_dir():
             raise LegacyDrainError("legacy root must be a regular directory")
@@ -562,6 +723,10 @@ def drain_one(
                 validation_result="NOT_APPLICABLE",
             )
             return record
+        record["legacy_candidate"] = str(candidate)
+        _write_state(journal, record, config)
+        if fault:
+            fault("after_journal_created")
         try:
             validation, fingerprint, candidate_bytes = _validate_candidate(config, candidate)
         except (LegacyDrainError, OSError, ValueError, sqlite3.DatabaseError) as exc:
@@ -578,7 +743,7 @@ def drain_one(
             return record
         if fault:
             fault("after_candidate_validated")
-        tombstone_name = f".{candidate.name}.{trigger_point.name}.legacy-drain.tombstone"
+        tombstone_name = _tombstone_name(candidate.name, trigger_point.name)
         tombstone = root / tombstone_name
         record.update(
             {
@@ -590,8 +755,15 @@ def drain_one(
                 "validation_result": "PASS",
                 "validation": validation,
                 "tombstone_basename": tombstone_name,
+                "root_identity": safety.check_directory(root),
+                "directory_identity": validation["directory_identity"],
             }
         )
+        _check_bound(config, record, candidate)
+        record["inventory"] = validation["inventory"]
+        if _tree_fingerprint(candidate) != fingerprint:
+            raise LegacyDrainError("legacy candidate changed after validation")
+        _seal(journal, record)
         _write_state(journal, record, config, state="VALIDATED")
         if fault:
             fault("after_intent")
@@ -599,52 +771,34 @@ def drain_one(
             raise LegacyDrainError("exact tombstone already exists")
         if _tree_fingerprint(candidate) != fingerprint:
             raise LegacyDrainError("legacy candidate changed after validation")
-        checker = config.open_fd_check or _default_open_fd_check
-        if checker(candidate) is True:
-            raise LegacyDrainError("legacy candidate acquired open file descriptors")
-        root_descriptor = os.open(
-            root,
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
-        )
-        try:
-            before = os.stat(candidate.name, dir_fd=root_descriptor, follow_symlinks=False)
-            if not stat.S_ISDIR(before.st_mode):
-                raise LegacyDrainError("candidate changed before rename")
-            os.rename(
-                candidate.name,
-                tombstone_name,
-                src_dir_fd=root_descriptor,
-                dst_dir_fd=root_descriptor,
-            )
-            after = os.stat(tombstone_name, dir_fd=root_descriptor, follow_symlinks=False)
-            if (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino) or not stat.S_ISDIR(after.st_mode):
-                os.rename(
-                    tombstone_name,
-                    candidate.name,
-                    src_dir_fd=root_descriptor,
-                    dst_dir_fd=root_descriptor,
-                )
-                os.fsync(root_descriptor)
-                raise LegacyDrainError("candidate identity changed during atomic rename")
-            os.fsync(root_descriptor)
-        finally:
-            os.close(root_descriptor)
+        _require_no_open_fds(config, candidate)
+        _check_bound(config, record, candidate)
+        safety.check_inventory(candidate, record["directory_identity"], record["inventory"])
+        safety.rename_bound(root, candidate.name, tombstone_name,
+                            record["directory_identity"], record["root_identity"])
+        if fault:
+            fault("after_rename_before_journal")
+        _check_bound(config, record, tombstone)
         if _tree_fingerprint(tombstone) != fingerprint:
-            os.rename(tombstone, candidate)
-            _fsync_directory(root)
             raise LegacyDrainError("legacy candidate contents changed during transition")
         _write_state(journal, record, config, state="TOMBSTONED")
         if fault:
             fault("after_tombstone")
+        _require_no_open_fds(config, tombstone)
+        _check_bound(config, record, tombstone)
+        _delete_permit(journal, record, create=True)
+        _write_state(journal, record, config, state="DELETE_STARTED")
         try:
-            delete_tree(tombstone)
-            _fsync_directory(root)
+            _physical_delete(config, journal, record, delete_tree)
         except Exception as exc:
             # A no-op delete failure is recoverable without data loss.  If the
             # tree changed, retain the hidden tombstone for deterministic repair.
             if tombstone.exists() and _tree_fingerprint(tombstone) == fingerprint:
-                os.rename(tombstone, candidate)
-                _fsync_directory(root)
+                _check_bound(config, record, tombstone)
+                safety.check_inventory(tombstone, record["directory_identity"], record["inventory"])
+                _require_no_open_fds(config, tombstone)
+                safety.rename_bound(root, tombstone.name, candidate.name,
+                                    record["directory_identity"], record["root_identity"])
                 state = "DELETE_FAILED_ROLLED_BACK"
                 journal_action = "SKIPPED"
             else:
@@ -675,4 +829,4 @@ def drain_one(
         )
         return record
     except Exception as exc:
-        return {"action": "SKIPPED", "reason": str(exc), "bytes_reclaimed": 0}
+        return {"action": "SKIPPED", "state": "RECOVERY_BLOCKED", "reason": f"RECOVERY_FAIL_CLOSED: {exc}", "bytes_reclaimed": 0}
