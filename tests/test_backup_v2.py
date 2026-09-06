@@ -11,6 +11,7 @@ import sqlite3
 import pytest
 
 import backup_v2 as backup
+from trade_notification_outbox import notification_id_for_trade
 
 
 class Clock:
@@ -25,6 +26,35 @@ class Clock:
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _outbox_state(state: str = "PENDING") -> dict:
+    notification_id = notification_id_for_trade("LIVE-backup-test")
+    delivered = state == "DELIVERED"
+    return {
+        "schema_version": 1,
+        "items": {
+            notification_id: {
+                "notification_id": notification_id,
+                "notification_type": "TRADE_OPEN",
+                "trade_id": "LIVE-backup-test",
+                "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "opened_at": "2026-09-06T00:00:00+00:00",
+                "fingerprint": "signal-fingerprint",
+                "payload": {"text": "test notification"},
+                "state": state,
+                "attempt_count": 1 if delivered else 0,
+                "created_at": "2026-09-06T00:00:00+00:00",
+                "last_attempt_at": "2026-09-06T00:01:00+00:00" if delivered else None,
+                "last_error": "",
+                "delivered_at": "2026-09-06T00:01:01+00:00" if delivered else None,
+                "next_attempt_at": None if delivered else 1_788_652_800.0,
+                "last_result": "SENT" if delivered else None,
+                "history": [],
+            }
+        },
+    }
 
 
 def _source(root: Path) -> Path:
@@ -47,6 +77,7 @@ def _source(root: Path) -> Path:
         "active_setups_v3.json.bak": {},
         "bot_config.json": {"last_active_chat_id": 1},
         "last_notification.json": {"fingerprints": {}},
+        "trade_notification_outbox.json": _outbox_state(),
         "trade_close_notifications.json": {"sent": []},
         "strategy_weights.json": {"Trend": 1.0},
         "decision_learning.json": {"schema_version": 1},
@@ -61,7 +92,7 @@ def _source(root: Path) -> Path:
         (root / name).write_text(json.dumps(value), encoding="utf-8")
     for name, content in {
         "research_lab_shadow_history.csv": "shadow_trade_id,status\n",
-        "trades.csv": "symbol,status\n",
+        "trades.csv": "symbol,status,trade_id\nBTC/USDT,OPEN,LIVE-backup-test\n",
         "setup_history_v3.csv": "setup_id,status\n",
         "live_price_history.csv": "timestamp,symbol,price\n",
         "signals_v3.csv": "timestamp,symbol,signal\n",
@@ -154,6 +185,203 @@ def test_missing_active_setups_backup_is_valid_conditional_absence(
     point = _create(config)
     assert _manifest_row(point, "active_setups_v3.json.bak")["capture_status"] == backup.ABSENT
     assert backup.validate_restore_point(point)["verified"]
+
+
+def test_outbox_absent_is_valid_conditional_absence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    (config.source_root / "trade_notification_outbox.json").unlink()
+    point = _create(config)
+    row = _manifest_row(point, "trade_notification_outbox.json")
+    assert row["consistency_class"] == backup.CONDITIONAL_CORE
+    assert row["capture_status"] == backup.ABSENT
+    assert backup.validate_restore_point(point)["verified"]
+
+
+def test_pending_outbox_is_captured_and_hashed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    row = _manifest_row(point, "trade_notification_outbox.json")
+    assert row["consistency_class"] == backup.CONDITIONAL_CORE
+    assert row["capture_status"] == backup.CAPTURED
+    assert row["sha256"] == _sha(point / "trade_notification_outbox.json")
+    assert json.loads((point / "trade_notification_outbox.json").read_text())["items"]
+
+
+def test_delivered_outbox_is_captured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    source_outbox = config.source_root / "trade_notification_outbox.json"
+    source_outbox.write_text(json.dumps(_outbox_state("DELIVERED")), encoding="utf-8")
+    point = _create(config)
+    restored = json.loads((point / source_outbox.name).read_text())
+    assert next(iter(restored["items"].values()))["state"] == "DELIVERED"
+    assert backup.validate_restore_point(point)["verified"]
+
+
+def test_outbox_hash_corruption_invalidates_restore_point(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    outbox = point / "trade_notification_outbox.json"
+    outbox.write_text(outbox.read_text() + "\n", encoding="utf-8")
+    result = backup.validate_restore_point(point)
+    assert not result["verified"]
+    assert any("trade_notification_outbox.json: size mismatch" in error for error in result["errors"])
+
+
+def test_missing_captured_outbox_invalidates_restore_point(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    (point / "trade_notification_outbox.json").unlink()
+    result = backup.validate_restore_point(point)
+    assert not result["verified"]
+    assert any("trade_notification_outbox.json" in error for error in result["errors"])
+
+
+def test_malformed_source_outbox_prevents_backup_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    (config.source_root / "trade_notification_outbox.json").write_text("{broken", encoding="utf-8")
+    with pytest.raises(backup.BackupError, match="invalid trade notification outbox"):
+        backup.create_backup(config)
+    assert not backup._published_directories(config.backup_root)
+
+
+def test_malformed_captured_outbox_fails_semantic_validation_even_with_matching_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    outbox = point / "trade_notification_outbox.json"
+    outbox.write_text("{}", encoding="utf-8")
+    manifest_path = point / backup.MANIFEST
+    manifest = json.loads(manifest_path.read_text())
+    row = next(row for row in manifest["files"] if row["path"] == outbox.name)
+    row["size"] = outbox.stat().st_size
+    row["sha256"] = _sha(outbox)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    result = backup.validate_restore_point(point)
+    assert not result["verified"]
+    assert any("invalid outbox state" in error for error in result["errors"])
+
+
+def test_prepare_restore_preserves_pending_outbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    staging = backup.prepare_restore(point, tmp_path / "restore-pending")
+    state = json.loads((staging / "trade_notification_outbox.json").read_text())
+    assert next(iter(state["items"].values()))["state"] == "PENDING"
+
+
+def test_prepare_restore_preserves_delivered_outbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    source_outbox = config.source_root / "trade_notification_outbox.json"
+    source_outbox.write_text(json.dumps(_outbox_state("DELIVERED")), encoding="utf-8")
+    point = _create(config)
+    staging = backup.prepare_restore(point, tmp_path / "restore-delivered")
+    state = json.loads((staging / source_outbox.name).read_text())
+    assert next(iter(state["items"].values()))["state"] == "DELIVERED"
+
+
+def test_restore_ready_passes_with_valid_outbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    staging = backup.prepare_restore(point, tmp_path / "restore-ready")
+    ready = json.loads((staging / "RESTORE_READY.json").read_text())
+    assert ready["RESTORE_READY"] is True
+    assert ready["production_installed"] is False
+    assert (staging / "trade_notification_outbox.json").read_bytes() == (
+        point / "trade_notification_outbox.json"
+    ).read_bytes()
+
+
+def test_pre_h2_schema_2_1_point_without_outbox_feature_remains_valid(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    (point / "trade_notification_outbox.json").unlink()
+    manifest_path = point / backup.MANIFEST
+    manifest = json.loads(manifest_path.read_text())
+    manifest.pop("features")
+    manifest["files"] = [
+        row for row in manifest["files"]
+        if row["path"] != "trade_notification_outbox.json"
+    ]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert backup.validate_restore_point(point)["verified"]
+
+
+def test_current_outbox_feature_requires_manifest_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    (point / "trade_notification_outbox.json").unlink()
+    manifest_path = point / backup.MANIFEST
+    manifest = json.loads(manifest_path.read_text())
+    manifest["files"] = [
+        row for row in manifest["files"]
+        if row["path"] != "trade_notification_outbox.json"
+    ]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    result = backup.validate_restore_point(point)
+    assert not result["verified"]
+    assert any("state file absent from manifest" in error for error in result["errors"])
+
+
+def test_outbox_trade_missing_from_source_ledger_prevents_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    (config.source_root / "trades.csv").write_text(
+        "symbol,status,trade_id\nBTC/USDT,OPEN,LIVE-other\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(backup.BackupError, match="outbox references absent trades"):
+        backup.create_backup(config)
+    assert not backup._published_directories(config.backup_root)
+
+
+def test_captured_outbox_trade_missing_from_captured_ledger_fails_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, monkeypatch)
+    point = _create(config)
+    outbox = point / "trade_notification_outbox.json"
+    state = json.loads(outbox.read_text())
+    item = next(iter(state["items"].values()))
+    item["trade_id"] = "LIVE-orphan"
+    new_id = notification_id_for_trade(item["trade_id"])
+    item["notification_id"] = new_id
+    state["items"] = {new_id: item}
+    outbox.write_text(json.dumps(state), encoding="utf-8")
+
+    manifest_path = point / backup.MANIFEST
+    manifest = json.loads(manifest_path.read_text())
+    row = next(row for row in manifest["files"] if row["path"] == outbox.name)
+    row["size"] = outbox.stat().st_size
+    row["sha256"] = _sha(outbox)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = backup.validate_restore_point(point)
+    assert not result["verified"]
+    assert any("outbox references absent trades" in error for error in result["errors"])
 
 
 def test_database_integrity_failure_is_not_published(

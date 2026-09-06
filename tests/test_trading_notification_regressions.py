@@ -28,7 +28,7 @@ class TradingNotificationRegressionTest(TestCase):
         )
 
     def _exercise(self, *, existing=(), higher_tf_bull=True,
-                  portfolio_status="ALLOW", open_error=None):
+                  portfolio_status="ALLOW", open_error=None, outbox_error=None):
         market = agent.MarketSnapshot(
             symbol="BTC/USDT",
             tf1h=self._tf(),
@@ -51,10 +51,39 @@ class TradingNotificationRegressionTest(TestCase):
             "status": portfolio_status,
             "reasons": [] if portfolio_status == "ALLOW" else ["MAX_OPEN_TRADES"],
         }
-        open_mock = Mock(side_effect=open_error)
-        mark_mock = Mock()
+        call_order = []
+        opened_trade = {
+                "trade_id": "LIVE-test",
+                "symbol": "BTC/USDT",
+                "direction": "LONG",
+                "opened_at": "2026-09-05T00:00:00",
+        }
+
+        def open_side_effect(**_kwargs):
+            call_order.append("open_trade")
+            if open_error is not None:
+                raise open_error
+            return opened_trade
+
+        open_mock = Mock(side_effect=open_side_effect)
+        mark_mock = Mock(side_effect=lambda _setup: call_order.append("cooldown"))
+        outbox_mock = Mock()
+        def enqueue_side_effect(_trade):
+            call_order.append("outbox")
+            if outbox_error is not None:
+                raise outbox_error
+            return {"notification_id": "trade-open-test"}
+
+        outbox_mock.enqueue_from_trade.side_effect = enqueue_side_effect
+
+        async def send_side_effect(_notification_id):
+            call_order.append("send")
+            return agent.NotificationResult(agent.NotificationStatus.SENT)
 
         with ExitStack() as stack:
+            stack.enter_context(patch.object(
+                agent, "_AGENT_SINGLETON_LOCK", Mock(acquired=True),
+            ))
             stack.enter_context(patch.object(agent, "load_market", return_value=market))
             stack.enter_context(patch.object(
                 agent, "analyze_market",
@@ -94,12 +123,13 @@ class TradingNotificationRegressionTest(TestCase):
                 agent.PORTFOLIO_MANAGER, "can_open_trade", return_value=portfolio,
             ))
             stack.enter_context(patch.object(agent, "open_trade", open_mock))
+            stack.enter_context(patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", outbox_mock))
             stack.enter_context(patch.object(agent, "mark_setup_active", mark_mock))
             stack.enter_context(patch.object(agent, "save_setup_history"))
             stack.enter_context(patch.object(
                 agent,
-                "send_notification",
-                AsyncMock(return_value=agent.NotificationResult(agent.NotificationStatus.SENT)),
+                "send_outbox_notification",
+                AsyncMock(side_effect=send_side_effect),
             ))
             stack.enter_context(patch.object(agent, "log_notification_result"))
             stack.enter_context(patch.object(agent.LOGGER, "analysis_reports"))
@@ -108,39 +138,51 @@ class TradingNotificationRegressionTest(TestCase):
             stack.enter_context(patch.object(agent.LOGGER, "higher_tf_rejected"))
             stack.enter_context(patch.object(agent.LOGGER, "notification_sending"))
 
-            if open_error is None:
+            if open_error is None and outbox_error is None:
                 result = agent.analyze_symbol("BTC/USDT")
             else:
-                with self.assertRaises(type(open_error)):
+                expected_error = open_error if open_error is not None else outbox_error
+                with self.assertRaises(type(expected_error)):
                     agent.analyze_symbol("BTC/USDT")
                 result = None
 
-        return result, open_mock, mark_mock
+        return result, open_mock, mark_mock, call_order
 
     def test_portfolio_rejection_does_not_record_cooldown(self):
-        _, open_mock, mark_mock = self._exercise(portfolio_status="BLOCK")
+        _, open_mock, mark_mock, _ = self._exercise(portfolio_status="BLOCK")
         open_mock.assert_not_called()
         mark_mock.assert_not_called()
 
     def test_successful_open_records_cooldown(self):
-        _, open_mock, mark_mock = self._exercise()
+        _, open_mock, mark_mock, call_order = self._exercise()
         open_mock.assert_called_once()
         mark_mock.assert_called_once_with("BTC_USDT_LONG")
+        self.assertEqual(call_order, ["open_trade", "outbox", "cooldown", "send"])
+        metadata = open_mock.call_args.kwargs["research_metadata"]
+        self.assertIn(agent.RECOVERY_INTENT_KEY, metadata)
 
     def test_existing_trade_does_not_record_cooldown(self):
-        _, open_mock, mark_mock = self._exercise(existing=[{"symbol": "BTC/USDT"}])
+        _, open_mock, mark_mock, _ = self._exercise(existing=[{"symbol": "BTC/USDT"}])
         open_mock.assert_not_called()
         mark_mock.assert_not_called()
 
     def test_higher_timeframe_rejection_does_not_record_cooldown(self):
-        _, open_mock, mark_mock = self._exercise(higher_tf_bull=False)
+        _, open_mock, mark_mock, _ = self._exercise(higher_tf_bull=False)
         open_mock.assert_not_called()
         mark_mock.assert_not_called()
 
     def test_open_trade_failure_does_not_record_cooldown(self):
-        _, open_mock, mark_mock = self._exercise(open_error=RuntimeError("persist failed"))
+        _, open_mock, mark_mock, _ = self._exercise(open_error=RuntimeError("persist failed"))
         open_mock.assert_called_once()
         mark_mock.assert_not_called()
+
+    def test_outbox_persist_failure_after_open_is_explicit_and_precedes_cooldown(self):
+        error = agent.OutboxError("outbox unavailable")
+        _, open_mock, mark_mock, call_order = self._exercise(outbox_error=error)
+        open_mock.assert_called_once()
+        mark_mock.assert_called_once_with("BTC_USDT_LONG")
+        self.assertEqual(call_order, ["open_trade", "outbox", "cooldown"])
+        self.assertIn(agent.RECOVERY_INTENT_KEY, open_mock.call_args.kwargs["research_metadata"])
 
     def test_sent_log_requires_confirmed_success(self):
         with patch.object(agent.LOGGER, "notification_sent") as sent, \

@@ -2,6 +2,7 @@ import csv
 import hashlib
 import json
 import logging
+import os
 import uuid
 from pathlib import Path
 from datetime import datetime
@@ -142,7 +143,17 @@ def open_trade(symbol, direction, entry, stop_loss, take_profit, *, research_met
     with TRADES_FILE.open("a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS)
         writer.writerow(trade)
+        f.flush()
+        os.fsync(f.fileno())
     _research_diagnostics(trade, snapshot=True, assessment=assessment)
+    return trade
+
+
+def get_all_trades():
+    """Return canonical trade rows for durable notification reconciliation."""
+    ensure_file()
+    with TRADES_FILE.open("r", newline="") as f:
+        return [dict(row) for row in csv.DictReader(f)]
 
 def get_open_trades():
     ensure_file()

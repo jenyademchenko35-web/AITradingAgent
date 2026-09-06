@@ -26,9 +26,11 @@ import tempfile
 from typing import Any, Callable, Iterable, Mapping
 
 import legacy_drain
+from trade_notification_outbox import OutboxError, validate_outbox_file
 
 
 SCHEMA_VERSION = "2.1"
+OUTBOX_MANIFEST_FEATURE = "trade_notification_outbox_conditional_core_v1"
 MANIFEST = "manifest.v2.json"
 COLD_SIDECAR = "cold_conversion.json"
 DB_RAW = "research.db"
@@ -58,6 +60,7 @@ CONDITIONAL_CORE_FILES = (
     "setup_history_v3.csv",
     "bot_config.json",
     "last_notification.json",
+    "trade_notification_outbox.json",
     "trade_close_notifications.json",
     "decision_learning.json",
     "research_lab_v2_status.json",
@@ -107,6 +110,28 @@ class BackupError(RuntimeError):
 
 class LockBusy(BackupError):
     """Another backup writer owns the shared lock."""
+
+
+def _validate_outbox_trade_links(outbox_path: Path, trades_path: Path) -> None:
+    state = validate_outbox_file(outbox_path)
+    if not trades_path.is_file() or trades_path.is_symlink():
+        raise BackupError("trade notification outbox requires captured trades.csv")
+    try:
+        with trades_path.open("r", newline="", encoding="utf-8") as stream:
+            trade_ids = {
+                str(row.get("trade_id") or "").strip()
+                for row in csv.DictReader(stream)
+                if str(row.get("trade_id") or "").strip()
+            }
+    except (OSError, csv.Error) as exc:
+        raise BackupError(f"cannot validate outbox trade references: {exc}") from exc
+    missing = sorted({
+        str(item.get("trade_id") or "")
+        for item in state["items"].values()
+        if str(item.get("trade_id") or "") not in trade_ids
+    })
+    if missing:
+        raise BackupError(f"outbox references absent trades: {', '.join(missing)}")
 
 
 @dataclass(frozen=True)
@@ -378,6 +403,12 @@ def _check_required_sources(config: BackupConfig) -> None:
             and (path.is_symlink() or not path.is_file())
         ):
             raise BackupError(f"state path is not a regular file: {name}")
+    outbox = source / "trade_notification_outbox.json"
+    if outbox.exists():
+        try:
+            _validate_outbox_trade_links(outbox, source / "trades.csv")
+        except (OSError, ValueError, OutboxError, BackupError) as exc:
+            raise BackupError(f"invalid trade notification outbox: {exc}") from exc
 
 
 def _database_metadata(path: Path, *, full_integrity: bool = True) -> dict[str, Any]:
@@ -649,6 +680,7 @@ def _manifest(
     files.extend(volatile_records)
     return {
         "schema_version": SCHEMA_VERSION,
+        "features": [OUTBOX_MANIFEST_FEATURE],
         "created_at": _utc(completed),
         "hostname": config.hostname(),
         "branch": _git(config.source_root, "branch", "--show-current"),
@@ -708,6 +740,18 @@ def validate_restore_point(
         errors.append("backup_state is not VERIFIED")
     if manifest.get("secrets_included"):
         errors.append("manifest reports included secrets")
+    feature_value = manifest.get("features", [])
+    if (
+        not isinstance(feature_value, list)
+        or not all(isinstance(feature, str) for feature in feature_value)
+        or len(feature_value) != len(set(feature_value))
+    ):
+        errors.append("manifest features must be a unique string list")
+        feature_value = []
+    unknown_features = sorted(set(feature_value) - {OUTBOX_MANIFEST_FEATURE})
+    if unknown_features:
+        errors.append(f"unsupported manifest features: {', '.join(unknown_features)}")
+    outbox_contract = OUTBOX_MANIFEST_FEATURE in feature_value
     file_value = manifest.get("files")
     if not isinstance(file_value, list):
         errors.append("manifest files must be a list")
@@ -735,7 +779,12 @@ def validate_restore_point(
         ):
             errors.append(f"unsafe or unknown manifest path: {name}")
     records = {row.get("path"): row for row in rows}
-    for name in allowed:
+    required_manifest_names = set(allowed)
+    if not outbox_contract:
+        required_manifest_names.remove("trade_notification_outbox.json")
+        if "trade_notification_outbox.json" in records:
+            errors.append("outbox manifest row requires its feature declaration")
+    for name in required_manifest_names:
         if name not in records:
             errors.append(f"state file absent from manifest: {name}")
     cold = (point / DB_COLD).is_file()
@@ -790,6 +839,11 @@ def validate_restore_point(
         for field in ("size", "sha256"):
             if actual[field] != record.get(field):
                 errors.append(f"{name}: {field} mismatch")
+        if name == "trade_notification_outbox.json":
+            try:
+                _validate_outbox_trade_links(path, point / "trades.csv")
+            except (OSError, ValueError, OutboxError, BackupError) as exc:
+                errors.append(f"{name}: invalid outbox state: {exc}")
     raw = (point / DB_RAW).is_file()
     if raw:
         try:

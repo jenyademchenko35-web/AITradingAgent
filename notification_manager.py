@@ -1,6 +1,8 @@
 import json
 import os
 from pathlib import Path
+import stat
+import tempfile
 import time
 from datetime import datetime, timezone
 
@@ -21,9 +23,48 @@ def _read_json(path: Path) -> dict:
 
 
 def _write_json(path: Path, payload: dict) -> None:
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    temporary.replace(path)
+    """Durably replace JSON without following a pre-existing symlink."""
+    parent = path.parent
+    parent_stat = parent.lstat()
+    if stat.S_ISLNK(parent_stat.st_mode) or not stat.S_ISDIR(parent_stat.st_mode):
+        raise OSError("state parent must be a real directory")
+    try:
+        target_stat = path.lstat()
+    except FileNotFoundError:
+        target_stat = None
+    if target_stat is not None and (
+        stat.S_ISLNK(target_stat.st_mode) or not stat.S_ISREG(target_stat.st_mode)
+    ):
+        raise OSError("state target must be a regular non-symlink file")
+
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(fd, 0o600)
+        data = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        with os.fdopen(fd, "wb", closefd=True) as stream:
+            fd = -1
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        temporary = None
+        os.chmod(path, 0o600, follow_symlinks=False)
+        directory_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        if temporary is not None:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
 
 def save_last_active_chat_id(chat_id: int) -> None:
     """Remember navigation activity without changing owner or notifications."""

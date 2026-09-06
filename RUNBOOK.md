@@ -35,6 +35,17 @@ venv/bin/python telegram_bot_v4.py
 
 Не использовать системный `python3` вместо `venv/bin/python`.
 
+### Singleton основного агента
+
+Все способы запуска `multi_timeframe_agent_v3.py` используют один lifetime
+`flock`: `<passwd-home>/.local/state/AITradingAgent/agent.lock`. Passwd home,
+а не переменная `HOME`, гарантирует один namespace для systemd/SSH/update.sh.
+Блокировка берётся до
+инициализации trading/outbox компонентов и удерживается открытым file descriptor
+до завершения процесса. Второй запуск немедленно завершается с кодом `73`; наличие
+старого lock-файла без живого владельца запуску не мешает. Не удаляйте lock-файл
+для управления процессом — проверяйте владельца блокировки или список процессов.
+
 
 ## Запуск Агента
 

@@ -7,8 +7,27 @@ import traceback
 import os
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Any, Callable
+from agent_singleton import AgentAlreadyRunning, AgentSingletonError, acquire_agent_singleton
+
+# This guard intentionally runs before config, strategy, Telegram, trade or
+# outbox imports/initializers. Every direct launcher executes this same file.
+_AGENT_SINGLETON_LOCK = None
+if __name__ == "__main__":
+    try:
+        _AGENT_SINGLETON_LOCK = acquire_agent_singleton()
+    except (AgentAlreadyRunning, AgentSingletonError) as exc:
+        print(f"AITradingAgent singleton refusal: {exc}", file=sys.stderr)
+        raise SystemExit(73) from exc
+
+
+def _require_agent_singleton() -> None:
+    """Reject every trading/outbox mutation entrypoint without the lifetime lock."""
+    if _AGENT_SINGLETON_LOCK is None or not getattr(_AGENT_SINGLETON_LOCK, "acquired", False):
+        raise AgentSingletonError("trading mutation requires the global agent singleton lock")
+
 from config import (
     MIN_CONFIDENCE,
     MIN_EDGE,
@@ -40,6 +59,7 @@ import ccxt
 import pandas as pd
 import asyncio
 from notification_manager import (
+    SIGNAL_COOLDOWN_SECONDS,
     decision_signal_fingerprint,
     load_chat_id,
     format_signal,
@@ -63,8 +83,15 @@ from active_setups_state import load_active_setups_state, save_active_setups_sta
 from telegram import Bot
 from trade_tracker import (
     open_trade,
+    get_all_trades,
     get_open_trades,
     close_trade,
+)
+from trade_notification_outbox import (
+    OutboxError,
+    RECOVERY_INTENT_KEY,
+    TradeNotificationOutbox,
+    recovery_intent,
 )
 from trade_close_notifier import TradeCloseNotifier
 from dotenv import load_dotenv
@@ -85,6 +112,10 @@ DOGE_LINK_OPPORTUNITY_DRY_RUN = DogeLinkOpportunityDryRun()
 LONG_REBOUND_OPPORTUNITY_DRY_RUN = LongReboundOpportunityDryRun()
 RELAXED_EDGE_DRY_RUN = RelaxedEdgeDryRun()
 TRADE_CLOSE_NOTIFIER = TradeCloseNotifier(bot_token=BOT_TOKEN)
+TRADE_NOTIFICATION_OUTBOX = (
+    TradeNotificationOutbox() if _AGENT_SINGLETON_LOCK is not None else None
+)
+OUTBOX_MAX_ITEMS_PER_CYCLE = 3
 
 # ==========================
 # # ==========================
@@ -1083,6 +1114,111 @@ async def send_notification(
     return NotificationResult(NotificationStatus.SENT)
 
 
+async def send_outbox_notification(notification_id: str) -> NotificationResult:
+    """Attempt one claimed outbox item and durably record its outcome."""
+    _require_agent_singleton()
+    try:
+        item = TRADE_NOTIFICATION_OUTBOX.claim(notification_id)
+    except OutboxError as exc:
+        return NotificationResult(NotificationStatus.ERROR, "outbox_persist_error", str(exc))
+    if item is None:
+        return NotificationResult(NotificationStatus.SKIPPED, "in_progress_or_not_due")
+
+    def retryable(reason: str, error: str, *, result: str = "ERROR") -> NotificationResult:
+        try:
+            TRADE_NOTIFICATION_OUTBOX.mark_retryable(
+                notification_id, error or reason, result=result,
+            )
+        except OutboxError as persist_exc:
+            return NotificationResult(
+                NotificationStatus.ERROR,
+                "outbox_persist_error",
+                f"{reason}: {error}; {persist_exc}",
+            )
+        status = NotificationStatus.SKIPPED if result == "SKIPPED" else NotificationStatus.ERROR
+        return NotificationResult(status, reason, error)
+
+    chat_id = load_chat_id()
+    if not chat_id or not BOT_TOKEN:
+        return retryable("missing_configuration", "missing_configuration", result="SKIPPED")
+
+    signal_fingerprint = item["fingerprint"]
+    if is_duplicate(signal_fingerprint) or TRADE_NOTIFICATION_OUTBOX.has_recent_delivery(
+        signal_fingerprint,
+        cooldown_seconds=SIGNAL_COOLDOWN_SECONDS,
+    ):
+        try:
+            TRADE_NOTIFICATION_OUTBOX.mark_permanent_skip(
+                notification_id, reason="signal_fingerprint_cooldown",
+            )
+        except OutboxError as exc:
+            return NotificationResult(NotificationStatus.ERROR, "outbox_persist_error", str(exc))
+        return NotificationResult(NotificationStatus.SKIPPED, "duplicate")
+
+    try:
+        bot = Bot(BOT_TOKEN)
+        await bot.send_message(chat_id=chat_id, text=item["payload"]["text"])
+    except Exception as exc:
+        return retryable("send_error", str(exc))
+
+    # The outbox is the delivery source of truth. Telegram cannot participate in
+    # this local transaction, so a crash before this write may cause one retry.
+    try:
+        TRADE_NOTIFICATION_OUTBOX.mark_delivered(notification_id)
+    except OutboxError as exc:
+        return NotificationResult(
+            NotificationStatus.ERROR, "delivered_state_persist_error", str(exc),
+        )
+    # Preserve the pre-H2 signal cooldown as a compatibility index. Failure here
+    # cannot make an already delivered outbox item retry or duplicate; outbox
+    # delivery history itself enforces the same fingerprint cooldown.
+    try:
+        mark_as_sent(signal_fingerprint)
+    except Exception as exc:
+        return NotificationResult(
+            NotificationStatus.SENT, "sent_compatibility_state_error", str(exc),
+        )
+    return NotificationResult(NotificationStatus.SENT)
+
+
+def process_notification_outbox() -> None:
+    """Recover and retry a bounded number of durable intents once per cycle."""
+    _require_agent_singleton()
+    try:
+        recovered = TRADE_NOTIFICATION_OUTBOX.recover_interrupted()
+        reconciled = TRADE_NOTIFICATION_OUTBOX.reconcile_trades(get_all_trades())
+        if recovered or reconciled:
+            LOGGER.timestamped(json.dumps({
+                "event": "trade_notification_outbox_recovered",
+                "interrupted": recovered,
+                "reconciled": reconciled,
+            }, sort_keys=True))
+        due = TRADE_NOTIFICATION_OUTBOX.due_ids(limit=OUTBOX_MAX_ITEMS_PER_CYCLE)
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({
+            "event": "trade_notification_outbox_error",
+            "stage": "recovery",
+            "error": str(exc),
+        }, sort_keys=True))
+        return
+    for notification_id in due:
+        try:
+            result = asyncio.run(send_outbox_notification(notification_id))
+        except Exception as exc:
+            LOGGER.timestamped(json.dumps({
+                "event": "trade_notification_outbox_error",
+                "stage": "delivery",
+                "notification_id": notification_id,
+                "error": str(exc),
+            }, sort_keys=True))
+            continue
+        try:
+            item = TRADE_NOTIFICATION_OUTBOX.get(notification_id) or {}
+        except OutboxError:
+            item = {}
+        log_notification_result(str(item.get("symbol") or "UNKNOWN"), result)
+
+
 def log_notification_result(symbol: str, result: NotificationResult) -> None:
     if result.status is NotificationStatus.SENT:
         LOGGER.notification_sent()
@@ -1177,6 +1313,7 @@ def analyze_market(market: MarketSnapshot, symbol: str):
     return decision, trend, structure, momentum, risk, weights
 
 def analyze_symbol(symbol: str, cycle_id: str = ""):
+    _require_agent_singleton()
     market = load_market(symbol)
     # Higher timeframe trend filter
     higher_tf_bull = (
@@ -1492,34 +1629,62 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 log_final_status()
                 return decision, market
 
-            open_trade(
+            notification_eligible = (
+                decision.quality in ("A", "B")
+                and decision.confidence >= 75
+            )
+            trade_metadata = research_trade_metadata_snapshot(feature_row, decision)
+            if notification_eligible:
+                fingerprint = decision_signal_fingerprint(
+                    symbol,
+                    decision,
+                    timeframe="1h",
+                    entry=entry,
+                    stop_loss=stop_loss,
+                    take_profit=take_profit,
+                )
+                notification_text = format_signal(
+                    symbol,
+                    decision,
+                    market,
+                    entry=entry,
+                    stop_loss=stop_loss,
+                    take_profit=take_profit,
+                )
+                trade_metadata[RECOVERY_INTENT_KEY] = recovery_intent(
+                    fingerprint=fingerprint,
+                    text=notification_text,
+                )
+
+            opened_trade = open_trade(
                 symbol=symbol,
                 direction=decision.direction,
                 entry=entry,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
-                research_metadata=research_trade_metadata_snapshot(feature_row, decision),
+                research_metadata=trade_metadata,
             )
+            notification_item = None
+            notification_error = None
+            if notification_eligible:
+                try:
+                    notification_item = TRADE_NOTIFICATION_OUTBOX.enqueue_from_trade(opened_trade)
+                    if notification_item is None:
+                        raise OutboxError("opened trade is missing its durable notification intent")
+                except OutboxError as exc:
+                    notification_error = exc
             # Cooldown describes an accepted/opened setup, not an attempted
-            # candidate.  Every rejection and open failure above leaves the
-            # state untouched.
+            # candidate. Once the trade is canonical these trading-state writes
+            # must not depend on Telegram persistence health.
             mark_setup_active(setup_id)
             save_setup_history(symbol, decision)
+            if notification_error is not None:
+                raise notification_error
 
-            if (
-                decision.quality in ("A", "B")
-                and decision.confidence >= 75
-            ):
+            if notification_item is not None:
                 LOGGER.notification_sending(symbol)
                 notification_result = asyncio.run(
-                    send_notification(
-                        symbol,
-                        decision,
-                        market,
-                        entry=entry,
-                        stop_loss=stop_loss,
-                        take_profit=take_profit,
-                    )
+                    send_outbox_notification(notification_item["notification_id"])
                 )
                 log_notification_result(symbol, notification_result)
     elif decision.raw_signal_status in ("SETUP", "HIGH PRIORITY"):
@@ -1536,6 +1701,7 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
     return decision, market
 
 def update_open_trades(current_prices):
+    _require_agent_singleton()
     trades = get_open_trades()
 
     for trade in trades:
@@ -1731,6 +1897,9 @@ def _publish_runtime_snapshot_observer(cycle_id, decisions, *, current_prices=No
 
 
 def run_once():
+    _require_agent_singleton()
+    # Recovery is bounded and does not alter trading cadence or eligibility.
+    process_notification_outbox()
     decisions = []
     api_errors = 0
     current_prices = {}
@@ -1918,14 +2087,18 @@ def run_loop(
 
 
 if __name__ == "__main__":
-    args = build_cli_parser().parse_args()
-    # Telegram runtime overrides are intentionally ephemeral. A production
-    # agent restart restores env/default configuration before the first cycle.
-    from research_lab_v2.config import clear_runtime_override
-    clear_runtime_override()
-    LOGGER.startup(datetime.now(timezone.utc).isoformat())
-    if args.loop:
-        run_loop(args.interval)
-    else:
-        run_once()
-        LOGGER.finished()
+    try:
+        args = build_cli_parser().parse_args()
+        # Telegram runtime overrides are intentionally ephemeral. A production
+        # agent restart restores env/default configuration before the first cycle.
+        from research_lab_v2.config import clear_runtime_override
+        clear_runtime_override()
+        LOGGER.startup(datetime.now(timezone.utc).isoformat())
+        if args.loop:
+            run_loop(args.interval)
+        else:
+            run_once()
+            LOGGER.finished()
+    finally:
+        if _AGENT_SINGLETON_LOCK is not None:
+            _AGENT_SINGLETON_LOCK.close()

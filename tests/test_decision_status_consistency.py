@@ -104,6 +104,8 @@ class DecisionStatusConsistencyTest(TestCase):
 
         with (
             patch.object(agent_v3, "SYMBOLS", ["BTC/USDT"]),
+            patch.object(agent_v3, "_AGENT_SINGLETON_LOCK", SimpleNamespace(acquired=True)),
+            patch.object(agent_v3, "process_notification_outbox"),
             patch.object(agent_v3, "analyze_symbol", return_value=(decision, market)),
             patch.object(agent_v3, "update_stats", side_effect=capture_stats),
             patch.object(agent_v3, "select_best_candidate", return_value=None),
