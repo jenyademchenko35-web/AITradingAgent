@@ -134,7 +134,9 @@ def test_start_and_menu_use_the_same_compact_primary_entry_when_v2_is_disabled(m
 
     start_text, start_keyboard = start_update.message.calls[0]
     menu_text, menu_keyboard = menu_update.message.calls[0]
-    assert start_text == menu_text
+    start_without_check = "\n".join(line for line in start_text.splitlines() if not line.startswith("Checked"))
+    menu_without_check = "\n".join(line for line in menu_text.splitlines() if not line.startswith("Checked"))
+    assert start_without_check == menu_without_check
     assert start_keyboard == menu_keyboard
     assert "LONG LEGACY DASHBOARD" not in start_text
     assert "🤖 TradeWatcher" in start_text

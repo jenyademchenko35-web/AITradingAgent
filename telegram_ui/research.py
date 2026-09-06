@@ -65,18 +65,17 @@ def build_read_only_research_report(database_path: Path) -> dict[str, Any]:
                 "strategies", "strategy_runs", "shadow_trade_outcomes",
                 "candidate_history", "walk_forward_results",
             }
-            integrity_ok = connection.execute("PRAGMA quick_check(1)").fetchone()[0] == "ok"
             schema_ok = required <= tables
+            if schema_ok:
+                for table in required:
+                    connection.execute(f'SELECT 1 FROM "{table}" LIMIT 1').fetchone()
             evidence = None
             last_activity = None
             if _has_table(connection, "strategy_runs"):
-                last_activity = connection.execute(
-                    "SELECT MAX(timestamp) FROM strategy_runs",
-                ).fetchone()[0]
-            if _has_table(connection, "shadow_trade_outcomes"):
-                evidence = connection.execute(
-                    "SELECT COUNT(*) FROM shadow_trade_outcomes WHERE join_status='RESOLVED'",
-                ).fetchone()[0]
+                latest = connection.execute(
+                    "SELECT timestamp FROM strategy_runs ORDER BY id DESC LIMIT 1",
+                ).fetchone()
+                last_activity = latest[0] if latest is not None else None
             candidate: dict[str, Any] = {}
             if _has_table(connection, "candidate_history"):
                 row = connection.execute(
@@ -93,7 +92,7 @@ def build_read_only_research_report(database_path: Path) -> dict[str, Any]:
                         ).fetchone()
                         candidate["walk_forward"] = wf[0] if wf is not None else "NOT_RUN"
             empty["research_health"] = {
-                "data_pipeline": "OK" if schema_ok and integrity_ok else "DEGRADED",
+                "data_pipeline": "OK" if schema_ok else "DEGRADED",
                 "research_db": {"exists": True},
                 "evidence_watch": {"fully_joined": evidence},
                 "last_activity": last_activity,

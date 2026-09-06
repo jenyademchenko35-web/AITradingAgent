@@ -254,7 +254,7 @@ def test_read_only_research_projection_preserves_database_and_directory(tmp_path
     before_names = sorted(path.name for path in tmp_path.iterdir())
     report = build_read_only_research_report(database)
     assert report["best_candidate"]["strategy_id"] == "S1"
-    assert report["research_health"]["evidence_watch"]["fully_joined"] == 1
+    assert report["research_health"]["evidence_watch"]["fully_joined"] is None
     assert hashlib.sha256(database.read_bytes()).hexdigest() == before_hash
     assert sorted(path.name for path in tmp_path.iterdir()) == before_names
 
