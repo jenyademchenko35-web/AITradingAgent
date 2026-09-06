@@ -137,7 +137,8 @@ def test_start_and_menu_use_the_same_compact_primary_entry_when_v2_is_disabled(m
     assert start_text == menu_text
     assert start_keyboard == menu_keyboard
     assert "LONG LEGACY DASHBOARD" not in start_text
-    assert "🟢 Сервер: ONLINE" in start_text
+    assert "🤖 TradeWatcher" in start_text
+    assert "Agent" in start_text
     for legacy_section in ("Shadow Validation", "Walk-Forward", "Feature Coverage", "Root Cause"):
         assert legacy_section not in menu_text
     assert button_texts(start_keyboard) == ["🟢 Статус", "📈 Рынок", "📂 Сделки", "🔬 Research Lab", "ℹ️ Помощь"]

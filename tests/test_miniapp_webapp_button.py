@@ -16,18 +16,18 @@ def environment(**overrides):
 def test_owner_sees_https_webapp_button():
     rows = home_keyboard(user_id=42, environ=environment()).inline_keyboard
     button = rows[0][0]
-    assert button.text == "⚡ Открыть TradeWatcher"
+    assert button.text == "🚀 Open TradeWatcher"
     assert button.web_app.url == "https://mini.example/app"
     assert button.callback_data is None
 
 
 def test_non_owner_disabled_and_invalid_urls_hide_button():
-    assert len(home_keyboard(user_id=7, environ=environment()).inline_keyboard) == 3
-    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_ENABLED="false")).inline_keyboard) == 3
-    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_PUBLIC_URL="http://mini.example")).inline_keyboard) == 3
-    assert len(home_keyboard(user_id=42, environ=environment(TELEGRAM_UI_V2_ENABLED="false")).inline_keyboard) == 3
+    assert len(home_keyboard(user_id=7, environ=environment()).inline_keyboard) == 2
+    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_ENABLED="false")).inline_keyboard) == 2
+    assert len(home_keyboard(user_id=42, environ=environment(MINIAPP_PUBLIC_URL="http://mini.example")).inline_keyboard) == 2
+    assert len(home_keyboard(user_id=42, environ=environment(TELEGRAM_UI_V2_ENABLED="false")).inline_keyboard) == 2
 
 
 def test_default_keyboard_uses_the_compact_primary_navigation():
     buttons = [button.callback_data for row in home_keyboard().inline_keyboard for button in row]
-    assert buttons == ["ui:v2:home", "ui:v2:market", "ui:v2:trades", "ui:v2:researchlab", "ui:v2:help"]
+    assert buttons == ["ui:v2:market", "ui:v2:trades", "ui:v2:research", "ui:v2:system"]

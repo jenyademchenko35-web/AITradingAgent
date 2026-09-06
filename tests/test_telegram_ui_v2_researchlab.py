@@ -9,19 +9,15 @@ from telegram_ui.screens import format_researchlab_screen
 
 def test_compact_researchlab_is_read_only_summary():
     text = format_researchlab_screen({
-        "runtime_status": {
-            "enabled": True, "dry_run": False, "real_order_allowed": False,
-            "strategy_modes": {
-                "TREND_CONFIRM": "SHADOW_ENABLED",
-                "RISK_CONSERVATIVE": "SHADOW_ENABLED",
-                "MOMENTUM_STRICT": "EVALUATE_ONLY",
-            },
-        },
-        "shadow_ledger": {"open": [{}, {}], "closed": [{}, {}, {}, {}]},
+        "runtime_status": {"boundary_state": "PASS"},
+        "research_data_integrity": {"state": "OK"},
+        "research_health": {"data_pipeline": "DEGRADED", "evidence_watch": {"fully_joined": 17}},
+        "best_candidate": {"strategy_id": "MOMENTUM_STRICT", "promotion_probability": 12.5, "walk_forward": "NOT_RUN"},
     })
-    assert "Real Orders: NO" in text
-    assert "Open Shadow: 2" in text and "Closed Shadow: 4" in text
-    assert "MOMENTUM_STRICT\nMode: EVALUATE_ONLY" in text
+    assert "DB           🟢 OK" in text
+    assert "Health       🟡 DEGRADED" in text
+    assert "Evidence     17" in text
+    assert "Candidate    MOMENTUM_STRICT" in text
 
 
 def test_researchlab_keyboard_is_navigation_only():

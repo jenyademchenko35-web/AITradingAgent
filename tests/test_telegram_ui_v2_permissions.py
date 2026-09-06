@@ -68,7 +68,8 @@ def test_start_updates_last_active_only(monkeypatch):
     asyncio.run(bot.start(update(7, -1007), SimpleNamespace()))
     assert calls[0] == -1007
     assert "legacy" not in calls[1]
-    assert "🟢 Сервер: ONLINE" in calls[1]
+    assert "🤖 TradeWatcher" in calls[1]
+    assert "Agent" in calls[1]
 
 
 def test_last_active_write_preserves_owner_and_notification(monkeypatch, tmp_path):

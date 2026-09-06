@@ -6,6 +6,8 @@ import logging
 import secrets
 from typing import Any
 
+from telegram.error import BadRequest
+
 
 UNKNOWN_COMMAND_TEXT = "Команда не найдена. Откройте /menu или /help."
 STALE_BUTTON_TEXT = "Эта кнопка устарела. Откройте главное меню заново."
@@ -50,7 +52,20 @@ async def send_paginated_text(message: Any, text: str, *, reply_markup: Any = No
 
 async def edit_paginated_text(query: Any, text: str, *, reply_markup: Any = None) -> None:
     chunks = split_text(text)
-    await query.edit_message_text(text=chunks[0], reply_markup=reply_markup if len(chunks) == 1 else None)
+    try:
+        await query.edit_message_text(text=chunks[0], reply_markup=reply_markup if len(chunks) == 1 else None)
+    except BadRequest as exc:
+        # Telegram returns BadRequest both when content is unchanged and when an
+        # old message can no longer be edited.  The former is success; the
+        # latter safely falls back to a new message without exposing internals.
+        detail = str(exc).lower()
+        if "message is not modified" in detail:
+            return
+        message = getattr(query, "message", None)
+        if message is None or not hasattr(message, "reply_text"):
+            raise
+        await send_paginated_text(message, text, reply_markup=reply_markup)
+        return
     for index, chunk in enumerate(chunks[1:], start=1):
         markup = reply_markup if index == len(chunks) - 1 else None
         await query.message.reply_text(chunk, reply_markup=markup)

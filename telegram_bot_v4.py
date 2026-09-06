@@ -146,14 +146,19 @@ from telegram_ui.keyboards import (
     help_keyboard as v2_help_keyboard,
     home_keyboard as v2_home_keyboard,
     market_keyboard as v2_market_keyboard,
+    research_keyboard as v2_research_keyboard,
     researchlab_keyboard as v2_researchlab_keyboard,
     section_keyboard as v2_section_keyboard,
     signal_card_keyboard as v2_signal_card_keyboard,
     symbols_keyboard as v2_symbols_keyboard,
     timeframe_keyboard as v2_timeframe_keyboard,
+    trades_keyboard as v2_trades_keyboard,
+    system_keyboard as v2_system_keyboard,
     with_miniapp_button as v2_with_miniapp_button,
 )
 from telegram_ui.navigation import navigation_store
+from telegram_ui.router import ScreenRequest, ScreenRouter
+from telegram_ui.research import build_read_only_research_report
 from telegram_ui.permissions import (
     OWNER_ONLY_TEXT,
     get_ui_flags,
@@ -172,6 +177,7 @@ from telegram_ui.screens import (
     format_stats_screen as format_v2_stats,
     format_timeframe_screen as format_v2_timeframe,
     format_trades_screen as format_v2_trades,
+    format_system_screen as format_v2_system,
 )
 from telegram_ui.signal_cards import build_signal_card, build_why_screen
 from trade_metrics_normalizer import (
@@ -231,6 +237,7 @@ MARKET_HEATMAP_FILE = BASE_DIR / "market_heatmap_report.json"
 MARKET_INTELLIGENCE_FILE = BASE_DIR / "market_intelligence_report.json"
 MARKET_INTELLIGENCE_SUMMARY_FILE = BASE_DIR / "market_intelligence_summary.txt"
 LIVE_MONITOR_STATE_FILE = BASE_DIR / "live_monitor_state.json"
+RUNTIME_SNAPSHOT_FILE = BASE_DIR / "runtime_snapshot.json"
 TRADE_MARKET_CONTEXT_FILE = BASE_DIR / "trade_market_context.csv"
 TRADE_MEMORY_SUMMARY_FILE = BASE_DIR / "trade_memory_summary.txt"
 STRATEGY_LAB_REPORT_FILE = BASE_DIR / "strategy_lab_report.json"
@@ -3202,11 +3209,11 @@ def _primary_home(update: Update) -> tuple[str, InlineKeyboardMarkup]:
         except Exception:
             TELEGRAM_LOGGER.exception("Telegram UI v2 primary home failed; using compact legacy fallback")
     try:
-        rows = _v2_market_rows(_v2_decision_rows())
+        snapshot = _v2_home_snapshot()
     except Exception:
-        TELEGRAM_LOGGER.exception("Telegram primary home market summary unavailable")
-        rows = []
-    return format_v2_home(rows), v2_with_miniapp_button(main_keyboard(), user_id=user_id)
+        TELEGRAM_LOGGER.exception("Telegram primary home snapshot unavailable")
+        snapshot = {"agent": None, "market": None, "open_trades": "UNKNOWN", "research": None}
+    return format_v2_home(snapshot), v2_with_miniapp_button(main_keyboard(), user_id=user_id)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3959,8 +3966,241 @@ def _v2_trade_statistics() -> tuple[Mapping[str, Any], List[str]]:
 
 
 def _v2_research_report() -> Mapping[str, Any]:
-    from research_lab_v2.dashboard import ResearchDashboardV2
-    return ResearchDashboardV2(BASE_DIR / "research.db").build_report()
+    return build_read_only_research_report(BASE_DIR / "research.db")
+
+
+def _v2_status(payload: Any, *keys: str) -> Any:
+    if not isinstance(payload, Mapping):
+        return None
+    for key in keys:
+        value = payload.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _v2_fresh_status(
+    payload: Any,
+    *,
+    status_keys: tuple[str, ...],
+    timestamp_keys: tuple[str, ...],
+    max_age_seconds: float,
+) -> Any:
+    """Return stored status only when its canonical timestamp is fresh."""
+    if not isinstance(payload, Mapping):
+        return None
+    status = _v2_status(payload, *status_keys)
+    timestamp = _v2_status(payload, *timestamp_keys)
+    parsed = parse_time(str(timestamp or ""))
+    if status is None or parsed is None:
+        return None
+    age = (datetime.now(timezone.utc) - parsed).total_seconds()
+    if age < -300:
+        return "STALE"
+    return status if age <= max_age_seconds else "STALE"
+
+
+def _v2_home_snapshot() -> Mapping[str, Any]:
+    health = agent_health_snapshot()
+    source_rows = _v2_decision_rows()
+    rows = _v2_market_rows(source_rows)
+    trades = read_csv_rows(TRADES_FILE)
+    runtime = read_json(RUNTIME_SNAPSHOT_FILE)
+    runtime_freshness = runtime.get("freshness", {}) if isinstance(runtime, Mapping) else {}
+    runtime_status = _v2_fresh_status(
+        runtime_freshness, status_keys=("status",),
+        timestamp_keys=("generated_at", "source_updated_at"), max_age_seconds=RUN_INTERVAL * 3,
+    )
+    expected_count = (
+        runtime.get("market", {}).get("symbols_analyzed")
+        if isinstance(runtime, Mapping) and isinstance(runtime.get("market"), Mapping) else None
+    )
+    market_times = [parse_time(str(row.get("timestamp") or "")) for row in rows]
+    market_times = [value for value in market_times if value is not None]
+    market_status = None
+    if market_times:
+        now = datetime.now(timezone.utc)
+        ages = [(now - value).total_seconds() for value in market_times]
+        if any(age < -300 or age > RUN_INTERVAL * 3 for age in ages):
+            market_status = "STALE"
+        elif runtime_status != "FRESH" or not isinstance(expected_count, int) or expected_count <= 0:
+            market_status = "DEGRADED"
+        elif len(rows) < expected_count:
+            market_status = "DEGRADED"
+        else:
+            market_status = "OK"
+    try:
+        research = _v2_research_report()
+        research_health = research.get("research_health", {})
+    except Exception:
+        TELEGRAM_LOGGER.exception("Telegram UI v2 research home snapshot unavailable")
+        research_health = {}
+    return {
+        "agent": health.get("online"),
+        "market": market_status,
+        "open_trades": sum(str(row.get("status", "")).upper() == "OPEN" for row in trades),
+        "research": _v2_fresh_status(
+            research_health,
+            status_keys=("data_pipeline", "state", "status"),
+            timestamp_keys=("last_activity",),
+            max_age_seconds=RUN_INTERVAL * 3,
+        ),
+    }
+
+
+def _v2_system_snapshot() -> Mapping[str, Any]:
+    agent = agent_health_snapshot()
+    try:
+        live = load_live_monitor_state()
+    except Exception:
+        live = {}
+    news = read_json(MARKET_NEWS_HEALTH_FILE)
+    runtime = read_json(RUNTIME_SNAPSHOT_FILE)
+    try:
+        research = _v2_research_report()
+    except Exception:
+        research = {}
+    research_health = research.get("research_health", {}) if isinstance(research, Mapping) else {}
+    runtime_freshness = runtime.get("freshness", {}) if isinstance(runtime, Mapping) else {}
+    return {
+        "agent": agent.get("online"),
+        # Reaching this callback through the active bot is direct liveness evidence.
+        "telegram": "OK",
+        "live_monitor": _v2_fresh_status(
+            live, status_keys=("status", "health", "state"), timestamp_keys=("generated_at",), max_age_seconds=300,
+        ),
+        "market_news": _v2_fresh_status(
+            news, status_keys=("health_status", "report_status", "status", "state"),
+            timestamp_keys=("generated_at", "updated_at", "timestamp"), max_age_seconds=NEWS_WARNING_SECONDS,
+        ),
+        "runtime": _v2_fresh_status(
+            runtime_freshness, status_keys=("status", "state"),
+            timestamp_keys=("generated_at", "source_updated_at"), max_age_seconds=RUN_INTERVAL * 3,
+        ),
+        "research": _v2_fresh_status(
+            research_health, status_keys=("data_pipeline", "state", "status"),
+            timestamp_keys=("last_activity",), max_age_seconds=RUN_INTERVAL * 3,
+        ),
+        "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+
+
+def _route_home(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    return format_v2_home(_v2_home_snapshot()), v2_home_keyboard()
+
+
+def _route_signals(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    rows = _v2_decision_rows()
+    return format_v2_signals(), v2_symbols_keyboard(_v2_symbols(rows))
+
+
+def _route_market(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    rows = _v2_decision_rows()
+    return format_v2_market(_v2_market_rows(rows)), v2_market_keyboard(_v2_symbols(rows))
+
+
+def _route_symbol(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    if len(request.arguments) != 1:
+        raise LookupError("symbol callback requires one argument")
+    rows = _v2_decision_rows()
+    symbol = _symbol_from_callback(request.arguments[0])
+    timeframes = v2_available_timeframes(rows, symbol)
+    return format_v2_timeframe(symbol, timeframes), v2_timeframe_keyboard(v2_compact_symbol(symbol), timeframes)
+
+
+def _route_signal_card(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    if len(request.arguments) != 2:
+        raise LookupError("signal callback requires symbol and timeframe")
+    symbol, timeframe = request.arguments
+    return build_signal_card(_v2_signal_payload(symbol, timeframe)), v2_signal_card_keyboard(
+        symbol, timeframe, user_id=request.user_id,
+    )
+
+
+def _route_why(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    if len(request.arguments) != 2:
+        raise LookupError("why callback requires symbol and timeframe")
+    symbol, timeframe = request.arguments
+    return build_why_screen(_v2_signal_payload(symbol, timeframe)), v2_signal_card_keyboard(symbol, timeframe)
+
+
+def _route_signal_stats(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    if len(request.arguments) != 2:
+        raise LookupError("stats callback requires symbol and timeframe")
+    metrics, results = _v2_trade_statistics()
+    return format_v2_stats(metrics, results), v2_signal_card_keyboard(*request.arguments)
+
+
+def _route_chart(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    if len(request.arguments) != 2:
+        raise LookupError("chart callback requires symbol and timeframe")
+    return "📈 График\n\nГрафик доступен в TradeWatcher.", v2_signal_card_keyboard(*request.arguments)
+
+
+def _route_trades(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    return format_v2_trades(read_csv_rows(TRADES_FILE)), v2_trades_keyboard()
+
+
+def _route_stats(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    metrics, results = _v2_trade_statistics()
+    return format_v2_stats(metrics, results), v2_section_keyboard("fullstats")
+
+
+def _route_research(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    return format_v2_researchlab(_v2_research_report()), v2_research_keyboard()
+
+
+def _route_system(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    return format_v2_system(_v2_system_snapshot()), v2_system_keyboard()
+
+
+def _route_settings(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+    flags = get_ui_flags()
+    chat_id = load_notification_chat_id()
+    return format_v2_settings(
+        enabled=flags.enabled, owner_only=flags.owner_only,
+        notifications=bool(BOT_TOKEN and chat_id is not None), chat_id=chat_id,
+    ), deep_screen_keyboard("home")
+
+
+def _static_route(text_factory, keyboard_factory, *args):
+    def render(request: ScreenRequest) -> tuple[str, InlineKeyboardMarkup]:
+        return text_factory(*args), keyboard_factory()
+    return render
+
+
+_V2_ROUTER = ScreenRouter({
+    "home": _route_home,
+    "signals": _route_signals,
+    "market": _route_market,
+    "overview": _route_market,
+    "watchlist": _route_market,
+    "symbol": _route_symbol,
+    "timeframe": _route_signal_card,
+    "refresh": _route_signal_card,
+    "why": _route_why,
+    "signalstats": _route_signal_stats,
+    "chart": _route_chart,
+    "trades": _route_trades,
+    "history": _static_route(format_trades, lambda: deep_screen_keyboard("trades")),
+    "tradedetails": _static_route(format_trades, lambda: deep_screen_keyboard("trades")),
+    "stats": _route_stats,
+    "fullstats": _static_route(format_stats, lambda: deep_screen_keyboard("stats")),
+    "analytics": _route_research,
+    "research": _route_research,
+    "researchlab": _route_research,
+    "research_health": _route_research,
+    "research_metrics": _route_research,
+    "experiments": _route_research,
+    "candidate": _route_research,
+    "researchlab_trades": _route_research,
+    "research_rank": _route_research,
+    "system": _route_system,
+    "diagnostics": _route_system,
+    "settings": _route_settings,
+    "help": _static_route(format_v2_help, v2_help_keyboard),
+    "commands": _static_route(format_v2_commands, lambda: deep_screen_keyboard("help")),
+})
 
 
 def _v2_screen(
@@ -3969,72 +4209,7 @@ def _v2_screen(
     *,
     user_id: object = None,
 ) -> tuple[str, InlineKeyboardMarkup]:
-    rows = _v2_decision_rows()
-    if screen == "home":
-        return format_v2_home(_v2_market_rows(rows)), v2_home_keyboard()
-    if screen in {"signals", "opportunities"}:
-        symbols = _v2_symbols(rows)
-        return format_v2_signals(), v2_symbols_keyboard(symbols)
-    if screen == "market":
-        market_rows = _v2_market_rows(rows)
-        return format_v2_market(market_rows), v2_market_keyboard(_v2_symbols(rows))
-    if screen == "symbol" and arguments:
-        symbol = _symbol_from_callback(arguments[0])
-        timeframes = v2_available_timeframes(rows, symbol)
-        return format_v2_timeframe(symbol, timeframes), v2_timeframe_keyboard(
-            v2_compact_symbol(symbol), timeframes,
-        )
-    if screen in {"timeframe", "refresh"} and len(arguments) == 2:
-        symbol, timeframe = arguments
-        payload = _v2_signal_payload(symbol, timeframe)
-        return build_signal_card(payload), v2_signal_card_keyboard(
-            symbol, timeframe, user_id=user_id,
-        )
-    if screen == "why" and len(arguments) == 2:
-        symbol, timeframe = arguments
-        return build_why_screen(_v2_signal_payload(symbol, timeframe)), v2_signal_card_keyboard(symbol, timeframe)
-    if screen == "signalstats" and len(arguments) == 2:
-        metrics, results = _v2_trade_statistics()
-        return format_v2_stats(metrics, results), v2_signal_card_keyboard(arguments[0], arguments[1])
-    if screen == "chart" and len(arguments) == 2:
-        return "📈 График\n\nГрафик будет доступен в следующем обновлении.", v2_signal_card_keyboard(
-            arguments[0], arguments[1],
-        )
-    if screen == "trades":
-        return format_v2_trades(read_csv_rows(TRADES_FILE)), v2_section_keyboard("tradedetails")
-    if screen == "tradedetails":
-        return format_trades(), deep_screen_keyboard("trades")
-    if screen == "stats":
-        metrics, results = _v2_trade_statistics()
-        return format_v2_stats(metrics, results), v2_section_keyboard("fullstats")
-    if screen == "fullstats":
-        return format_stats(), deep_screen_keyboard("stats")
-    if screen in {"analytics", "research"}:
-        return (
-            "🧠 Аналитика\n\nResearch Dashboard и сохранённые отчёты доступны без запуска торговых модулей.",
-            deep_screen_keyboard("home"),
-        )
-    if screen == "researchlab":
-        return format_v2_researchlab(_v2_research_report()), v2_researchlab_keyboard()
-    if screen == "researchlab_trades":
-        return format_research_lab_v2("researchlab_trades"), deep_screen_keyboard("researchlab")
-    if screen == "research_rank":
-        return format_research_lab_v2("top"), deep_screen_keyboard("researchlab")
-    if screen == "settings":
-        flags = get_ui_flags()
-        chat_id = load_notification_chat_id()
-        return format_v2_settings(
-            enabled=flags.enabled, owner_only=flags.owner_only,
-            notifications=bool(BOT_TOKEN and chat_id is not None), chat_id=chat_id,
-        ), deep_screen_keyboard("home")
-    if screen == "help":
-        return format_v2_help(), v2_help_keyboard()
-    if screen == "commands":
-        return format_v2_commands(), deep_screen_keyboard("help")
-    if screen == "overview":
-        market_rows = _v2_market_rows(rows)
-        return format_v2_market(market_rows), v2_market_keyboard(_v2_symbols(rows))
-    return STALE_BUTTON_TEXT, v2_home_keyboard()
+    return _V2_ROUTER.render(ScreenRequest(screen, arguments, user_id))
 
 
 async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -4044,7 +4219,12 @@ async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     await query.answer()
     if not should_use_v2(update):
-        await edit_paginated_text(query, STALE_BUTTON_TEXT, reply_markup=main_keyboard())
+        flags = get_ui_flags()
+        denied = flags.enabled and flags.owner_only and not is_owner_update(update)
+        await edit_paginated_text(
+            query, OWNER_ONLY_TEXT if denied else STALE_BUTTON_TEXT,
+            reply_markup=main_keyboard(),
+        )
         return
     try:
         callback = parse_callback(query.data)
@@ -4056,7 +4236,11 @@ async def handle_v2_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             ),
         )
         return
-    if callback.action in {"research", "researchlab", "researchlab_trades", "research_rank"} and not is_owner_update(update):
+    protected_screens = {
+        "analytics", "research", "researchlab", "researchlab_trades", "research_rank",
+        "research_health", "research_metrics", "experiments", "candidate",
+    }
+    if callback.screen in protected_screens and not is_owner_update(update):
         await edit_paginated_text(query, OWNER_ONLY_TEXT, reply_markup=v2_home_keyboard())
         return
 

@@ -26,19 +26,20 @@ def _update(user_id=42):
 def test_home_keyboard_has_the_compact_primary_destinations():
     keyboard = home_keyboard().inline_keyboard
     assert [[button.text for button in row] for row in keyboard] == [
-        ["🟢 Статус", "📈 Рынок"], ["💼 Сделки", "🔬 Research Lab"],
-        ["ℹ️ Помощь"],
+        ["📊 Market", "💼 Trades"], ["🧪 Research", "⚙️ System"],
     ]
     assert [button.callback_data for row in keyboard for button in row] == [
-        "ui:v2:home", "ui:v2:market", "ui:v2:trades", "ui:v2:researchlab", "ui:v2:help",
+        "ui:v2:market", "ui:v2:trades", "ui:v2:research", "ui:v2:system",
     ]
 
 
-def test_home_screen_is_compact_and_online():
-    text = format_home_screen([{"signal": "SETUP"}, {"signal": "WAIT"}])
-    assert "🤖 TradeWatcher Crypto" in text
-    assert "🟢 Сервер: ONLINE" in text
-    assert "1 активных сигналов" in text
+def test_home_screen_is_compact_and_uses_supplied_health_only():
+    text = format_home_screen({"agent": "OK", "market": None, "open_trades": 1, "research": "DEGRADED"})
+    assert "🤖 TradeWatcher" in text
+    assert "Agent       🟢 OK" in text
+    assert "Market      ⚪ UNKNOWN" in text
+    assert "Open trades 1" in text
+    assert "Research    🟡 DEGRADED" in text
     assert "MSK" in text
     assert len(text) < 4096
 

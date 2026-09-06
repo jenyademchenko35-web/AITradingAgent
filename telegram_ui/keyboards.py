@@ -29,7 +29,7 @@ def with_miniapp_button(
     if url is None or any(button.web_app for row in keyboard.inline_keyboard for button in row):
         return keyboard
     rows = [
-        [InlineKeyboardButton("⚡ Открыть TradeWatcher", web_app=WebAppInfo(url=url))],
+        [InlineKeyboardButton("🚀 Open TradeWatcher", web_app=WebAppInfo(url=url))],
         *[list(row) for row in keyboard.inline_keyboard],
     ]
     return InlineKeyboardMarkup(rows)
@@ -56,15 +56,12 @@ def miniapp_signal_button(
 def home_keyboard(*, user_id: object = None, environ=None) -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("🟢 Статус", callback_data=build_callback("home")),
-            InlineKeyboardButton("📈 Рынок", callback_data=build_callback("market")),
+            InlineKeyboardButton("📊 Market", callback_data=build_callback("market")),
+            InlineKeyboardButton("💼 Trades", callback_data=build_callback("trades")),
         ],
         [
-            InlineKeyboardButton("💼 Сделки", callback_data=build_callback("trades")),
-            InlineKeyboardButton("🔬 Research Lab", callback_data=build_callback("researchlab")),
-        ],
-        [
-            InlineKeyboardButton("ℹ️ Помощь", callback_data=build_callback("help")),
+            InlineKeyboardButton("🧪 Research", callback_data=build_callback("research")),
+            InlineKeyboardButton("⚙️ System", callback_data=build_callback("system")),
         ],
     ])
     return with_miniapp_button(keyboard, user_id=user_id, environ=environ)
@@ -133,7 +130,10 @@ def market_keyboard(symbols: list[str] | tuple[str, ...]) -> InlineKeyboardMarku
     ) for symbol in symbols]
     rows = [buttons[index:index + 3] for index in range(0, len(buttons), 3)]
     rows.extend([
-        [InlineKeyboardButton("🔄 Обновить", callback_data=build_callback("market"))],
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data=build_callback("market")),
+            InlineKeyboardButton("👁 Watchlist", callback_data=build_callback("watchlist")),
+        ],
         [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
     ])
     return InlineKeyboardMarkup(rows)
@@ -157,6 +157,40 @@ def researchlab_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("⬅️ Назад", callback_data=build_callback("back", "home")),
             InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home")),
         ],
+    ])
+
+
+def trades_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data=build_callback("trades")),
+            InlineKeyboardButton("📜 History", callback_data=build_callback("history")),
+        ],
+        [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
+    ])
+
+
+def research_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🩺 Health", callback_data=build_callback("research_health")),
+            InlineKeyboardButton("📐 Metrics", callback_data=build_callback("research_metrics")),
+        ],
+        [
+            InlineKeyboardButton("🧫 Experiments", callback_data=build_callback("experiments")),
+            InlineKeyboardButton("🎯 Candidate", callback_data=build_callback("candidate")),
+        ],
+        [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
+    ])
+
+
+def system_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🔄 Refresh", callback_data=build_callback("system")),
+            InlineKeyboardButton("🔎 Diagnostics", callback_data=build_callback("diagnostics")),
+        ],
+        [InlineKeyboardButton("🏠 Главное меню", callback_data=build_callback("home"))],
     ])
 
 

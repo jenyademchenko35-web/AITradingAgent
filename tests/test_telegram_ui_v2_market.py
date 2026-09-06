@@ -11,14 +11,14 @@ def test_market_uses_latest_status_per_symbol():
     ]
     current = [{**row, "symbol": symbol} for (symbol, _), row in latest_rows(rows).items()]
     text = format_market_screen(current)
-    assert "BTC  🟢 ГОТОВ К ВХОДУ" in text
-    assert "ETH  ⚪ НЕТ СДЕЛКИ" in text
+    assert "BTC" in text and "🟢 ГОТОВ К ВХОДУ" in text
+    assert "ETH" in text and "⚪ НЕТ СДЕЛКИ" in text
     assert "WAIT" not in text
 
 
 def test_market_keyboard_routes_symbols_and_refresh():
     callbacks = [button.callback_data for row in market_keyboard(["BTC/USDT"]).inline_keyboard for button in row]
-    assert callbacks == ["ui:v2:symbol:BTCUSDT", "ui:v2:market", "ui:v2:home"]
+    assert callbacks == ["ui:v2:symbol:BTCUSDT", "ui:v2:market", "ui:v2:watchlist", "ui:v2:home"]
 
 
 def test_compact_trade_and_stats_wrappers():
@@ -27,6 +27,6 @@ def test_compact_trade_and_stats_wrappers():
         "closed_trades": 10, "winrate": 60, "profit_factor": 1.5,
         "net_r": 3, "max_drawdown_r": 1.2,
     }, ["WIN", "LOSS"])
-    assert "Открыто: 1" in trades
-    assert "Closed: 10" in stats and "PF: 1.50" in stats
+    assert "Open: 1" in trades
+    assert "Closed: 10" in stats and "PF: 1.5" in stats
     assert len(trades) < 4096 and len(stats) < 4096

@@ -26,7 +26,8 @@ def test_v2_start_exception_falls_back_to_compact_primary_home(monkeypatch):
     asyncio.run(bot.start(update, SimpleNamespace()))
     assert len(update.message.calls) == 1
     assert "legacy-home" not in update.message.calls[0]
-    assert "🟢 Сервер: ONLINE" in update.message.calls[0]
+    assert "🤖 TradeWatcher" in update.message.calls[0]
+    assert "Agent" in update.message.calls[0]
 
 
 def test_non_owner_still_receives_compact_primary_start(monkeypatch):
@@ -37,7 +38,8 @@ def test_non_owner_still_receives_compact_primary_start(monkeypatch):
     asyncio.run(bot.start(update, SimpleNamespace()))
     assert len(update.message.calls) == 1
     assert "legacy-home" not in update.message.calls[0]
-    assert "🟢 Сервер: ONLINE" in update.message.calls[0]
+    assert "🤖 TradeWatcher" in update.message.calls[0]
+    assert "Agent" in update.message.calls[0]
 
 
 def test_v2_callback_exception_edits_to_legacy(monkeypatch):
