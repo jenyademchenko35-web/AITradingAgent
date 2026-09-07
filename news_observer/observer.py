@@ -17,7 +17,7 @@ from .freshness import parse_timestamp, utc_now
 from .health import build_health_snapshot, build_source_snapshot
 from .models import NewsItem, SourceFetchResult, SourceKind, SourceStatus
 from .normalizer import normalize_items
-from .source_base import SourceParserError
+from .source_base import SourceParserError, SourceUnavailableError
 from .source_registry import NewsSourceRegistry, build_default_registry
 from .storage import NewsStorage
 
@@ -86,6 +86,7 @@ class MarketNewsObserver:
                         kind=config.kind,
                         location=config.location,
                         status=SourceStatus.DISABLED,
+                        error=config.disabled_reason,
                         fetched_at=utc_now().isoformat(),
                         parser_version=config.parser_version,
                     )
@@ -271,6 +272,8 @@ class MarketNewsObserver:
             if error.error_type == "TIMEOUT":
                 return SourceStatus.TIMEOUT
             return SourceStatus.HTTP_ERROR
+        if isinstance(error, SourceUnavailableError):
+            return SourceStatus.DEGRADED
         if isinstance(error, SourceParserError):
             return SourceStatus.PARSER_ERROR
         if isinstance(error, (json.JSONDecodeError, UnicodeDecodeError)):

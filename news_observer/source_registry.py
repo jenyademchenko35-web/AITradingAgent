@@ -65,8 +65,12 @@ def build_default_registry(base_dir: Path | str, *, timeout: float = 8.0) -> New
                 name="Binance News",
                 kind=SourceKind.RSS,
                 location="https://www.binance.com/en/feed/rss",
+                enabled=False,
                 timeout=timeout,
                 priority=30,
+                disabled_reason=(
+                    "unsupported RSS endpoint: returns HTTP 202 with an empty text/html body"
+                ),
             ),
             SourceConfig(
                 name="MarketNewsCache",

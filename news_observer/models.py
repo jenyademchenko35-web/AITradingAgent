@@ -84,6 +84,7 @@ class SourceConfig:
     headers: tuple[tuple[str, str], ...] = ()
     priority: int = 100
     parser_version: str = "2.0"
+    disabled_reason: str = ""
 
     @property
     def source_id(self) -> str:
@@ -110,6 +111,7 @@ class SourceConfig:
             "retries": self.retries,
             "retry_count": self.retries,
             "parser_version": self.parser_version,
+            "disabled_reason": self.disabled_reason,
             "health_status": "UNKNOWN",
         }
 

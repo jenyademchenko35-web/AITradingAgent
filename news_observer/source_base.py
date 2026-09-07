@@ -23,6 +23,15 @@ class SourceParserError(RuntimeError):
         self.attempts = attempts
 
 
+class SourceUnavailableError(RuntimeError):
+    """A successful transport that did not return the configured feed format."""
+
+    def __init__(self, message: str, *, status_code: int, attempts: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.attempts = attempts
+
+
 def _result_status(item_count: int, attempts: int) -> SourceStatus:
     """Classify a successful transport without hiding retries or empty feeds."""
     if item_count <= 0:
@@ -113,6 +122,40 @@ class RSSSource(NewsSource):
 
     def fetch(self, fetcher: HTTPFetcher) -> tuple[list[dict[str, Any]], SourceFetchResult]:
         response = fetcher.fetch(self.config)
+        content_type = next(
+            (
+                str(value).lower()
+                for key, value in response.headers.items()
+                if str(key).lower() == "content-type"
+            ),
+            "",
+        )
+        if response.status_code != 200:
+            raise SourceUnavailableError(
+                f"unexpected RSS HTTP status {response.status_code}",
+                status_code=response.status_code,
+                attempts=response.attempts,
+            )
+        if not response.body.strip():
+            raise SourceUnavailableError(
+                "empty RSS response",
+                status_code=response.status_code,
+                attempts=response.attempts,
+            )
+        payload_prefix = response.body.lstrip()[:32].lower()
+        incompatible_payload = (
+            payload_prefix.startswith((b"<html", b"<!doctype html", b"{", b"["))
+        )
+        if (
+            "text/html" in content_type
+            or "application/json" in content_type
+            or incompatible_payload
+        ):
+            raise SourceUnavailableError(
+                f"unexpected RSS content type {content_type.split(';', 1)[0]}",
+                status_code=response.status_code,
+                attempts=response.attempts,
+            )
         try:
             root = ET.fromstring(response.body)
         except ET.ParseError as exc:
