@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import inspect
 import json
+import signal
 
 import pytest
 
 import multi_timeframe_agent_v3 as agent
+
+
+@pytest.fixture(autouse=True)
+def clear_stop_request():
+    agent._STOP_REQUESTED.clear()
+    yield
+    agent._STOP_REQUESTED.clear()
 
 
 def test_cli_interval_is_seconds_and_default_remains_300():
@@ -65,3 +74,88 @@ def test_loop_passes_300_directly_to_sleep_measures_monotonic_and_runs_next_cycl
     }
     assert decoded[-1]["interrupted"] is True
     assert decoded[-1]["actual_sleep_seconds"] == 0.5
+
+
+def _quiet_logger(monkeypatch, events=None):
+    monkeypatch.setattr(agent.LOGGER, "cycle_started", lambda *_: None)
+    monkeypatch.setattr(agent.LOGGER, "cycle_finished", lambda *_: None)
+    monkeypatch.setattr(agent.LOGGER, "loop_error", lambda *_: None)
+    monkeypatch.setattr(agent.LOGGER, "sleeping", lambda *_: None)
+    monkeypatch.setattr(agent.LOGGER, "stopping", lambda: None)
+    monkeypatch.setattr(agent.LOGGER, "timestamped", (events if events is not None else []).append)
+
+
+def test_sigterm_before_cycle_starts_no_cycle(monkeypatch):
+    cycles = []
+    monkeypatch.setattr(agent, "run_once", lambda: cycles.append("cycle"))
+    _quiet_logger(monkeypatch)
+
+    agent._request_graceful_stop(signal.SIGTERM, None)
+    agent.run_loop(300)
+
+    assert cycles == []
+
+
+def test_sigterm_during_cycle_finishes_current_cycle_and_starts_no_second(monkeypatch):
+    lifecycle = []
+
+    def complete_cycle():
+        lifecycle.append("cycle-body-start")
+        agent._request_graceful_stop(signal.SIGTERM, None)
+        lifecycle.append("cycle-body-finished")
+
+    monkeypatch.setattr(agent, "run_once", complete_cycle)
+    monkeypatch.setattr(agent.LOGGER, "cycle_started", lambda *_: lifecycle.append("cycle-started"))
+    monkeypatch.setattr(agent.LOGGER, "cycle_finished", lambda *_: lifecycle.append("cycle-finished"))
+    monkeypatch.setattr(agent.LOGGER, "loop_error", lambda *_: lifecycle.append("loop-error"))
+    monkeypatch.setattr(agent.LOGGER, "sleeping", lambda *_: lifecycle.append("sleep"))
+    monkeypatch.setattr(agent.LOGGER, "stopping", lambda: lifecycle.append("stopped"))
+    monkeypatch.setattr(agent.LOGGER, "timestamped", lambda *_: None)
+
+    agent.run_loop(300)
+
+    assert lifecycle == [
+        "cycle-started", "cycle-body-start", "cycle-body-finished", "cycle-finished", "stopped",
+    ]
+
+
+def test_sigterm_during_sleep_interrupts_wait_and_starts_no_second_cycle(monkeypatch):
+    cycles = []
+    events = []
+    monotonic_values = iter((10.0, 10.01))
+    monkeypatch.setattr(agent, "run_once", lambda: cycles.append("cycle"))
+    _quiet_logger(monkeypatch, events)
+
+    def request_stop(_duration):
+        agent._request_graceful_stop(signal.SIGTERM, None)
+
+    agent.run_loop(300, sleep_fn=request_stop, monotonic_fn=lambda: next(monotonic_values))
+
+    assert cycles == ["cycle"]
+    assert json.loads(events[-1])["interrupted"] is True
+    assert json.loads(events[-1])["actual_sleep_seconds"] < 1
+
+
+def test_signal_handler_only_sets_process_local_event(tmp_path):
+    protected = [tmp_path / name for name in ("trade_notification_outbox.json", "last_notification.json", "trades.csv")]
+    for path in protected:
+        path.write_bytes(b"unchanged")
+
+    source = inspect.getsource(agent._request_graceful_stop)
+    agent._request_graceful_stop(signal.SIGTERM, None)
+
+    assert agent._STOP_REQUESTED.is_set()
+    assert all(path.read_bytes() == b"unchanged" for path in protected)
+    assert "_STOP_REQUESTED.set()" in source
+    for forbidden in ("open(", "write", "LOGGER", "Bot", "sqlite"):
+        assert forbidden not in source
+
+
+def test_fatal_main_exception_is_not_hidden(monkeypatch):
+    monkeypatch.setattr(agent, "_require_agent_singleton", lambda: None)
+    monkeypatch.setattr("research_lab_v2.config.clear_runtime_override", lambda: None)
+    monkeypatch.setattr(agent.LOGGER, "startup", lambda *_: None)
+    monkeypatch.setattr(agent, "run_loop", lambda *_: (_ for _ in ()).throw(RuntimeError("fatal")))
+
+    with pytest.raises(RuntimeError, match="fatal"):
+        agent.main(["--loop", "--interval", "300"])

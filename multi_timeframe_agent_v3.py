@@ -7,7 +7,9 @@ import traceback
 import os
 import json
 import math
+import signal
 import sys
+import threading
 from pathlib import Path
 from typing import Any, Callable
 from agent_singleton import AgentAlreadyRunning, AgentSingletonError, acquire_agent_singleton
@@ -15,12 +17,25 @@ from agent_singleton import AgentAlreadyRunning, AgentSingletonError, acquire_ag
 # This guard intentionally runs before config, strategy, Telegram, trade or
 # outbox imports/initializers. Every direct launcher executes this same file.
 _AGENT_SINGLETON_LOCK = None
+_STOP_REQUESTED = threading.Event()
+
+
+def _request_graceful_stop(_signum: int, _frame: object) -> None:
+    """Record a stop request; cleanup stays in normal control flow."""
+    _STOP_REQUESTED.set()
+
+
+def _install_signal_handlers() -> None:
+    signal.signal(signal.SIGTERM, _request_graceful_stop)
+
+
 if __name__ == "__main__":
     try:
         _AGENT_SINGLETON_LOCK = acquire_agent_singleton()
     except (AgentAlreadyRunning, AgentSingletonError) as exc:
         print(f"AITradingAgent singleton refusal: {exc}", file=sys.stderr)
         raise SystemExit(73) from exc
+    _install_signal_handlers()
 
 
 def _require_agent_singleton() -> None:
@@ -2042,13 +2057,13 @@ def build_cli_parser() -> argparse.ArgumentParser:
 def run_loop(
     interval_seconds: int | float,
     *,
-    sleep_fn: Callable[[float], None] = time.sleep,
+    sleep_fn: Callable[[float], None] | None = None,
     monotonic_fn: Callable[[], float] = time.monotonic,
     wall_clock_fn: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
 ):
     interval = validate_loop_interval(interval_seconds)
     try:
-        while True:
+        while not _STOP_REQUESTED.is_set():
             cycle_start = time.time()
             LOGGER.cycle_started(datetime.now(timezone.utc).isoformat())
             try:
@@ -2058,6 +2073,9 @@ def run_loop(
             cycle_end = time.time()
             duration = cycle_end - cycle_start
             LOGGER.cycle_finished(duration)
+            if _STOP_REQUESTED.is_set():
+                LOGGER.stopping()
+                break
             LOGGER.sleeping(interval)
             sleep_started_monotonic = monotonic_fn()
             sleep_wall_clock = wall_clock_fn().astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -2068,7 +2086,11 @@ def run_loop(
                 "wall_clock": sleep_wall_clock,
             }, sort_keys=True))
             try:
-                sleep_fn(interval)
+                if sleep_fn is None:
+                    interrupted = _STOP_REQUESTED.wait(interval)
+                else:
+                    sleep_fn(interval)
+                    interrupted = _STOP_REQUESTED.is_set()
             except KeyboardInterrupt:
                 LOGGER.timestamped(json.dumps({
                     "event": "agent_loop_sleep_end",
@@ -2080,25 +2102,35 @@ def run_loop(
             LOGGER.timestamped(json.dumps({
                 "event": "agent_loop_sleep_end",
                 "actual_sleep_seconds": max(0.0, monotonic_fn() - sleep_started_monotonic),
-                "interrupted": False,
+                "interrupted": interrupted,
             }, sort_keys=True))
+            if interrupted:
+                LOGGER.stopping()
+                break
     except KeyboardInterrupt:
         LOGGER.stopping()
 
 
-if __name__ == "__main__":
-    try:
-        args = build_cli_parser().parse_args()
-        # Telegram runtime overrides are intentionally ephemeral. A production
-        # agent restart restores env/default configuration before the first cycle.
-        from research_lab_v2.config import clear_runtime_override
-        clear_runtime_override()
-        LOGGER.startup(datetime.now(timezone.utc).isoformat())
-        if args.loop:
-            run_loop(args.interval)
-        else:
+def main(argv: list[str] | None = None) -> int:
+    _require_agent_singleton()
+    args = build_cli_parser().parse_args(argv)
+    # Telegram runtime overrides are intentionally ephemeral. A production
+    # agent restart restores env/default configuration before the first cycle.
+    from research_lab_v2.config import clear_runtime_override
+    clear_runtime_override()
+    LOGGER.startup(datetime.now(timezone.utc).isoformat())
+    if args.loop:
+        run_loop(args.interval)
+    else:
+        if not _STOP_REQUESTED.is_set():
             run_once()
             LOGGER.finished()
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
     finally:
         if _AGENT_SINGLETON_LOCK is not None:
             _AGENT_SINGLETON_LOCK.close()

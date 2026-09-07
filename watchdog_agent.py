@@ -28,7 +28,7 @@ NOTIFICATION_COOLDOWN = 15 * 60
 RESTART_WINDOW = 30 * 60
 CRITICAL_RESTART_COUNT = 3
 CRITICAL_RETRY_COOLDOWN = 5 * 60
-STALE_LOG_SECONDS = 15 * 60
+SYSTEMD_MANAGED_PROCESSES = frozenset({"multi_timeframe_agent_v3.py"})
 
 
 @dataclass(frozen=True)
@@ -42,11 +42,6 @@ class ProcessSpec:
 
 
 PROCESS_SPECS = (
-    ProcessSpec(
-        "multi_timeframe_agent_v3.py",
-        ("--loop", "--interval", "300"),
-        Path("logs/agent.log"),
-    ),
     ProcessSpec("telegram_bot_v4.py", (), Path("logs/telegram_bot_v4.log")),
     ProcessSpec(
         "market_news_observer.py",
@@ -120,7 +115,7 @@ class Watchdog:
         now: Callable[[], float] = time.time,
     ) -> None:
         load_dotenv(PROJECT_ROOT / ".env")
-        self.specs = tuple(specs)
+        self.specs = tuple(spec for spec in specs if spec.filename not in SYSTEMD_MANAGED_PROCESSES)
         self.logger = logger or configure_logging()
         self.now = now
         self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -177,6 +172,9 @@ class Watchdog:
         return self.now() - self.last_restart_attempt.get(filename, 0) >= CRITICAL_RETRY_COOLDOWN
 
     def start_process(self, spec: ProcessSpec) -> subprocess.Popen[bytes] | None:
+        if spec.filename in SYSTEMD_MANAGED_PROCESSES:
+            self.logger.error("Refusing to manage systemd-owned process: %s", spec.filename)
+            return None
         if not self.can_attempt_restart(spec.filename):
             self.logger.warning("Restart rate limited for %s", spec.filename)
             return None
@@ -220,32 +218,10 @@ class Watchdog:
             )
             return None
 
-    def is_log_stale(self, path: Path, max_age: float = STALE_LOG_SECONDS) -> bool:
-        try:
-            return self.now() - path.stat().st_mtime > max_age
-        except FileNotFoundError:
-            return False
-
-    def stop_processes(self, processes: Iterable[psutil.Process], filename: str) -> None:
-        remaining = []
-        for process in processes:
-            try:
-                process.terminate()
-                remaining.append(process)
-            except psutil.NoSuchProcess:
-                continue
-            except psutil.Error:
-                self.logger.exception("Could not terminate %s pid=%s", filename, process.pid)
-        _gone, alive = psutil.wait_procs(remaining, timeout=10)
-        for process in alive:
-            try:
-                process.kill()
-            except psutil.NoSuchProcess:
-                pass
-            except psutil.Error:
-                self.logger.exception("Could not kill %s pid=%s", filename, process.pid)
-
     def check_spec(self, spec: ProcessSpec) -> None:
+        if spec.filename in SYSTEMD_MANAGED_PROCESSES:
+            self.logger.error("Refusing to inspect or manage systemd-owned process: %s", spec.filename)
+            return
         processes = self.find_processes(spec.filename)
         self.logger.info("State %s: %s", spec.filename, "running" if processes else "stopped")
         if not processes:
@@ -256,20 +232,6 @@ class Watchdog:
                 f"Процесс остановлен:\n{spec.filename}\n"
                 "Выполняется автоматический перезапуск.",
             )
-            self.start_process(spec)
-            return
-        if (
-            spec.filename == "multi_timeframe_agent_v3.py"
-            and self.is_log_stale(PROJECT_ROOT / spec.log_path)
-        ):
-            self.logger.warning("Hung process detected: %s", spec.filename)
-            self.notify(
-                spec.filename,
-                "hung",
-                f"⚠️ WATCHDOG\nПроцесс завис (лог не обновлялся более 15 минут):\n{spec.filename}",
-            )
-            self.stop_processes(processes, spec.filename)
-            time.sleep(5)
             self.start_process(spec)
 
     def check_once(self) -> None:

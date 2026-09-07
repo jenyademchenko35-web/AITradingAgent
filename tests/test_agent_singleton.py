@@ -204,16 +204,57 @@ def test_update_style_direct_script_launch_cannot_bypass_guard() -> None:
     assert guard < config_import
 
 
-def test_update_script_waits_bounded_for_old_agent_before_restart() -> None:
+def test_update_script_never_manages_agent_lifecycle() -> None:
     source = (REPO_ROOT / "update.sh").read_text(encoding="utf-8")
-    capture = source.index('AGENT_PIDS="$(pgrep -f "multi_timeframe_agent_v3.py"')
-    stop = source.index('stop_process "multi_timeframe_agent_v3.py"', capture)
-    wait = source.index('wait_for_pids_exit "$AGENT_PIDS" 30', stop)
-    start = source.index('start_agent_process "$PY"', wait)
-    assert capture < stop < wait < start
-    assert "refusing overlapping restart" in source
-    assert 'kill -0 "$pid"' in source
-    assert "agent_v3 failed startup" in source
+    executable = "\n".join(
+        line for line in source.splitlines() if not line.lstrip().startswith("#")
+    )
+    assert 'stop_process "multi_timeframe_agent_v3.py"' not in executable
+    assert "start_agent_process" not in executable
+    assert '"$BASE_DIR/multi_timeframe_agent_v3.py"' not in executable
+    assert "Agent is not managed by update.sh" in source
+
+
+def test_real_sigterm_during_interruptible_wait_exits_zero_and_releases_singleton(tmp_path: Path) -> None:
+    path = tmp_path / "state" / "agent.lock"
+    code = f"""
+import sys
+from agent_singleton import AgentSingletonLock
+import multi_timeframe_agent_v3 as agent
+
+lock = AgentSingletonLock({str(path)!r}, trusted_root={str(tmp_path)!r}).acquire()
+agent.run_once = lambda: None
+agent.LOGGER.cycle_started = lambda *args: None
+agent.LOGGER.cycle_finished = lambda *args: None
+agent.LOGGER.loop_error = lambda *args: None
+agent.LOGGER.sleeping = lambda *args: print("SLEEPING", flush=True)
+agent.LOGGER.timestamped = lambda *args: None
+agent.LOGGER.stopping = lambda *args: None
+agent._install_signal_handlers()
+try:
+    agent.run_loop(300)
+finally:
+    lock.close()
+"""
+    holder = subprocess.Popen(
+        [sys.executable, "-c", code],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        assert holder.stdout is not None and holder.stdout.readline().strip() == "SLEEPING"
+        started = time.monotonic()
+        holder.send_signal(signal.SIGTERM)
+        assert holder.wait(timeout=5) == 0
+        assert time.monotonic() - started < 2
+        replacement = singleton.AgentSingletonLock(path, trusted_root=tmp_path).acquire()
+        replacement.close()
+    finally:
+        if holder.poll() is None:
+            holder.kill()
+            holder.wait(timeout=5)
 
 
 def test_singleton_is_acquired_before_outbox_initialization() -> None:

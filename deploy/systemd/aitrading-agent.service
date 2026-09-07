@@ -1,0 +1,31 @@
+[Unit]
+Description=AITradingAgent main agent
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=aitrading
+Group=aitrading
+WorkingDirectory=/home/aitrading/AITradingAgent
+EnvironmentFile=/home/aitrading/AITradingAgent/.env
+ExecStart=/home/aitrading/AITradingAgent/venv/bin/python -u /home/aitrading/AITradingAgent/multi_timeframe_agent_v3.py --loop --interval 300
+
+Restart=on-failure
+RestartPreventExitStatus=73
+RestartSec=30
+
+TimeoutStopSec=5min
+KillSignal=SIGTERM
+KillMode=control-group
+
+UMask=0002
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=aitrading-agent
+
+[Install]
+WantedBy=multi-user.target

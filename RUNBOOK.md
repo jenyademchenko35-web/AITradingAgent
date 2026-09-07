@@ -19,15 +19,18 @@
 
 ## Правильный Порядок Запуска
 
-Запускать проект нужно так:
-
-1. Сначала агент:
+После завершения controlled migration основной Agent управляется только systemd:
 
 ```bash
-venv/bin/python multi_timeframe_agent_v3.py --loop --interval 300
+sudo systemctl start aitrading-agent.service
+systemctl status aitrading-agent.service --no-pager
 ```
 
-2. Потом Telegram-бот:
+Не запускать основной Agent через `nohup`, `update.sh`, legacy watchdog или
+ручной Python command. До завершения migration существующий session-scope Agent
+остаётся работающим и не должен останавливаться обычным code update.
+
+Telegram-бот запускается своим отдельным supervisor:
 
 ```bash
 venv/bin/python telegram_bot_v4.py
@@ -35,11 +38,48 @@ venv/bin/python telegram_bot_v4.py
 
 Не использовать системный `python3` вместо `venv/bin/python`.
 
+### Controlled session → systemd handoff
+
+Migration выполняется отдельной операцией, а не из `update.sh`:
+
+1. Проверить production health, один Agent, working DB/WAL, H2 outbox и Research.
+2. Развернуть reviewed code и `deploy/systemd/aitrading-agent.service` без restart.
+3. Скопировать unit в `/etc/systemd/system/aitrading-agent.service` вручную с sudo.
+4. Выполнить `systemd-analyze verify` и `sudo systemctl daemon-reload`.
+5. **DO NOT start** systemd unit, пока session Agent жив.
+6. Дождаться нового `agent_loop_sleep_start` в текущем Agent log.
+7. Проверить exact PID/cmdline/cwd и отправить `SIGTERM` только этому session PID.
+8. Дождаться clean exit; не использовать SIGKILL как normal path.
+9. Проверить отсутствие Agent и что canonical singleton lock свободен.
+10. Запустить `sudo systemctl start aitrading-agent.service`.
+11. Подтвердить ровно один Agent, его systemd cgroup и удерживаемый singleton.
+12. Дождаться first full cycle: `database_status=OK`,
+    `runtime_snapshot_published`, `Cycle duration`.
+13. Проверить DB quick-check/WAL, H2 outbox, Research и H9 boundary.
+14. Подтвердить `systemctl is-enabled aitrading-agent.service`.
+
+### Rollback systemd Agent
+
+Rollback не сбрасывает код или runtime state:
+
+1. `sudo systemctl stop aitrading-agent.service`.
+2. Проверить, что systemd PID исчез и singleton lock свободен.
+3. Отключить unit от boot, прежде чем возвращать session launcher.
+4. Из `/home/aitrading/AITradingAgent` запустить ровно один canonical session Agent:
+
+```bash
+nohup venv/bin/python -u multi_timeframe_agent_v3.py --loop --interval 300 \
+  >> logs/agent_v3.log 2>&1 &
+```
+
+5. Проверить один PID, правильный cwd, singleton holder и first full cycle.
+6. Не удалять и не пересоздавать DB, outbox, cooldown или trading state.
+
 ### Singleton основного агента
 
-Все способы запуска `multi_timeframe_agent_v3.py` используют один lifetime
+Canonical systemd launcher и controlled rollback command используют один lifetime
 `flock`: `<passwd-home>/.local/state/AITradingAgent/agent.lock`. Passwd home,
-а не переменная `HOME`, гарантирует один namespace для systemd/SSH/update.sh.
+а не переменная `HOME`, гарантирует один namespace для systemd и controlled rollback.
 Блокировка берётся до
 инициализации trading/outbox компонентов и удерживается открытым file descriptor
 до завершения процесса. Второй запуск немедленно завершается с кодом `73`; наличие
@@ -47,15 +87,26 @@ venv/bin/python telegram_bot_v4.py
 для управления процессом — проверяйте владельца блокировки или список процессов.
 
 
-## Запуск Агента
+## Agent supervision и logging
 
-Основная команда:
+Canonical command закреплён в version-controlled systemd unit:
 
 ```bash
-venv/bin/python multi_timeframe_agent_v3.py --loop --interval 300
+systemctl cat aitrading-agent.service
 ```
 
-Что делает:
+Agent stdout/stderr под systemd поступают в journald:
+
+```bash
+journalctl -u aitrading-agent.service -n 200 --no-pager
+```
+
+`logs/agent_v3.log` — diagnostic-only legacy session log. `logs/agent.log` —
+legacy-unused для Agent после migration. Runtime health определяется по systemd,
+`runtime_snapshot.json`, завершённым циклам и DB health, а не по freshness этих
+file logs. Legacy watchdog основной Agent больше не контролирует.
+
+Agent:
 
 - запускает основной v3-агент;
 - анализирует рынок по циклу;
@@ -245,7 +296,7 @@ venv/bin/python telegram_bot_v4.py
 Решение:
 
 ```bash
-venv/bin/python multi_timeframe_agent_v3.py --loop --interval 300
+systemctl status aitrading-agent.service --no-pager
 ```
 
 или
@@ -269,9 +320,9 @@ venv/bin/python backtest.py
 
 Решение:
 
-1. Запустить агент через `venv`.
+1. Проверить `systemctl status aitrading-agent.service --no-pager`.
 2. Дождаться завершения хотя бы одного цикла.
-3. Проверить терминальный вывод агента.
+3. Проверить `journalctl -u aitrading-agent.service -n 200 --no-pager`.
 
 
 ### Нет BOT_TOKEN

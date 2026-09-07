@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
-import subprocess
-import time
 from unittest.mock import MagicMock, patch
 
 import psutil
@@ -85,12 +82,29 @@ def test_counts_repeated_restarts_in_window():
     assert watchdog.can_attempt_restart("worker.py") is False
 
 
-def test_detects_stale_log(tmp_path):
-    log = tmp_path / "agent.log"
-    log.write_text("old", encoding="utf-8")
-    old = 1_000_000.0 - module.STALE_LOG_SECONDS - 1
-    os.utime(log, (old, old))
-    assert make_watchdog().is_log_stale(log) is True
+def test_legacy_watchdog_never_supervises_or_controls_main_agent():
+    assert all(spec.filename != "multi_timeframe_agent_v3.py" for spec in module.PROCESS_SPECS)
+    source = Path(module.__file__).read_text(encoding="utf-8")
+    assert 'ProcessSpec(\n        "multi_timeframe_agent_v3.py"' not in source
+    assert "logs/agent.log" not in source
+    assert "is_log_stale" not in source
+    assert "stop_processes" not in source
+
+
+def test_legacy_watchdog_rejects_even_injected_main_agent_spec():
+    agent = ProcessSpec(
+        "multi_timeframe_agent_v3.py", ("--loop", "--interval", "300"), Path("logs/agent.log")
+    )
+    watchdog = make_watchdog()
+    watchdog.find_processes = MagicMock()
+    with patch.object(module.subprocess, "Popen") as popen:
+        assert watchdog.start_process(agent) is None
+        watchdog.check_spec(agent)
+    popen.assert_not_called()
+    watchdog.find_processes.assert_not_called()
+
+    constructed = Watchdog((agent,), logger=watchdog.logger)
+    assert constructed.specs == ()
 
 
 def test_once_runs_one_check_and_exits():
