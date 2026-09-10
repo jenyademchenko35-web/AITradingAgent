@@ -163,6 +163,10 @@ def _publisher_settings(tmp_path: Path) -> RuntimePublisherSettings:
     )
 
 
+def _accepted(snapshot_id: str) -> bytes:
+    return json.dumps({"status": "accepted", "snapshot_id": snapshot_id}).encode()
+
+
 def test_publisher_reads_only_existing_reports_and_publishes_successfully(tmp_path):
     snapshot = _bundle()["runtime_snapshot"]
     write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
@@ -171,7 +175,7 @@ def test_publisher_reads_only_existing_reports_and_publishes_successfully(tmp_pa
     assert bundle and bundle["runtime_snapshot"]["snapshot_id"] == snapshot["snapshot_id"]
     sent = []
     def opener(outgoing, timeout):
-        sent.append((outgoing, timeout)); return _Response()
+        sent.append((outgoing, timeout)); return _Response(body=_accepted(snapshot["snapshot_id"]))
     assert publish_once(_publisher_settings(tmp_path), opener=opener) is True
     assert sent and sent[0][0].get_method() == "POST"
     assert "publisher-secret" not in sent[0][0].data.decode("utf-8")
@@ -187,6 +191,129 @@ def test_publisher_network_failure_retries_without_logging_secret(tmp_path, capl
     assert publish_with_retry(_publisher_settings(tmp_path), opener=opener, sleep=lambda _: None) is False
     assert len(calls) == 2
     assert "publisher-secret" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("status", "failure_class"),
+    [
+        (400, "CLIENT_HTTP_ERROR"),
+        (401, "AUTH_CONFIG_ERROR"),
+        (403, "AUTH_CONFIG_ERROR"),
+        (404, "PERMANENT_ROUTE_ERROR"),
+        (405, "METHOD_PATH_MISMATCH"),
+        (422, "PAYLOAD_SCHEMA_ERROR"),
+    ],
+)
+def test_publisher_does_not_retry_permanent_http_failures(
+    tmp_path, caplog, status, failure_class,
+):
+    snapshot = _bundle()["runtime_snapshot"]
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    calls, sleeps = [], []
+    def opener(*_args, **_kwargs):
+        calls.append(True)
+        raise error.HTTPError(
+            "https://example.invalid", status, "rejected", {},
+            BytesIO(b'{"detail":"rejected"}'),
+        )
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=opener, sleep=sleeps.append,
+    ) is False
+    assert len(calls) == 1 and sleeps == []
+    assert f"failure_class={failure_class}" in caplog.text
+    assert "retryable=false" in caplog.text
+    assert "event=retry" not in caplog.text
+
+
+@pytest.mark.parametrize("status", [429, 500, 502, 503])
+def test_publisher_retries_retryable_http_failures(tmp_path, caplog, status):
+    snapshot = _bundle()["runtime_snapshot"]
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    calls, sleeps = [], []
+    def opener(*_args, **_kwargs):
+        calls.append(True)
+        raise error.HTTPError(
+            "https://example.invalid", status, "temporary", {},
+            BytesIO(b'{"detail":"temporary"}'),
+        )
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=opener, sleep=sleeps.append,
+    ) is False
+    assert len(calls) == 2 and sleeps == [1]
+    assert "retryable=true" in caplog.text
+    assert "event=retry" in caplog.text
+
+
+@pytest.mark.parametrize("exception", [TimeoutError("timeout"), ConnectionError("offline")])
+def test_publisher_retries_timeout_and_connection_errors(tmp_path, exception):
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", _bundle()["runtime_snapshot"])
+    calls, sleeps = [], []
+    def opener(*_args, **_kwargs):
+        calls.append(True)
+        raise exception
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=opener, sleep=sleeps.append,
+    ) is False
+    assert len(calls) == 2 and sleeps == [1]
+
+
+def test_publisher_rejects_invalid_success_body_without_retry(tmp_path, caplog):
+    snapshot = _bundle()["runtime_snapshot"]
+    write_runtime_snapshot(tmp_path / "runtime_snapshot.json", snapshot)
+    caplog.set_level(logging.INFO, logger="runtime_publisher")
+    calls, sleeps = [], []
+    def opener(*_args, **_kwargs):
+        calls.append(True)
+        return _Response(200, b'{"status":"ok"}')
+    assert publish_with_retry(
+        _publisher_settings(tmp_path), opener=opener, sleep=sleeps.append,
+    ) is False
+    assert len(calls) == 1 and sleeps == []
+    assert "failure_class=INVALID_SUCCESS_RESPONSE" in caplog.text
+
+
+def test_publisher_route_contract_matches_backend_and_documented_url(tmp_path):
+    example = Path(__file__).resolve().parents[1] / ".env.example"
+    documented_url = next(
+        line.split("=", 1)[1].strip()
+        for line in example.read_text(encoding="utf-8").splitlines()
+        if line.startswith("RUNTIME_INGEST_URL=")
+    )
+    settings = RuntimePublisherSettings.from_env(
+        {
+            "RUNTIME_INGEST_URL": documented_url,
+            "RUNTIME_INGEST_SECRET": "test-secret",
+        },
+        base_dir=tmp_path,
+    )
+    paths = {
+        route.path for route in _app_client(tmp_path).app.routes
+        if "POST" in getattr(route, "methods", set())
+    }
+    assert "/api/runtime/ingest" in paths
+    assert settings.url.endswith("/api/runtime/ingest")
+
+
+def test_remote_failure_does_not_mutate_local_runtime_or_trading_state(tmp_path):
+    snapshot = _bundle()["runtime_snapshot"]
+    runtime_path = tmp_path / "runtime_snapshot.json"
+    trading_path = tmp_path / "trades.csv"
+    research_path = tmp_path / "research_lab_v2_status.json"
+    write_runtime_snapshot(runtime_path, snapshot)
+    trading_path.write_text("symbol,status\nBTC/USDT,OPEN\n", encoding="utf-8")
+    research_path.write_text('{"database_status":"OK"}', encoding="utf-8")
+    before = {p: p.read_bytes() for p in (runtime_path, trading_path, research_path)}
+    def route_missing(*_args, **_kwargs):
+        raise error.HTTPError(
+            "https://example.invalid", 404, "missing", {},
+            BytesIO(b'{"message":"Application not found"}'),
+        )
+    # Two normal publisher cycles both survive; each performs one bounded attempt.
+    assert publish_with_retry(_publisher_settings(tmp_path), opener=route_missing, sleep=lambda _: None) is False
+    assert publish_with_retry(_publisher_settings(tmp_path), opener=route_missing, sleep=lambda _: None) is False
+    assert {p: p.read_bytes() for p in before} == before
 
 
 def test_publisher_invalid_canonical_snapshot_makes_no_http_attempt_or_retry(tmp_path, caplog):

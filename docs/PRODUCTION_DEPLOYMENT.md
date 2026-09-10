@@ -48,6 +48,13 @@ snapshot and generated scenario/evaluation summaries. A network failure retries
 with bounded backoff and never blocks, imports, starts, or changes the trading
 agent.
 
+Retries are limited to transport failures, HTTP 429 and HTTP 5xx. Contract and
+configuration responses (400/401/403/404/405/422) are logged as explicit
+non-retryable failures and wait for the next normal publisher interval. In
+particular, a Railway `404 Application not found` indicates that the custom
+domain is not routed to an application; changing the ingest path or payload is
+not a valid repair for that condition.
+
 Railway accepts `POST /api/runtime/ingest` only with
 `Authorization: Bearer <RUNTIME_INGEST_SECRET>` (or the dedicated
 `X-Runtime-Ingest-Token` header). It validates the v1 schema, timestamps,

@@ -27,10 +27,24 @@ MAX_ERROR_RESPONSE_CHARS = 300
 MAX_ERROR_RESPONSE_BYTES = 8_192
 _SAFE_ERROR_FIELDS = ("error", "detail", "code", "reason")
 _PUBLISH_SUCCESS = "SUCCESS"
-_PUBLISH_NETWORK_FAILURE = "NETWORK_FAILURE"
+_PUBLISH_RETRYABLE_NETWORK_ERROR = "RETRYABLE_NETWORK_ERROR"
+_PUBLISH_RETRYABLE_RATE_LIMIT = "RETRYABLE_RATE_LIMIT"
+_PUBLISH_RETRYABLE_SERVER_ERROR = "RETRYABLE_SERVER_ERROR"
+_PUBLISH_AUTH_CONFIG_ERROR = "AUTH_CONFIG_ERROR"
+_PUBLISH_PERMANENT_ROUTE_ERROR = "PERMANENT_ROUTE_ERROR"
+_PUBLISH_METHOD_PATH_MISMATCH = "METHOD_PATH_MISMATCH"
+_PUBLISH_PAYLOAD_SCHEMA_ERROR = "PAYLOAD_SCHEMA_ERROR"
+_PUBLISH_CLIENT_HTTP_ERROR = "CLIENT_HTTP_ERROR"
+_PUBLISH_NON_RETRYABLE_HTTP_ERROR = "NON_RETRYABLE_HTTP_ERROR"
+_PUBLISH_INVALID_SUCCESS_RESPONSE = "INVALID_SUCCESS_RESPONSE"
 _PUBLISH_SNAPSHOT_UNAVAILABLE = "SNAPSHOT_UNAVAILABLE"
 _PUBLISH_SNAPSHOT_INVALID = "SNAPSHOT_INVALID"
 _PUBLISH_INVALID_BUNDLE = "INVALID_RUNTIME_BUNDLE"
+_RETRYABLE_RESULTS = frozenset({
+    _PUBLISH_RETRYABLE_NETWORK_ERROR,
+    _PUBLISH_RETRYABLE_RATE_LIMIT,
+    _PUBLISH_RETRYABLE_SERVER_ERROR,
+})
 
 
 @dataclass(frozen=True)
@@ -185,6 +199,39 @@ def _ingest_error_diagnostics(response: Any, *, secret: str, payload_text: str) 
     return {"response_body": "json_without_safe_error_fields"}
 
 
+def _http_failure_result(status: int) -> str:
+    """Classify HTTP failures according to the runtime-ingest contract."""
+    if status == 429:
+        return _PUBLISH_RETRYABLE_RATE_LIMIT
+    if 500 <= status <= 599:
+        return _PUBLISH_RETRYABLE_SERVER_ERROR
+    if status in {401, 403}:
+        return _PUBLISH_AUTH_CONFIG_ERROR
+    if status == 404:
+        return _PUBLISH_PERMANENT_ROUTE_ERROR
+    if status == 405:
+        return _PUBLISH_METHOD_PATH_MISMATCH
+    if status == 422:
+        return _PUBLISH_PAYLOAD_SCHEMA_ERROR
+    if 400 <= status <= 499:
+        return _PUBLISH_CLIENT_HTTP_ERROR
+    return _PUBLISH_NON_RETRYABLE_HTTP_ERROR
+
+
+def _valid_success_response(response: Any, *, snapshot_id: str) -> bool:
+    """Require the documented server acknowledgement, without logging its body."""
+    try:
+        raw = response.read(MAX_ERROR_RESPONSE_BYTES)
+        body = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError, json.JSONDecodeError):
+        return False
+    return (
+        isinstance(body, Mapping)
+        and body.get("status") == "accepted"
+        and body.get("snapshot_id") == snapshot_id
+    )
+
+
 def _publish_once_result(
     settings: RuntimePublisherSettings,
     *,
@@ -214,6 +261,7 @@ def _publish_once_result(
     )
     started = time.monotonic()
     diagnostics: dict[str, str] = {}
+    success_response_valid = False
     try:
         with opener(outgoing, timeout=settings.timeout_seconds) as response:
             status = int(getattr(response, "status", response.getcode()))
@@ -221,20 +269,45 @@ def _publish_once_result(
                 diagnostics = _ingest_error_diagnostics(
                     response, secret=settings.secret, payload_text=payload_text,
                 )
+            elif 200 <= status < 300:
+                success_response_valid = _valid_success_response(
+                    response, snapshot_id=snapshot_id,
+                )
     except error.HTTPError as exc:
         status = int(exc.code)
         diagnostics = _ingest_error_diagnostics(
             exc, secret=settings.secret, payload_text=payload_text,
         )
     except (OSError, ValueError) as exc:
-        _log("failed", snapshot_id=snapshot_id, error_type=type(exc).__name__, latency_ms=int((time.monotonic() - started) * 1000))
-        return _PUBLISH_NETWORK_FAILURE
+        _log(
+            "failed", snapshot_id=snapshot_id,
+            failure_class=_PUBLISH_RETRYABLE_NETWORK_ERROR, retryable="true",
+            error_type=type(exc).__name__,
+            latency_ms=int((time.monotonic() - started) * 1000),
+        )
+        return _PUBLISH_RETRYABLE_NETWORK_ERROR
     latency_ms = int((time.monotonic() - started) * 1000)
-    if 200 <= status < 300 or status == 409:
+    if status == 409:
         _log("success", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms)
         return _PUBLISH_SUCCESS
-    _log("failed", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms, **diagnostics)
-    return _PUBLISH_NETWORK_FAILURE
+    if 200 <= status < 300:
+        if success_response_valid:
+            _log("success", snapshot_id=snapshot_id, http_status=status, latency_ms=latency_ms)
+            return _PUBLISH_SUCCESS
+        _log(
+            "failed", snapshot_id=snapshot_id, http_status=status,
+            failure_class=_PUBLISH_INVALID_SUCCESS_RESPONSE, retryable="false",
+            latency_ms=latency_ms,
+        )
+        return _PUBLISH_INVALID_SUCCESS_RESPONSE
+    result = _http_failure_result(status)
+    _log(
+        "failed", snapshot_id=snapshot_id, http_status=status,
+        failure_class=result,
+        retryable="true" if result in _RETRYABLE_RESULTS else "false",
+        latency_ms=latency_ms, **diagnostics,
+    )
+    return result
 
 
 def publish_once(
@@ -258,7 +331,7 @@ def publish_with_retry(
             return True
         # Invalid/unavailable observer inputs are not transport faults.  Wait
         # for a later publisher cycle instead of spamming a fixed bad file.
-        if result != _PUBLISH_NETWORK_FAILURE:
+        if result not in _RETRYABLE_RESULTS:
             return False
         if attempt < settings.max_retries:
             delay = min(60, 2 ** attempt)
