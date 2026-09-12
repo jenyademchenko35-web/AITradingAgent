@@ -1,8 +1,9 @@
-"""SQLite persistence for reproducible, shadow-only strategy research."""
+"""SQLite persistence for reproducible shadow and attributed LIVE research."""
 
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import sqlite3
 from contextlib import contextmanager
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS strategy_runs (
     shadow_mode_started_at TEXT,
     feature_snapshot_id TEXT, signal_id TEXT, decision_id TEXT,
     strategy_version TEXT, attribution_version TEXT, data_quality TEXT,
+    live_trade_id TEXT, source_type TEXT, source_run_uid TEXT UNIQUE,
     UNIQUE(cycle_id, strategy_id, symbol, timeframe)
 );
 CREATE TABLE IF NOT EXISTS strategy_metrics (
@@ -87,6 +89,28 @@ CREATE TABLE IF NOT EXISTS shadow_trade_outcomes (
     outcome_id TEXT, feature_snapshot_id TEXT, signal_id TEXT, decision_id TEXT,
     strategy_version TEXT, attribution_version TEXT, data_quality TEXT,
     source TEXT NOT NULL, original_shadow_trade_id TEXT,
+    created_at TEXT NOT NULL, persisted_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS live_trade_outcomes (
+    live_trade_id TEXT PRIMARY KEY,
+    outcome_id TEXT NOT NULL UNIQUE,
+    source_run_id TEXT NOT NULL UNIQUE REFERENCES strategy_runs(source_run_uid),
+    source_type TEXT NOT NULL CHECK(source_type='LIVE'),
+    strategy_id TEXT NOT NULL REFERENCES strategies(id),
+    strategy_version TEXT NOT NULL,
+    research_attribution_version TEXT NOT NULL,
+    symbol TEXT NOT NULL, timeframe TEXT NOT NULL, direction TEXT NOT NULL,
+    opened_at TEXT NOT NULL, closed_at TEXT NOT NULL,
+    entry_price REAL NOT NULL, stop_loss REAL NOT NULL,
+    take_profit REAL NOT NULL, exit_price REAL NOT NULL,
+    pnl_r REAL NOT NULL, close_reason TEXT NOT NULL,
+    research_signal_fingerprint TEXT NOT NULL,
+    feature_snapshot_json TEXT NOT NULL,
+    feature_snapshot_id TEXT NOT NULL, signal_id TEXT NOT NULL,
+    decision_id TEXT NOT NULL,
+    trade_metadata_quality TEXT NOT NULL,
+    research_join_quality TEXT NOT NULL,
+    data_quality TEXT NOT NULL, join_status TEXT NOT NULL,
     created_at TEXT NOT NULL, persisted_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_runs_strategy_time ON strategy_runs(strategy_id, timestamp);
@@ -161,6 +185,9 @@ class ResearchDatabase:
             "strategy_version": "TEXT",
             "attribution_version": "TEXT",
             "data_quality": "TEXT",
+            "live_trade_id": "TEXT",
+            "source_type": "TEXT",
+            "source_run_uid": "TEXT",
         }
         for name, definition in additions.items():
             if name not in columns:
@@ -170,6 +197,20 @@ class ResearchDatabase:
         connection.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS uq_strategy_runs_cycle_scope
             ON strategy_runs(cycle_id, strategy_id, symbol, timeframe)
+        """)
+        connection.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_strategy_runs_live_trade
+            ON strategy_runs(live_trade_id) WHERE live_trade_id IS NOT NULL
+        """)
+        connection.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_strategy_runs_source_run_uid
+            ON strategy_runs(source_run_uid) WHERE source_run_uid IS NOT NULL
+        """)
+        # SQLite foreign-key parent keys require a full UNIQUE index. NULL is
+        # still allowed repeatedly, preserving every historical shadow row.
+        connection.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_strategy_runs_source_run_uid_full
+            ON strategy_runs(source_run_uid)
         """)
         outcome_columns = {
             row[1] for row in connection.execute("PRAGMA table_info(shadow_trade_outcomes)")
@@ -234,8 +275,10 @@ class ResearchDatabase:
                    signal_id: str | None = None,
                    decision_id: str | None = None,
                    strategy_version: str | None = None,
-                   attribution_version: str | None = None,
-                   data_quality: str | None = None) -> None:
+                  attribution_version: str | None = None,
+                   data_quality: str | None = None,
+                   live_trade_id: str | None = None,
+                   source_type: str | None = None) -> None:
         with self.connect() as db:
             db.execute("""
                 INSERT INTO strategy_runs
@@ -245,8 +288,9 @@ class ResearchDatabase:
                  signal_fingerprint, previous_fingerprint, is_new_signal, blocked_reason,
                  signal_audit_version, strategy_mode, actual_shadow_opened,
                  shadow_mode_started_at, feature_snapshot_id, signal_id, decision_id,
-                 strategy_version, attribution_version, data_quality)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 strategy_version, attribution_version, data_quality,
+                 live_trade_id, source_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(cycle_id, strategy_id, symbol, timeframe) DO NOTHING
             """, (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
                   json.dumps(dict(features), ensure_ascii=False, sort_keys=True, default=str),
@@ -256,7 +300,255 @@ class ResearchDatabase:
                   blocked_reason, signal_audit_version, strategy_mode,
                   int(actual_shadow_opened), shadow_mode_started_at,
                   feature_snapshot_id, signal_id, decision_id, strategy_version,
-                  attribution_version, data_quality))
+                  attribution_version, data_quality, live_trade_id, source_type))
+
+    def record_live_run(self, *, source_run_id: str, live_trade_id: str,
+                        cycle_id: str, timestamp: str,
+                        symbol: str, timeframe: str, decision: str,
+                        features: Mapping[str, Any], feature_snapshot_id: str,
+                        signal_id: str, decision_id: str, strategy_version: str,
+                        research_signal_fingerprint: str,
+                        attribution_version: str) -> dict[str, str]:
+        """Persist and return the sole exact Research run for a LIVE trade."""
+        required = {
+            "source_run_id": source_run_id, "live_trade_id": live_trade_id,
+            "cycle_id": cycle_id,
+            "timestamp": timestamp, "symbol": symbol,
+            "feature_snapshot_id": feature_snapshot_id, "signal_id": signal_id,
+            "decision_id": decision_id, "strategy_version": strategy_version,
+            "research_signal_fingerprint": research_signal_fingerprint,
+            "attribution_version": attribution_version,
+        }
+        missing = sorted(key for key, value in required.items() if not str(value or "").strip())
+        if missing or not live_trade_id.startswith("LIVE-"):
+            raise ValueError(f"invalid LIVE attribution: missing={','.join(missing) or '-'}")
+        feature_json = json.dumps(dict(features), ensure_ascii=False, sort_keys=True, default=str)
+        with self.connect() as db:
+            existing = db.execute(
+                "SELECT * FROM strategy_runs WHERE source_run_uid=? OR live_trade_id=?",
+                (source_run_id, live_trade_id),
+            ).fetchall()
+            if len(existing) > 1:
+                raise ValueError("LIVE attribution is not one-to-one")
+            if existing:
+                row = existing[0]
+                expected = {
+                    "cycle_id": cycle_id, "timestamp": timestamp,
+                    "strategy_id": "LIVE_BASELINE", "symbol": symbol,
+                    "timeframe": timeframe, "feature_snapshot_id": feature_snapshot_id,
+                    "signal_id": signal_id, "decision_id": decision_id,
+                    "strategy_version": strategy_version,
+                    "signal_fingerprint": research_signal_fingerprint,
+                    "attribution_version": attribution_version, "source_type": "LIVE",
+                    "source_run_uid": source_run_id,
+                    "feature_snapshot_json": feature_json,
+                }
+                if any(str(row[key] or "") != str(value) for key, value in expected.items()):
+                    raise ValueError("conflicting LIVE attribution retry")
+                return {"status": "existing", "source_run_id": source_run_id}
+            db.execute("""
+                INSERT INTO strategy_runs
+                (cycle_id, strategy_id, timestamp, symbol, timeframe, decision,
+                 status, feature_snapshot_json, would_open_trade,
+                 condition_active, entry_triggered, signal_fingerprint,
+                 is_new_signal, strategy_mode, actual_shadow_opened,
+                 feature_snapshot_id, signal_id, decision_id, strategy_version,
+                 attribution_version, data_quality, live_trade_id, source_type,
+                 source_run_uid)
+                VALUES (?, 'LIVE_BASELINE', ?, ?, ?, ?, 'LIVE_DECISION_CAPTURED',
+                        ?, 1, 1, 1, ?, 1, 'LIVE', 0, ?, ?, ?, ?, ?,
+                        'ATTRIBUTION_COMPLETE', ?, 'LIVE', ?)
+            """, (
+                cycle_id, timestamp, symbol, timeframe, decision, feature_json,
+                research_signal_fingerprint, feature_snapshot_id, signal_id,
+                decision_id, strategy_version, attribution_version, live_trade_id,
+                source_run_id,
+            ))
+            rows = db.execute(
+                "SELECT source_run_uid FROM strategy_runs WHERE live_trade_id=?",
+                (live_trade_id,),
+            ).fetchall()
+            if len(rows) != 1:
+                raise ValueError("LIVE attribution did not resolve to exactly one run")
+            if str(rows[0]["source_run_uid"]) != source_run_id:
+                raise ValueError("LIVE attribution source run identity changed")
+            return {"status": "inserted", "source_run_id": source_run_id}
+
+    def persist_live_outcome(self, outcome: Mapping[str, Any], *,
+                             persisted_at: str | None = None) -> dict[str, Any]:
+        """Persist one exact LIVE outcome; retries are idempotent by trade ID."""
+        required = (
+            "live_trade_id", "source_run_id", "strategy_id", "strategy_version",
+            "research_attribution_version", "symbol", "timeframe", "direction",
+            "opened_at", "closed_at", "entry_price", "stop_loss", "take_profit",
+            "exit_price", "pnl_r", "close_reason", "research_signal_fingerprint",
+            "feature_snapshot", "feature_snapshot_id", "signal_id", "decision_id",
+        )
+        missing = [name for name in required if outcome.get(name) in (None, "")]
+        if missing:
+            raise ValueError(f"missing LIVE outcome fields: {','.join(missing)}")
+        live_trade_id = str(outcome["live_trade_id"])
+        if not live_trade_id.startswith("LIVE-"):
+            raise ValueError("LIVE outcome cannot use a shadow trade ID")
+        source_run_id = str(outcome["source_run_id"])
+        numeric = {
+            name: self._number_or_none(outcome[name])
+            for name in ("entry_price", "stop_loss", "take_profit", "exit_price", "pnl_r")
+        }
+        if any(value is None for value in numeric.values()):
+            raise ValueError("LIVE outcome contains a non-finite numeric field")
+        opened = datetime.fromisoformat(str(outcome["opened_at"]).replace("Z", "+00:00"))
+        closed = datetime.fromisoformat(str(outcome["closed_at"]).replace("Z", "+00:00"))
+        if opened.tzinfo is None:
+            opened = opened.replace(tzinfo=timezone.utc)
+        if closed.tzinfo is None:
+            closed = closed.replace(tzinfo=timezone.utc)
+        if closed <= opened:
+            raise ValueError("LIVE outcome timestamps are not ordered")
+        feature_snapshot = dict(outcome["feature_snapshot"])
+        snapshot_json = json.dumps(
+            feature_snapshot, ensure_ascii=False,
+            sort_keys=True, default=str,
+        )
+        from .attribution import feature_snapshot_id as calculate_feature_snapshot_id
+        calculated_feature_id = calculate_feature_snapshot_id(outcome["feature_snapshot"])
+        if calculated_feature_id != str(outcome["feature_snapshot_id"]):
+            raise ValueError("LIVE outcome feature snapshot identity is invalid")
+        semantic_identity = {
+            "symbol": outcome["symbol"],
+            "timeframe": outcome["timeframe"],
+            "direction": str(outcome["direction"]).upper(),
+        }
+        snapshot_identity = {
+            "symbol": feature_snapshot.get("symbol"),
+            "timeframe": feature_snapshot.get("timeframe"),
+            "direction": str(feature_snapshot.get("direction") or "").upper(),
+        }
+        if any(str(snapshot_identity[key]) != str(value)
+               for key, value in semantic_identity.items()):
+            raise ValueError("LIVE outcome identity differs from its feature snapshot")
+        outcome_id = "live-out-" + hashlib.sha256(
+            f"{live_trade_id}|{outcome['research_attribution_version']}".encode("utf-8")
+        ).hexdigest()[:24]
+        now = persisted_at or _utc()
+        with self.connect() as db:
+            existing = db.execute(
+                "SELECT * FROM live_trade_outcomes WHERE live_trade_id=?", (live_trade_id,),
+            ).fetchone()
+            if existing:
+                expected_existing = {
+                    "outcome_id": outcome_id,
+                    "source_run_id": source_run_id,
+                    "source_type": "LIVE",
+                    "strategy_id": outcome["strategy_id"],
+                    "strategy_version": outcome["strategy_version"],
+                    "research_attribution_version": outcome["research_attribution_version"],
+                    "symbol": outcome["symbol"],
+                    "timeframe": outcome["timeframe"],
+                    "direction": outcome["direction"],
+                    "opened_at": outcome["opened_at"],
+                    "closed_at": outcome["closed_at"],
+                    "entry_price": numeric["entry_price"],
+                    "stop_loss": numeric["stop_loss"],
+                    "take_profit": numeric["take_profit"],
+                    "exit_price": numeric["exit_price"],
+                    "pnl_r": numeric["pnl_r"],
+                    "close_reason": outcome["close_reason"],
+                    "research_signal_fingerprint": outcome["research_signal_fingerprint"],
+                    "feature_snapshot_json": snapshot_json,
+                    "feature_snapshot_id": outcome["feature_snapshot_id"],
+                    "signal_id": outcome["signal_id"],
+                    "decision_id": outcome["decision_id"],
+                }
+                if any(str(existing[key]) != str(value)
+                       for key, value in expected_existing.items()):
+                    raise ValueError("conflicting LIVE outcome retry")
+                return {"status": "existing", "live_trade_id": live_trade_id,
+                        "outcome_id": outcome_id, "join_status": existing["join_status"]}
+            run = db.execute(
+                "SELECT * FROM strategy_runs WHERE source_run_uid=? AND live_trade_id=? "
+                "AND source_type='LIVE'", (source_run_id, live_trade_id),
+            ).fetchall()
+            if len(run) != 1:
+                raise ValueError("LIVE outcome source run is missing or ambiguous")
+            row = run[0]
+            run_timestamp = datetime.fromisoformat(
+                str(row["timestamp"]).replace("Z", "+00:00")
+            )
+            if run_timestamp.tzinfo is None:
+                run_timestamp = run_timestamp.replace(tzinfo=timezone.utc)
+            if run_timestamp > opened:
+                raise ValueError("LIVE decision timestamp is after trade open")
+            exact = {
+                "strategy_id": outcome["strategy_id"],
+                "symbol": outcome["symbol"], "timeframe": outcome["timeframe"],
+                "strategy_version": outcome["strategy_version"],
+                "feature_snapshot_id": outcome["feature_snapshot_id"],
+                "signal_id": outcome["signal_id"],
+                "decision_id": outcome["decision_id"],
+                "signal_fingerprint": outcome["research_signal_fingerprint"],
+                "attribution_version": outcome["research_attribution_version"],
+                "feature_snapshot_json": snapshot_json,
+            }
+            if any(str(row[key] or "") != str(value) for key, value in exact.items()):
+                raise ValueError("LIVE outcome attribution does not match its source run")
+            db.execute("""
+                INSERT INTO live_trade_outcomes
+                (live_trade_id, outcome_id, source_run_id, source_type,
+                 strategy_id, strategy_version, research_attribution_version,
+                 symbol, timeframe, direction, opened_at, closed_at,
+                 entry_price, stop_loss, take_profit, exit_price, pnl_r,
+                 close_reason, research_signal_fingerprint, feature_snapshot_json,
+                 feature_snapshot_id, signal_id, decision_id,
+                 trade_metadata_quality, research_join_quality, data_quality,
+                 join_status, created_at, persisted_at)
+                VALUES (?, ?, ?, 'LIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, 'JOIN_COMPLETE', 'OUTCOME_COMPLETE',
+                        'JOIN_COMPLETE', ?, ?)
+            """, (
+                live_trade_id, outcome_id, source_run_id,
+                outcome["strategy_id"], outcome["strategy_version"],
+                outcome["research_attribution_version"], outcome["symbol"],
+                outcome["timeframe"], outcome["direction"],
+                outcome["opened_at"], outcome["closed_at"],
+                numeric["entry_price"], numeric["stop_loss"],
+                numeric["take_profit"], numeric["exit_price"], numeric["pnl_r"],
+                outcome["close_reason"], outcome["research_signal_fingerprint"],
+                snapshot_json, outcome["feature_snapshot_id"], outcome["signal_id"],
+                outcome["decision_id"], outcome.get("trade_metadata_quality", "COMPLETE"),
+                outcome["opened_at"], now,
+            ))
+        return {"status": "inserted", "live_trade_id": live_trade_id,
+                "outcome_id": outcome_id, "join_status": "JOIN_COMPLETE",
+                "data_quality": "OUTCOME_COMPLETE"}
+
+    def live_join_coverage(self) -> dict[str, int]:
+        """Return exact LIVE join counts without mixing shadow metrics."""
+        with self.connect() as db:
+            row = db.execute("""
+                SELECT COUNT(*) AS outcomes,
+                       SUM(CASE WHEN join_status='JOIN_COMPLETE' THEN 1 ELSE 0 END) AS joined,
+                       COUNT(DISTINCT live_trade_id) AS trades,
+                       COUNT(DISTINCT source_run_id) AS runs
+                FROM live_trade_outcomes
+            """).fetchone()
+        return {key: int(row[key] or 0) for key in ("outcomes", "joined", "trades", "runs")}
+
+    def live_materialized_trade_ids(self) -> dict[str, set[str]]:
+        """Fetch reconciliation watermarks in one read transaction."""
+        with self.connect() as db:
+            source_runs = {
+                str(row[0]) for row in db.execute(
+                    "SELECT live_trade_id FROM strategy_runs "
+                    "WHERE source_type='LIVE' AND live_trade_id IS NOT NULL"
+                )
+            }
+            outcomes = {
+                str(row[0]) for row in db.execute(
+                    "SELECT live_trade_id FROM live_trade_outcomes"
+                )
+            }
+        return {"source_runs": source_runs, "outcomes": outcomes}
 
     def load_signal_states(self) -> dict[tuple[str, str, str], dict[str, Any]]:
         with self.connect() as db:

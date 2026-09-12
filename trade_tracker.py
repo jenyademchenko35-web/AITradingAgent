@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import stat
 import uuid
 from pathlib import Path
 from datetime import datetime
@@ -27,6 +28,41 @@ FIELDS = [
     "research_data_quality",
 ]
 LOGGER = logging.getLogger(__name__)
+LIVE_ATTRIBUTION_VERSION = "live_attribution_bridge_v1"
+LIVE_ATTRIBUTION_TRADE_PREFIX = "LIVE-RAV1-"
+REQUIRED_ATTRIBUTION_FIELDS = (
+    "research_attribution_version", "source_run_id", "signal_id",
+    "decision_id", "strategy_id", "strategy_version", "feature_snapshot_id",
+    "research_signal_fingerprint", "live_trade_id", "feature_snapshot",
+    "trade_metadata_quality", "research_join_quality", "decision_timestamp",
+)
+
+
+def _atomic_write_trades(rows):
+    """Publish a complete canonical ledger without an in-place truncation window."""
+    previous_mode = None
+    if TRADES_FILE.exists():
+        previous_mode = stat.S_IMODE(TRADES_FILE.stat().st_mode)
+    temporary = TRADES_FILE.with_name(
+        f".{TRADES_FILE.name}.{uuid.uuid4().hex}.tmp"
+    )
+    try:
+        with temporary.open("x", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+            if previous_mode is not None:
+                os.fchmod(handle.fileno(), previous_mode)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, TRADES_FILE)
+        directory_fd = os.open(TRADES_FILE.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _legacy_trade_id(trade):
@@ -55,9 +91,19 @@ def _ensure_trade_identity(trade):
 
 def _metadata_json(metadata):
     """Serialize an immutable open-time research context without failing trades."""
+    values = dict(metadata or {})
+    attribution_required = bool(values.get("research_attribution_version"))
+    if attribution_required:
+        missing = [field for field in REQUIRED_ATTRIBUTION_FIELDS if not values.get(field)]
+        if missing:
+            raise ValueError(
+                "incomplete LIVE Research attribution: " + ",".join(missing)
+            )
     try:
-        return json.dumps(dict(metadata or {}), ensure_ascii=False, sort_keys=True, default=str)
-    except (TypeError, ValueError):
+        return json.dumps(values, ensure_ascii=False, sort_keys=True, default=str)
+    except (TypeError, ValueError) as exc:
+        if attribution_required:
+            raise ValueError("LIVE Research attribution is not serializable") from exc
         return "{}"
 
 
@@ -98,9 +144,7 @@ def _research_diagnostics(trade, *, snapshot=False, assessment=None):
 
 def ensure_file():
     if not TRADES_FILE.exists():
-        with TRADES_FILE.open("w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=FIELDS)
-            writer.writeheader()
+        _atomic_write_trades([])
         return
     # Existing production CSVs predate the research columns.  Upgrade only the
     # header/empty columns before appending so a new metadata-rich row can never
@@ -111,16 +155,29 @@ def ensure_file():
         if all(field in existing_fields for field in FIELDS):
             return
         rows = [dict(row) for row in reader]
-    temporary = TRADES_FILE.with_suffix(TRADES_FILE.suffix + ".tmp")
-    with temporary.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDS)
-        writer.writeheader()
-        writer.writerows(rows)
-    temporary.replace(TRADES_FILE)
+    _atomic_write_trades(rows)
 
-def open_trade(symbol, direction, entry, stop_loss, take_profit, *, research_metadata=None):
+def open_trade(symbol, direction, entry, stop_loss, take_profit, *,
+               research_metadata=None, trade_id=None):
     ensure_file()
     now = datetime.utcnow().isoformat()
+    trade_id = str(trade_id or f"LIVE-{uuid.uuid4().hex}")
+    if not trade_id.startswith("LIVE-"):
+        raise ValueError("new canonical trade must use LIVE identity")
+    metadata = dict(research_metadata or {})
+    attribution_version = metadata.get("research_attribution_version")
+    versioned_trade = trade_id.startswith(LIVE_ATTRIBUTION_TRADE_PREFIX)
+    if bool(versioned_trade) != (attribution_version == LIVE_ATTRIBUTION_VERSION):
+        raise ValueError("LIVE Research attribution version and trade identity disagree")
+    if attribution_version:
+        if attribution_version != LIVE_ATTRIBUTION_VERSION:
+            raise ValueError("unsupported LIVE Research attribution version")
+        if str(metadata.get("live_trade_id") or "") != trade_id:
+            raise ValueError("canonical trade_id differs from LIVE Research attribution")
+    serialized_metadata = _metadata_json(metadata)
+    with TRADES_FILE.open("r", newline="") as f:
+        if any(str(row.get("trade_id")) == trade_id for row in csv.DictReader(f)):
+            raise ValueError(f"duplicate canonical trade identity: {trade_id}")
     trade = {
         "symbol": symbol,
         "direction": direction,
@@ -133,18 +190,16 @@ def open_trade(symbol, direction, entry, stop_loss, take_profit, *, research_met
         "closed_at": "",
         "exit_price": "",
         "pnl": "",
-        "trade_id": f"LIVE-{uuid.uuid4().hex}",
+        "trade_id": trade_id,
         "trade_id_provenance": "LIVE_PERSISTED",
-        "research_metadata_json": _metadata_json(research_metadata),
+        "research_metadata_json": serialized_metadata,
         "research_data_quality": "",
     }
     assessment = _assess_trade_safely(trade)
     trade["research_data_quality"] = assessment["data_quality"]
-    with TRADES_FILE.open("a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDS)
-        writer.writerow(trade)
-        f.flush()
-        os.fsync(f.fileno())
+    with TRADES_FILE.open("r", newline="") as f:
+        rows = [dict(row) for row in csv.DictReader(f)]
+    _atomic_write_trades([*rows, trade])
     _research_diagnostics(trade, snapshot=True, assessment=assessment)
     return trade
 
@@ -183,9 +238,12 @@ def close_trade(symbol, result, exit_price=None, pnl=None):
                 row["research_data_quality"] = assessment["data_quality"]
                 _research_diagnostics(row, assessment=assessment)
             trades.append(row)
-    with TRADES_FILE.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDS)
-        writer.writeheader()
-        writer.writerows(trades)
+    _atomic_write_trades(trades)
+
+    closed = [
+        row for row in trades
+        if row["symbol"] == symbol and row["closed_at"] == now
+    ]
 
     print(f"Trade closed: {symbol} -> {result}")
+    return closed

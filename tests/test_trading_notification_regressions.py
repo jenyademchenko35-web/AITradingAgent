@@ -28,7 +28,8 @@ class TradingNotificationRegressionTest(TestCase):
         )
 
     def _exercise(self, *, existing=(), higher_tf_bull=True,
-                  portfolio_status="ALLOW", open_error=None, outbox_error=None):
+                  portfolio_status="ALLOW", open_error=None, outbox_error=None,
+                  feature_available=True):
         market = agent.MarketSnapshot(
             symbol="BTC/USDT",
             tf1h=self._tf(),
@@ -75,6 +76,18 @@ class TradingNotificationRegressionTest(TestCase):
             return {"notification_id": "trade-open-test"}
 
         outbox_mock.enqueue_from_trade.side_effect = enqueue_side_effect
+        attribution = {
+            "live_trade_id": "LIVE-test",
+            "source_run_id": 101,
+            "signal_id": "sig-test",
+            "decision_id": "dec-test",
+            "strategy_id": "LIVE_BASELINE",
+            "strategy_version": "1.0.0",
+            "feature_snapshot_id": "fs-test",
+            "research_signal_fingerprint": "rsig-test",
+            "research_attribution_version": "live_attribution_bridge_v1",
+            "research_join_quality": "ATTRIBUTION_COMPLETE",
+        }
 
         async def send_side_effect(_notification_id):
             call_order.append("send")
@@ -90,7 +103,18 @@ class TradingNotificationRegressionTest(TestCase):
                 return_value=(decision, engine, engine, engine, engine, {}),
             ))
             stack.enter_context(patch.object(agent, "_research_lab_is_enabled", return_value=False))
-            stack.enter_context(patch("feature_logger.build_feature_row", return_value={}))
+            stack.enter_context(patch(
+                "research_lab_v2.live_attribution.capture_live_decision",
+                return_value=attribution,
+            ))
+            stack.enter_context(patch(
+                "feature_logger.build_feature_row",
+                return_value={
+                    "timestamp": "2026-09-05T00:00:00+00:00",
+                    "symbol": "BTC/USDT",
+                    "timeframe": "1h",
+                } if feature_available else {},
+            ))
             stack.enter_context(patch("feature_logger.FeatureLogger.log"))
             stack.enter_context(patch("candidate_laboratory.CandidateLaboratory.run", return_value=[]))
             stack.enter_context(patch(
@@ -175,6 +199,11 @@ class TradingNotificationRegressionTest(TestCase):
         _, open_mock, mark_mock, _ = self._exercise(open_error=RuntimeError("persist failed"))
         open_mock.assert_called_once()
         mark_mock.assert_not_called()
+
+    def test_optional_feature_observer_failure_does_not_block_open(self):
+        _, open_mock, mark_mock, _ = self._exercise(feature_available=False)
+        open_mock.assert_called_once()
+        mark_mock.assert_called_once()
 
     def test_outbox_persist_failure_after_open_is_explicit_and_precedes_cooldown(self):
         error = agent.OutboxError("outbox unavailable")

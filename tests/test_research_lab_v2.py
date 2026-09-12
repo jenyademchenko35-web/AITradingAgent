@@ -83,7 +83,7 @@ def test_sqlite_schema_contains_all_research_tables(tmp_path):
     database.initialize()
     assert {
         "strategies", "strategy_runs", "strategy_metrics", "feature_statistics",
-        "walk_forward_results", "candidate_history",
+        "walk_forward_results", "candidate_history", "live_trade_outcomes",
     } <= database.table_names()
 
 
@@ -118,7 +118,35 @@ def test_additive_migration_preserves_old_dry_run_evaluations(tmp_path):
             "SELECT cycle_id, would_open_trade, actual_shadow_opened, "
             "shadow_mode_started_at FROM strategy_runs"
         ).fetchone()
+        run_columns = {item[1] for item in db.execute("PRAGMA table_info(strategy_runs)")}
+        tables = {item[0] for item in db.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        )}
     assert row == ("old-dry", 1, 0, None)
+    assert {"live_trade_id", "source_type", "source_run_uid"} <= run_columns
+    assert "live_trade_outcomes" in tables
+
+    # Exercise the exact upgraded-schema FK path; a partial UNIQUE index is not
+    # a valid SQLite parent key even though it is sufficient on a fresh schema.
+    from research_lab_v2.live_attribution import capture_live_decision, persist_closed_live_trade
+    feature = {
+        "timestamp": "2026-09-10T10:00:00+00:00", "cycle_id": "migration-live",
+        "symbol": "BTC/USDT", "timeframe": "1h", "direction": "LONG",
+        "signal": "SETUP", "decision": "SETUP", "signal_score": 30,
+    }
+    attribution = capture_live_decision(
+        feature_snapshot=feature, cycle_id="migration-live", symbol="BTC/USDT",
+        direction="LONG", decision="SETUP",
+    )
+    outcome = persist_closed_live_trade({
+        "trade_id": attribution["live_trade_id"], "symbol": "BTC/USDT",
+        "direction": "LONG", "entry": "100", "stop_loss": "95",
+        "take_profit": "110", "status": "WIN", "result": "WIN",
+        "opened_at": "2026-09-10T10:00:01+00:00",
+        "closed_at": "2026-09-10T11:00:00+00:00", "exit_price": "110",
+        "research_metadata_json": json.dumps(attribution, sort_keys=True),
+    }, database=ResearchDatabase(path))
+    assert outcome["join_status"] == "JOIN_COMPLETE"
 
 
 def test_metrics_ranking_and_promotion_rules():

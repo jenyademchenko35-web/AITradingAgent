@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 import argparse
+import hashlib
 import traceback
 import os
 import json
@@ -667,7 +668,7 @@ class DecisionResult:
     explanation: str
 
 
-def research_trade_metadata_snapshot(feature_row, decision):
+def research_trade_metadata_snapshot(feature_row, decision, *, attribution=None):
     """Copy already-published decision context for immutable trade persistence.
 
     This helper deliberately performs no eligibility, price, or risk
@@ -675,7 +676,7 @@ def research_trade_metadata_snapshot(feature_row, decision):
     current decision into the live trade record so closing a trade never has to
     query a later market state.
     """
-    return {
+    metadata = {
         "timeframe": feature_row.get("timeframe"),
         "market_regime": feature_row.get("market_regime"),
         "trend_alignment": feature_row.get("trend_alignment"),
@@ -691,6 +692,46 @@ def research_trade_metadata_snapshot(feature_row, decision):
         "decision_summary": getattr(decision, "summary", None),
         "snapshot_id": feature_row.get("snapshot_id"),
         "decision_timestamp": feature_row.get("timestamp"),
+    }
+    if attribution:
+        metadata.update(dict(attribution))
+    else:
+        metadata["research_join_quality"] = "LEGACY_UNATTRIBUTED"
+    return metadata
+
+
+def live_research_feature_snapshot(*, timestamp, cycle_id, symbol, market,
+                                   decision, trend, structure, momentum, risk,
+                                   weights):
+    """Pure decision-time snapshot; independent of optional Research observers."""
+    snapshot_id = hashlib.sha256(
+        f"{timestamp}|{cycle_id}|{symbol}|LIVE_ATTRIBUTION_V1".encode()
+    ).hexdigest()[:24]
+    return {
+        "timestamp": timestamp,
+        "cycle_id": cycle_id,
+        "snapshot_id": snapshot_id,
+        "symbol": symbol,
+        "timeframe": "1h",
+        "direction": decision.direction,
+        "signal": decision.signal,
+        "decision": decision.signal,
+        "signal_score": float(decision.score),
+        "confidence": float(decision.confidence),
+        "quality": decision.quality,
+        "long_total": float(decision.long_total),
+        "short_total": float(decision.short_total),
+        "trend_long_score": float(trend.long),
+        "trend_short_score": float(trend.short),
+        "structure_long_score": float(structure.long),
+        "structure_short_score": float(structure.short),
+        "momentum_long_score": float(momentum.long),
+        "momentum_short_score": float(momentum.short),
+        "risk_long_score": float(risk.long),
+        "risk_short_score": float(risk.short),
+        "close": float(market.tf1h.close),
+        "atr": float(market.tf1h.atr),
+        "weights": dict(weights or {}),
     }
 
 
@@ -1355,10 +1396,15 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
     decision.execution_status = "NO_TRADE"
     decision.veto_reasons = []
     decision.failed_filters = []
+    live_feature_row = live_research_feature_snapshot(
+        timestamp=decision_timestamp, cycle_id=decision.cycle_id,
+        symbol=symbol, market=market, decision=decision, trend=trend,
+        structure=structure, momentum=momentum, risk=risk, weights=weights,
+    )
+    feature_row = None
     # Research observers are isolated from LIVE execution. Their failures never
     # change the decision or prevent the normal setup tracking below.
     try:
-        import hashlib
         from candidate_laboratory import CandidateLaboratory
         from candidate_report import build_reports
         from feature_logger import FeatureLogger, build_feature_row
@@ -1648,7 +1694,25 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                 decision.quality in ("A", "B")
                 and decision.confidence >= 75
             )
-            trade_metadata = research_trade_metadata_snapshot(feature_row, decision)
+            from research_lab_v2.live_attribution import LiveAttributionError, capture_live_decision
+            try:
+                attribution = capture_live_decision(
+                    feature_snapshot=live_feature_row,
+                    cycle_id=decision.cycle_id,
+                    symbol=symbol,
+                    direction=decision.direction,
+                    decision=decision.signal,
+                )
+            except LiveAttributionError as exc:
+                LOGGER.timestamped(json.dumps({
+                    "event": "live_research_attribution_open_blocked",
+                    "symbol": symbol, "cycle_id": decision.cycle_id,
+                    "error": str(exc),
+                }, sort_keys=True), minimum="NORMAL")
+                raise
+            trade_metadata = research_trade_metadata_snapshot(
+                live_feature_row, decision, attribution=attribution,
+            )
             if notification_eligible:
                 fingerprint = decision_signal_fingerprint(
                     symbol,
@@ -1671,13 +1735,17 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
                     text=notification_text,
                 )
 
+            open_kwargs = {
+                "symbol": symbol,
+                "direction": decision.direction,
+                "entry": entry,
+                "stop_loss": stop_loss,
+                "take_profit": take_profit,
+                "research_metadata": trade_metadata,
+            }
+            open_kwargs["trade_id"] = attribution["live_trade_id"]
             opened_trade = open_trade(
-                symbol=symbol,
-                direction=decision.direction,
-                entry=entry,
-                stop_loss=stop_loss,
-                take_profit=take_profit,
-                research_metadata=trade_metadata,
+                **open_kwargs,
             )
             notification_item = None
             notification_error = None
@@ -1715,9 +1783,37 @@ def analyze_symbol(symbol: str, cycle_id: str = ""):
     log_final_status()
     return decision, market
 
+def _persist_live_research_closures(rows):
+    """Persist after canonical close; failures remain recoverable from trades.csv."""
+    for row in rows:
+        try:
+            from research_lab_v2.live_attribution import persist_closed_live_trade
+            persist_closed_live_trade(row)
+        except Exception as exc:
+            LOGGER.timestamped(json.dumps({
+                "event": "live_research_outcome_pending",
+                "trade_id": row.get("trade_id"),
+                "error": str(exc),
+            }, sort_keys=True), minimum="NORMAL")
+
+
 def update_open_trades(current_prices):
     _require_agent_singleton()
-    trades = get_open_trades()
+    all_trades = get_all_trades()
+    try:
+        from research_lab_v2.live_attribution import reconcile_live_attribution
+        recovery = reconcile_live_attribution(all_trades)
+        if recovery["source_inserted"] or recovery["outcome_inserted"] or recovery["failed"]:
+            LOGGER.timestamped(json.dumps({
+                "event": "live_research_attribution_reconciliation",
+                **recovery,
+            }, sort_keys=True), minimum="NORMAL")
+    except Exception as exc:
+        LOGGER.timestamped(json.dumps({
+            "event": "live_research_outcome_reconciliation_error",
+            "error": str(exc),
+        }, sort_keys=True), minimum="NORMAL")
+    trades = [row for row in all_trades if row.get("status") == "OPEN"]
 
     for trade in trades:
 
@@ -1741,7 +1837,8 @@ def update_open_trades(current_prices):
 
             if price <= sl:
                 pnl = price - float(trade["entry"])
-                close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
+                closed = close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
+                _persist_live_research_closures(closed)
                 LOGGER.trade_result(symbol, "LOSS")
                 send_trade_close_notification(
                     trade,
@@ -1752,7 +1849,8 @@ def update_open_trades(current_prices):
 
             elif price >= tp:
                 pnl = abs(price - float(trade["entry"]))
-                close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
+                closed = close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
+                _persist_live_research_closures(closed)
                 LOGGER.trade_result(symbol, "WIN")
                 send_trade_close_notification(
                     trade,
@@ -1765,7 +1863,8 @@ def update_open_trades(current_prices):
 
             if price >= sl:
                 pnl = -abs(price - float(trade["entry"]))
-                close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
+                closed = close_trade(symbol, "LOSS", exit_price=price, pnl=round(pnl, 2))
+                _persist_live_research_closures(closed)
                 LOGGER.trade_result(symbol, "LOSS")
                 send_trade_close_notification(
                     trade,
@@ -1776,7 +1875,8 @@ def update_open_trades(current_prices):
 
             elif price <= tp:
                 pnl = abs(float(trade["entry"]) - price)
-                close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
+                closed = close_trade(symbol, "WIN", exit_price=price, pnl=round(pnl, 2))
+                _persist_live_research_closures(closed)
                 LOGGER.trade_result(symbol, "WIN")
                 send_trade_close_notification(
                     trade,
