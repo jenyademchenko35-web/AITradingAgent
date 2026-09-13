@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import math
+import re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -16,6 +18,7 @@ from .database import ResearchDatabase
 BASE_DIR = Path(__file__).resolve().parent.parent
 LIVE_STRATEGY_ID = "LIVE_BASELINE"
 LIVE_TRADE_ID_PREFIX = "LIVE-RAV1-"
+LIVE_TRADE_ID_PATTERN = re.compile(r"^LIVE-RAV1-[0-9a-f]{24}$")
 _METADATA_PARSE_ERROR = "__live_attribution_metadata_parse_error__"
 ATTRIBUTION_FIELDS = (
     "research_attribution_version", "source_run_id", "signal_id",
@@ -43,16 +46,31 @@ def _metadata(row: Mapping[str, Any]) -> dict[str, Any]:
     return dict(value) if isinstance(value, Mapping) else {_METADATA_PARSE_ERROR: True}
 
 
+def _canonical_utc_timestamp(value: Any) -> str:
+    """Return the one UTC representation accepted by the LIVE bridge."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("LIVE decision timestamp is missing")
+    text = value.strip()
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("LIVE decision timestamp is not ISO-8601") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
+        raise ValueError("LIVE decision timestamp must be timezone-aware UTC")
+    return parsed.astimezone(timezone.utc).isoformat()
+
+
 def attribution_state(row: Mapping[str, Any]) -> str:
     metadata = _metadata(row)
-    versioned_trade = str(row.get("trade_id") or "").startswith(LIVE_TRADE_ID_PREFIX)
+    trade_id = str(row.get("trade_id") or metadata.get("live_trade_id") or "")
+    versioned_trade = trade_id.startswith(LIVE_TRADE_ID_PREFIX)
     if metadata.get(_METADATA_PARSE_ERROR):
         return "ATTRIBUTION_PARTIAL" if versioned_trade else "LEGACY_UNATTRIBUTED"
-    metadata_versioned = metadata.get("research_attribution_version") == LIVE_ATTRIBUTION_VERSION
-    if versioned_trade != metadata_versioned:
+    version = metadata.get("research_attribution_version")
+    if not version:
+        return "ATTRIBUTION_PARTIAL" if versioned_trade else "LEGACY_UNATTRIBUTED"
+    if version != LIVE_ATTRIBUTION_VERSION or LIVE_TRADE_ID_PATTERN.fullmatch(trade_id) is None:
         return "ATTRIBUTION_PARTIAL"
-    if not metadata.get("research_attribution_version"):
-        return "LEGACY_UNATTRIBUTED"
     complete = all(metadata.get(field) for field in ATTRIBUTION_FIELDS)
     complete = complete and isinstance(metadata.get("feature_snapshot"), Mapping)
     if isinstance(metadata.get("feature_snapshot"), Mapping):
@@ -67,10 +85,34 @@ def attribution_state(row: Mapping[str, Any]) -> str:
     }
     snapshot = metadata.get("feature_snapshot")
     if isinstance(snapshot, Mapping):
-        complete = complete and str(row.get("trade_id") or metadata.get("live_trade_id")) == str(
-            metadata.get("live_trade_id")
-        )
-        complete = complete and str(metadata.get("decision_timestamp")) == str(snapshot.get("timestamp"))
+        complete = complete and trade_id == str(metadata.get("live_trade_id"))
+        try:
+            decision_timestamp = _canonical_utc_timestamp(metadata.get("decision_timestamp"))
+            snapshot_timestamp = _canonical_utc_timestamp(snapshot.get("timestamp"))
+            complete = complete and decision_timestamp == snapshot_timestamp
+            timeframe = str(snapshot.get("timeframe") or "").strip()
+            if not timeframe:
+                raise ValueError("LIVE attribution timeframe is missing")
+            calculated_chain = live_attribution_ids(
+                snapshot=snapshot,
+                strategy_version=str(metadata.get("strategy_version") or ""),
+            )
+            complete = complete and all(
+                str(calculated_chain[field]) == str(metadata.get(field) or "")
+                for field in (
+                    "feature_snapshot_id", "signal_id", "decision_id",
+                    "research_signal_fingerprint", "research_attribution_version",
+                    "live_trade_id",
+                )
+            )
+            calculated_source_run_id = stable_id("lrun", {
+                "live_trade_id": metadata.get("live_trade_id"),
+                "decision_id": metadata.get("decision_id"),
+                "attribution_version": metadata.get("research_attribution_version"),
+            })
+            complete = complete and calculated_source_run_id == str(metadata.get("source_run_id"))
+        except (TypeError, ValueError):
+            complete = False
         for row_field, snapshot_field in (("symbol", "symbol"), ("direction", "direction")):
             if row.get(row_field) not in (None, ""):
                 left = str(row.get(row_field))
@@ -89,18 +131,23 @@ def capture_live_decision(*, feature_snapshot: Mapping[str, Any], cycle_id: str,
     strategy = registry.get(LIVE_STRATEGY_ID)
     if strategy is None:
         raise LiveAttributionError("LIVE_BASELINE strategy is not registered")
+    timeframe = str(feature_snapshot.get("timeframe") or "").strip()
+    if not timeframe:
+        raise LiveAttributionError("LIVE feature snapshot has no timeframe")
+    try:
+        timestamp = _canonical_utc_timestamp(feature_snapshot.get("timestamp"))
+    except ValueError as exc:
+        raise LiveAttributionError(str(exc)) from exc
     snapshot = {
         **dict(feature_snapshot),
         "cycle_id": cycle_id,
         "symbol": symbol,
-        "timeframe": str(feature_snapshot.get("timeframe") or "1h"),
+        "timestamp": timestamp,
+        "timeframe": timeframe,
         "direction": direction,
         "signal": decision,
         "decision": decision,
     }
-    timestamp = str(snapshot.get("timestamp") or "")
-    if not timestamp:
-        raise LiveAttributionError("LIVE feature snapshot has no decision timestamp")
     try:
         chain = live_attribution_ids(snapshot=snapshot, strategy_version=strategy.version)
     except (TypeError, ValueError) as exc:
@@ -288,7 +335,7 @@ def persist_closed_live_trade(row: Mapping[str, Any], *,
         "strategy_version": metadata["strategy_version"],
         "research_attribution_version": metadata["research_attribution_version"],
         "symbol": row.get("symbol"),
-        "timeframe": metadata.get("timeframe") or "1h",
+        "timeframe": metadata["feature_snapshot"]["timeframe"],
         "direction": row.get("direction"),
         "opened_at": row.get("opened_at"),
         "closed_at": row.get("closed_at"),

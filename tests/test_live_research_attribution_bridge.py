@@ -7,7 +7,11 @@ import sqlite3
 import pytest
 
 import trade_tracker
-from research_lab_v2.attribution import LIVE_ATTRIBUTION_VERSION
+from research_lab_v2.attribution import (
+    LIVE_ATTRIBUTION_VERSION,
+    live_attribution_ids,
+    stable_id,
+)
 from research_lab_v2.database import ResearchDatabase
 from research_lab_v2.live_attribution import (
     LiveAttributionError,
@@ -23,8 +27,8 @@ from research_lab_v2.live_attribution import (
 from strategies import registry
 
 
-def snapshot():
-    return {
+def snapshot(**changes):
+    value = {
         "timestamp": "2026-09-10T10:00:00+00:00",
         "cycle_id": "cycle-1",
         "snapshot_id": "shared-observer-snapshot",
@@ -38,6 +42,8 @@ def snapshot():
         "momentum_score": 18.0,
         "risk_score": 15.0,
     }
+    value.update(changes)
+    return value
 
 
 def captured(database, *, persist=True):
@@ -333,6 +339,127 @@ def test_decision_timestamp_must_equal_snapshot_timestamp(database):
     assert attribution_state(row) == "ATTRIBUTION_PARTIAL"
 
 
+def test_invalid_nonempty_timestamp_is_not_complete_or_materialized(database):
+    invalid = snapshot(timestamp="not-a-timestamp")
+    with pytest.raises(LiveAttributionError, match="not ISO-8601"):
+        capture_live_decision(
+            feature_snapshot=invalid, cycle_id="cycle-1", symbol="BTC/USDT",
+            direction="LONG", decision="SETUP",
+        )
+    with database.connect() as db:
+        assert db.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 0
+
+
+def test_invalid_nonempty_timestamp_metadata_is_classified_partial(database):
+    value = captured(database, persist=False)
+    value["feature_snapshot"]["timestamp"] = "not-a-timestamp"
+    value["feature_snapshot"].pop("feature_snapshot_id")
+    value["decision_timestamp"] = "not-a-timestamp"
+    chain = live_attribution_ids(
+        snapshot=value["feature_snapshot"], strategy_version=value["strategy_version"],
+    )
+    value.update(chain)
+    value["feature_snapshot"]["feature_snapshot_id"] = chain["feature_snapshot_id"]
+    value["source_run_id"] = stable_id("lrun", {
+        "live_trade_id": value["live_trade_id"],
+        "decision_id": value["decision_id"],
+        "attribution_version": value["research_attribution_version"],
+    })
+    row = closed_row(value, trade_id=value["live_trade_id"])
+    assert attribution_state(row) == "ATTRIBUTION_PARTIAL"
+    with pytest.raises(LiveAttributionError, match="partial attribution"):
+        persist_live_source_run(row, database=database)
+
+
+def test_non_utc_timestamp_is_rejected_before_materialization(database):
+    with pytest.raises(LiveAttributionError, match="timezone-aware UTC"):
+        capture_live_decision(
+            feature_snapshot=snapshot(timestamp="2026-09-10T13:00:00+03:00"),
+            cycle_id="cycle-1", symbol="BTC/USDT", direction="LONG", decision="SETUP",
+        )
+
+
+def test_valid_z_timestamp_is_canonicalized_and_complete(database):
+    value = capture_live_decision(
+        feature_snapshot=snapshot(timestamp="2026-09-10T10:00:00Z"),
+        cycle_id="cycle-1", symbol="BTC/USDT", direction="LONG", decision="SETUP",
+    )
+    assert value["decision_timestamp"] == "2026-09-10T10:00:00+00:00"
+    assert value["feature_snapshot"]["timestamp"] == value["decision_timestamp"]
+    assert attribution_state(closed_row(value)) == "ATTRIBUTION_COMPLETE"
+
+
+@pytest.mark.parametrize("timeframe", ["1h", "4h", "15m"])
+def test_timeframe_roundtrip_uses_exact_snapshot_identity(database, timeframe):
+    value = capture_live_decision(
+        feature_snapshot=snapshot(timeframe=timeframe), cycle_id="cycle-1",
+        symbol="BTC/USDT", direction="LONG", decision="SETUP",
+    )
+    persist_live_source_run(value, database=database)
+    assert persist_closed_live_trade(closed_row(value), database=database)["status"] == "inserted"
+    with database.connect() as db:
+        source = db.execute("SELECT timeframe FROM strategy_runs").fetchone()[0]
+        outcome = db.execute("SELECT timeframe FROM live_trade_outcomes").fetchone()[0]
+    assert source == outcome == timeframe
+
+
+def test_missing_timeframe_fails_closed_without_implicit_1h(database):
+    with pytest.raises(LiveAttributionError, match="no timeframe"):
+        capture_live_decision(
+            feature_snapshot=snapshot(timeframe=""), cycle_id="cycle-1",
+            symbol="BTC/USDT", direction="LONG", decision="SETUP",
+        )
+
+
+def test_close_cannot_fallback_missing_timeframe_to_1h(database):
+    value = captured(database, persist=False)
+    value["feature_snapshot"].pop("timeframe")
+    assert attribution_state(closed_row(value)) == "ATTRIBUTION_PARTIAL"
+    with pytest.raises(LiveAttributionError, match="partial attribution"):
+        persist_closed_live_trade(closed_row(value), database=database)
+
+
+def test_unknown_attribution_version_is_never_complete(database):
+    value = captured(database, persist=False)
+    value["research_attribution_version"] = "live_attribution_bridge_v999"
+    value["live_trade_id"] = "LIVE-ordinary"
+    row = closed_row(value, trade_id="LIVE-ordinary")
+    assert attribution_state(row) == "ATTRIBUTION_PARTIAL"
+
+
+def test_unknown_version_with_rav1_namespace_is_not_complete(database):
+    value = captured(database, persist=False)
+    value["research_attribution_version"] = "live_attribution_bridge_v999"
+    assert attribution_state(closed_row(value)) == "ATTRIBUTION_PARTIAL"
+
+
+def test_valid_version_requires_exact_generated_rav1_namespace(database):
+    value = captured(database, persist=False)
+    assert attribution_state(closed_row(value)) == "ATTRIBUTION_COMPLETE"
+    value["live_trade_id"] = "LIVE-RAV1-malformed"
+    assert attribution_state(closed_row(value, trade_id="LIVE-RAV1-malformed")) == "ATTRIBUTION_PARTIAL"
+
+
+def test_malformed_legacy_live_row_remains_readable_not_complete():
+    row = {"trade_id": "LIVE-malformed", "research_metadata_json": "{}"}
+    assert attribution_state(row) == "LEGACY_UNATTRIBUTED"
+
+
+def test_valid_1h_deterministic_ids_remain_unchanged(database):
+    value = captured(database, persist=False)
+    assert {key: value[key] for key in (
+        "feature_snapshot_id", "signal_id", "decision_id",
+        "research_signal_fingerprint", "live_trade_id", "source_run_id",
+    )} == {
+        "feature_snapshot_id": "fs-9e5c4bc7661c5ea832e90316",
+        "signal_id": "sig-c8a756428ceb1fdfada498c0",
+        "decision_id": "dec-7217906243196a0f69eae9f1",
+        "research_signal_fingerprint": "rsig-c700344e3256f3a63d8d480e",
+        "live_trade_id": "LIVE-RAV1-954b67439416f26255d7d5a6",
+        "source_run_id": "lrun-8b0f629a0bd801a2fb4b9287",
+    }
+
+
 def test_partial_attribution_has_no_fuzzy_fallback(database):
     value = captured(database)
     value["decision_id"] = ""
@@ -343,7 +470,7 @@ def test_partial_attribution_has_no_fuzzy_fallback(database):
 def test_live_outcome_must_reference_existing_exact_run(database):
     value = captured(database)
     value["source_run_id"] += "-wrong"
-    with pytest.raises(LiveAttributionError, match="source run"):
+    with pytest.raises(LiveAttributionError, match="partial attribution"):
         persist_closed_live_trade(closed_row(value), database=database)
 
 
@@ -376,14 +503,14 @@ def test_live_decision_must_not_follow_trade_open(database):
 def test_tampered_feature_snapshot_cannot_join(database):
     value = captured(database)
     value["feature_snapshot"]["signal_score"] = 999
-    with pytest.raises(LiveAttributionError, match="feature snapshot identity"):
+    with pytest.raises(LiveAttributionError, match="partial attribution"):
         persist_closed_live_trade(closed_row(value), database=database)
 
 
 def test_tampered_decision_identity_cannot_create_source_run(database):
     value = captured(database, persist=False)
     value["decision_id"] = "dec-tampered"
-    with pytest.raises(LiveAttributionError, match="decision_id identity"):
+    with pytest.raises(LiveAttributionError, match="partial attribution"):
         persist_live_source_run(value, database=database)
 
 

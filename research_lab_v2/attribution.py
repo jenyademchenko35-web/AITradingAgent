@@ -41,7 +41,7 @@ def live_attribution_ids(*, snapshot: Mapping[str, Any], strategy_version: str) 
     research_fingerprint = stable_id("rsig", {
         "feature_snapshot_id": feature_id,
         "symbol": snapshot.get("symbol"),
-        "timeframe": snapshot.get("timeframe", "1h"),
+        "timeframe": snapshot.get("timeframe"),
         "direction": str(snapshot.get("direction") or "").upper(),
         "signal": str(snapshot.get("signal") or snapshot.get("decision") or "").upper(),
         "score": snapshot.get("signal_score"),
