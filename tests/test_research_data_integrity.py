@@ -1,9 +1,18 @@
 from __future__ import annotations
 
+import sqlite3
+from unittest.mock import patch
+
+import pytest
+
 from research_lab_v2.analytics import calculate_metrics, promotion_decision, rank_strategies
 from research_lab_v2.database import ResearchDatabase
 from research_lab_v2.integrity import DATA_DEGRADED, DATA_INVALID, DATA_HEALTHY, evaluate_integrity, version_metadata
+from research_lab_v2.service import ResearchLab
+from research_lab_v2.trace_outcome import current_pipeline_summary
 from strategies import registry
+
+from tests.test_research_attribution_trace import _insert_current
 
 
 def trade(identifier: str, **changes):
@@ -19,6 +28,41 @@ def database(path):
     value = ResearchDatabase(path); value.initialize()
     for item in registry.all(): value.upsert_strategy(item)
     return value
+
+
+def healthy_current_pipeline(tmp_path):
+    path = _insert_current(tmp_path)
+    value = ResearchDatabase(path)
+    value.record_metrics(
+        "TREND_CONFIRM", calculate_metrics([2.0]),
+        calculated_at="2026-08-12T12:00:00+00:00",
+    )
+    return path, value
+
+
+def trace_summary(**changes):
+    summary = {
+        "status": "OK",
+        "fully_joined": 0,
+        "partial": 0,
+        "broken": 0,
+        "outcomes_checked": 0,
+        "current_pipeline_regression": False,
+    }
+    summary.update(changes)
+    return summary
+
+
+def assert_trace_failure_closes_gates(report, reason):
+    assert report["state"] != DATA_HEALTHY
+    assert report["gates"] == {
+        "ranking_allowed": False,
+        "walk_forward_allowed": False,
+        "promotion_allowed": False,
+    }
+    trace = report["checks"]["CURRENT_PIPELINE_TRACE"]
+    assert trace["verification_status"] == "UNVERIFIABLE"
+    assert trace["diagnostic_reason"] == reason
 
 
 def test_matching_ledger_and_outcomes_are_healthy(tmp_path):
@@ -64,6 +108,176 @@ def test_feature_coverage_and_stale_metrics_gate_walk_forward(tmp_path):
     report = evaluate_integrity(db)
     assert report["checks"]["FEATURE_SNAPSHOT_COVERAGE"]["coverage_pct"] == 0.0
     assert report["gates"]["walk_forward_allowed"] is False
+
+
+def test_broken_current_trace_invalidates_integrity_and_closes_all_gates(tmp_path):
+    path, db = healthy_current_pipeline(tmp_path)
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            "UPDATE strategy_runs SET strategy_version='conflicting-version' "
+            "WHERE shadow_trade_id='trace-1'"
+        )
+
+    summary = current_pipeline_summary(path)
+    report = evaluate_integrity(db)
+    assert summary["broken"] == 1
+    assert summary["current_pipeline_regression"] is True
+    assert report["state"] == DATA_INVALID
+    assert report["checks"]["CURRENT_PIPELINE_TRACE"]["broken"] == 1
+    assert report["gates"] == {
+        "ranking_allowed": False,
+        "walk_forward_allowed": False,
+        "promotion_allowed": False,
+    }
+
+
+def test_nonbroken_current_regression_degrades_integrity_and_closes_all_gates(tmp_path):
+    path, db = healthy_current_pipeline(tmp_path)
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            "UPDATE shadow_trade_outcomes SET outcome_id=NULL "
+            "WHERE shadow_trade_id='trace-1'"
+        )
+
+    summary = current_pipeline_summary(path)
+    report = evaluate_integrity(db)
+    assert summary["broken"] == 0
+    assert summary["partial"] == 1
+    assert summary["current_pipeline_regression"] is True
+    assert report["state"] == DATA_DEGRADED
+    assert report["gates"] == {
+        "ranking_allowed": False,
+        "walk_forward_allowed": False,
+        "promotion_allowed": False,
+    }
+
+
+def test_clean_fully_joined_pipeline_preserves_healthy_open_gates(tmp_path):
+    path, db = healthy_current_pipeline(tmp_path)
+    summary = current_pipeline_summary(path)
+    report = evaluate_integrity(db)
+    assert summary["fully_joined"] == 1
+    assert summary["current_pipeline_regression"] is False
+    assert report["state"] == DATA_HEALTHY
+    assert report["gates"] == {
+        "ranking_allowed": True,
+        "walk_forward_allowed": True,
+        "promotion_allowed": True,
+    }
+
+
+def test_historical_unresolved_debt_does_not_become_current_regression(tmp_path):
+    db = database(tmp_path / "research.db")
+    db.persist_closed_outcome(trade("legacy"), source="LEDGER_BACKFILL")
+    db.record_metrics(
+        "RISK_CONSERVATIVE", calculate_metrics([2.0]),
+        calculated_at="2026-08-10T02:00:00+00:00",
+    )
+    report = evaluate_integrity(db)
+    trace = report["checks"]["CURRENT_PIPELINE_TRACE"]
+    assert trace["current_pipeline_regression"] is False
+    assert report["state"] == DATA_DEGRADED
+    assert report["gates"]["ranking_allowed"] is True
+    assert report["gates"]["walk_forward_allowed"] is False
+
+
+def test_trace_summary_exception_fails_closed(tmp_path):
+    db = database(tmp_path / "research.db")
+    with patch("research_lab_v2.integrity.current_pipeline_summary", side_effect=RuntimeError("unreadable")):
+        report = evaluate_integrity(db)
+    assert_trace_failure_closes_gates(report, "TRACE_READ_EXCEPTION:RuntimeError")
+
+
+@pytest.mark.parametrize("status", ["READ_ERROR", "DATABASE_NOT_FOUND", "SCHEMA_UNAVAILABLE"])
+def test_trace_summary_error_status_fails_closed(tmp_path, status):
+    db = database(tmp_path / "research.db")
+    with patch("research_lab_v2.integrity.current_pipeline_summary", return_value=trace_summary(status=status)):
+        report = evaluate_integrity(db)
+    assert_trace_failure_closes_gates(report, f"TRACE_STATUS_NOT_OK:{status}")
+
+
+def test_non_mapping_trace_summary_fails_closed(tmp_path):
+    db = database(tmp_path / "research.db")
+    with patch("research_lab_v2.integrity.current_pipeline_summary", return_value=[]):
+        report = evaluate_integrity(db)
+    assert_trace_failure_closes_gates(report, "TRACE_SUMMARY_NOT_MAPPING")
+
+
+@pytest.mark.parametrize(
+    ("summary", "reason"),
+    [
+        ({"status": "OK"}, "TRACE_SUMMARY_MISSING_FIELD:fully_joined"),
+        (trace_summary(broken=None), "TRACE_SUMMARY_MISSING_FIELD:broken"),
+        (trace_summary(broken="bad"), "TRACE_SUMMARY_INVALID_FIELD:broken"),
+        (
+            {key: value for key, value in trace_summary(partial=1, outcomes_checked=1).items()
+             if key != "current_pipeline_regression"},
+            "TRACE_SUMMARY_MISSING_FIELD:current_pipeline_regression",
+        ),
+    ],
+)
+def test_incomplete_or_malformed_trace_verdict_fails_closed(tmp_path, summary, reason):
+    db = database(tmp_path / "research.db")
+    with patch("research_lab_v2.integrity.current_pipeline_summary", return_value=summary):
+        report = evaluate_integrity(db)
+    assert_trace_failure_closes_gates(report, reason)
+
+
+@pytest.mark.parametrize(
+    ("summary", "reason"),
+    [
+        (trace_summary(broken=1, outcomes_checked=1), "TRACE_SUMMARY_INCONSISTENT_REGRESSION"),
+        (
+            trace_summary(current_pipeline_regression=True),
+            "TRACE_SUMMARY_INCONSISTENT_REGRESSION",
+        ),
+        (trace_summary(fully_joined=1), "TRACE_SUMMARY_INCONSISTENT_COUNTS"),
+    ],
+)
+def test_inconsistent_trace_verdict_fails_closed(tmp_path, summary, reason):
+    db = database(tmp_path / "research.db")
+    with patch("research_lab_v2.integrity.current_pipeline_summary", return_value=summary):
+        report = evaluate_integrity(db)
+    assert_trace_failure_closes_gates(report, reason)
+
+
+def test_valid_empty_current_pipeline_preserves_healthy_open_gates(tmp_path):
+    db = database(tmp_path / "research.db")
+    report = evaluate_integrity(db)
+    assert report["state"] == DATA_HEALTHY
+    assert report["checks"]["CURRENT_PIPELINE_TRACE"]["verification_status"] == "VERIFIED"
+    assert report["gates"] == {
+        "ranking_allowed": True,
+        "walk_forward_allowed": True,
+        "promotion_allowed": True,
+    }
+
+
+def test_service_and_analytics_consume_trace_closed_gates(tmp_path):
+    path, db = healthy_current_pipeline(tmp_path)
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            "UPDATE strategy_runs SET strategy_version='conflicting-version' "
+            "WHERE shadow_trade_id='trace-1'"
+        )
+    integrity = evaluate_integrity(db)
+    candidate = {
+        **calculate_metrics([2.0] * 100), "strategy_id": "TREND_CONFIRM",
+        "walk_forward_status": "PASS", "confidence": "HIGH",
+        "better_windows": 3, "profitable_windows": 3,
+    }
+    assert rank_strategies([candidate], integrity=integrity)[0]["ranking_eligible"] is False
+    assert promotion_decision(candidate, {}, integrity=integrity)["status"] == "BLOCKED"
+
+    lab = ResearchLab(path, ranking_interval=1, ledger_path=tmp_path / "history.csv")
+    assert lab.rebuild_outcome_metrics()["ranked"] is False
+    with pytest.raises(ValueError, match="walk-forward blocked"):
+        lab.record_walk_forward_report({
+            "configuration": {"candidate_id": "TREND_CONFIRM"},
+            "candidate": {"windows": 3, "profitable_windows": 3},
+            "comparison": {"candidate_better_windows": 3},
+            "bootstrap": {"confidence": "HIGH"},
+        })
 
 
 def test_canonical_metrics_and_integrity_gate_do_not_treat_evaluations_as_trades(tmp_path):

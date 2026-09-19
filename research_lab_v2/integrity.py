@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .trace_outcome import current_pipeline_summary
+
 DATA_HEALTHY = "DATA_HEALTHY"
 DATA_DEGRADED = "DATA_DEGRADED"
 DATA_INVALID = "DATA_INVALID"
@@ -70,6 +72,47 @@ def ledger_rows(path: str | Path | None) -> list[dict[str, Any]]:
         return []
 
 
+def _validated_current_pipeline_summary(database_path: str | Path) -> tuple[dict[str, Any], str | None]:
+    """Read and validate the canonical trace verdict without reclassifying rows."""
+    empty = {
+        "status": "UNVERIFIABLE",
+        "fully_joined": 0,
+        "partial": 0,
+        "broken": 0,
+        "outcomes_checked": 0,
+        "current_pipeline_regression": False,
+    }
+    try:
+        raw = current_pipeline_summary(database_path)
+    except Exception as error:
+        return {**empty, "status": "TRACE_READ_EXCEPTION"}, f"TRACE_READ_EXCEPTION:{type(error).__name__}"
+    if not isinstance(raw, Mapping):
+        return empty, "TRACE_SUMMARY_NOT_MAPPING"
+    if "status" not in raw or raw["status"] is None:
+        return empty, "TRACE_SUMMARY_MISSING_FIELD:status"
+    if raw["status"] != "OK":
+        return {**empty, "status": raw["status"]}, f"TRACE_STATUS_NOT_OK:{raw['status']}"
+
+    required_counts = ("fully_joined", "partial", "broken", "outcomes_checked")
+    for field in required_counts:
+        if field not in raw or raw[field] is None:
+            return {**empty, "status": "OK"}, f"TRACE_SUMMARY_MISSING_FIELD:{field}"
+        if isinstance(raw[field], bool) or not isinstance(raw[field], int) or raw[field] < 0:
+            return {**empty, "status": "OK"}, f"TRACE_SUMMARY_INVALID_FIELD:{field}"
+    if "current_pipeline_regression" not in raw or raw["current_pipeline_regression"] is None:
+        return {**empty, "status": "OK"}, "TRACE_SUMMARY_MISSING_FIELD:current_pipeline_regression"
+    if not isinstance(raw["current_pipeline_regression"], bool):
+        return {**empty, "status": "OK"}, "TRACE_SUMMARY_INVALID_FIELD:current_pipeline_regression"
+
+    pipeline = dict(raw)
+    classified = pipeline["fully_joined"] + pipeline["partial"] + pipeline["broken"]
+    if pipeline["outcomes_checked"] != classified:
+        return {**empty, "status": "OK"}, "TRACE_SUMMARY_INCONSISTENT_COUNTS"
+    if pipeline["current_pipeline_regression"] != bool(pipeline["partial"] or pipeline["broken"]):
+        return {**empty, "status": "OK"}, "TRACE_SUMMARY_INCONSISTENT_REGRESSION"
+    return pipeline, None
+
+
 def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (),
                        artifact_path: str | Path | None = None,
                        pnl_r_abs_limit: float = DEFAULT_PNL_R_ABS_LIMIT) -> dict[str, Any]:
@@ -81,6 +124,10 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
         outcomes = [dict(row) for row in db.execute("SELECT * FROM shadow_trade_outcomes").fetchall()]
         metric_stamp = db.execute("SELECT MAX(calculated_at) FROM strategy_metrics").fetchone()[0]
         wf_stamp = db.execute("SELECT MAX(calculated_at) FROM walk_forward_results").fetchone()[0]
+    pipeline, trace_diagnostic = _validated_current_pipeline_summary(database.path)
+    trace_unverifiable = trace_diagnostic is not None
+    pipeline_broken = pipeline["broken"]
+    current_pipeline_regression = pipeline["current_pipeline_regression"]
     outcome_ids = [str(row.get("shadow_trade_id") or "").strip() for row in outcomes]
     duplicate_ledger = sorted({value for value in valid_ledger_ids if valid_ledger_ids.count(value) > 1})
     duplicate_outcomes = sorted({value for value in outcome_ids if outcome_ids.count(value) > 1})
@@ -124,14 +171,19 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
     # separate evidence requirement; only an existing result becomes stale.
     walk_forward_stale = bool(latest_outcome and _time(wf_stamp) and _time(wf_stamp) < latest_outcome)
     coverage = round(feature_valid / len(outcomes) * 100, 2) if outcomes else 0.0
-    invalid = duplicate_ledger or duplicate_outcomes or invalid_time or invalid_pnl or invalid_json
+    invalid = bool(
+        duplicate_ledger or duplicate_outcomes or invalid_time or invalid_pnl
+        or invalid_json or pipeline_broken
+    )
     # Historical unresolved ledger backfills are visible migration debt, but
     # cannot poison the health of a corrected future pipeline forever.
     degraded = bool(sync_gap_ids or orphan_ids or historical_unresolved or current_unresolved
-                    or metrics_stale or walk_forward_stale)
+                    or metrics_stale or walk_forward_stale or current_pipeline_regression
+                    or trace_unverifiable)
     state = DATA_INVALID if invalid else DATA_DEGRADED if degraded else DATA_HEALTHY
     ranking_allowed = (not invalid and not sync_gap_ids and not orphan_ids and
-                       not current_unresolved and not metrics_stale)
+                       not current_unresolved and not metrics_stale and
+                       not current_pipeline_regression and not trace_unverifiable)
     new_coverage = round(new_fully_joined / new_outcomes * 100, 2) if new_outcomes else 0.0
     # Attribution-dependent validation can start only from fully joined
     # post-fix evidence. Existing unresolved historical rows remain immutable.
@@ -139,7 +191,8 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
     walk_forward_allowed = (not invalid and not sync_gap_ids and not orphan_ids and
                             not current_unresolved and
                             (not needs_post_fix_evidence or (new_outcomes > 0 and new_coverage >= 95.0)) and
-                            not walk_forward_stale)
+                            not walk_forward_stale and not current_pipeline_regression and
+                            not trace_unverifiable)
     gates = {"ranking_allowed": ranking_allowed, "walk_forward_allowed": walk_forward_allowed,
              "promotion_allowed": ranking_allowed and walk_forward_allowed}
     report = {"schema_version": 1, "checked_at": datetime.now(timezone.utc).isoformat(), "state": state,
@@ -162,6 +215,15 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
                     "new_outcomes_fully_joined": new_fully_joined,
                     "new_outcomes_join_coverage_pct": new_coverage,
                     "status": "CRITICAL" if current_unresolved else "OK",
+                },
+                "CURRENT_PIPELINE_TRACE": {
+                    "status": pipeline.get("status"),
+                    "verification_status": "UNVERIFIABLE" if trace_unverifiable else "VERIFIED",
+                    "diagnostic_reason": trace_diagnostic,
+                    "fully_joined": pipeline["fully_joined"],
+                    "partial": pipeline["partial"],
+                    "broken": pipeline_broken,
+                    "current_pipeline_regression": current_pipeline_regression,
                 },
                 "FEATURE_SNAPSHOT_COVERAGE": {"closed_outcomes": len(outcomes), "with_feature_snapshot": feature_available, "valid_feature_snapshot": feature_valid, "coverage_pct": coverage, "status": "OK" if coverage >=95 else "WARNING" if coverage >=80 else "CRITICAL"},
                 "INVALID_FEATURE_JSON": {"count": len(invalid_json), "examples": invalid_json[:10]},

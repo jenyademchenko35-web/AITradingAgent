@@ -123,8 +123,47 @@ CREATE INDEX IF NOT EXISTS idx_outcomes_source_run
 """
 
 
+STRATEGY_RUN_REPLAY_FIELDS = (
+    "cycle_id", "strategy_id", "timestamp", "symbol", "timeframe", "decision",
+    "status", "feature_snapshot_json", "result_r", "shadow_trade_id",
+    "would_open_trade", "block_reason", "condition_active", "entry_triggered",
+    "trigger_reason", "signal_fingerprint", "previous_fingerprint",
+    "is_new_signal", "blocked_reason", "signal_audit_version", "strategy_mode",
+    "actual_shadow_opened", "shadow_mode_started_at", "feature_snapshot_id",
+    "signal_id", "decision_id", "strategy_version", "attribution_version",
+    "data_quality", "live_trade_id", "source_type",
+)
+
+SHADOW_OUTCOME_WRITE_FIELDS = (
+    "shadow_trade_id", "strategy_id", "symbol", "timeframe", "side",
+    "entry_time", "entry_price", "stop_loss", "take_profit", "exit_time",
+    "exit_price", "exit_reason", "status", "pnl_r", "mfe_r", "mae_r",
+    "holding_candles", "signal_fingerprint", "feature_snapshot_json",
+    "feature_snapshot_available", "feature_snapshot_valid",
+)
+
+SHADOW_OUTCOME_REPLAY_FIELDS = (
+    *SHADOW_OUTCOME_WRITE_FIELDS, "feature_snapshot_id",
+    "signal_id", "decision_id", "strategy_version", "attribution_version", "source",
+)
+
+
 class ResearchDatabaseBusy(RuntimeError):
     """Raised after SQLite's busy timeout expires; callers may fail open."""
+
+
+class AmbiguousSourceRunError(RuntimeError):
+    """Raised when a shadow outcome matches multiple opening runs."""
+
+
+class ReplayConflictError(RuntimeError):
+    """Raised when a persistence key is replayed with a different payload."""
+
+
+def _replay_conflicts(existing: Any, incoming: Mapping[str, Any],
+                      fields: Iterable[str]) -> list[str]:
+    """Compare normalized write payloads exactly, without DB-only fields."""
+    return [field for field in fields if existing[field] != incoming[field]]
 
 
 def _utc() -> str:
@@ -279,8 +318,30 @@ class ResearchDatabase:
                    data_quality: str | None = None,
                    live_trade_id: str | None = None,
                    source_type: str | None = None) -> None:
+        payload = {
+            "cycle_id": cycle_id, "strategy_id": strategy_id, "timestamp": timestamp,
+            "symbol": symbol, "timeframe": timeframe, "decision": decision,
+            "status": status,
+            "feature_snapshot_json": json.dumps(
+                dict(features), ensure_ascii=False, sort_keys=True, default=str,
+            ),
+            "result_r": result_r, "shadow_trade_id": shadow_trade_id,
+            "would_open_trade": int(would_open_trade), "block_reason": block_reason,
+            "condition_active": int(condition_active),
+            "entry_triggered": int(entry_triggered), "trigger_reason": trigger_reason,
+            "signal_fingerprint": signal_fingerprint,
+            "previous_fingerprint": previous_fingerprint,
+            "is_new_signal": int(is_new_signal), "blocked_reason": blocked_reason,
+            "signal_audit_version": signal_audit_version, "strategy_mode": strategy_mode,
+            "actual_shadow_opened": int(actual_shadow_opened),
+            "shadow_mode_started_at": shadow_mode_started_at,
+            "feature_snapshot_id": feature_snapshot_id, "signal_id": signal_id,
+            "decision_id": decision_id, "strategy_version": strategy_version,
+            "attribution_version": attribution_version, "data_quality": data_quality,
+            "live_trade_id": live_trade_id, "source_type": source_type,
+        }
         with self.connect() as db:
-            db.execute("""
+            cursor = db.execute("""
                 INSERT INTO strategy_runs
                 (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
                  feature_snapshot_json, result_r, shadow_trade_id, would_open_trade,
@@ -292,15 +353,21 @@ class ResearchDatabase:
                  live_trade_id, source_type)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(cycle_id, strategy_id, symbol, timeframe) DO NOTHING
-            """, (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
-                  json.dumps(dict(features), ensure_ascii=False, sort_keys=True, default=str),
-                  result_r, shadow_trade_id, int(would_open_trade), block_reason,
-                  int(condition_active), int(entry_triggered), trigger_reason,
-                  signal_fingerprint, previous_fingerprint, int(is_new_signal),
-                  blocked_reason, signal_audit_version, strategy_mode,
-                  int(actual_shadow_opened), shadow_mode_started_at,
-                  feature_snapshot_id, signal_id, decision_id, strategy_version,
-                  attribution_version, data_quality, live_trade_id, source_type))
+            """, tuple(payload[field] for field in STRATEGY_RUN_REPLAY_FIELDS))
+            if cursor.rowcount == 0:
+                existing = db.execute("""
+                    SELECT * FROM strategy_runs
+                    WHERE cycle_id=? AND strategy_id=? AND symbol=? AND timeframe=?
+                """, (cycle_id, strategy_id, symbol, timeframe)).fetchone()
+                conflicts = _replay_conflicts(
+                    existing, payload, STRATEGY_RUN_REPLAY_FIELDS,
+                )
+                if conflicts:
+                    raise ReplayConflictError(
+                        "conflicting strategy run replay for "
+                        f"cycle_id={cycle_id}, strategy_id={strategy_id}, "
+                        f"symbol={symbol}, timeframe={timeframe}: {','.join(conflicts)}"
+                    )
 
     def record_live_run(self, *, source_run_id: str, live_trade_id: str,
                         cycle_id: str, timestamp: str,
@@ -669,13 +736,17 @@ class ResearchDatabase:
     def _source_run_id(self, db: sqlite3.Connection, *, shadow_trade_id: str,
                        strategy_id: str, symbol: str, timeframe: str) -> int | None:
         """Only an exact opening ID is a deterministic evaluation↔outcome join."""
-        row = db.execute("""
+        rows = db.execute("""
             SELECT id FROM strategy_runs
             WHERE shadow_trade_id=? AND strategy_id=? AND symbol=? AND timeframe=?
               AND cycle_id NOT LIKE '%:closed:%'
-            ORDER BY id DESC LIMIT 1
-        """, (shadow_trade_id, strategy_id, symbol, timeframe)).fetchone()
-        return int(row["id"]) if row else None
+            LIMIT 2
+        """, (shadow_trade_id, strategy_id, symbol, timeframe)).fetchall()
+        if len(rows) > 1:
+            raise AmbiguousSourceRunError(
+                f"ambiguous source run for shadow_trade_id={shadow_trade_id}"
+            )
+        return int(rows[0]["id"]) if rows else None
 
     def persist_closed_outcome(self, trade: Mapping[str, Any], *, source: str,
                                persisted_at: str | None = None) -> dict[str, Any]:
@@ -701,21 +772,55 @@ class ResearchDatabase:
             return {"status": "invalid", "shadow_trade_id": trade_id,
                     "reason": "MISSING_REQUIRED_OUTCOME_FIELDS"}
         snapshot_json, snapshot_available, snapshot_valid = self._feature_snapshot_payload(trade)
+        feature_snapshot_id = str(trade.get("feature_snapshot_id") or "") or None
+        signal_id = str(trade.get("signal_id") or "") or None
+        decision_id = str(trade.get("decision_id") or "") or None
+        strategy_version = str(trade.get("strategy_version") or "") or None
+        payload = {
+            "shadow_trade_id": trade_id, "strategy_id": strategy_id,
+            "symbol": symbol, "timeframe": timeframe, "side": side,
+            "entry_time": trade.get("entry_time") or trade.get("opened_at"),
+            "entry_price": self._number_or_none(
+                trade.get("entry_price", trade.get("entry")),
+            ),
+            "stop_loss": self._number_or_none(trade.get("stop_loss")),
+            "take_profit": self._number_or_none(trade.get("take_profit")),
+            "exit_time": trade.get("exit_time") or trade.get("closed_at"),
+            "exit_price": self._number_or_none(trade.get("exit_price")),
+            "exit_reason": trade.get("exit_reason"),
+            "status": str(trade.get("status") or "CLOSED"), "pnl_r": pnl_r,
+            "mfe_r": self._number_or_none(trade.get("mfe_r")),
+            "mae_r": self._number_or_none(trade.get("mae_r")),
+            "holding_candles": int(
+                self._number_or_none(trade.get("holding_candles")) or 0,
+            ),
+            "signal_fingerprint": trade.get("signal_fingerprint"),
+            "feature_snapshot_json": snapshot_json,
+            "feature_snapshot_available": int(snapshot_available),
+            "feature_snapshot_valid": int(snapshot_valid),
+            "feature_snapshot_id": feature_snapshot_id, "signal_id": signal_id,
+            "decision_id": decision_id, "strategy_version": strategy_version,
+            "attribution_version": attribution_version, "source": source,
+        }
         with self.connect() as db:
             existing = db.execute(
-                "SELECT shadow_trade_id FROM shadow_trade_outcomes WHERE shadow_trade_id=?",
+                "SELECT * FROM shadow_trade_outcomes WHERE shadow_trade_id=?",
                 (trade_id,),
             ).fetchone()
             if existing:
+                conflicts = _replay_conflicts(
+                    existing, payload, SHADOW_OUTCOME_REPLAY_FIELDS,
+                )
+                if conflicts:
+                    raise ReplayConflictError(
+                        f"conflicting shadow outcome replay for shadow_trade_id={trade_id}: "
+                        f"{','.join(conflicts)}"
+                    )
                 return {"status": "existing", "shadow_trade_id": trade_id}
             source_run_id = self._source_run_id(
                 db, shadow_trade_id=trade_id, strategy_id=strategy_id,
                 symbol=symbol, timeframe=timeframe,
             )
-            feature_snapshot_id = str(trade.get("feature_snapshot_id") or "") or None
-            signal_id = str(trade.get("signal_id") or "") or None
-            decision_id = str(trade.get("decision_id") or "") or None
-            strategy_version = str(trade.get("strategy_version") or "") or None
             required_links = (feature_snapshot_id, signal_id, decision_id, strategy_version)
             fully_attributed = source_run_id is not None and (
                 not is_new_attribution or all(required_links)
@@ -738,21 +843,11 @@ class ResearchDatabase:
                  source, original_shadow_trade_id, created_at, persisted_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                trade_id, strategy_id, symbol, timeframe, side,
-                trade.get("entry_time") or trade.get("opened_at"),
-                self._number_or_none(trade.get("entry_price", trade.get("entry"))),
-                self._number_or_none(trade.get("stop_loss")),
-                self._number_or_none(trade.get("take_profit")),
-                trade.get("exit_time") or trade.get("closed_at"),
-                self._number_or_none(trade.get("exit_price")),
-                trade.get("exit_reason"), str(trade.get("status") or "CLOSED"), pnl_r,
-                self._number_or_none(trade.get("mfe_r")), self._number_or_none(trade.get("mae_r")),
-                int(self._number_or_none(trade.get("holding_candles")) or 0),
-                trade.get("signal_fingerprint"), snapshot_json, int(snapshot_available),
-                int(snapshot_valid), source_run_id, join_status,
+                *(payload[field] for field in SHADOW_OUTCOME_WRITE_FIELDS),
+                source_run_id, join_status,
                 outcome_id, feature_snapshot_id, signal_id, decision_id,
                 strategy_version, attribution_version, data_quality, source, trade_id,
-                trade.get("entry_time") or trade.get("opened_at") or now, now,
+                payload["entry_time"] or now, now,
             ))
         return {"status": "inserted", "shadow_trade_id": trade_id,
                 "join_status": join_status,

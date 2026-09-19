@@ -2,10 +2,16 @@ import csv
 import json
 import sqlite3
 
+import pytest
+
 from research_lab_v2.analytics import calculate_metrics
 from research_lab_v2.backfill_outcomes import backfill_outcomes
 from research_lab_v2.config import ResearchLabSettings
-from research_lab_v2.database import ResearchDatabase
+from research_lab_v2.database import (
+    AmbiguousSourceRunError,
+    ReplayConflictError,
+    ResearchDatabase,
+)
 from research_lab_v2.dashboard import ResearchDashboardV2
 from research_lab_v2.runtime import ResearchLabRuntime, ShadowResearchBook
 from research_lab_v2.service import ResearchLab
@@ -46,6 +52,63 @@ def _database(path):
     return database
 
 
+def _run_payload(**changes):
+    payload = {
+        "cycle_id": "cycle-1", "strategy_id": "RISK_CONSERVATIVE",
+        "timestamp": "2026-08-01T00:00:00+00:00", "symbol": "BTC/USDT",
+        "timeframe": "1h", "decision": "SETUP", "status": "OPENED_SHADOW",
+        "features": {"adx": 31.0}, "shadow_trade_id": "run-replay",
+        "actual_shadow_opened": True, "feature_snapshot_id": "feature-1",
+        "signal_id": "signal-1", "decision_id": "decision-1",
+        "strategy_version": "strategy-1",
+        "attribution_version": "attribution_chain_v1", "data_quality": "COMPLETE",
+    }
+    payload.update(changes)
+    return payload
+
+
+def test_record_run_identical_replay_is_idempotent(tmp_path):
+    path = tmp_path / "research.db"
+    database = _database(path)
+    payload = _run_payload()
+    database.record_run(**payload)
+    database.record_run(**payload)
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 1
+
+
+@pytest.mark.parametrize("changes", [
+    {"timestamp": "2026-08-01T00:01:00+00:00"},
+    {"features": {"adx": 32.0}},
+    {"feature_snapshot_id": "feature-2"},
+    {"signal_id": "signal-2"},
+    {"decision_id": "decision-2"},
+    {"strategy_version": "strategy-2"},
+])
+def test_record_run_conflicting_replay_is_rejected(tmp_path, changes):
+    database = _database(tmp_path / "research.db")
+    database.record_run(**_run_payload())
+    with pytest.raises(ReplayConflictError, match="conflicting strategy run replay"):
+        database.record_run(**_run_payload(**changes))
+
+
+def test_record_run_identical_nullable_legacy_payload_is_idempotent(tmp_path):
+    path = tmp_path / "research.db"
+    database = _database(path)
+    payload = _run_payload(
+        shadow_trade_id=None, actual_shadow_opened=False,
+        feature_snapshot_id=None, signal_id=None, decision_id=None,
+        strategy_version=None, attribution_version=None, data_quality=None,
+    )
+    database.record_run(**payload)
+    database.record_run(**payload)
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            "SELECT COUNT(*), shadow_trade_id, feature_snapshot_id FROM strategy_runs"
+        ).fetchone()
+    assert row == (1, None, None)
+
+
 def test_closed_trade_is_persisted_exactly_once_and_survives_restart(tmp_path):
     path = tmp_path / "research.db"
     database = _database(path)
@@ -57,6 +120,44 @@ def test_closed_trade_is_persisted_exactly_once_and_survives_restart(tmp_path):
     assert second["status"] == "existing"
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 1
+
+
+@pytest.mark.parametrize("changes", [
+    {"pnl_r": 2.0},
+    {"exit_price": 96.0},
+    {"decision_id": "decision-2"},
+])
+def test_closed_outcome_conflicting_replay_is_rejected(tmp_path, changes):
+    database = _database(tmp_path / "research.db")
+    attribution = {
+        "feature_snapshot_id": "feature-1", "signal_id": "signal-1",
+        "decision_id": "decision-1", "strategy_version": "strategy-1",
+        "attribution_version": "attribution_chain_v1",
+    }
+    database.persist_closed_outcome(
+        _trade("outcome-replay", **attribution), source="LIVE_RESEARCH_RUNTIME",
+    )
+    with pytest.raises(ReplayConflictError, match="conflicting shadow outcome replay"):
+        database.persist_closed_outcome(
+            _trade("outcome-replay", **{**attribution, **changes}),
+            source="LIVE_RESEARCH_RUNTIME",
+        )
+
+
+def test_closed_outcome_nullable_legacy_replay_ignores_insert_timestamps(tmp_path):
+    database = _database(tmp_path / "research.db")
+    trade = _trade(
+        "legacy-nullable", entry_time=None, mfe_r=None, mae_r=None,
+        signal_fingerprint=None, feature_snapshot=None,
+    )
+    first = database.persist_closed_outcome(
+        trade, source="LEDGER_BACKFILL", persisted_at="2026-08-01T02:00:00+00:00",
+    )
+    second = database.persist_closed_outcome(
+        trade, source="LEDGER_BACKFILL", persisted_at="2026-08-02T02:00:00+00:00",
+    )
+    assert first["status"] == "inserted"
+    assert second == {"status": "existing", "shadow_trade_id": "legacy-nullable"}
 
 
 def test_pending_shadow_close_recovers_after_ledger_before_database_crash(tmp_path):
@@ -156,6 +257,30 @@ def test_exact_opening_run_is_linked_and_unresolved_is_honest(tmp_path):
     assert coverage["closed_outcomes"] == 2
     assert coverage["joined_outcomes"] == 1
     assert coverage["unresolved_outcome_joins"] == 1
+
+
+@pytest.mark.parametrize("match_count", [2, 3])
+def test_source_run_resolution_rejects_two_or_more_matches(tmp_path, match_count):
+    path = tmp_path / "research.db"
+    database = _database(path)
+    for index in range(match_count):
+        database.record_run(
+            cycle_id=f"open-{index}", strategy_id="RISK_CONSERVATIVE",
+            timestamp="2026-08-01T00:00:00+00:00", symbol="BTC/USDT",
+            timeframe="1h", decision="SETUP", status="OPENED_SHADOW",
+            features={"adx": 31}, shadow_trade_id="ambiguous",
+            actual_shadow_opened=True,
+        )
+
+    with pytest.raises(AmbiguousSourceRunError, match="ambiguous source run"):
+        database.persist_closed_outcome(
+            _trade("ambiguous"), source="LIVE_RESEARCH_RUNTIME"
+        )
+
+    with sqlite3.connect(path) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM shadow_trade_outcomes WHERE shadow_trade_id='ambiguous'"
+        ).fetchone()[0] == 0
 
 
 def test_feature_snapshot_is_preserved_and_malformed_snapshot_is_flagged(tmp_path):
