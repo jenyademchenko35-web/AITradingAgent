@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import sqlite3
 from unittest.mock import patch
@@ -343,6 +344,41 @@ def test_unreadable_ledger_fails_closed(tmp_path):
     assert report["gates"]["ranking_allowed"] is False
     assert report["gates"]["walk_forward_allowed"] is False
     assert report["gates"]["promotion_allowed"] is False
+
+
+def test_oversized_csv_field_fails_closed(tmp_path):
+    ledger = tmp_path / "history.csv"
+    ledger.write_text(
+        "shadow_trade_id,status\n" + "x" * (csv.field_size_limit() + 1) + ",CLOSED\n",
+        encoding="utf-8",
+    )
+    database = _db_with_verified_current_v1_outcome(tmp_path)
+    rows, diagnostic = ledger_evidence(ledger)
+
+    assert rows == []
+    assert diagnostic == "LEDGER_UNREADABLE:Error"
+    report = evaluate_integrity(database, ledger=rows, ledger_diagnostic=diagnostic)
+    assert report["state"] == DATA_DEGRADED
+    assert report["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+    assert report["checks"]["LEDGER_EVIDENCE"]["fail_closed"] is True
+
+
+def test_invalid_utf8_ledger_fails_closed(tmp_path):
+    ledger = tmp_path / "history.csv"
+    ledger.write_bytes(b"shadow_trade_id,status\n\xff,CLOSED\n")
+    database = _db_with_verified_current_v1_outcome(tmp_path)
+    rows, diagnostic = ledger_evidence(ledger)
+
+    assert rows == []
+    assert diagnostic == "LEDGER_UNREADABLE:UnicodeDecodeError"
+    report = evaluate_integrity(database, ledger=rows, ledger_diagnostic=diagnostic)
+    assert report["state"] == DATA_DEGRADED
+    assert report["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+    assert report["checks"]["LEDGER_EVIDENCE"]["fail_closed"] is True
 
 
 def test_legitimate_empty_ledger_stays_healthy_and_distinguishable(tmp_path):

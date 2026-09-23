@@ -77,7 +77,7 @@ def ledger_evidence(path: str | Path | None) -> tuple[list[dict[str, Any]], str 
     try:
         with target.open(encoding="utf-8", newline="") as handle:
             rows = [dict(row) for row in csv.DictReader(handle) if str(row.get("status", "")).upper() == "CLOSED"]
-    except OSError as error:
+    except (OSError, csv.Error, UnicodeError) as error:
         return [], f"LEDGER_UNREADABLE:{type(error).__name__}"
     return rows, None
 
