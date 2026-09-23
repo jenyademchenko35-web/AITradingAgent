@@ -153,11 +153,28 @@ class ResearchDatabaseBusy(RuntimeError):
 
 
 class AmbiguousSourceRunError(RuntimeError):
-    """Raised when a shadow outcome matches multiple opening runs."""
+    """Raised when a shadow outcome cannot bind to one expected opening run."""
 
 
 class ReplayConflictError(RuntimeError):
     """Raised when a persistence key is replayed with a different payload."""
+
+
+_UNBOUND_SOURCE_RUN = object()
+
+
+def canonical_outcome_identifiers(trade: Mapping[str, Any]) -> tuple[str, str, str, str]:
+    """Use the same opening-run lookup keys for provenance and persistence."""
+    trade_id = str(trade.get("shadow_trade_id") or "").strip()
+    strategy_value = trade.get("strategy_id")
+    # The candidate alias remains only for historical ledger compatibility.
+    if (not strategy_value and
+            str(trade.get("attribution_version") or "") != "attribution_chain_v1"):
+        strategy_value = trade.get("candidate_id")
+    strategy_id = str(strategy_value or "").upper()
+    symbol = str(trade.get("symbol") or "").strip()
+    timeframe = str(trade.get("timeframe") or "1h").strip() or "1h"
+    return trade_id, strategy_id, symbol, timeframe
 
 
 def _replay_conflicts(existing: Any, incoming: Mapping[str, Any],
@@ -749,23 +766,17 @@ class ResearchDatabase:
         return int(rows[0]["id"]) if rows else None
 
     def persist_closed_outcome(self, trade: Mapping[str, Any], *, source: str,
-                               persisted_at: str | None = None) -> dict[str, Any]:
+                               persisted_at: str | None = None,
+                               expected_source_run_id: int | None | object =
+                               _UNBOUND_SOURCE_RUN) -> dict[str, Any]:
         """Persist one canonical shadow closure, idempotently by shadow_trade_id.
 
         The outcome table deliberately stands apart from `strategy_runs`: one
         evaluation may lead to zero or multiple independently closed trades.
         """
-        trade_id = str(trade.get("shadow_trade_id") or "").strip()
         attribution_version = str(trade.get("attribution_version") or "") or None
         is_new_attribution = attribution_version == "attribution_chain_v1"
-        # New runtime trades must carry their explicit strategy identity.  The
-        # candidate alias remains only for historical ledger compatibility.
-        strategy_value = trade.get("strategy_id")
-        if not strategy_value and not is_new_attribution:
-            strategy_value = trade.get("candidate_id")
-        strategy_id = str(strategy_value or "").upper()
-        symbol = str(trade.get("symbol") or "").strip()
-        timeframe = str(trade.get("timeframe") or "1h").strip() or "1h"
+        trade_id, strategy_id, symbol, timeframe = canonical_outcome_identifiers(trade)
         side = str(trade.get("side") or trade.get("direction") or "UNKNOWN").upper()
         pnl_r = self._number_or_none(trade.get("pnl_r"))
         if not trade_id or not strategy_id or not symbol or pnl_r is None:
@@ -821,6 +832,11 @@ class ResearchDatabase:
                 db, shadow_trade_id=trade_id, strategy_id=strategy_id,
                 symbol=symbol, timeframe=timeframe,
             )
+            if (expected_source_run_id is not _UNBOUND_SOURCE_RUN
+                    and source_run_id != expected_source_run_id):
+                raise AmbiguousSourceRunError(
+                    f"source run changed for shadow_trade_id={trade_id}"
+                )
             required_links = (feature_snapshot_id, signal_id, decision_id, strategy_version)
             fully_attributed = source_run_id is not None and (
                 not is_new_attribution or all(required_links)

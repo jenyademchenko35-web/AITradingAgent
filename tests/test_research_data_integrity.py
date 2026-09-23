@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from unittest.mock import patch
 
 import pytest
 
 from research_lab_v2.analytics import calculate_metrics, promotion_decision, rank_strategies
+from research_lab_v2.backfill_outcomes import backfill_outcomes
 from research_lab_v2.database import ResearchDatabase
 from research_lab_v2.integrity import DATA_DEGRADED, DATA_INVALID, DATA_HEALTHY, evaluate_integrity, ledger_evidence, version_metadata
 from research_lab_v2.service import ResearchLab
@@ -13,7 +15,7 @@ from research_lab_v2.trace_outcome import current_pipeline_summary
 from strategies import registry
 
 from tests.test_research_attribution_trace import _insert_current
-from tests.test_research_outcome_persistence import _ledger
+from tests.test_research_outcome_persistence import _ledger, _trade
 
 
 def trade(identifier: str, **changes):
@@ -369,3 +371,247 @@ def test_readable_ledger_sync_gap_still_closes_gates(tmp_path):
     assert report["checks"]["LEDGER_EVIDENCE"]["availability"] == "READABLE"
     assert report["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
     assert report["gates"]["ranking_allowed"] is False
+
+
+# Finding B (audit 2026-09-22): the ledger carries no attribution columns, so
+# backfill_outcomes --apply restores a current-v1 closure as an untagged legacy
+# row that the trace epoch can never verify again. Asserts post-fix behavior.
+
+
+def _current_v1_ledger_trade(path, trade_id="cur-1"):
+    with sqlite3.connect(path) as connection:
+        source = connection.execute(
+            "SELECT feature_snapshot_json, feature_snapshot_id, signal_id, decision_id, "
+            "strategy_version FROM strategy_runs WHERE shadow_trade_id=?", (trade_id,)
+        ).fetchone()
+    return _trade(
+        trade_id, fingerprint="fingerprint-1", strategy_id="TREND_CONFIRM", side="LONG",
+        entry_time="2026-08-12T10:00:00Z", entry_price=100.0, stop_loss=98.0,
+        take_profit=104.0, exit_time="2026-08-12T11:00:00Z", exit_price=104.0,
+        exit_reason="TAKE_PROFIT", pnl_r=2.0,
+        feature_snapshot=json.loads(source[0]),
+    ), source[1:]
+
+
+@pytest.mark.parametrize("identifier, value", [
+    (None, None),
+    ("shadow_trade_id", " cur-1 "),
+    ("strategy_id", "trend_confirm"),
+    ("symbol", " BTC/USDT "),
+    ("timeframe", "1h "),
+])
+def test_backfill_of_current_v1_closure_stays_in_trace_epoch(tmp_path, identifier, value):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, expected_ids = _current_v1_ledger_trade(path)
+    if identifier:
+        ledger_trade[identifier] = value
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 1
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            "SELECT join_status, attribution_version, feature_snapshot_id, signal_id, "
+            "decision_id, strategy_version FROM shadow_trade_outcomes "
+            "WHERE shadow_trade_id='cur-1'"
+        ).fetchone()
+    assert row == ("RESOLVED", "attribution_chain_v1", *expected_ids)
+    summary = current_pipeline_summary(path)
+    assert summary["outcomes_checked"] == summary["fully_joined"] == 1
+    assert summary["current_pipeline_regression"] is False
+
+
+def test_backfill_normalized_current_v1_with_incomplete_evidence_keeps_gates_closed(tmp_path):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    ledger_trade["timeframe"] = "1h "
+    ledger_trade["feature_snapshot"] = {}
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+
+    for _ in range(2):
+        report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+        assert report["inserted"] == 0
+        assert report["ambiguous"] == 1
+        with sqlite3.connect(path) as connection:
+            assert connection.execute(
+                "SELECT COUNT(*) FROM shadow_trade_outcomes"
+            ).fetchone()[0] == 0
+        assert current_pipeline_summary(path)["outcomes_checked"] == 0
+        integrity = evaluate_integrity(ResearchDatabase(path), ledger=ledger_evidence(ledger)[0])
+        assert integrity["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
+        assert integrity["state"] != DATA_HEALTHY
+        assert integrity["gates"] == {
+            "ranking_allowed": False, "walk_forward_allowed": False,
+            "promotion_allowed": False,
+        }
+
+
+def test_backfill_rejects_unvalidated_source_run_at_persistence(tmp_path):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    ledger_trade["feature_snapshot"] = {}
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    with patch("research_lab_v2.backfill_outcomes._source_run", return_value=None):
+        report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 0
+    assert report["ambiguous"] == 1
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 0
+
+
+def test_backfill_current_v1_missing_decision_stays_partial_without_fabrication(tmp_path):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    with sqlite3.connect(path) as connection:
+        connection.execute("UPDATE strategy_runs SET decision_id=NULL WHERE shadow_trade_id='cur-1'")
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    preview = backfill_outcomes(ledger_path=ledger, database_path=path)
+    assert preview["ambiguous"] == 1
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == report["ambiguous"] == 1
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            "SELECT attribution_version, decision_id, join_status, data_quality "
+            "FROM shadow_trade_outcomes WHERE shadow_trade_id='cur-1'"
+        ).fetchone()
+    assert row == ("attribution_chain_v1", None, "UNRESOLVED", "PARTIAL")
+    summary = current_pipeline_summary(path)
+    assert summary["outcomes_checked"] == summary["partial"] == 1
+    assert summary["current_pipeline_regression"] is True
+    assert evaluate_integrity(ResearchDatabase(path), ledger=ledger_evidence(ledger)[0])["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+
+
+def test_backfill_ambiguous_current_v1_source_leaves_sync_gap(tmp_path):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    with sqlite3.connect(path) as connection:
+        connection.execute("""
+            INSERT INTO strategy_runs
+            (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
+             feature_snapshot_json, shadow_trade_id, signal_fingerprint,
+             actual_shadow_opened, feature_snapshot_id, signal_id, decision_id,
+             strategy_version, attribution_version, data_quality)
+            SELECT cycle_id || '-duplicate', strategy_id, timestamp, symbol, timeframe,
+                   decision, status, feature_snapshot_json, shadow_trade_id,
+                   signal_fingerprint, actual_shadow_opened, feature_snapshot_id,
+                   signal_id, decision_id, strategy_version, attribution_version,
+                   data_quality FROM strategy_runs WHERE shadow_trade_id='cur-1'
+        """)
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 0
+    assert report["ambiguous"] == 1
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 0
+    integrity = evaluate_integrity(ResearchDatabase(path), ledger=ledger_evidence(ledger)[0])
+    assert integrity["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
+    assert integrity["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+
+
+@pytest.mark.parametrize("conflict", ["fingerprint", "snapshot", "snapshot_shape", "source_quality"])
+def test_backfill_conflicting_current_v1_evidence_leaves_sync_gap(tmp_path, conflict):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    if conflict == "fingerprint":
+        ledger_trade["signal_fingerprint"] = "different-fingerprint"
+    elif conflict == "snapshot":
+        ledger_trade["feature_snapshot"] = {"adx": 30}
+    elif conflict == "snapshot_shape":
+        ledger_trade["feature_snapshot"] = []
+    with sqlite3.connect(path) as connection:
+        if conflict == "source_quality":
+            connection.execute("UPDATE strategy_runs SET data_quality='PARTIAL' WHERE shadow_trade_id='cur-1'")
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 0
+    assert report["ambiguous"] == 1
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 0
+    integrity = evaluate_integrity(ResearchDatabase(path), ledger=ledger_evidence(ledger)[0])
+    assert integrity["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
+    assert integrity["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+
+
+@pytest.mark.parametrize("erase_all_ids", [False, True])
+def test_backfill_unversioned_attribution_evidence_is_not_called_legacy(tmp_path, erase_all_ids):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    with sqlite3.connect(path) as connection:
+        connection.execute("UPDATE strategy_runs SET attribution_version=NULL WHERE shadow_trade_id='cur-1'")
+        if erase_all_ids:
+            connection.execute(
+                "UPDATE strategy_runs SET feature_snapshot_id=NULL, signal_id=NULL, "
+                "decision_id=NULL, strategy_version=NULL WHERE shadow_trade_id='cur-1'"
+            )
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 0
+    assert report["ambiguous"] == 1
+    integrity = evaluate_integrity(ResearchDatabase(path), ledger=ledger_evidence(ledger)[0])
+    assert integrity["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
+    assert integrity["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+
+
+def test_backfill_current_snapshot_without_source_run_leaves_sync_gap(tmp_path):
+    path = _insert_current(tmp_path, trade_id="cur-1")
+    ledger_trade, _ = _current_v1_ledger_trade(path)
+    with sqlite3.connect(path) as connection:
+        connection.execute("DELETE FROM shadow_trade_outcomes")
+        connection.execute("DELETE FROM strategy_runs WHERE shadow_trade_id='cur-1'")
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 0
+    assert report["ambiguous"] == 1
+    integrity = evaluate_integrity(ResearchDatabase(path), ledger=ledger_evidence(ledger)[0])
+    assert integrity["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
+    assert integrity["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+
+
+def test_backfill_exact_legacy_run_remains_compatible(tmp_path):
+    path = tmp_path / "research.db"
+    db = database(path)
+    ledger_trade = _trade("legacy")
+    db.record_run(
+        cycle_id="legacy-open", strategy_id="RISK_CONSERVATIVE",
+        timestamp=ledger_trade["entry_time"], symbol=ledger_trade["symbol"],
+        timeframe=ledger_trade["timeframe"], decision="SETUP", status="OPENED_SHADOW",
+        features=ledger_trade["feature_snapshot"], shadow_trade_id="legacy",
+        signal_fingerprint=ledger_trade["signal_fingerprint"],
+    )
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [ledger_trade])
+    report = backfill_outcomes(ledger_path=ledger, database_path=path, apply=True)
+    assert report["inserted"] == 1
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            "SELECT attribution_version, join_status, data_quality "
+            "FROM shadow_trade_outcomes WHERE shadow_trade_id='legacy'"
+        ).fetchone()
+    assert row == (None, "RESOLVED", "COMPLETE")
