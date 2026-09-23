@@ -14,7 +14,7 @@ from .analytics import (
     promotion_decision,
     rank_strategies,
 )
-from .integrity import evaluate_integrity, ledger_rows
+from .integrity import evaluate_integrity, ledger_evidence
 from .database import ResearchDatabase
 
 
@@ -113,12 +113,13 @@ class ResearchLab:
                 ])
                 if stats:
                     self.database.record_feature_statistics(strategy_id, stats)
+        ledger, ledger_diagnostic = ledger_evidence(self.ledger_path)
         integrity = evaluate_integrity(
-            self.database, ledger=ledger_rows(self.ledger_path),
+            self.database, ledger=ledger, ledger_diagnostic=ledger_diagnostic,
             artifact_path=self.database.path.parent / "research_data_integrity.json",
         )
         if not integrity["gates"]["ranking_allowed"]:
-            reconciliation = self.database.outcome_reconciliation(ledger_rows(self.ledger_path))
+            reconciliation = self.database.outcome_reconciliation(ledger)
             return {"closed": sum(len(rows) for rows in grouped.values()), "ranked": False,
                     "ranking_blocked": "OUTCOME_EVIDENCE_INCOMPLETE", "integrity": integrity,
                     "reconciliation": reconciliation}
@@ -140,7 +141,10 @@ class ResearchLab:
         if not strategy_id or registry.get(strategy_id) is None:
             raise ValueError("walk-forward report has no registered candidate_id")
         self.register_strategies()
-        integrity = evaluate_integrity(self.database, ledger=ledger_rows(self.ledger_path))
+        ledger, ledger_diagnostic = ledger_evidence(self.ledger_path)
+        integrity = evaluate_integrity(
+            self.database, ledger=ledger, ledger_diagnostic=ledger_diagnostic,
+        )
         if not integrity["gates"]["walk_forward_allowed"]:
             raise ValueError("walk-forward blocked by research data integrity")
         self.database.record_walk_forward(strategy_id, {

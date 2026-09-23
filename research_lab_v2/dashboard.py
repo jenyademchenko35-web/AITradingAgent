@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
-import csv
 from pathlib import Path
 from typing import Any
 
 from .analytics import evidence_state, rank_strategies
 from .database import ResearchDatabase
 from .health import build_research_health
-from .integrity import evaluate_integrity
+from .integrity import evaluate_integrity, ledger_evidence
 from .runtime import SHADOW_BOOK_FILE, SHADOW_HISTORY_FILE, load_runtime_status
 from .trace_outcome import current_pipeline_summary
 
@@ -39,18 +38,14 @@ class ResearchDashboardV2:
         self.shadow_book_path = Path(shadow_book_path)
         self.shadow_history_path = Path(shadow_history_path)
 
-    def _shadow_ledger(self) -> dict[str, list[dict[str, Any]]]:
+    def _shadow_ledger(self) -> dict[str, Any]:
         try:
             payload = json.loads(self.shadow_book_path.read_text(encoding="utf-8"))
             open_rows = payload if isinstance(payload, list) else []
         except (OSError, ValueError, TypeError):
             open_rows = []
-        try:
-            with self.shadow_history_path.open("r", encoding="utf-8", newline="") as handle:
-                closed_rows = list(csv.DictReader(handle))
-        except OSError:
-            closed_rows = []
-        return {"open": open_rows, "closed": closed_rows}
+        closed_rows, closed_diagnostic = ledger_evidence(self.shadow_history_path)
+        return {"open": open_rows, "closed": closed_rows, "closed_diagnostic": closed_diagnostic}
 
     def build_report(self) -> dict[str, Any]:
         runtime_status = (
@@ -74,7 +69,7 @@ class ResearchDashboardV2:
         evidence = database.strategy_evidence()
         ledger = self._shadow_ledger()
         reconciliation = database.outcome_reconciliation(ledger["closed"])
-        integrity = evaluate_integrity(database, ledger=ledger["closed"], artifact_path=self.path.parent / "research_data_integrity.json")
+        integrity = evaluate_integrity(database, ledger=ledger["closed"], ledger_diagnostic=ledger["closed_diagnostic"], artifact_path=self.path.parent / "research_data_integrity.json")
         pipeline_progress = current_pipeline_summary(self.path)
         top = _rows(self.path, """
             WITH latest AS (

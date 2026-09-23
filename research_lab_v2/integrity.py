@@ -62,14 +62,29 @@ def _atomic(path: Path, payload: Mapping[str, Any]) -> None:
     temporary.replace(path)
 
 
-def ledger_rows(path: str | Path | None) -> list[dict[str, Any]]:
+def ledger_evidence(path: str | Path | None) -> tuple[list[dict[str, Any]], str | None]:
+    """Read CLOSED ledger rows and report evidence availability explicitly.
+
+    The diagnostic is ``None`` for a readable ledger or an intentionally
+    unconfigured path, ``"LEDGER_MISSING"`` when an expected file is absent,
+    and ``"LEDGER_UNREADABLE:<type>"`` when the file cannot be read.
+    """
     if path is None:
-        return []
+        return [], None
+    target = Path(path)
+    if not target.is_file():
+        return [], "LEDGER_MISSING"
     try:
-        with Path(path).open(encoding="utf-8", newline="") as handle:
-            return [dict(row) for row in csv.DictReader(handle) if str(row.get("status", "")).upper() == "CLOSED"]
-    except OSError:
-        return []
+        with target.open(encoding="utf-8", newline="") as handle:
+            rows = [dict(row) for row in csv.DictReader(handle) if str(row.get("status", "")).upper() == "CLOSED"]
+    except OSError as error:
+        return [], f"LEDGER_UNREADABLE:{type(error).__name__}"
+    return rows, None
+
+
+def ledger_rows(path: str | Path | None) -> list[dict[str, Any]]:
+    rows, _ = ledger_evidence(path)
+    return rows
 
 
 def _validated_current_pipeline_summary(database_path: str | Path) -> tuple[dict[str, Any], str | None]:
@@ -115,6 +130,7 @@ def _validated_current_pipeline_summary(database_path: str | Path) -> tuple[dict
 
 def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (),
                        artifact_path: str | Path | None = None,
+                       ledger_diagnostic: str | None = None,
                        pnl_r_abs_limit: float = DEFAULT_PNL_R_ABS_LIMIT) -> dict[str, Any]:
     """Evaluate one canonical state machine from ledger and SQLite evidence."""
     ledger = [dict(row) for row in ledger if str(row.get("status", "")).upper() == "CLOSED"]
@@ -124,6 +140,9 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
         outcomes = [dict(row) for row in db.execute("SELECT * FROM shadow_trade_outcomes").fetchall()]
         metric_stamp = db.execute("SELECT MAX(calculated_at) FROM strategy_metrics").fetchone()[0]
         wf_stamp = db.execute("SELECT MAX(calculated_at) FROM walk_forward_results").fetchone()[0]
+    # Reconciliation is only meaningful while canonical outcomes exist; an
+    # absent ledger before the first closure is a bootstrap state, not corruption.
+    ledger_unavailable = bool(ledger_diagnostic) and bool(outcomes)
     pipeline, trace_diagnostic = _validated_current_pipeline_summary(database.path)
     trace_unverifiable = trace_diagnostic is not None
     pipeline_broken = pipeline["broken"]
@@ -179,11 +198,12 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
     # cannot poison the health of a corrected future pipeline forever.
     degraded = bool(sync_gap_ids or orphan_ids or historical_unresolved or current_unresolved
                     or metrics_stale or walk_forward_stale or current_pipeline_regression
-                    or trace_unverifiable)
+                    or trace_unverifiable or ledger_unavailable)
     state = DATA_INVALID if invalid else DATA_DEGRADED if degraded else DATA_HEALTHY
     ranking_allowed = (not invalid and not sync_gap_ids and not orphan_ids and
                        not current_unresolved and not metrics_stale and
-                       not current_pipeline_regression and not trace_unverifiable)
+                       not current_pipeline_regression and not trace_unverifiable and
+                       not ledger_unavailable)
     new_coverage = round(new_fully_joined / new_outcomes * 100, 2) if new_outcomes else 0.0
     # Attribution-dependent validation can start only from fully joined
     # post-fix evidence. Existing unresolved historical rows remain immutable.
@@ -192,11 +212,12 @@ def evaluate_integrity(database: Any, *, ledger: Iterable[Mapping[str, Any]] = (
                             not current_unresolved and
                             (not needs_post_fix_evidence or (new_outcomes > 0 and new_coverage >= 95.0)) and
                             not walk_forward_stale and not current_pipeline_regression and
-                            not trace_unverifiable)
+                            not trace_unverifiable and not ledger_unavailable)
     gates = {"ranking_allowed": ranking_allowed, "walk_forward_allowed": walk_forward_allowed,
              "promotion_allowed": ranking_allowed and walk_forward_allowed}
     report = {"schema_version": 1, "checked_at": datetime.now(timezone.utc).isoformat(), "state": state,
               "checks": {
+                "LEDGER_EVIDENCE": {"availability": ledger_diagnostic or "READABLE", "diagnostic_reason": ledger_diagnostic, "fail_closed": ledger_unavailable},
                 "OUTCOME_SYNC_GAP": {"ledger_closed": len(ledger), "canonical_outcomes": len(outcomes), "sync_gap": len(sync_gap_ids), "examples": sync_gap_ids[:10], "orphan_examples": orphan_ids[:10]},
                 "DUPLICATE_SHADOW_TRADE_ID": {"count": len(duplicate_ledger), "examples": duplicate_ledger[:10]},
                 "DUPLICATE_OUTCOME": {"count": len(duplicate_outcomes), "examples": duplicate_outcomes[:10]},

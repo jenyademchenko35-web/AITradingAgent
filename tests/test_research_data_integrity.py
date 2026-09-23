@@ -7,12 +7,13 @@ import pytest
 
 from research_lab_v2.analytics import calculate_metrics, promotion_decision, rank_strategies
 from research_lab_v2.database import ResearchDatabase
-from research_lab_v2.integrity import DATA_DEGRADED, DATA_INVALID, DATA_HEALTHY, evaluate_integrity, version_metadata
+from research_lab_v2.integrity import DATA_DEGRADED, DATA_INVALID, DATA_HEALTHY, evaluate_integrity, ledger_evidence, version_metadata
 from research_lab_v2.service import ResearchLab
 from research_lab_v2.trace_outcome import current_pipeline_summary
 from strategies import registry
 
 from tests.test_research_attribution_trace import _insert_current
+from tests.test_research_outcome_persistence import _ledger
 
 
 def trade(identifier: str, **changes):
@@ -297,3 +298,74 @@ def test_versions_are_deterministic():
     assert first["dataset_version"] == second["dataset_version"]
     assert first["feature_set_version"] == second["feature_set_version"]
     assert first["strategy_version"] == second["strategy_version"]
+
+
+def _db_with_verified_current_v1_outcome(tmp_path):
+    """Fully joined current-v1 outcome in the DB; the caller chooses the ledger state."""
+    path = _insert_current(tmp_path)
+    database = ResearchDatabase(path)
+    database.record_metrics("TREND_CONFIRM", calculate_metrics([2.0]),
+                            calculated_at="2099-01-01T00:00:00+00:00")
+    return database
+
+
+# Finding A (audit 2026-09-22): a missing/unreadable ledger must fail closed
+# while a legitimately readable empty ledger stays a valid known-empty state.
+
+def test_missing_ledger_fails_closed(tmp_path):
+    database = _db_with_verified_current_v1_outcome(tmp_path)
+    rows, diagnostic = ledger_evidence(tmp_path / "absent.csv")
+    assert diagnostic == "LEDGER_MISSING"
+    report = evaluate_integrity(database, ledger=rows, ledger_diagnostic=diagnostic)
+    assert report["state"] == DATA_DEGRADED
+    assert report["gates"] == {
+        "ranking_allowed": False, "walk_forward_allowed": False, "promotion_allowed": False,
+    }
+    assert report["checks"]["LEDGER_EVIDENCE"] == {
+        "availability": "LEDGER_MISSING", "diagnostic_reason": "LEDGER_MISSING", "fail_closed": True,
+    }
+
+
+def test_unreadable_ledger_fails_closed(tmp_path):
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [trade("ghost")])
+    ledger.chmod(0)
+    database = _db_with_verified_current_v1_outcome(tmp_path)
+    try:
+        rows, diagnostic = ledger_evidence(ledger)
+        assert diagnostic is not None and diagnostic.startswith("LEDGER_UNREADABLE")
+        report = evaluate_integrity(database, ledger=rows, ledger_diagnostic=diagnostic)
+    finally:
+        ledger.chmod(0o600)
+    assert report["state"] == DATA_DEGRADED
+    assert report["gates"]["ranking_allowed"] is False
+    assert report["gates"]["walk_forward_allowed"] is False
+    assert report["gates"]["promotion_allowed"] is False
+
+
+def test_legitimate_empty_ledger_stays_healthy_and_distinguishable(tmp_path):
+    empty = tmp_path / "history.csv"
+    _ledger(empty, [])
+    database = _db_with_verified_current_v1_outcome(tmp_path)
+    readable_rows, readable_diagnostic = ledger_evidence(empty)
+    assert readable_diagnostic is None
+    readable = evaluate_integrity(database, ledger=readable_rows, ledger_diagnostic=readable_diagnostic)
+    unavailable_rows, unavailable_diagnostic = ledger_evidence(tmp_path / "absent.csv")
+    unavailable = evaluate_integrity(database, ledger=unavailable_rows, ledger_diagnostic=unavailable_diagnostic)
+    assert readable["state"] == DATA_HEALTHY
+    assert readable["gates"]["ranking_allowed"] is True
+    assert unavailable["state"] != readable["state"]
+    assert unavailable["checks"]["LEDGER_EVIDENCE"] != readable["checks"]["LEDGER_EVIDENCE"]
+
+
+def test_readable_ledger_sync_gap_still_closes_gates(tmp_path):
+    ledger = tmp_path / "history.csv"
+    _ledger(ledger, [trade("ghost")])
+    database = _db_with_verified_current_v1_outcome(tmp_path)
+    rows, diagnostic = ledger_evidence(ledger)
+    assert diagnostic is None
+    report = evaluate_integrity(database, ledger=rows, ledger_diagnostic=diagnostic)
+    assert report["state"] == DATA_DEGRADED
+    assert report["checks"]["LEDGER_EVIDENCE"]["availability"] == "READABLE"
+    assert report["checks"]["OUTCOME_SYNC_GAP"]["sync_gap"] == 1
+    assert report["gates"]["ranking_allowed"] is False
