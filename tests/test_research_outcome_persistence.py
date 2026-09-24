@@ -1,6 +1,7 @@
 import csv
 import json
 import sqlite3
+from unittest.mock import patch
 
 import pytest
 
@@ -235,6 +236,107 @@ def test_pending_close_without_ledger_is_never_canonicalized(tmp_path):
     assert book.pending_closes()[0]["shadow_trade_id"] == "outbox-before-ledger"
     with sqlite3.connect(tmp_path / "research.db") as connection:
         assert connection.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 0
+
+
+def test_pending_close_replay_uses_durable_payload_after_ledger_crash(tmp_path):
+    database = _database(tmp_path / "research.db")
+    settings = ResearchLabSettings(enabled=True, dry_run=False, database_path=str(tmp_path / "research.db"))
+    opened = {
+        "timestamp": "2026-08-16T10:00:00+00:00", "symbol": "BTC/USDT",
+        "timeframe": "1h", "current_price": 100.0, "high": 100.0, "low": 100.0,
+    }
+    book = ShadowResearchBook(tmp_path / "open.json", tmp_path / "history.csv")
+    trade_id, reason = book.open(
+        strategy_id="RISK_CONSERVATIVE", snapshot=opened,
+        plan={"direction": "LONG", "entry": 100.0, "stop_loss": 99.0,
+              "take_profit": 102.0, "rr": 2.0},
+        settings=settings, signal_fingerprint="fingerprint",
+        shadow_mode_started_at=opened["timestamp"], attribution={},
+    )
+    assert reason is None and trade_id
+    snapshot_a = {
+        **opened, "timestamp": "2026-08-16T11:00:00+00:00",
+        "low": 98.5, "candle_open_at": "2026-08-16T11:00:00+00:00",
+    }
+    with patch.object(book, "_append_history", side_effect=OSError("crash before ledger")):
+        with pytest.raises(OSError, match="crash before ledger"):
+            book.close_from_snapshots([snapshot_a], settings=settings)
+    pending_a = book.pending_closes()[0]
+    assert pending_a["exit_reason"] == "STOP_LOSS"
+    assert book.history() == []
+    assert len(book.load()) == 1
+
+    restarted = ResearchLabRuntime(
+        status_path=tmp_path / "status.json", shadow_book_path=tmp_path / "open.json",
+        shadow_history_path=tmp_path / "history.csv",
+    ).shadow_book
+    assert restarted.reconcile_pending_closes(
+        lambda trade: database.persist_closed_outcome(trade, source="LIVE_RESEARCH_RUNTIME")
+    )["deferred"] == 1
+    snapshot_b = {
+        **opened, "timestamp": "2026-08-16T12:00:00+00:00",
+        "high": 102.5, "candle_open_at": "2026-08-16T12:00:00+00:00",
+    }
+    closed = restarted.close_from_snapshots([snapshot_b], settings=settings)
+    assert closed == [pending_a]
+    assert len(restarted.history()) == 1
+    assert restarted.history()[0]["exit_reason"] == "STOP_LOSS"
+    assert restarted.load() == []
+    assert restarted.reconcile_pending_closes(
+        lambda trade: database.persist_closed_outcome(trade, source="LIVE_RESEARCH_RUNTIME")
+    )["recovered"] == 1
+    with sqlite3.connect(tmp_path / "research.db") as connection:
+        outcome = connection.execute(
+            "SELECT exit_time, exit_reason, exit_price, pnl_r FROM shadow_trade_outcomes "
+            "WHERE shadow_trade_id=?", (trade_id,),
+        ).fetchone()
+    ledger = restarted.history()[0]
+    assert outcome == (
+        ledger["exit_time"], ledger["exit_reason"], float(ledger["exit_price"]),
+        float(ledger["pnl_r"]),
+    )
+    assert restarted.pending_closes() == []
+
+
+def test_pending_close_ledger_payload_mismatch_fails_closed(tmp_path):
+    database = _database(tmp_path / "research.db")
+    book = ShadowResearchBook(tmp_path / "open.json", tmp_path / "history.csv")
+    pending_a = _trade("conflicting-close")
+    book.queue_closed_trade(pending_a)
+    book._append_history(_trade("conflicting-close", exit_reason="TAKE_PROFIT",
+                                exit_price=96.0, pnl_r=2.0))
+    result = book.reconcile_pending_closes(
+        lambda trade: database.persist_closed_outcome(trade, source="LIVE_RESEARCH_RUNTIME")
+    )
+    assert result == {"pending": 1, "recovered": 0, "failed": 1, "deferred": 0}
+    assert book.pending_closes() == [pending_a]
+    with sqlite3.connect(tmp_path / "research.db") as connection:
+        assert connection.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 0
+    book.path.write_text(json.dumps([{**pending_a, "status": "OPEN"}]), encoding="utf-8")
+    with pytest.raises(ValueError, match="pending/ledger close payload conflict"):
+        book.close_from_snapshots([], settings=ResearchLabSettings(enabled=True))
+    assert len(book.load()) == 1
+    assert book.pending_closes() == [pending_a]
+    assert len(book.history()) == 1
+
+
+def test_pending_close_identical_ledger_replay_is_idempotent(tmp_path):
+    database = _database(tmp_path / "research.db")
+    book = ShadowResearchBook(tmp_path / "open.json", tmp_path / "history.csv")
+    pending = _trade("identical-close")
+    book.queue_closed_trade(pending)
+    book._append_history(pending)
+    book.path.write_text(json.dumps([{**pending, "status": "OPEN"}]), encoding="utf-8")
+    restarted = ShadowResearchBook(tmp_path / "open.json", tmp_path / "history.csv")
+    persist = lambda trade: database.persist_closed_outcome(trade, source="LIVE_RESEARCH_RUNTIME")
+    assert restarted.reconcile_pending_closes(persist)["recovered"] == 1
+    assert restarted.pending_closes() == [pending]
+    assert restarted.close_from_snapshots([], settings=ResearchLabSettings(enabled=True)) == [pending]
+    assert restarted.reconcile_pending_closes(persist)["recovered"] == 1
+    assert restarted.reconcile_pending_closes(persist)["pending"] == 0
+    assert len(restarted.history()) == 1
+    with sqlite3.connect(tmp_path / "research.db") as connection:
+        assert connection.execute("SELECT COUNT(*) FROM shadow_trade_outcomes").fetchone()[0] == 1
 
 
 def test_same_fingerprint_trades_remain_distinct_by_shadow_trade_id(tmp_path):

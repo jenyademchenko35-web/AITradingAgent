@@ -26,7 +26,7 @@ from .config import (
     SAFE_STRATEGY_ALLOWLIST,
     get_settings,
 )
-from .database import ResearchDatabaseBusy
+from .database import ResearchDatabase, ResearchDatabaseBusy, canonical_outcome_identifiers
 from .service import ResearchLab
 from .attribution import attribution_ids, feature_snapshot_id
 from .integrity import version_metadata
@@ -330,6 +330,56 @@ class ShadowResearchBook:
         "shadow_mode_started_at", "feature_snapshot_json",
     )
 
+    @staticmethod
+    def _close_payload(trade: Mapping[str, Any]) -> dict[str, Any]:
+        """Normalize fields shared by the pending intent, CSV, and SQLite."""
+        trade_id, strategy_id, symbol, timeframe = canonical_outcome_identifiers(trade)
+        number = ResearchDatabase._number_or_none
+        snapshot, _, valid = ResearchDatabase._feature_snapshot_payload(trade)
+        if valid:
+            snapshot = json.dumps(json.loads(snapshot), sort_keys=True, ensure_ascii=False)
+        return {
+            "shadow_trade_id": trade_id, "strategy_id": strategy_id,
+            "symbol": symbol, "timeframe": timeframe,
+            "side": str(trade.get("side") or trade.get("direction") or "UNKNOWN").upper(),
+            "entry_time": str(trade.get("entry_time") or trade.get("opened_at") or ""),
+            "entry_price": number(trade.get("entry_price", trade.get("entry"))),
+            "stop_loss": number(trade.get("stop_loss")),
+            "take_profit": number(trade.get("take_profit")),
+            "exit_time": str(trade.get("exit_time") or trade.get("closed_at") or ""),
+            "exit_price": number(trade.get("exit_price")),
+            "exit_reason": str(trade.get("exit_reason") or ""),
+            "status": str(trade.get("status") or "CLOSED"),
+            "pnl_r": number(trade.get("pnl_r")),
+            "mfe_r": number(trade.get("mfe_r")),
+            "mae_r": number(trade.get("mae_r")),
+            "holding_candles": int(number(trade.get("holding_candles")) or 0),
+            "signal_fingerprint": str(trade.get("signal_fingerprint") or ""),
+            "feature_snapshot": snapshot,
+            "risk_r": number(trade.get("risk_r", 1.0)),
+            "shadow_mode_started_at": str(trade.get("shadow_mode_started_at") or ""),
+        }
+
+    @classmethod
+    def _confirm_ledger_close(cls, pending: Mapping[str, Any],
+                              ledger_rows: Iterable[Mapping[str, Any]]) -> bool:
+        """An ID confirms a pending close only when its persisted payload agrees."""
+        trade_id = str(pending.get("shadow_trade_id") or "").strip()
+        matches = [row for row in ledger_rows
+                   if str(row.get("shadow_trade_id") or "").strip() == trade_id]
+        if not matches:
+            return False
+        expected = cls._close_payload(pending)
+        for row in matches:
+            actual = cls._close_payload(row)
+            conflicts = [field for field in expected if expected[field] != actual[field]]
+            if conflicts:
+                raise ValueError(
+                    f"pending/ledger close payload conflict for shadow_trade_id={trade_id}: "
+                    f"{','.join(conflicts)}"
+                )
+        return True
+
     def __init__(self, path: str | Path = SHADOW_BOOK_FILE,
                  history_path: str | Path = SHADOW_HISTORY_FILE,
                  pending_closes_path: str | Path | None = None) -> None:
@@ -367,10 +417,13 @@ class ShadowResearchBook:
             payload.setdefault("entry_time", payload.get("opened_at"))
             payload.setdefault("entry_price", payload.get("entry"))
             payload.setdefault("risk_r", 1.0)
-            payload["feature_snapshot_json"] = json.dumps(
-                payload.get("feature_snapshot", {}), ensure_ascii=False,
-                sort_keys=True, default=str,
-            )
+            if "feature_snapshot" in payload:
+                payload["feature_snapshot_json"] = json.dumps(
+                    payload["feature_snapshot"], ensure_ascii=False,
+                    sort_keys=True, default=str,
+                )
+            elif not payload.get("feature_snapshot_json"):
+                payload["feature_snapshot_json"] = json.dumps({})
             writer.writerow(payload)
 
     def pending_closes(self) -> list[dict[str, Any]]:
@@ -408,14 +461,18 @@ class ShadowResearchBook:
         """Persist only ledger-confirmed queued closures, then acknowledge them."""
         pending = self.pending_closes()
         remaining: list[dict[str, Any]] = []
-        ledger_ids = {
-            str(row.get("shadow_trade_id") or "").strip()
-            for row in self.history()
-        }
+        ledger_rows = self.history()
+        open_ids = {str(row.get("shadow_trade_id") or "").strip() for row in self.load()}
         recovered = failed = deferred = 0
         for trade in pending:
             trade_id = str(trade.get("shadow_trade_id") or "").strip()
-            if not trade_id or trade_id not in ledger_ids:
+            try:
+                confirmed = bool(trade_id) and self._confirm_ledger_close(trade, ledger_rows)
+            except ValueError:
+                remaining.append(trade)
+                failed += 1
+                continue
+            if not confirmed:
                 # The durable outbox is written first. A crash before CSV
                 # append must never manufacture a canonical outcome.
                 remaining.append(trade)
@@ -429,6 +486,10 @@ class ShadowResearchBook:
                 continue
             if str(result.get("status") or "") in {"inserted", "existing"}:
                 recovered += 1
+                if trade_id in open_ids:
+                    # Keep the intent until the open book is cleared. A
+                    # restart must not recalculate this close from snapshots.
+                    remaining.append(trade)
             else:
                 remaining.append(trade)
                 failed += 1
@@ -470,17 +531,16 @@ class ShadowResearchBook:
             str(row.get("shadow_trade_id") or "").strip(): row
             for row in self.pending_closes()
         }
-        ledger_ids = {
-            str(row.get("shadow_trade_id") or "").strip()
-            for row in self.history()
-        }
+        ledger_rows = self.history()
         for original in open_rows:
             trade = dict(original)
             trade_id = str(trade.get("shadow_trade_id") or "").strip()
             prior_closed = pending_by_id.get(trade_id)
-            if prior_closed is not None and trade_id in ledger_ids:
-                # Recover the already-recorded close after a crash before the
-                # open-book replace. Do not append a second ledger row.
+            if prior_closed is not None:
+                # A durable pending close is the canonical intent on replay,
+                # even when a later snapshot would calculate another exit.
+                if not self._confirm_ledger_close(prior_closed, ledger_rows):
+                    self._append_history(prior_closed)
                 closed.append(dict(prior_closed))
                 continue
             row = by_symbol.get(str(trade.get("symbol")))
