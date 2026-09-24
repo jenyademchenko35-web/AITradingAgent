@@ -106,6 +106,8 @@ from trade_tracker import (
 from trade_notification_outbox import (
     OutboxError,
     RECOVERY_INTENT_KEY,
+    RETRYABLE_ERROR,
+    SENDING,
     TradeNotificationOutbox,
     recovery_intent,
 )
@@ -1210,6 +1212,26 @@ async def send_outbox_notification(notification_id: str) -> NotificationResult:
         except OutboxError as exc:
             return NotificationResult(NotificationStatus.ERROR, "outbox_persist_error", str(exc))
         return NotificationResult(NotificationStatus.SKIPPED, "duplicate")
+
+    history = item["history"]
+    if (
+        len(history) >= 2
+        and history[-1]["state"] == SENDING
+        and history[-1]["reason"] == "delivery_claimed"
+        and history[-2]["state"] == RETRYABLE_ERROR
+        and history[-2]["reason"] == "recovered_interrupted_send"
+    ):
+        try:
+            LOGGER.timestamped(json.dumps({
+                "event": "trade_notification_outbox_uncertain_retry",
+                "level": "WARNING",
+                "notification_id": notification_id,
+                "prior_send_outcome": "UNKNOWN",
+                "warning": "retry_may_duplicate_externally_accepted_telegram_message",
+            }, sort_keys=True))
+        except Exception:
+            # Observability must not suppress an otherwise eligible retry.
+            pass
 
     try:
         bot = Bot(BOT_TOKEN)

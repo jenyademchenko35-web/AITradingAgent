@@ -66,6 +66,14 @@ class TradeNotificationOutboxTest(TestCase):
         self.assertIsNotNone(item)
         return item
 
+    def restarted_outbox(self):
+        return TradeNotificationOutbox(
+            self.path,
+            now=lambda: self.clock[0],
+            base_backoff_seconds=10,
+            max_backoff_seconds=40,
+        )
+
     def test_successful_open_intent_is_durable_before_delivery(self):
         item = self.enqueue()
         persisted = json.loads(self.path.read_text(encoding="utf-8"))
@@ -95,10 +103,11 @@ class TradeNotificationOutboxTest(TestCase):
     def test_sending_after_crash_becomes_retryable(self):
         item = self.enqueue()
         self.assertEqual(self.outbox.claim(item["notification_id"])["state"], SENDING)
-        self.assertEqual(self.outbox.recover_interrupted(), 1)
-        recovered = self.outbox.get(item["notification_id"])
+        restarted = self.restarted_outbox()
+        self.assertEqual(restarted.recover_interrupted(), 1)
+        recovered = restarted.get(item["notification_id"])
         self.assertEqual(recovered["state"], RETRYABLE_ERROR)
-        self.assertEqual(self.outbox.due_ids(), [item["notification_id"]])
+        self.assertEqual(restarted.due_ids(), [item["notification_id"]])
 
     def test_cycle_recovery_processes_interrupted_item_safely(self):
         item = self.enqueue()
@@ -168,7 +177,9 @@ class TradeNotificationOutboxTest(TestCase):
         item = self.enqueue()
         self.outbox.claim(item["notification_id"])
         self.outbox.mark_delivered(item["notification_id"])
-        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", self.outbox), \
+        restarted = self.restarted_outbox()
+        self.assertEqual(restarted.get(item["notification_id"])["state"], DELIVERED)
+        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", restarted), \
                 patch.object(agent, "Bot") as bot:
             result = asyncio.run(agent.send_outbox_notification(item["notification_id"]))
         self.assertEqual(result.reason, "in_progress_or_not_due")
@@ -240,21 +251,100 @@ class TradeNotificationOutboxTest(TestCase):
                 patch.object(self.outbox, "mark_delivered", side_effect=OutboxPersistError("crash")):
             result = asyncio.run(agent.send_outbox_notification(item["notification_id"]))
         self.assertEqual(result.reason, "delivered_state_persist_error")
+        bot.send_message.assert_awaited_once()
         acknowledged.assert_not_called()
         self.assertEqual(self.outbox.get(item["notification_id"])["state"], SENDING)
 
-        self.outbox.recover_interrupted()
-        second_bot = Mock(send_message=AsyncMock(return_value=None))
-        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", self.outbox), \
+        restarted = self.restarted_outbox()
+        self.assertEqual(restarted.get(item["notification_id"])["state"], SENDING)
+        self.assertEqual(restarted.recover_interrupted(), 1)
+        self.assertEqual(restarted.get(item["notification_id"])["state"], RETRYABLE_ERROR)
+        self.assertEqual(restarted.due_ids(), [item["notification_id"]])
+
+        events = []
+        warnings = []
+        second_bot = Mock(send_message=AsyncMock(
+            side_effect=lambda **_kwargs: events.append("telegram_retry"),
+        ))
+
+        def record_warning(raw):
+            warnings.append(json.loads(raw))
+            events.append("warning")
+
+        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", restarted), \
                 patch.object(agent, "BOT_TOKEN", "token"), \
                 patch.object(agent, "load_chat_id", return_value=1), \
                 patch.object(agent, "Bot", return_value=second_bot), \
                 patch.object(agent, "is_duplicate", return_value=False), \
-                patch.object(agent, "mark_as_sent"):
+                patch.object(agent, "mark_as_sent"), \
+                patch.object(agent.LOGGER, "timestamped", side_effect=record_warning):
             recovered = asyncio.run(agent.send_outbox_notification(item["notification_id"]))
         self.assertEqual(recovered.status, agent.NotificationStatus.SENT)
+        self.assertEqual(events, ["warning", "telegram_retry"])
+        self.assertEqual(warnings, [{
+            "event": "trade_notification_outbox_uncertain_retry",
+            "level": "WARNING",
+            "notification_id": item["notification_id"],
+            "prior_send_outcome": "UNKNOWN",
+            "warning": "retry_may_duplicate_externally_accepted_telegram_message",
+        }])
         second_bot.send_message.assert_awaited_once()
-        self.assertEqual(self.outbox.get(item["notification_id"])["state"], DELIVERED)
+        self.assertEqual(restarted.get(item["notification_id"])["state"], DELIVERED)
+
+    def test_uncertainty_warning_only_on_retry_directly_after_recovery(self):
+        item = self.enqueue()
+        self.outbox.claim(item["notification_id"])
+        restarted = self.restarted_outbox()
+        self.assertEqual(restarted.recover_interrupted(), 1)
+
+        failed_bot = Mock(send_message=AsyncMock(side_effect=OSError("network down")))
+        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", restarted), \
+                patch.object(agent, "BOT_TOKEN", "token"), \
+                patch.object(agent, "load_chat_id", return_value=1), \
+                patch.object(agent, "Bot", return_value=failed_bot), \
+                patch.object(agent, "is_duplicate", return_value=False), \
+                patch.object(agent.LOGGER, "timestamped") as first_warning:
+            failed = asyncio.run(agent.send_outbox_notification(item["notification_id"]))
+        self.assertEqual(failed.reason, "send_error")
+        failed_bot.send_message.assert_awaited_once()
+        first_warning.assert_called_once()
+        self.assertEqual(json.loads(first_warning.call_args.args[0])["prior_send_outcome"], "UNKNOWN")
+        retryable = restarted.get(item["notification_id"])
+        self.assertEqual(retryable["state"], RETRYABLE_ERROR)
+        self.assertEqual(retryable["last_error"], "network down")
+
+        self.clock[0] = retryable["next_attempt_at"]
+        later_bot = Mock(send_message=AsyncMock(return_value=None))
+        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", restarted), \
+                patch.object(agent, "BOT_TOKEN", "token"), \
+                patch.object(agent, "load_chat_id", return_value=1), \
+                patch.object(agent, "Bot", return_value=later_bot), \
+                patch.object(agent, "is_duplicate", return_value=False), \
+                patch.object(agent, "mark_as_sent"), \
+                patch.object(agent.LOGGER, "timestamped") as later_warning:
+            sent = asyncio.run(agent.send_outbox_notification(item["notification_id"]))
+        self.assertEqual(sent.status, agent.NotificationStatus.SENT)
+        later_bot.send_message.assert_awaited_once()
+        later_warning.assert_not_called()
+        self.assertEqual(restarted.get(item["notification_id"])["state"], DELIVERED)
+
+    def test_uncertain_retry_continues_when_warning_logging_fails(self):
+        item = self.enqueue()
+        self.outbox.claim(item["notification_id"])
+        restarted = self.restarted_outbox()
+        restarted.recover_interrupted()
+        bot = Mock(send_message=AsyncMock(return_value=None))
+        with patch.object(agent, "TRADE_NOTIFICATION_OUTBOX", restarted), \
+                patch.object(agent, "BOT_TOKEN", "token"), \
+                patch.object(agent, "load_chat_id", return_value=1), \
+                patch.object(agent, "Bot", return_value=bot), \
+                patch.object(agent, "is_duplicate", return_value=False), \
+                patch.object(agent, "mark_as_sent"), \
+                patch.object(agent.LOGGER, "timestamped", side_effect=OSError("log unavailable")):
+            result = asyncio.run(agent.send_outbox_notification(item["notification_id"]))
+        self.assertEqual(result.status, agent.NotificationStatus.SENT)
+        bot.send_message.assert_awaited_once()
+        self.assertEqual(restarted.get(item["notification_id"])["state"], DELIVERED)
 
     def test_corrupt_outbox_fails_closed_without_overwrite(self):
         self.path.write_text("{broken", encoding="utf-8")

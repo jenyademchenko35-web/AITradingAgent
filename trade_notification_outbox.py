@@ -5,8 +5,9 @@ embedded in the canonical trade row so a crash immediately after ``open_trade``
 cannot permanently lose the notification before this file is materialised.
 
 Telegram does not expose an idempotency key for ``sendMessage``.  Processing is
-therefore at-least-once: a crash after Telegram accepts a message but before the
-local fingerprint acknowledgement can cause one duplicate on recovery.
+therefore at-least-once across the send-to-DELIVERED persistence window: a crash
+after Telegram accepts a message can cause a duplicate on recovery.  Repeated
+ambiguous crashes can cause further retries, so duplicates are not globally bounded.
 """
 
 from __future__ import annotations
