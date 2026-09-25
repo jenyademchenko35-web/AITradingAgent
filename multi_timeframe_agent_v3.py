@@ -9,7 +9,9 @@ import os
 import json
 import math
 import signal
+import stat
 import sys
+import tempfile
 import threading
 from pathlib import Path
 from typing import Any, Callable
@@ -319,8 +321,43 @@ def load_stats():
         }
 
 def save_stats(stats):
-    with open(STATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(stats, f, indent=2)
+    parent = os.path.dirname(os.path.abspath(STATS_FILE))
+    descriptor, temporary = tempfile.mkstemp(
+        dir=parent, prefix=f".{os.path.basename(STATS_FILE)}.", suffix=".tmp",
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as f:
+            try:
+                os.fchmod(f.fileno(), stat.S_IMODE(os.stat(STATS_FILE).st_mode))
+            except FileNotFoundError:
+                pass
+            json.dump(stats, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, STATS_FILE)
+        if os.name == "posix":
+            try:
+                directory = os.open(parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
+            except OSError as exc:
+                # Replacement already succeeded; a directory-sync warning
+                # must not turn this completed save into a failed cycle.
+                try:
+                    LOGGER.timestamped(json.dumps({
+                        "event": "agent_stats_directory_fsync_warning",
+                        "path": STATS_FILE,
+                        "error": str(exc),
+                    }, sort_keys=True))
+                except Exception:
+                    pass
+    finally:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
     LOGGER.csv_write(STATS_FILE)
 
 def update_stats(decisions, api_errors):
