@@ -6,7 +6,7 @@ import json
 import hashlib
 import math
 import sqlite3
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Mapping
@@ -334,7 +334,8 @@ class ResearchDatabase:
                   attribution_version: str | None = None,
                    data_quality: str | None = None,
                    live_trade_id: str | None = None,
-                   source_type: str | None = None) -> None:
+                   source_type: str | None = None,
+                   connection: sqlite3.Connection | None = None) -> None:
         payload = {
             "cycle_id": cycle_id, "strategy_id": strategy_id, "timestamp": timestamp,
             "symbol": symbol, "timeframe": timeframe, "decision": decision,
@@ -357,7 +358,7 @@ class ResearchDatabase:
             "attribution_version": attribution_version, "data_quality": data_quality,
             "live_trade_id": live_trade_id, "source_type": source_type,
         }
-        with self.connect() as db:
+        with (self.connect() if connection is None else nullcontext(connection)) as db:
             cursor = db.execute("""
                 INSERT INTO strategy_runs
                 (cycle_id, strategy_id, timestamp, symbol, timeframe, decision, status,
@@ -645,8 +646,9 @@ class ResearchDatabase:
     def upsert_signal_state(self, *, strategy_id: str, symbol: str, timeframe: str,
                             condition_active: bool, direction: str,
                             signal_fingerprint: str | None,
-                            last_triggered_at: str | None, updated_at: str) -> None:
-        with self.connect() as db:
+                            last_triggered_at: str | None, updated_at: str,
+                            connection: sqlite3.Connection | None = None) -> None:
+        with (self.connect() if connection is None else nullcontext(connection)) as db:
             db.execute("""
                 INSERT INTO signal_states
                 (strategy_id, symbol, timeframe, condition_active, direction,

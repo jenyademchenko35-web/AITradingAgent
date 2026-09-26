@@ -25,7 +25,7 @@ from research_lab_v2.config import (
     get_settings,
     set_runtime_override,
 )
-from research_lab_v2.database import ResearchDatabase, ResearchDatabaseBusy
+from research_lab_v2.database import ReplayConflictError, ResearchDatabase, ResearchDatabaseBusy
 from research_lab_v2.parameter_search import generate_variants, register_variants
 from research_lab_v2.runtime import (
     REAL_ORDER_ALLOWED,
@@ -386,6 +386,146 @@ def test_same_agent_cycle_is_idempotent_by_timeframe(tmp_path):
         assert db.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 1
         columns = {row[1] for row in db.execute("PRAGMA table_info(strategy_runs)")}
     assert {"timeframe", "would_open_trade", "block_reason"} <= columns
+
+
+def _atomic_decision(strategy_id, *, status="EVALUATED"):
+    return {"candidate_id": strategy_id, "decision": "SETUP", "status": status,
+            "feature_snapshot": {"adx": 30.0}}
+
+
+def _atomic_state(strategy_id, *, active=True):
+    return {
+        "strategy_id": strategy_id, "symbol": "BTC/USDT", "timeframe": "1h",
+        "condition_active": active, "direction": "LONG",
+        "signal_fingerprint": "fingerprint" if active else None,
+        "last_triggered_at": "2026-07-31T10:00:00+00:00" if active else None,
+        "updated_at": "2026-07-31T10:00:00+00:00",
+    }
+
+
+def test_cycle_run_and_state_writes_roll_back_when_state_upsert_fails(monkeypatch, tmp_path):
+    path = tmp_path / "research.db"
+    lab = ResearchLab(path)
+    lab.register_strategies()
+    baseline = _atomic_state("RISK_CONSERVATIVE", active=False)
+    lab.database.upsert_signal_state(**baseline)
+    original_upsert = lab.database.upsert_signal_state
+    calls = 0
+
+    def fail_second_upsert(**kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("state upsert failed")
+        return original_upsert(**kwargs)
+
+    monkeypatch.setattr(lab.database, "upsert_signal_state", fail_second_upsert)
+    with pytest.raises(RuntimeError, match="state upsert failed"):
+        lab.process_cycle(
+            cycle_id="atomic-failure", snapshot=_snapshot("atomic-failure"),
+            decisions=[_atomic_decision("RISK_CONSERVATIVE"),
+                       _atomic_decision("TREND_CONFIRM")],
+            signal_state_updates=[_atomic_state("RISK_CONSERVATIVE"),
+                                  _atomic_state("TREND_CONFIRM")],
+        )
+    with sqlite3.connect(path) as db:
+        assert db.execute(
+            "SELECT COUNT(*) FROM strategy_runs WHERE cycle_id='atomic-failure'"
+        ).fetchone()[0] == 0
+        states = db.execute(
+            "SELECT strategy_id, condition_active FROM signal_states"
+        ).fetchall()
+    assert states == [("RISK_CONSERVATIVE", 0)]
+
+
+def test_cycle_run_and_state_writes_commit_together_and_replay_identically(tmp_path):
+    path = tmp_path / "research.db"
+    lab = ResearchLab(path)
+    arguments = {
+        "cycle_id": "atomic-success", "snapshot": _snapshot("atomic-success"),
+        "decisions": [_atomic_decision("RISK_CONSERVATIVE"),
+                      _atomic_decision("TREND_CONFIRM")],
+        "signal_state_updates": [_atomic_state("RISK_CONSERVATIVE"),
+                                 _atomic_state("TREND_CONFIRM")],
+    }
+    lab.process_cycle(**arguments)
+    lab.process_cycle(**arguments)
+    with sqlite3.connect(path) as db:
+        runs = db.execute(
+            "SELECT strategy_id FROM strategy_runs WHERE cycle_id='atomic-success'"
+        ).fetchall()
+        states = db.execute(
+            "SELECT strategy_id FROM signal_states WHERE condition_active=1"
+        ).fetchall()
+    assert {row[0] for row in runs} == {"RISK_CONSERVATIVE", "TREND_CONFIRM"}
+    assert len(runs) == 2
+    assert {row[0] for row in states} == {"RISK_CONSERVATIVE", "TREND_CONFIRM"}
+
+
+def test_conflicting_cycle_replay_rolls_back_earlier_new_run(tmp_path):
+    path = tmp_path / "research.db"
+    lab = ResearchLab(path)
+    snapshot = _snapshot("atomic-conflict")
+    lab.process_cycle(cycle_id="atomic-conflict", snapshot=snapshot,
+                      decisions=[_atomic_decision("TREND_CONFIRM")])
+    with pytest.raises(ReplayConflictError, match="conflicting strategy run replay"):
+        lab.process_cycle(
+            cycle_id="atomic-conflict", snapshot=snapshot,
+            decisions=[_atomic_decision("RISK_CONSERVATIVE"),
+                       _atomic_decision("TREND_CONFIRM", status="CHANGED")],
+            signal_state_updates=[_atomic_state("RISK_CONSERVATIVE")],
+        )
+    with sqlite3.connect(path) as db:
+        runs = db.execute(
+            "SELECT strategy_id, status FROM strategy_runs WHERE cycle_id='atomic-conflict'"
+        ).fetchall()
+        state_count = db.execute("SELECT COUNT(*) FROM signal_states").fetchone()[0]
+    assert runs == [("TREND_CONFIRM", "EVALUATED")]
+    assert state_count == 0
+
+
+def test_standalone_run_and_state_helpers_still_commit(tmp_path):
+    path = tmp_path / "research.db"
+    database = ResearchDatabase(path)
+    ResearchLab(path).register_strategies()
+    database.record_run(cycle_id="standalone", strategy_id="TREND_CONFIRM",
+                        timestamp="2026-07-31T10:00:00+00:00", symbol="BTC/USDT",
+                        decision="SETUP", status="EVALUATED", features={"adx": 30.0})
+    database.upsert_signal_state(**_atomic_state("TREND_CONFIRM"))
+    with sqlite3.connect(path) as db:
+        assert db.execute(
+            "SELECT COUNT(*) FROM strategy_runs WHERE cycle_id='standalone'"
+        ).fetchone()[0] == 1
+        assert db.execute(
+            "SELECT condition_active FROM signal_states WHERE strategy_id='TREND_CONFIRM'"
+        ).fetchone()[0] == 1
+
+
+def test_runtime_does_not_advance_loaded_state_after_atomic_failure(monkeypatch, tmp_path):
+    loaded_states = []
+    original_load = ResearchDatabase.load_signal_states
+
+    def capture_states(database):
+        states = original_load(database)
+        loaded_states.append(states)
+        return states
+
+    def fail_upsert(database, **kwargs):
+        raise RuntimeError("state upsert failed")
+
+    monkeypatch.setattr(ResearchDatabase, "load_signal_states", capture_states)
+    monkeypatch.setattr(ResearchDatabase, "upsert_signal_state", fail_upsert)
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json",
+                                 shadow_book_path=tmp_path / "shadow.json")
+    result = runtime.process_cycle(
+        cycle_id="atomic-runtime-failure", snapshots=[_snapshot("atomic-runtime-failure")],
+        settings=_trend_only_settings(tmp_path),
+    )
+    assert result["database_status"] == "ERROR"
+    assert loaded_states == [{}]
+    with sqlite3.connect(tmp_path / "research.db") as db:
+        assert db.execute("SELECT COUNT(*) FROM strategy_runs").fetchone()[0] == 0
+        assert db.execute("SELECT COUNT(*) FROM signal_states").fetchone()[0] == 0
 
 
 def test_database_lock_is_reported_without_raising(monkeypatch, tmp_path):

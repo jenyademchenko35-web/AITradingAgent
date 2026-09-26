@@ -32,48 +32,53 @@ class ResearchLab:
 
     def process_cycle(self, *, cycle_id: str, snapshot: Mapping[str, Any],
                       decisions: Iterable[Mapping[str, Any]],
-                      closed_trades: Iterable[Mapping[str, Any]] = ()) -> dict[str, Any]:
+                      closed_trades: Iterable[Mapping[str, Any]] = (),
+                      signal_state_updates: Iterable[Mapping[str, Any]] = ()) -> dict[str, Any]:
         self.register_strategies()
         decisions, closed = list(decisions), list(closed_trades)
         timestamp = str(snapshot.get("timestamp", ""))
         symbol = str(snapshot.get("symbol", ""))
-        for decision in decisions:
-            strategy_id = str(decision.get("candidate_id", "")).upper()
-            if not strategy_id or registry.get(strategy_id) is None:
-                continue
-            features = decision.get("feature_snapshot")
-            features = features if isinstance(features, Mapping) else snapshot
-            attribution_version = decision.get("attribution_version")
-            attribution_complete = all(decision.get(field) for field in (
-                "feature_snapshot_id", "signal_id", "decision_id", "strategy_version",
-            ))
-            self.database.record_run(
-                cycle_id=cycle_id, strategy_id=strategy_id, timestamp=timestamp,
-                symbol=symbol, timeframe=str(snapshot.get("timeframe", "1h")),
-                decision=str(decision.get("decision", "")),
-                status=str(decision.get("status", "EVALUATED")), features=features,
-                shadow_trade_id=decision.get("shadow_trade_id"),
-                would_open_trade=bool(decision.get("would_open_trade", False)),
-                block_reason=decision.get("block_reason"),
-                condition_active=bool(decision.get("condition_active", False)),
-                entry_triggered=bool(decision.get("entry_triggered", False)),
-                trigger_reason=decision.get("trigger_reason"),
-                signal_fingerprint=decision.get("signal_fingerprint"),
-                previous_fingerprint=decision.get("previous_fingerprint"),
-                is_new_signal=bool(decision.get("is_new_signal", False)),
-                blocked_reason=decision.get("blocked_reason"),
-                signal_audit_version=decision.get("signal_audit_version"),
-                strategy_mode=decision.get("strategy_mode"),
-                actual_shadow_opened=bool(decision.get("actual_shadow_opened", False)),
-                shadow_mode_started_at=decision.get("shadow_mode_started_at"),
-                feature_snapshot_id=decision.get("feature_snapshot_id"),
-                signal_id=decision.get("signal_id"),
-                decision_id=decision.get("decision_id"),
-                strategy_version=decision.get("strategy_version"),
-                attribution_version=attribution_version,
-                data_quality=("COMPLETE" if attribution_complete else "PARTIAL")
-                if attribution_version else None,
-            )
+        with self.database.connect() as connection:
+            for decision in decisions:
+                strategy_id = str(decision.get("candidate_id", "")).upper()
+                if not strategy_id or registry.get(strategy_id) is None:
+                    continue
+                features = decision.get("feature_snapshot")
+                features = features if isinstance(features, Mapping) else snapshot
+                attribution_version = decision.get("attribution_version")
+                attribution_complete = all(decision.get(field) for field in (
+                    "feature_snapshot_id", "signal_id", "decision_id", "strategy_version",
+                ))
+                self.database.record_run(
+                    cycle_id=cycle_id, strategy_id=strategy_id, timestamp=timestamp,
+                    symbol=symbol, timeframe=str(snapshot.get("timeframe", "1h")),
+                    decision=str(decision.get("decision", "")),
+                    status=str(decision.get("status", "EVALUATED")), features=features,
+                    shadow_trade_id=decision.get("shadow_trade_id"),
+                    would_open_trade=bool(decision.get("would_open_trade", False)),
+                    block_reason=decision.get("block_reason"),
+                    condition_active=bool(decision.get("condition_active", False)),
+                    entry_triggered=bool(decision.get("entry_triggered", False)),
+                    trigger_reason=decision.get("trigger_reason"),
+                    signal_fingerprint=decision.get("signal_fingerprint"),
+                    previous_fingerprint=decision.get("previous_fingerprint"),
+                    is_new_signal=bool(decision.get("is_new_signal", False)),
+                    blocked_reason=decision.get("blocked_reason"),
+                    signal_audit_version=decision.get("signal_audit_version"),
+                    strategy_mode=decision.get("strategy_mode"),
+                    actual_shadow_opened=bool(decision.get("actual_shadow_opened", False)),
+                    shadow_mode_started_at=decision.get("shadow_mode_started_at"),
+                    feature_snapshot_id=decision.get("feature_snapshot_id"),
+                    signal_id=decision.get("signal_id"),
+                    decision_id=decision.get("decision_id"),
+                    strategy_version=decision.get("strategy_version"),
+                    attribution_version=attribution_version,
+                    data_quality=("COMPLETE" if attribution_complete else "PARTIAL")
+                    if attribution_version else None,
+                    connection=connection,
+                )
+            for state in signal_state_updates:
+                self.database.upsert_signal_state(**state, connection=connection)
         for trade in closed:
             # Ledger rows are canonicalized by `strategy_id`; `candidate_id` is
             # an in-memory compatibility alias and is intentionally not required.

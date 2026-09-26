@@ -948,7 +948,10 @@ class ResearchLabRuntime:
                     snapshot_decisions.append(decision_row)
                 lab.process_cycle(cycle_id=cycle_id, snapshot=snapshot,
                                   decisions=snapshot_decisions,
-                                  closed_trades=closed)
+                                  closed_trades=closed,
+                                  signal_state_updates=[state for _, state in pending_states])
+                for key, state in pending_states:
+                    signal_states[key] = state
                 # Normal closures are already persisted above.  This removes
                 # their durable outbox entries; a crash before this point is
                 # safe because the next cycle retries by shadow_trade_id.
@@ -962,9 +965,6 @@ class ResearchLabRuntime:
                         "event": "pending_shadow_close_reconciliation",
                         **recovered,
                     }, self.log_path)
-                for key, state in pending_states:
-                    lab.database.upsert_signal_state(**state)
-                    signal_states[key] = state
                 closed = []
             duration = round((time.perf_counter() - started) * 1000, 2)
             diagnostics = lab.database.dry_run_diagnostics()
