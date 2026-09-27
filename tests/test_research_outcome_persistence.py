@@ -341,6 +341,8 @@ def test_pending_close_identical_ledger_replay_is_idempotent(tmp_path):
 
 def test_same_fingerprint_trades_remain_distinct_by_shadow_trade_id(tmp_path):
     database = _database(tmp_path / "research.db")
+    database.record_run(**_run_payload(cycle_id="open-one", shadow_trade_id="one"))
+    database.record_run(**_run_payload(cycle_id="open-two", shadow_trade_id="two"))
     assert database.persist_closed_outcome(_trade("one"), source="LIVE_RESEARCH_RUNTIME")["status"] == "inserted"
     assert database.persist_closed_outcome(_trade("two"), source="LIVE_RESEARCH_RUNTIME")["status"] == "inserted"
     assert len(database.completed_runs()["RISK_CONSERVATIVE"]) == 2
@@ -434,7 +436,8 @@ def test_metrics_use_canonical_outcomes_not_legacy_result_r(tmp_path):
     database = _database(tmp_path / "research.db")
     database.record_run(
         cycle_id="legacy", strategy_id="RISK_CONSERVATIVE", timestamp="2026-08-01T00:00:00+00:00",
-        symbol="BTC/USDT", decision="CLOSED", status="CLOSED", features={}, result_r=100.0,
+        symbol="BTC/USDT", decision="CLOSED", status="CLOSED", features={},
+        shadow_trade_id="canonical", result_r=100.0,
     )
     database.persist_closed_outcome(_trade("canonical", pnl_r=-1.0), source="LEDGER_BACKFILL")
     values = [row["pnl_r"] for row in database.completed_runs()["RISK_CONSERVATIVE"]]

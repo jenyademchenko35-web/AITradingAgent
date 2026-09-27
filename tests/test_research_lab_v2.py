@@ -222,7 +222,8 @@ def test_research_cycle_persists_runs_metrics_and_dashboard(tmp_path):
     ]
     result = lab.process_cycle(cycle_id="cycle-1", snapshot=snapshot,
                                decisions=[decision], closed_trades=closed)
-    assert result["closed"] == 2
+    # These legacy closures have no matching opening run and stay unresolved.
+    assert result["closed"] == 0
     report = ResearchDashboardV2(path).build_report()
     assert report["research_progress"]["registered_strategies"] >= 10
     assert report["research_progress"]["strategy_runs"] == 3

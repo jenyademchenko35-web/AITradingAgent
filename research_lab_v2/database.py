@@ -901,13 +901,19 @@ class ResearchDatabase:
         with self.connect() as db:
             rows = db.execute("""
                 SELECT strategy_id, pnl_r, feature_snapshot_json
-                FROM shadow_trade_outcomes ORDER BY exit_time, shadow_trade_id
+                FROM shadow_trade_outcomes
+                WHERE join_status='RESOLVED' AND status IN ('CLOSED', 'WIN', 'LOSS')
+                ORDER BY exit_time, shadow_trade_id
             """).fetchall()
         grouped: dict[str, list[dict[str, Any]]] = {}
         for row in rows:
+            try:
+                snapshot = json.loads(row["feature_snapshot_json"] or "{}")
+            except (TypeError, ValueError):
+                snapshot = {}
             grouped.setdefault(row["strategy_id"], []).append({
                 "pnl_r": row["pnl_r"],
-                "feature_snapshot": json.loads(row["feature_snapshot_json"] or "{}"),
+                "feature_snapshot": snapshot,
             })
         return grouped
 
