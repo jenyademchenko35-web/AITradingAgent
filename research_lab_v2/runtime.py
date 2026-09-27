@@ -319,6 +319,10 @@ def build_feature_snapshot(*, cycle_id: str, symbol: str, decision: Any,
     return fallback
 
 
+class ShadowOpenBookIntegrityError(RuntimeError):
+    """An existing shadow open book cannot be read safely."""
+
+
 class ShadowResearchBook:
     """A separate shadow-only book; never touches live or candidate CSV state."""
 
@@ -393,10 +397,35 @@ class ShadowResearchBook:
 
     def load(self) -> list[dict[str, Any]]:
         try:
-            payload = json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, ValueError, TypeError):
-            return []
-        return payload if isinstance(payload, list) else []
+            content = self.path.read_text(encoding="utf-8")
+        except FileNotFoundError as exc:
+            try:
+                self.path.lstat()
+            except FileNotFoundError:
+                return []
+            except OSError as stat_exc:
+                raise ShadowOpenBookIntegrityError(
+                    f"shadow open-book read failure at {self.path}: {stat_exc}"
+                ) from stat_exc
+            raise ShadowOpenBookIntegrityError(
+                f"shadow open-book read failure at {self.path}: {exc}"
+            ) from exc
+        except (OSError, UnicodeError) as exc:
+            raise ShadowOpenBookIntegrityError(
+                f"shadow open-book read failure at {self.path}: {exc}"
+            ) from exc
+        try:
+            payload = json.loads(content)
+        except (ValueError, TypeError) as exc:
+            raise ShadowOpenBookIntegrityError(
+                f"shadow open-book invalid JSON at {self.path}: {exc}"
+            ) from exc
+        if not isinstance(payload, list):
+            raise ShadowOpenBookIntegrityError(
+                f"shadow open-book invalid top-level type at {self.path}: "
+                f"expected list, got {type(payload).__name__}"
+            )
+        return payload
 
     def history(self) -> list[dict[str, Any]]:
         try:
@@ -706,7 +735,19 @@ class ResearchLabRuntime:
             previous = json.loads(self.status_path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             previous = {}
-        ledger = self.shadow_book.summary()
+        try:
+            ledger = self.shadow_book.summary()
+        except ShadowOpenBookIntegrityError as exc:
+            ledger = {
+                "open_research_shadow_trades": None,
+                "closed_research_shadow_trades": None,
+                "open_per_strategy": None,
+                "last_opened": None,
+                "last_closed": None,
+                "shadow_book_path": str(self.shadow_book.path),
+                "shadow_history_path": str(self.shadow_book.history_path),
+            }
+            updates.update(database_status="ERROR", last_error=str(exc))
         payload = {
             "enabled": settings.enabled, "dry_run": settings.dry_run,
             "strategies_enabled": list(settings.evaluated_strategies),

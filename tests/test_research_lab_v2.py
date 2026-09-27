@@ -30,6 +30,7 @@ from research_lab_v2.parameter_search import generate_variants, register_variant
 from research_lab_v2.runtime import (
     REAL_ORDER_ALLOWED,
     ResearchLabRuntime,
+    ShadowOpenBookIntegrityError,
     ShadowResearchBook,
     build_feature_snapshot,
     classify_signal_event,
@@ -1145,3 +1146,76 @@ def test_telegram_researchlab_trades_reads_only_separate_ledger(tmp_path):
     assert "LEGACY_ONLY_SHOULD_NOT_APPEAR" not in formatted
     from telegram_handlers import BOT_COMMANDS_V5
     assert "researchlab_trades" in {command.command for command in BOT_COMMANDS_V5}
+
+
+def test_shadow_open_book_missing_file_bootstraps_and_opens(tmp_path):
+    path = tmp_path / "open.json"
+    book = ShadowResearchBook(path, tmp_path / "history.csv")
+    assert book.load() == []
+    trade_id = _open_shadow_book_trade(book, ResearchLabSettings())
+    assert book.load()[0]["shadow_trade_id"] == trade_id
+
+
+def test_shadow_open_book_existing_list_loads_unchanged(tmp_path):
+    path = tmp_path / "open.json"
+    rows = [{"shadow_trade_id": "existing", "status": "OPEN", "extra": {"x": 1}}]
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    assert ShadowResearchBook(path, tmp_path / "history.csv").load() == rows
+
+
+@pytest.mark.parametrize(("content", "message"), [
+    (b"[{broken", "invalid JSON"),
+    (b'{"shadow_trade_id": "existing"}', "invalid top-level type"),
+])
+def test_shadow_open_book_invalid_existing_file_cannot_be_overwritten(tmp_path, content, message):
+    path = tmp_path / "open.json"
+    path.write_bytes(content)
+    book = ShadowResearchBook(path, tmp_path / "history.csv")
+    with pytest.raises(ShadowOpenBookIntegrityError, match=message):
+        book.load()
+    with pytest.raises(ShadowOpenBookIntegrityError, match=message):
+        _open_shadow_book_trade(book, ResearchLabSettings())
+    assert path.read_bytes() == content
+    with pytest.raises(ShadowOpenBookIntegrityError, match=message):
+        book.close_from_snapshots([], settings=ResearchLabSettings())
+    with pytest.raises(ShadowOpenBookIntegrityError, match=message):
+        book.reconcile_pending_closes(lambda trade: {"status": "existing"})
+    with pytest.raises(ShadowOpenBookIntegrityError, match=message):
+        book.summary()
+
+
+def test_shadow_open_book_existing_read_error_fails_closed(monkeypatch, tmp_path):
+    path = tmp_path / "open.json"
+    content = b'[{"shadow_trade_id": "existing", "status": "OPEN"}]'
+    path.write_bytes(content)
+    original_read_text = Path.read_text
+
+    def deny_book_read(self, *args, **kwargs):
+        if self == path:
+            raise PermissionError("read denied")
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", deny_book_read)
+    book = ShadowResearchBook(path, tmp_path / "history.csv")
+    with pytest.raises(ShadowOpenBookIntegrityError, match="shadow open-book read failure.*read denied"):
+        book.load()
+    with pytest.raises(ShadowOpenBookIntegrityError, match="shadow open-book read failure"):
+        _open_shadow_book_trade(book, ResearchLabSettings())
+    assert path.read_bytes() == content
+
+
+def test_runtime_corrupt_shadow_open_book_reports_error_without_opening(tmp_path):
+    path = tmp_path / "open.json"
+    content = b"[{broken"
+    path.write_bytes(content)
+    runtime = ResearchLabRuntime(status_path=tmp_path / "status.json", shadow_book_path=path)
+    result = runtime.process_cycle(
+        cycle_id="corrupt-book", snapshots=[_snapshot("corrupt-book")],
+        settings=_trend_only_settings(tmp_path, dry_run=False),
+    )
+    assert result["database_status"] == "ERROR"
+    assert "shadow open-book invalid JSON" in result["last_error"]
+    assert result["open_research_shadow_trades"] is None
+    assert result["opened_shadow"] == 0
+    assert path.read_bytes() == content
+    assert json.loads((tmp_path / "status.json").read_text(encoding="utf-8"))["last_error"] == result["last_error"]
